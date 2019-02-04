@@ -7,16 +7,15 @@ LDFLAGS=$(LDGSL) -lm
 
 EXECUTABLE=main.prog
 
-
-all: $(OBJECT)
+all: main.o utilities.o
 	$(CC) -o $(EXECUTABLE) $^ $(LDFLAGS)
 
 run: all
 	./$(EXECUTABLE)
 
-main.o: main.c
+main.o: main.c utilities.h
 
-utilities.o: utilities.c
+utilities.o: utilities.c utilities.h
 
 clean:
 	rm -rf $(OBJECT) $(EXECUTABLE)
