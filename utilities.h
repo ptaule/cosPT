@@ -17,7 +17,7 @@
 #define LOOPS 1
 #define N_COEFFS LOOPS+1
 #define N_CONFIGS (int)(2 * pow(3,LOOPS))
-#define MAX_KERNEL_NUM 2*LOOPS + 1
+#define N_KERNELS (int)((pow(3,LOOPS) + 1) * pow(4,LOOPS))
 
 #define COMPONENTS 2
 

@@ -82,34 +82,7 @@ static void compute_alpha_beta_tables(
     gsl_matrix_free(scalar_products);
 }
 
-short int kernelIndex(short int labels[], short int n) {
-    // Formula for one-dimensional indexation of n-tensor
-    //
-    // {i_1,...,i_n} -> index
-    //
-    // index = sum_{d=1} ^ {n} binomial( i_d + d - 1, d ) + 1
-    //
-    // assuming that i-indices are 0-based
-
-    short int index = 1;
-
-    for (int d = 1; d <= n; ++d) {
-        debug_print("d = %d\n",d);
-        short int A = labels[d-1] + d - 1;
-        short int B = d;
-        debug_print("A = %d\n",A);
-        debug_print("B = %d\n",B);
-        index += gsl_sf_choose(A,B);
-    }
-
-    // if DEBUG==true, check if index is within [0,NUMBER_OF_KERNELS - 1]
-#if DEBUG
-    if (index >= numberOfKernels(n,N_CONFIGS))
-        fprintf(stderr, "Warning: index = %d is larger than N_CONFIGS = %d\n",index,N_CONFIGS);
-#endif
-
-    return index;
-}
+short int kernelIndex(short int arguments[], short int n) { }
 
 int main (void) {
 
@@ -117,11 +90,6 @@ int main (void) {
     debug_print("N_COEFFS = %d\n", N_COEFFS);
     debug_print("N_CONFIGS = %d\n", N_CONFIGS);
     debug_print("COMPONENTS = %d\n", COMPONENTS);
-
-    short int v[2] = {0,0};
-    gsl_sf_choose(0,1);
-
-    /* printf("kernelIndex = %d\n",kernelIndex(v,2)); */
 
     /* double k = 1; */
     /* double Q = 1; */

@@ -90,17 +90,6 @@ short int sum_vectors(const short int labels[], size_t size) {
     return result;
 }
 
-short int numberOfKernels(short int n, short int n_configs) {
-    short int number = 0;
-
-    for (int i = 2; i <= n; ++i) {
-        // Binomial coefficient (n_configs + i - 1,i) determines d.o.f. of a
-        // symmetric i-tensor of size n_configs
-        number += gsl_sf_choose(n_configs + i - 1, i);
-    }
-    return number;
-}
-
 void print_gsl_matrix(const gsl_matrix* m, size_t height, size_t width) {
     for (size_t i = 0; i < height; ++i) {
         for (size_t j = 0; j < width; ++j) {
