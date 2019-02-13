@@ -9,6 +9,7 @@
 #define UTILITIES_H
 
 #include <stddef.h>
+#include <stdbool.h>
 
 // Constants:
 #define PI 3.14159265359
@@ -21,7 +22,7 @@
 
 #define COMPONENTS 2
 
-#define DEBUG 1
+#define DEBUG true
 
 // Macros:
 
@@ -35,10 +36,11 @@
 void label2config(short int label, short int config[], size_t size);
 short int config2label(const short int config[], size_t size);
 
+bool is_fundamental(short int label);
+bool unique_elements(short int array[],size_t length);
+
 short int sum_two_vectors(short int label_a, short int label_b);
 short int sum_vectors(const short int labels[], size_t size);
-
-short int numberOfKernels(short int n, short int n_configs);
 
 
 struct gsl_matrix;

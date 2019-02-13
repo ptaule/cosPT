@@ -12,6 +12,7 @@
 #include "utilities.h"
 
 
+
 void label2config(
         short int label,    // in, label element in [0, N_CONFIG - 1]
         short int config[], // out, array of base 3 digits
@@ -27,8 +28,9 @@ void label2config(
     // k-coefficient (last coefficient) is element in (0,1)
 
     config[size - 1] = label % 3;
-
 }
+
+
 
 short int config2label(
         const short int config[], // in, array of base 3 digits
@@ -49,8 +51,40 @@ short int config2label(
 }
 
 
-short int sum_two_vectors(short int label_a, short int label_b) {
 
+bool is_fundamental(short int label){
+    // Vector is not fundamental if k is present; this is the case if
+    // label >= N_CONFIGS/2
+    if (label >= N_CONFIGS/2) return false;
+
+    short int coeffs[N_COEFFS] = {};
+    label2config(label,coeffs,N_COEFFS);
+
+    short int num_vecs_present = 0;
+
+    // The last coefficient is for k, hence we can skip this (j < N_COEFFS - 1)
+    for (int i = 0; i < N_COEFFS - 1; ++i) {
+        if (coeffs[i] != 0) num_vecs_present++;
+    }
+    return (num_vecs_present == 1);
+
+}
+
+
+
+bool unique_elements(short int array[],size_t length) {
+    for (int i = 0; i < length; ++i) {
+        short int val = array[i];
+        for (int j = i + 1; j < length; ++j) {
+            if (array[j] == val) return false;
+        }
+    }
+    return true;
+}
+
+
+
+short int sum_two_vectors(short int label_a, short int label_b) {
     short int a_coeffs[N_COEFFS]   = {};
     short int b_coeffs[N_COEFFS]   = {};
     short int res_coeffs[N_COEFFS] = {};
@@ -79,6 +113,8 @@ correspond to an appropriate configuration.\n", label_a,label_b);
     return config2label(res_coeffs,N_COEFFS);
 }
 
+
+
 short int sum_vectors(const short int labels[], size_t size) {
     if (size == 1) return labels[0];
 
@@ -89,6 +125,8 @@ short int sum_vectors(const short int labels[], size_t size) {
     }
     return result;
 }
+
+
 
 void print_gsl_matrix(const gsl_matrix* m, size_t height, size_t width) {
     for (size_t i = 0; i < height; ++i) {
