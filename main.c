@@ -87,82 +87,83 @@ static void compute_alpha_beta_tables(
 
 // This function computes (addition to) kernel index for fundamental vector
 // arguments. (It assumes that the arguments are fundamentals.)
-short int kernel_index_from_fundamentals(const short int arguments[], short int length) {
+short int kernel_index_from_fundamental(short int argument) {
     short int index = 0;
     short int coeffs[N_COEFFS] = {};
-    for (int i = 0; i < length; ++i) {
-        label2config(arguments[i],coeffs,N_COEFFS);
-        // The last coefficient is for k, hence we can skip this (j < N_COEFFS - 1)
-        for (int j = 0; j < N_COEFFS - 1; ++j) {
-            /* This formula converts fundamental configs to corresponding index
-             * if   Q_i is not present, add 0 * 2^(2j + 1/2) = 0        to index
-             * if - Q_i is present, add     1 * 2^(2j + 0/2) = 2^(2i)   to index
-             * if + Q_i is present, add     1 * 2^(2j + 2/2) = 2^(2i+1) to index
-             */
-            index += abs(coeffs[j]) * pow(2, 2 * j + (coeffs[j] + 1)/2);
-        }
+    label2config(argument,coeffs,N_COEFFS);
+
+    // The last coefficient is for k, hence we can skip this (j < N_COEFFS - 1)
+    for (int i = 0; i < N_COEFFS - 1; ++i) {
+        /* This formula converts fundamental configs to corresponding index
+         * if   Q_i is not present, add 0 * 2^(2i + 1/2) = 0        to index
+         * if - Q_i is present, add     1 * 2^(2i + 0/2) = 2^(2i)   to index
+         * if + Q_i is present, add     1 * 2^(2i + 2/2) = 2^(2i+1) to index
+         */
+        index += abs(coeffs[i]) * pow(2, 2 * i + (coeffs[i] + 1)/2);
     }
     return index;
 }
 
 
 
-short int kernel_index_from_arguments(const short int arguments[], short int length) {
-    // First, do some checks if DEBUG-mode is on:
-    // - The maxium number of  possible kernel arguments is (2 LOOPS + 1)
-    // - No argument should appear twice
-    // - Arguments 2-end should be fundamental vectors (no k present, only one loop vector)
-    // - No argument should be the 0 (partly covered by the above point, since
-    //      a 0 argument is no fundamental)
+void kernel_index_from_arguments(
+        const short int arguments[], /* in, kernel arguments                            */
+        short int* index,            /* out, kernel index                               */
+        short int* n                 /* out, number of non-zero arguments/kernel number */
+        )
+{
+    // In DEBUG-mode, check that non-zero arguments (zero_label) are unique
 #if DEBUG
-    if (length > 2 * LOOPS + 1) {
-        fprintf(stderr, "WARNING: Number of arguments exceeds what is possible "
-                "for %d-LOOP.\n",LOOPS);
-    }
-    if (!unique_elements(arguments,length,zero_vector_label()))
-        fprintf(stderr,"WARNING: Duplicate non-zero vectors arguments passed to kernel_index().\n");
-
-    for (int i = 1; i < length; ++i) {
-        if (!is_fundamental(arguments[i]))
-            fprintf(stderr,"WARNING: One of the 2nd to last kernel arguments is "
-                    "not a fundamental.\n");
-    }
-    short int zero_config[N_COEFFS] = {};
-    short int zero_label = config2label(zero_config,N_COEFFS);
-    if (arguments[0] == zero_label)
-        fprintf(stderr,"WARNING: kernel_index() given a 0 argument.\n");
+    if (!unique_elements(arguments,N_KERNEL_ARGS,zero_vector_label()))
+        fprintf(stderr,"%s:%d:\tWARNING: Duplicate vector arguments passed to "
+                "kernel.\n",__FILE__,__LINE__);
 #endif
     //-------------------------------------------//
 
-    short int index = 0;
-
-    // A block consists of all fundamental vector argument combinations
+    // Define temp index used in calculation
+    short int temp_index = 0;
+    // Define counters for k-type vectors and fundamentals
+    short int n_k_vectors = 0;
+    short int n_fundamentals = 0;
+    // Define block size. A block consists of all fundamental vector argument
+    // combinations.
     short int block_size = pow(4,LOOPS);
+    // Store zero-label for comparison
+    short int zero_label = zero_vector_label();
 
-    // Two major cases: is a k-vector-combination present? It is assumed that
-    // this can only occur in the first argument. In our vector-label
-    // convention, k is the last coefficient, hence k is not present if
-    // label < N_CONFIGS/2
-    if (arguments[0] < N_CONFIGS/2) {
-        // k-vector config is _not_ present
-        index = 0;
+    for (int i = 0; i < N_KERNEL_ARGS; ++i) {
+        // First, check if argument is a zero vector
+        if (arguments[i] == zero_label) continue;
 
-        // In debug-mode, check that if k=0, then the first argument should be fundamental
+        // Argument is a k-type vector (i.e. on the form k + c_i Q_i) if k is
+        // present. In our vector-label convention, k is the last coefficient,
+        // hence k is present if label >= N_CONFIGS/2
+        if (arguments[i] >= N_CONFIGS/2) {
+            n_k_vectors++;
+            temp_index += (arguments[i] - N_CONFIGS/2 + 1) * block_size;
+        }
+        else {
+            // In DEBUG-mode, check that this is in fact a fundamental vector
 #if DEBUG
-        if (!is_fundamental(arguments[0]))
-            fprintf(stderr,"WARNING: kernel_index(): k not present in first "
-                    "argument and the argument is not a fundamental.\n");
+            if(!is_fundamental(arguments[i]))
+                fprintf(stderr,"%s:%d:\tWARNING: Kernel argument is neither 0, "
+                        "k-type, nor fundamental.\n",__FILE__,__LINE__);
 #endif
-        index += kernel_index_from_fundamentals(arguments,length);
+
+            n_fundamentals++;
+            temp_index += kernel_index_from_fundamental(arguments[i]);
+        }
     }
-    else {
-        // k-vector config _is_ present
-        index = block_size * (arguments[0] - N_CONFIGS/2 + 1);
-        // Compute addition to index from fundamental vectors (not including
-        // first argument, which is a k-vector-combination)
-        index += kernel_index_from_fundamentals(arguments+1,length-1);
-    }
-    return index;
+
+    // Set out-parameters
+    *index = temp_index;
+    *n = n_k_vectors + n_fundamentals;
+
+#if DEBUG
+    if (n_k_vectors > 1)
+        fprintf(stderr,"%s:%d:\tWARNING: More than one kernel argument is "
+                "k-type.\n",__FILE__,__LINE__);
+#endif
 }
 
 
@@ -175,7 +176,6 @@ short int combined_kernel_index(short int argument_index,short int component) {
 
 vfloat compute_SPT_kernel(
         const short int arguments[], /* kernel arguments                                  */
-        short int n,                 /* number of arguments/kernel number                 */
         short int component,         /* component to compute, NB: assumed to be 0-indexed */
         const gsl_matrix* alpha,     /* table of alpha function values for various input  */
         const gsl_matrix* beta,      /* table of beta function values for various input   */
@@ -184,7 +184,9 @@ vfloat compute_SPT_kernel(
 {
     // Compute kernel index, this depends on arguments (argument_index) and
     // which component is to be computed
-    short int argument_index = kernel_index_from_arguments(arguments,n);
+    short int argument_index = 0;
+    short int n = 0;
+    kernel_index_from_arguments(arguments,&argument_index,&n);
     short int index = combined_kernel_index(argument_index,component);
 
     // First check if the kernel is already computed
@@ -339,7 +341,9 @@ void test_kernel_index_from_arguments() {
     }
     printf("\n");
 
-    short int index = kernel_index_from_arguments(arguments,5);
+    short int index = 0;
+    short int n = 0;
+    kernel_index_from_arguments(arguments,&index,&n);
 
     printf("kernel_index_from_arguments = %d\n",index);
 }
