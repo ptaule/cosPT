@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <gsl/gsl_matrix.h>
-#include <gsl/gsl_sf.h>
+#include <gsl/gsl_combination.h>
 
 #include "utilities.h"
 
@@ -52,8 +52,8 @@ static void compute_scalar_products(
     }
 }
 
-/* // Potential tests for alpha/beta: */
-/* // alpha/beta diagonal should always be 2 */
+// Potential tests for alpha/beta:
+// alpha/beta diagonal should always be 2
 
 static void compute_alpha_beta_tables(
         const double k,    // in, overall k-vector (oriented in z-direction)
@@ -85,9 +85,9 @@ static void compute_alpha_beta_tables(
 
 
 
-// This function computes (additive) kernel index for fundamental vector arguments
-// (It assumes that the arguments are fundamentals)
-short int kernel_index_fundamental_vectors(short int arguments[], short int length) {
+// This function computes (addition to) kernel index for fundamental vector
+// arguments. (It assumes that the arguments are fundamentals.)
+short int kernel_index_from_fundamentals(const short int arguments[], short int length) {
     short int index = 0;
     short int coeffs[N_COEFFS] = {};
     for (int i = 0; i < length; ++i) {
@@ -107,9 +107,9 @@ short int kernel_index_fundamental_vectors(short int arguments[], short int leng
 
 
 
-short int kernel_index(short int arguments[], short int length) {
+short int kernel_index_from_arguments(const short int arguments[], short int length) {
     // First, do some checks if DEBUG-mode is on:
-    // - The most possible kernel arguments is (2 LOOPS + 1)
+    // - The maxium number of  possible kernel arguments is (2 LOOPS + 1)
     // - No argument should appear twice
     // - Arguments 2-end should be fundamental vectors (no k present, only one loop vector)
     // - No argument should be the 0 (partly covered by the above point, since
@@ -119,8 +119,8 @@ short int kernel_index(short int arguments[], short int length) {
         fprintf(stderr, "WARNING: Number of arguments exceeds what is possible "
                 "for %d-LOOP.\n",LOOPS);
     }
-    if (!unique_elements(arguments,length))
-        fprintf(stderr,"WARNING: Duplicate vector arguments passed to kernel_index().\n");
+    if (!unique_elements(arguments,length,zero_vector_label()))
+        fprintf(stderr,"WARNING: Duplicate non-zero vectors arguments passed to kernel_index().\n");
 
     for (int i = 1; i < length; ++i) {
         if (!is_fundamental(arguments[i]))
@@ -145,7 +145,7 @@ short int kernel_index(short int arguments[], short int length) {
     // label < N_CONFIGS/2
     if (arguments[0] < N_CONFIGS/2) {
         // k-vector config is _not_ present
-        index = N_KERNELS - block_size;
+        index = 0;
 
         // In debug-mode, check that if k=0, then the first argument should be fundamental
 #if DEBUG
@@ -153,21 +153,105 @@ short int kernel_index(short int arguments[], short int length) {
             fprintf(stderr,"WARNING: kernel_index(): k not present in first "
                     "argument and the argument is not a fundamental.\n");
 #endif
-        index += kernel_index_fundamental_vectors(arguments,length);
+        index += kernel_index_from_fundamentals(arguments,length);
     }
     else {
         // k-vector config _is_ present
-        index = block_size * (arguments[0] - N_CONFIGS/2);
+        index = block_size * (arguments[0] - N_CONFIGS/2 + 1);
         // Compute addition to index from fundamental vectors (not including
         // first argument, which is a k-vector-combination)
-        index += kernel_index_fundamental_vectors(arguments+1,length-1);
+        index += kernel_index_from_fundamentals(arguments+1,length-1);
     }
     return index;
 }
 
 
 
-void kernel_index2arguments(short int kernel_index) { };
+short int combined_kernel_index(short int argument_index,short int component) {
+    return argument_index * COMPONENTS + component;
+}
+
+
+
+vfloat compute_SPT_kernel(
+        const short int arguments[], /* kernel arguments                                  */
+        short int n,                 /* number of arguments/kernel number                 */
+        short int component,         /* component to compute, NB: assumed to be 0-indexed */
+        const gsl_matrix* alpha,     /* table of alpha function values for various input  */
+        const gsl_matrix* beta,      /* table of beta function values for various input   */
+        kernel_value* kernels        /* kernel table                                      */
+        )
+{
+    // Compute kernel index, this depends on arguments (argument_index) and
+    // which component is to be computed
+    short int argument_index = kernel_index_from_arguments(arguments,n);
+    short int index = combined_kernel_index(argument_index,component);
+
+    // First check if the kernel is already computed
+    if (kernels[index].computed) return kernels[index].value;
+
+    // For SPT kernels, F_1 = G_1 = ... = 1
+    if (n == 1) {
+        kernels[index].computed = true;
+        return kernels[index].value = 1.0;
+    }
+
+    // Define some factors dependent on component to compute
+    /* short int a,b; */
+    /* if (component == 1) { */
+    /*     a = 2 * n + 1; */
+    /*     b = 2; */
+    /* } */
+    /* else { */
+    /*     a = 3; */
+    /*     b = 2 * n; */
+    /* } */
+
+    /* vfloat value = 0.0; */
+
+    for (int m = 1; m < n; ++m) {
+        // - comb_l starts at {0,1,...,m} and in the while-loop goes over all
+        //   combinations of m elements from {0,...,n} (n choose m possibilities)
+        // - comb_r starts at {m+1,...,n} and in the while-loop goes
+        //   ("backwards") over all combinations of (n-m) elements from {0,...,n}
+        //   (n choose (n-m) possibilities)
+
+        gsl_combination* comb_l = gsl_combination_alloc(n,m);
+        gsl_combination* comb_r = gsl_combination_alloc(n,n-m);
+
+        gsl_combination_init_first(comb_l);
+        gsl_combination_init_first(comb_r);
+    }
+    return 0.0;
+}
+
+
+
+void testKernelComputer() {
+    vfloat k = 1;
+    vfloat Q = 1;
+    vfloat mu = 0.5;
+
+    matrix_vfloat* alpha = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
+    matrix_vfloat* beta = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
+
+    compute_alpha_beta_tables(k,Q,mu,alpha,beta);
+
+    // Allocate space for kernels
+    kernel_value* kernels = (kernel_value*)malloc(COMPONENTS * N_KERNELS * sizeof(kernel_value));
+
+    for (int i = 0; i < COMPONENTS * N_KERNELS; ++i) {
+        kernels[i].value = 0.0;
+        kernels[i].computed = false;
+    }
+
+
+    // Free allocated memory
+    free(kernels);
+    gsl_matrix_free(alpha);
+    gsl_matrix_free(beta);
+}
+
 
 
 int main () {
@@ -176,8 +260,7 @@ int main () {
     debug_print("N_KERNELS  = %d\n", N_KERNELS);
     debug_print("COMPONENTS = %d\n", COMPONENTS);
 
-    short int arguments[5] = {4,7,1,5,3};
-    printf("kernel_index = %d\n",kernel_index(arguments,5));
+    /* test_kernel_index_from_arguments(); */
 }
 
 
@@ -215,22 +298,25 @@ void printAlphaBetaTest() {
 }
 
 
-void test_kernel_index_fundamental_vectors() {
-    short int label1 = 7;
-    short int label2 = 1;
-    short int label3 = 5;
+void test_kernel_index_from_arguments() {
+    short int label1 = 17;
+    short int label2 = 5;
+    short int label3 = 1;
     short int label4 = 3;
+    short int label5 = 7;
 
-    short int arguments[4] = {label1,label2,label3,label4};
+    short int arguments[5] = {label1,label2,label3,label4,label5};
     short int config1[N_COEFFS];
     short int config2[N_COEFFS];
     short int config3[N_COEFFS];
     short int config4[N_COEFFS];
+    short int config5[N_COEFFS];
 
     label2config(label1,config1,N_COEFFS);
     label2config(label2,config2,N_COEFFS);
     label2config(label3,config3,N_COEFFS);
     label2config(label4,config4,N_COEFFS);
+    label2config(label5,config5,N_COEFFS);
 
     for (int i = 0; i < N_COEFFS; ++i) {
         printf("%d,",config1[i]);
@@ -248,7 +334,13 @@ void test_kernel_index_fundamental_vectors() {
         printf("%d,",config4[i]);
     }
     printf("\n");
+    for (int i = 0; i < N_COEFFS; ++i) {
+        printf("%d,",config5[i]);
+    }
+    printf("\n");
 
-    printf("kernel_index_fundamental_vectors = %d\n",kernel_index_fundamental_vectors(arguments,4));
+    short int index = kernel_index_from_arguments(arguments,5);
+
+    printf("kernel_index_from_arguments = %d\n",index);
 }
 

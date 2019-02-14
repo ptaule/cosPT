@@ -7,7 +7,6 @@
 
 #include <math.h>
 #include <gsl/gsl_matrix.h>
-#include <gsl/gsl_sf.h>
 
 #include "utilities.h"
 
@@ -52,6 +51,13 @@ short int config2label(
 
 
 
+short int zero_vector_label() {
+    const short int coeffs[N_COEFFS] = {};
+    return config2label(coeffs, N_COEFFS);
+}
+
+
+
 bool is_fundamental(short int label){
     // Vector is not fundamental if k is present; this is the case if
     // label >= N_CONFIGS/2
@@ -72,9 +78,12 @@ bool is_fundamental(short int label){
 
 
 
-bool unique_elements(short int array[],size_t length) {
+// Are there duplicate elements of the array? Yes, return true;
+// no, return false. Do not condiser elements equal to skip.
+bool unique_elements(const short int array[], size_t length, short int skip) {
     for (int i = 0; i < length; ++i) {
         short int val = array[i];
+        if (val == skip) continue;
         for (int j = i + 1; j < length; ++j) {
             if (array[j] == val) return false;
         }
