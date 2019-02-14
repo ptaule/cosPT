@@ -18,4 +18,4 @@ main.o: main.c utilities.h
 utilities.o: utilities.c utilities.h
 
 clean:
-	rm -rf $(OBJECT) $(EXECUTABLE)
+	rm -rf *.o *.prog
