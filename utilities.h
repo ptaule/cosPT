@@ -24,6 +24,11 @@
 
 #define DEBUG true
 
+// Variable precision
+#define matrix_vfloat gsl_matrix
+#define vector_vfloat gsl_vector
+typedef double vfloat;
+
 // Macros:
 
 // debug-print is optimized away if DEBUG==false

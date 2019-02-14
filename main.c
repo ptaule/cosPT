@@ -14,10 +14,10 @@
 #include "utilities.h"
 
 static void compute_scalar_products(
-        const double k,             // in, overall k-vector (oriented in z-direction)
-        const double Q,             // in, loop-momenta, absolute value
-        const double mu,            // in, cos of angle between Q and z-axis (k)
-        gsl_matrix* scalar_products // out, computed scalar products
+        const double k,                /* in, overall k-vector (oriented in z-direction) */
+        const double Q,                /* in, loop-momenta, absolute value               */
+        const double mu,               /* in, cos of angle between Q and z-axis (k)      */
+        matrix_vfloat* scalar_products /* out, computed scalar products                  */
         )
 {
     double bare_scalar_products[N_COEFFS][N_COEFFS] = {};
@@ -63,7 +63,7 @@ static void compute_alpha_beta_tables(
         gsl_matrix* beta   // out, matrix of beta-func. with possible arguments
         )
 {
-    gsl_matrix* scalar_products = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
+    matrix_vfloat* scalar_products = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
 
     compute_scalar_products(k,Q,mu,scalar_products);
 
@@ -200,8 +200,8 @@ void printAlphaBetaTest() {
     double Q = 1;
     double mu = 0.5;
 
-    gsl_matrix* alpha = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
-    gsl_matrix* beta = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
+    matrix_vfloat* alpha = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
+    matrix_vfloat* beta = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
 
     compute_alpha_beta_tables(k,Q,mu,alpha,beta);
 
