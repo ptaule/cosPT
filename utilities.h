@@ -15,13 +15,15 @@
 #define PI 3.14159265359
 #define TWOPI 6.28318530718
 
-#define LOOPS 2
+#define LOOPS 1
 #define N_COEFFS (LOOPS+1)
 #define N_CONFIGS (int)(2 * pow(3,LOOPS))
 #define N_KERNEL_ARGS (2 * LOOPS + 1)
 #define N_KERNELS (int)((pow(3,LOOPS) + 1) * pow(4,LOOPS))
 
 #define COMPONENTS 2
+
+#define ZERO_LABEL zero_label()
 
 #define DEBUG true
 
@@ -35,17 +37,18 @@ typedef double vfloat;
 // debug-print is optimized away if DEBUG==false
 #define debug_print(fmt, ...) \
             do { if (DEBUG) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
-#define debug_print_verbose(fmt, ...) \
-            do { if (DEBUG) \
-                fprintf(stderr, "Line: %s:%d,\t" fmt, __FILE__, __LINE__, __VA_ARGS__); } \
-while (0)
+#define warning(fmt) \
+                fprintf(stderr, "%s:%d,\tWarning: " fmt "\n", __FILE__, __LINE__);
+#define warning_verbose(fmt, ...) \
+                fprintf(stderr, "%s:%d,\tWarning: " fmt "\n",__FILE__, __LINE__, __VA_ARGS__);
 
 // Utility functions
 
 void label2config(short int label, short int config[], size_t size);
 short int config2label(const short int config[], size_t size);
 
-short int zero_vector_label();
+short int zero_label();
+
 bool is_fundamental(short int label);
 bool unique_elements(const short int array[],size_t length, short int skip);
 

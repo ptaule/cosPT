@@ -51,7 +51,7 @@ short int config2label(
 
 
 
-short int zero_vector_label() {
+short int zero_label() {
     const short int coeffs[N_COEFFS] = {};
     return config2label(coeffs, N_COEFFS);
 }
@@ -110,13 +110,13 @@ short int sum_two_vectors(short int label_a, short int label_b) {
     for (int i = 0; i < N_COEFFS - 1; ++i) {
         short int c = res_coeffs[i];
         if (!(c == -1 || c == 0 || c == 1))
-            fprintf(stderr, "Warning: Sum of vectors with labels (%d,%d) does not \
-correspond to an appropriate configuration.\n", label_a,label_b);
+            warning_verbose("Sum of vectors with labels (%d,%d) does not "
+                    "correspond to an appropriate configuration.", label_a,label_b);
     }
     short int c = res_coeffs[N_COEFFS - 1];
     if (!(c == 0 || c == 1))
-        fprintf(stderr, "Warning: Sum of vectors with labels (%d,%d) does not \
-correspond to an appropriate configuration.\n", label_a,label_b);
+        warning_verbose("Sum of vectors with labels (%d,%d) does not "
+                "correspond to an appropriate configuration.", label_a,label_b);
 #endif
 
     return config2label(res_coeffs,N_COEFFS);
@@ -130,6 +130,7 @@ short int sum_vectors(const short int labels[], size_t size) {
     short int result = sum_two_vectors(labels[0],labels[1]);
 
     for (size_t i = 2; i < size; ++i) {
+        if (labels[i] == ZERO_LABEL) continue;
         result = sum_two_vectors(result,labels[i]);
     }
     return result;
