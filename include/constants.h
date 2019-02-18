@@ -1,14 +1,13 @@
 /*
-   utilities.h
+   constants.h
 
-   Created by Petter Taule on 24.01.2019
+   Created by Petter Taule on 18.02.2019
    Copyright (c) 2019 Petter Taule. All rights reserved.
 */
 
-#ifndef UTILITIES_H
-#define UTILITIES_H
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
 
-#include <stddef.h>
 #include <stdbool.h>
 
 // Constants:
@@ -42,27 +41,5 @@ typedef double vfloat;
 #define warning_verbose(fmt, ...) \
                 fprintf(stderr, "%s:%d,\tWarning: " fmt "\n",__FILE__, __LINE__, __VA_ARGS__);
 
-// Utility functions
 
-void label2config(short int label, short int config[], size_t size);
-short int config2label(const short int config[], size_t size);
-
-short int zero_label();
-
-bool is_fundamental(short int label);
-bool unique_elements(const short int array[],size_t length, short int skip);
-
-short int sum_two_vectors(short int label_a, short int label_b);
-short int sum_vectors(const short int labels[], size_t size);
-
-
-struct gsl_matrix;
-void print_gsl_matrix(const gsl_matrix* m, size_t height, size_t width);
-
-
-typedef struct {
-    vfloat value;
-    bool computed;
-} kernel_value;
-
-#endif /* ifndef UTILITIES_H */
+#endif /* ifndef CONSTANTS_H */

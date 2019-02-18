@@ -8,7 +8,8 @@
 #include <math.h>
 #include <gsl/gsl_matrix.h>
 
-#include "utilities.h"
+#include "../include/constants.h"
+#include "../include/utilities.h"
 
 
 

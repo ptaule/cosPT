@@ -1,21 +1,48 @@
-CC=gcc
-CFLAGS=-Wall -O2 -I/scratch/Cuba-4.2/ -I/scratch/gsl-2.5/
+EXE=main.prog
+TEST_EXE=test.prog
 
-LDGSL=-L/scratch/gsl-2.5/.libs/ -L/scratch/gsl-2.5/cblas/.libs -lgsl -lgslcblas
-LDCUBA=-L/scratch/Cuba-4.2/ -lcuba
-LDFLAGS=$(LDGSL) -lm
+SRC_DIR = src
+OBJ_DIR = obj
 
-EXECUTABLE=main.prog
+SRC = $(wildcard $(SRC_DIR)/*.c)
+OBJ = $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 
-all: main.o utilities.o
-	$(CC) -o $(EXECUTABLE) $^ $(LDFLAGS)
+CFLAGS   += -Wall -O2
+CXXFLAGS += -Wall -O2
+CPPFLAGS += -I/scratch/Cuba-4.2/ -I/scratch/gsl-2.5/
+
+LDFLAGS_GSL  = -L/scratch/gsl-2.5/.libs/ -L/scratch/gsl-2.5/cblas/.libs
+LDLIBS_GSL   = -lgsl -lgslcblas
+LDFLAGS_CUBA = -L/scratch/Cuba-4.2/
+LDLIBS_CUBA  = -lcuba
+
+LDLIBS += -lm
+
+.PHONY: all clean tests
+
+all: $(EXE)
 
 run: all
-	./$(EXECUTABLE)
+	./$(EXE)
 
-main.o: main.c utilities.h
+$(EXE): $(OBJ)
+	$(CC) $(LDFLAGS) $(LDFLAGS_GSL) $^ $(LDLIBS) $(LDLIBS_GSL) -o $@
 
-utilities.o: utilities.c utilities.h
+$(OBJ_DIR)/main.o: $(SRC_DIR)/main.c include/constants.h \
+	include/utilities.h include/kernels.h include/spt_kernels.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/utilities.o: $(SRC_DIR)/utilities.c include/constants.h include/utilities.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/kernels.o: $(SRC_DIR)/kernels.c include/constants.h \
+	include/utilities.h include/kernels.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/spt_kernels.o: $(SRC_DIR)/spt_kernels.c include/constants.h \
+	include/utilities.h include/kernels.h include/spt_kernels.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
 
 clean:
-	rm -rf *.o *.prog
+	$(RM) $(OBJ) $(EXE)
