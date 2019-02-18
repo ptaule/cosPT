@@ -9,10 +9,10 @@
 #include <math.h>
 #include <gsl/gsl_matrix.h>
 
-#include "../include/constants.h"
-#include "../include/utilities.h"
-#include "../include/kernels.h"
-#include "../include/spt_kernels.h"
+#include "include/constants.h"
+#include "include/utilities.h"
+#include "include/kernels.h"
+#include "include/spt_kernels.h"
 
 void testVectorSum();
 void testAlphaBeta();
@@ -44,19 +44,12 @@ void testKernelComputer() {
 
     compute_alpha_beta_tables(k,Q,mu,alpha,beta);
 
-    printf("alpha = \n");
-    print_gsl_matrix(alpha,N_CONFIGS,N_CONFIGS);
-    printf("\nbeta = \n");
-    print_gsl_matrix(beta,N_CONFIGS,N_CONFIGS);
-    printf("\n");
-
     // Allocate space for kernels (calloc also initializes values to 0)
     kernel_value* kernels = (kernel_value*)calloc(COMPONENTS * N_KERNELS, sizeof(kernel_value));
 
-    short int args[N_KERNEL_ARGS] = {3,2,1};
+    short int args[N_KERNEL_ARGS] = {2,0,4};
     vfloat value = compute_SPT_kernel(args,0,alpha,beta,kernels);
     printf("value = %f\n",value);
-
 
     // Free allocated memory
     free(kernels);
