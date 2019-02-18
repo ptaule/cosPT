@@ -25,10 +25,10 @@ void compute_scalar_products(
     double bare_scalar_products[N_COEFFS][N_COEFFS] = {};
 
     // Note that the k-vector has the last coefficient in a configuration
-    bare_scalar_products[0][0] = k*k;
+    bare_scalar_products[0][0] = Q*Q;
     bare_scalar_products[0][1] = Q*k*mu;
     bare_scalar_products[1][0] = Q*k*mu;
-    bare_scalar_products[1][1] = Q*Q;
+    bare_scalar_products[1][1] = k*k;
 
     short int a_coeffs[N_COEFFS];
     short int b_coeffs[N_COEFFS];
