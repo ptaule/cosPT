@@ -11,6 +11,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#include "constants.h"
+
 // Utility functions
 
 void label2config(short int label, short int config[], size_t size);
@@ -25,7 +27,7 @@ short int sum_two_vectors(short int label_a, short int label_b);
 short int sum_vectors(const short int labels[], size_t size);
 
 
-struct gsl_matrix;
+struct matrix_vfloat;
 void print_gsl_matrix(const gsl_matrix* m, size_t height, size_t width);
 
 #endif /* ifndef UTILITIES_H */

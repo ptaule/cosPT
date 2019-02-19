@@ -5,6 +5,8 @@
    Copyright (c) 2019 Petter Taule. All rights reserved.
 */
 
+
+#include <stdio.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_combination.h>
 
@@ -16,8 +18,8 @@
 vfloat partial_SPT_sum(
         const short int arguments[], /* kernel arguments                                  */
         short int component,         /* component to compute, NB: assumed to be 0-indexed */
-        const gsl_matrix* alpha,     /* table of alpha function values for various input  */
-        const gsl_matrix* beta,      /* table of beta function values for various input   */
+        const matrix_vfloat* alpha,  /* table of alpha function values for various input  */
+        const matrix_vfloat* beta,   /* table of beta function values for various input   */
         kernel_value* kernels,       /* kernel table                                      */
         const short int n,
         const short int m,
@@ -99,8 +101,8 @@ vfloat partial_SPT_sum(
 vfloat compute_SPT_kernel(
         const short int arguments[], /* kernel arguments                                  */
         short int component,         /* component to compute, NB: assumed to be 0-indexed */
-        const gsl_matrix* alpha,     /* table of alpha function values for various input  */
-        const gsl_matrix* beta,      /* table of beta function values for various input   */
+        const matrix_vfloat* alpha,  /* table of alpha function values for various input  */
+        const matrix_vfloat* beta,   /* table of beta function values for various input   */
         kernel_value* kernels        /* kernel table                                      */
         )
 {

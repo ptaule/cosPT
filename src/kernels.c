@@ -16,13 +16,13 @@
 
 
 void compute_scalar_products(
-        const double k,                /* in, overall k-vector (oriented in z-direction) */
-        const double Q,                /* in, loop-momenta, absolute value               */
-        const double mu,               /* in, cos of angle between Q and z-axis (k)      */
+        const vfloat k,                /* in, overall k-vector (oriented in z-direction) */
+        const vfloat Q,                /* in, loop-momenta, absolute value               */
+        const vfloat mu,               /* in, cos of angle between Q and z-axis (k)      */
         matrix_vfloat* scalar_products /* out, computed scalar products                  */
         )
 {
-    double bare_scalar_products[N_COEFFS][N_COEFFS] = {};
+    vfloat bare_scalar_products[N_COEFFS][N_COEFFS] = {};
 
     // Note that the k-vector has the last coefficient in a configuration
     bare_scalar_products[0][0] = Q*Q;
@@ -58,11 +58,11 @@ void compute_scalar_products(
 // Potential tests for alpha/beta:
 // alpha/beta diagonal should always be 2
 void compute_alpha_beta_tables(
-        const double k,    // in, overall k-vector (oriented in z-direction)
-        const double Q,    // in, loop-momenta, absolute value
-        const double mu,   // in, cos of angle between Q and z-axis (k)
-        gsl_matrix* alpha, // out, matrix of alpha-func. with possible arguments
-        gsl_matrix* beta   // out, matrix of beta-func. with possible arguments
+        const vfloat k,       /* in, overall k-vector (oriented in z-direction)     */
+        const vfloat Q,       /* in, loop-momenta, absolute value                   */
+        const vfloat mu,      /* in, cos of angle between Q and z-axis (k)          */
+        matrix_vfloat* alpha, /* out, matrix of alpha-func. with possible arguments */
+        matrix_vfloat* beta   /* out, matrix of beta-func. with possible arguments  */
         )
 {
     matrix_vfloat* scalar_products = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);

@@ -73,9 +73,9 @@ void print_configs() {
 
 
 void testAlphaBeta() {
-    double k = 2;
-    double Q = 1;
-    double mu = 0.5;
+    vfloat k = 2;
+    vfloat Q = 1;
+    vfloat mu = 0.5;
 
     matrix_vfloat* alpha = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
     matrix_vfloat* beta = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
