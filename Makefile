@@ -10,7 +10,7 @@ SRC = $(wildcard $(SRC_DIR)/*.c)
 OBJ = $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 HEADERS = $(wildcard $(INC_DIR)/*.h)
 
-CFLAGS   += -Wall -O2
+CFLAGS   += -Wall -O3
 CPPFLAGS += -I/scratch/Cuba-4.2/ -I/scratch/gsl-2.5/
 
 LDFLAGS_GSL  = -L/scratch/gsl-2.5/.libs/ -L/scratch/gsl-2.5/cblas/.libs
@@ -30,17 +30,14 @@ run: all
 $(EXE): main.o $(OBJ)
 	$(CC) $(LDFLAGS) $(LDFLAGS_GSL) $^ $(LDLIBS) $(LDLIBS_GSL) -o $@
 
-main.o: main.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $^ -o $@
+main.o: main.c $(HEADERS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 
-$(OBJ_DIR)/spt_kernels.o: $(SRC_DIR)/spt_kernels.c include/constants.h \
-	include/utilities.h include/kernels.h include/spt_kernels.h
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 
 clean:
-	$(RM) $(OBJ)
+	$(RM) $(OBJ) main.o
