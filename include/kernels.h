@@ -8,6 +8,7 @@
 #ifndef KERNELS_H
 #define KERNELS_H
 
+#include <gsl/gsl_matrix.h>
 #include "constants.h"
 
 typedef struct {
@@ -15,7 +16,6 @@ typedef struct {
     bool computed;
 } kernel_value;
 
-struct matrix_vfloat;
 
 void compute_scalar_products(const vfloat k, const vfloat Q, const vfloat mu, matrix_vfloat* scalar_products);
 

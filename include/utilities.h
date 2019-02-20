@@ -10,6 +10,8 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <math.h>
+#include <gsl/gsl_matrix.h>
 
 #include "constants.h"
 
@@ -26,8 +28,6 @@ bool unique_elements(const short int array[],size_t length, short int skip);
 short int sum_two_vectors(short int label_a, short int label_b);
 short int sum_vectors(const short int labels[], size_t size);
 
-
-struct matrix_vfloat;
 void print_gsl_matrix(const gsl_matrix* m, size_t height, size_t width);
 
 #endif /* ifndef UTILITIES_H */

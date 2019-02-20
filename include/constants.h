@@ -8,7 +8,7 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#include <stdbool.h>
+#include <gsl/gsl_matrix.h>
 
 // Constants:
 #define PI 3.14159265359
