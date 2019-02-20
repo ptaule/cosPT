@@ -16,10 +16,27 @@ typedef struct {
     bool computed;
 } kernel_value;
 
+void compute_bare_scalar_products(
+        const vfloat magnitudes[],
+        const vfloat cos_theta[],
+        const vfloat phi[],
+        vfloat bare_scalar_products[][N_COEFFS]
+        );
 
-void compute_scalar_products(const vfloat k, const vfloat Q, const vfloat mu, matrix_vfloat* scalar_products);
+void compute_scalar_products(
+        const vfloat magnitudes[],
+        const vfloat cos_theta[],
+        const vfloat phi[],
+        matrix_vfloat* scalar_products
+        );
 
-void compute_alpha_beta_tables(const vfloat k, const vfloat Q, const vfloat mu, matrix_vfloat* alpha, matrix_vfloat* beta);
+void compute_alpha_beta_tables(
+        const vfloat magnitudes[],
+        const vfloat cos_theta[],
+        const vfloat phi[],
+        matrix_vfloat* alpha,
+        matrix_vfloat* beta
+        );
 
 short int kernel_index_from_fundamental(short int argument);
 void kernel_index_from_arguments(const short int arguments[], short int* index, short int* n);

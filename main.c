@@ -19,6 +19,8 @@ void testAlphaBeta();
 void testKernelComputer();
 void print_configs();
 void test_kernel_index_from_arguments();
+void testBareScalarProducts();
+void testScalarProducts();
 
 
 
@@ -35,19 +37,20 @@ int main () {
 
 
 void testKernelComputer() {
-    vfloat k = 2;
-    vfloat Q = 1;
-    vfloat mu = 0.5;
+    vfloat magnitudes[N_COEFFS]    = {1,2};
+    vfloat cos_theta[N_COEFFS - 1] = {0.5};
+    vfloat phi[N_COEFFS - 2];
+
+    short int args[N_KERNEL_ARGS] = {4,2,0};
 
     matrix_vfloat* alpha = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
     matrix_vfloat* beta = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
 
-    compute_alpha_beta_tables(k,Q,mu,alpha,beta);
+    compute_alpha_beta_tables(magnitudes,cos_theta,phi,alpha,beta);
 
     // Allocate space for kernels (calloc also initializes values to 0)
     kernel_value* kernels = (kernel_value*)calloc(COMPONENTS * N_KERNELS, sizeof(kernel_value));
 
-    short int args[N_KERNEL_ARGS] = {2,0,4};
     vfloat value = compute_SPT_kernel(args,0,alpha,beta,kernels);
     printf("value = %f\n",value);
 
@@ -73,14 +76,14 @@ void print_configs() {
 
 
 void testAlphaBeta() {
-    vfloat k = 2;
-    vfloat Q = 1;
-    vfloat mu = 0.5;
+    vfloat magnitudes[N_COEFFS]    = {1,2};
+    vfloat cos_theta[N_COEFFS - 1] = {0.5};
+    vfloat phi[N_COEFFS - 2];
 
     matrix_vfloat* alpha = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
     matrix_vfloat* beta = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
 
-    compute_alpha_beta_tables(k,Q,mu,alpha,beta);
+    compute_alpha_beta_tables(magnitudes,cos_theta,phi,alpha,beta);
 
     printf("alpha=\n");
     print_gsl_matrix(alpha,N_CONFIGS,N_CONFIGS);
@@ -168,3 +171,40 @@ void test_kernel_index_from_arguments() {
     printf("kernel_index_from_arguments = %d\n",index);
 }
 
+
+
+void testBareScalarProducts() {
+    vfloat bare_scalar_products[N_COEFFS][N_COEFFS] = {};
+
+    vfloat magnitudes[N_COEFFS]    = {1,2};
+    vfloat cos_theta[N_COEFFS - 1] = {0.5};
+    vfloat phi[N_COEFFS - 2];
+
+    compute_bare_scalar_products(magnitudes,cos_theta,phi,bare_scalar_products);
+
+    for (int i = 0; i < N_COEFFS; ++i) {
+        for (int j = 0; j < N_COEFFS; ++j) {
+            printf("%2.5f  ",bare_scalar_products[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+
+
+void testScalarProducts() {
+    matrix_vfloat* scalar_products = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
+
+    vfloat magnitudes[N_COEFFS]    = {1,2};
+    vfloat cos_theta[N_COEFFS - 1] = {0.5};
+    vfloat phi[N_COEFFS - 2];
+
+    compute_scalar_products(magnitudes,cos_theta,phi,scalar_products);
+
+    for (int i = 0; i < N_CONFIGS; ++i) {
+        for (int j = 0; j < N_CONFIGS; ++j) {
+            printf("%2.2f  ",gsl_matrix_get(scalar_products,i,j));
+        }
+        printf("\n");
+    }
+}
