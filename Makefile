@@ -1,5 +1,4 @@
 EXE=main.prog
-TEST_EXE=tests.prog
 
 SRC_DIR = src
 OBJ_DIR = obj
@@ -10,7 +9,9 @@ SRC = $(wildcard $(SRC_DIR)/*.c)
 OBJ = $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 HEADERS = $(wildcard $(INC_DIR)/*.h)
 
-CFLAGS   += -Wall -O3
+TEST_INTERFACE = $(TEST_DIR)/test_interface
+
+CFLAGS   += -Wall -O3 -fPIC
 CPPFLAGS += -I/scratch/Cuba-4.2/ -I/scratch/gsl-2.5/
 
 LDFLAGS_GSL  = -L/scratch/gsl-2.5/.libs/ -L/scratch/gsl-2.5/cblas/.libs
@@ -20,7 +21,7 @@ LDLIBS_CUBA  = -lcuba
 
 LDLIBS += -lm
 
-.PHONY: all clean run
+.PHONY: all clean run test_interface
 
 all: $(EXE)
 
@@ -36,8 +37,14 @@ main.o: main.c $(HEADERS)
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
+test_interface: $(TEST_INTERFACE).so
 
+$(TEST_INTERFACE).so: $(TEST_INTERFACE).o $(OBJ)
+	$(CC) $(LDFLAGS) $(LDFLAGS_GSL) $^ $(LDLIBS) $(LDLIBS_GSL) -shared -o $@
+
+$(TEST_INTERFACE).o: $(TEST_INTERFACE).c $(HEADERS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 
 clean:
-	$(RM) $(OBJ) main.o
+	$(RM) $(OBJ) main.o $(TEST_INTERFACE).o
