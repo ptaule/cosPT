@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_combination.h>
+#include <gsl/gsl_sf.h>
 
 #include "../include/constants.h"
 #include "../include/utilities.h"
@@ -46,12 +47,6 @@ vfloat partial_SPT_sum(
     gsl_combination* comb_l = gsl_combination_alloc(n,m);
     gsl_combination* comb_r = gsl_combination_alloc(n,n-m);
 
-    // DEBUG-mode: check that groupings are equal in size
-#if DEBUG
-    if (gsl_combination_n(comb_l) != gsl_combination_n(comb_r))
-        warning("Left/right grouping of arguments does not have equal sizes.");
-#endif
-
     gsl_combination_init_first(comb_l);
     gsl_combination_init_last(comb_r);
 
@@ -88,7 +83,8 @@ vfloat partial_SPT_sum(
              gsl_combination_prev(comb_r) == GSL_SUCCESS
             );
 
-    value /= gsl_combination_n(comb_l);
+    // Devide through by symmetrization factor (n choose m)
+    value /= gsl_sf_choose(n,m);
 
     gsl_combination_free(comb_l);
     gsl_combination_free(comb_r);
