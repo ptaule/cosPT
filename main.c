@@ -37,21 +37,28 @@ int main () {
 
 
 void testKernelComputer() {
-    vfloat magnitudes[N_COEFFS]    = {1,2};
-    vfloat cos_theta[N_COEFFS - 1] = {0.5};
-    vfloat phi[N_COEFFS - 2];
+    vfloat magnitudes[N_COEFFS]    = {1,0.5,2};
+    vfloat cos_theta[N_COEFFS - 1] = {0.5,0.5};
+    vfloat phi[N_COEFFS - 2]       = {0};
 
-    short int args[N_KERNEL_ARGS] = {4,2,0};
+    short int component = 0;
+
+    short int args[N_KERNEL_ARGS] = {10,7,5,3,ZERO_LABEL};
+    // 2-loop:
+    // k - Q_2 <-> 10
+    // Q_2     <-> 7
+    // Q_1     <-> 5
+    // - Q_1   <-> 3
 
     matrix_vfloat* alpha = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
-    matrix_vfloat* beta = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
+    matrix_vfloat* beta  = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
 
     compute_alpha_beta_tables(magnitudes,cos_theta,phi,alpha,beta);
 
     // Allocate space for kernels (calloc also initializes values to 0)
     kernel_value* kernels = (kernel_value*)calloc(COMPONENTS * N_KERNELS, sizeof(kernel_value));
 
-    vfloat value = compute_SPT_kernel(args,0,alpha,beta,kernels);
+    vfloat value = compute_SPT_kernel(args,component,alpha,beta,kernels);
     printf("value = %f\n",value);
 
     // Free allocated memory

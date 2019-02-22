@@ -14,7 +14,7 @@
 #define PI 3.14159265359
 #define TWOPI 6.28318530718
 
-#define LOOPS 1
+#define LOOPS 2
 #define N_COEFFS (LOOPS+1)
 #define N_CONFIGS (int)(2 * pow(3,LOOPS))
 #define N_KERNEL_ARGS (2 * LOOPS + 1)
