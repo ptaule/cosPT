@@ -21,6 +21,7 @@ void print_configs();
 void test_kernel_index_from_arguments();
 void testBareScalarProducts();
 void testScalarProducts();
+void testInverseIndex();
 
 
 
@@ -214,4 +215,23 @@ void testScalarProducts() {
         }
         printf("\n");
     }
+}
+
+
+
+void testInverseIndex() {
+    short int arguments[N_KERNEL_ARGS] = {4,2,0};
+
+    short int kernel_index = 0;
+    short int n = 0;
+
+    kernel_index_from_arguments(arguments,&kernel_index,&n);
+    printf("kernel_index = %d\n",kernel_index);
+
+    kernel_index_to_arguments(kernel_index,arguments);
+
+    for (int i = 0; i < N_KERNEL_ARGS; ++i) {
+        printf("%d, ",arguments[i]);
+    }
+    printf("\n");
 }

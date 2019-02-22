@@ -40,6 +40,7 @@ void compute_alpha_beta_tables(
 
 short int kernel_index_from_fundamental(short int argument);
 void kernel_index_from_arguments(const short int arguments[], short int* index, short int* n);
+void kernel_index_to_arguments(short int index, short int arguments[]);
 short int combined_kernel_index(short int argument_index,short int component);
 
 #endif /* ifndef KERNELS_H */
