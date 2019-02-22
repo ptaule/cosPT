@@ -132,13 +132,13 @@ vfloat compute_SPT_kernel(
 
     for (int m = 1; m < n; ++m) {
         value += partial_SPT_sum(arguments,component,alpha,beta,kernels,n,m,a,b);
-        debug_print("(n,m) = (%d,%d),\tcomponent = %d,\tindex = %d,\tvalue += %f\n",
-            n,m,component,argument_index,
-            (partial_SPT_sum(arguments,component,alpha,beta,kernels,n,m,a,b)/((2*n + 3)*(n - 1))));
     }
 
     // Divide by overall factor in SPT recursion relation
     value /= (2*n + 3) * (n - 1);
+
+    debug_print("n = %d,\tcomponent = %d,\tindex = %d,\tvalue = %f\n",
+            n,component,argument_index,value);
 
     // Update kernel table
     kernels[index].value = value;

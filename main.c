@@ -59,7 +59,7 @@ void testKernelComputer() {
     kernel_value* kernels = (kernel_value*)calloc(COMPONENTS * N_KERNELS, sizeof(kernel_value));
 
     vfloat value = compute_SPT_kernel(args,component,alpha,beta,kernels);
-    printf("value = %f\n",value);
+    printf("result = %f\n",value);
 
     // Free allocated memory
     free(kernels);
