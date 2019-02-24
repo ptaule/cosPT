@@ -9,7 +9,8 @@ const points = [1e-5,1e-4,1e-3,1e-2,1e-1,1,10];
 const mu_vals = [0,0.3,0.5,0.8,0.9];
 filenames = ["F2_mu_0.dat", "F2_mu_03.dat", "F2_mu_05.dat", "F2_mu_08.dat", "F2_mu_09.dat" ];
 
-const abs_tol = 1e-7
+const abs_tol = 1e-6
+const rel_tol = 1e-6
 
 @testset "F2kernel" begin
     n = 2;
@@ -28,8 +29,7 @@ const abs_tol = 1e-7
                 kernel = ccall((:SPTkernel1Loop,
                                 "/home/t30/ben/ge52sir/Code/Non_linear_PS/tests/test_interface.so"),
                                vfloat,(Int32,Int32,vfloat,vfloat,vfloat),n,component,q,k,μ);
-
-                @test kernel ≈ mathematica[b,c] atol=abs_tol
+                @test isapprox(kernel,mathematica[b,c];atol=abs_tol,rtol=rel_tol)
             end
         end
     end
@@ -53,7 +53,7 @@ end
                                 "/home/t30/ben/ge52sir/Code/Non_linear_PS/tests/test_interface.so"),
                                vfloat,(Int32,Int32,vfloat,vfloat,vfloat),n,component,q,k,μ);
 
-                @test kernel ≈ mathematica[b,c] atol=abs_tol
+                @test isapprox(kernel,mathematica[b,c];atol=abs_tol,rtol=rel_tol)
             end
         end
     end
@@ -77,7 +77,7 @@ end
                                 "/home/t30/ben/ge52sir/Code/Non_linear_PS/tests/test_interface.so"),
                                vfloat,(Int32,Int32,vfloat,vfloat,vfloat),n,component,q,k,μ);
 
-                @test kernel ≈ mathematica[b,c] atol=abs_tol
+                @test isapprox(kernel,mathematica[b,c];atol=abs_tol,rtol=rel_tol)
             end
         end
     end
@@ -101,7 +101,7 @@ end
                                 "/home/t30/ben/ge52sir/Code/Non_linear_PS/tests/test_interface.so"),
                                vfloat,(Int32,Int32,vfloat,vfloat,vfloat),n,component,q,k,μ);
 
-                @test kernel ≈ mathematica[b,c] atol=abs_tol
+                @test isapprox(kernel,mathematica[b,c];atol=abs_tol,rtol=rel_tol)
             end
         end
     end
