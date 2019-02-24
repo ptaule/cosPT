@@ -22,10 +22,10 @@ vfloat partial_SPT_sum(
         const matrix_vfloat* alpha,  /* table of alpha function values for various input  */
         const matrix_vfloat* beta,   /* table of beta function values for various input   */
         kernel_value* kernels,       /* kernel table                                      */
-        const short int n,
-        const short int m,
-        const short int a,
-        const short int b
+        short int n,                 /* kernel number                                     */
+        short int m,                 /* sum index in kernel recursion relation            */
+        short int a,                 /* coefficient: (2n+1) for F, 2 for G                */
+        short int b                  /* coefficient: 3 for F, 2n for G                    */
         )
 {
     vfloat value = 0;
