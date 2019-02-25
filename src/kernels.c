@@ -16,21 +16,22 @@
 
 
 void compute_bare_scalar_products(
-        const vfloat magnitudes[],              /* in, vector magnitudes: Q1,Q2,(...),k  */
-        const vfloat cos_theta[],               /* in, cosine of polar angles of Q's     */
-        const vfloat phi[],                     /* in, azimuthal angles of Q2,Q3,...     */
-        vfloat bare_scalar_products[][N_COEFFS] /* out, scalar product combinations      */
+        vfloat k,                               /* in, magnitude of k vector         */
+        const vfloat Q_magnitudes[],            /* in, vector magnitudes: Q1,Q2,...  */
+        const vfloat cos_theta[],               /* in, cosine of polar angles of Q's */
+        const vfloat phi[],                     /* in, azimuthal angles of Q2,Q3,... */
+        vfloat bare_scalar_products[][N_COEFFS] /* out, scalar product combinations  */
         )
 {
-    // Diagonal products correspond to k*k, Q1*Q1, etc.
-    for (int i = 0; i < N_COEFFS; ++i) {
-        bare_scalar_products[i][i] = magnitudes[i] * magnitudes[i];
+    // Diagonal products correspond to Q1*Q1, etc.
+    for (int i = 0; i < N_COEFFS - 1; ++i) {
+        bare_scalar_products[i][i] = Q_magnitudes[i] * Q_magnitudes[i];
     }
+    bare_scalar_products[N_COEFFS - 1][N_COEFFS - 1] = k*k;
 
     // Products involving k and Q_i has the form k*Q_i*cos(theta_i)
-    vfloat k = magnitudes[N_COEFFS - 1];
     for (int i = 0; i < N_COEFFS - 1; ++i) {
-        vfloat value = k * magnitudes[i] * cos_theta[i];
+        vfloat value = k * Q_magnitudes[i] * cos_theta[i];
         bare_scalar_products[N_COEFFS - 1][i] = value;
         bare_scalar_products[i][N_COEFFS - 1] = value;
     }
@@ -39,14 +40,14 @@ void compute_bare_scalar_products(
     // (This is a special case since phi_1 is chosen to be zero.)
     vfloat cos_theta_1 = cos_theta[0];
     vfloat sin_theta_1 = sqrt(1 - pow(cos_theta_1,2));
-    vfloat Q_1 = magnitudes[0];
+    vfloat Q_1 = Q_magnitudes[0];
 
     for (int i = 1; i < N_COEFFS - 1; ++i) {
         vfloat sin_theta_i = sqrt(1 - pow(cos_theta[i],2));
         vfloat value =
             sin_theta_1 * cos(phi[i-1]) * sin_theta_i
             + cos_theta_1 * cos_theta[i];
-        value *= Q_1 * magnitudes[i];
+        value *= Q_1 * Q_magnitudes[i];
 
         bare_scalar_products[i][0] = value;
         bare_scalar_products[0][i] = value;
@@ -64,7 +65,7 @@ void compute_bare_scalar_products(
               + sin(phi[i-1]) * sin_theta_i * sin(phi[j-1]) * sin_theta_j
               + cos_theta[i] * cos_theta[j];
 
-            value *= magnitudes[i] * magnitudes[j];
+            value *= Q_magnitudes[i] * Q_magnitudes[j];
             bare_scalar_products[i][j] = value;
             bare_scalar_products[j][i] = value;
         }
@@ -73,15 +74,16 @@ void compute_bare_scalar_products(
 
 
 void compute_scalar_products(
-        const vfloat magnitudes[],     /* in, vector magnitudes: Q1,Q2,(...),k  */
-        const vfloat cos_theta[],      /* in, cosine of polar angles of Q's     */
-        const vfloat phi[],            /* in, azimuthal angles of Q2,Q3,...     */
+        vfloat k,                      /* in, magnitude of k vector         */
+        const vfloat Q_magnitudes[],   /* in, vector magnitudes: Q1,Q2,...  */
+        const vfloat cos_theta[],      /* in, cosine of polar angles of Q's */
+        const vfloat phi[],            /* in, azimuthal angles of Q2,Q3,... */
         matrix_vfloat* scalar_products /* out, scalar products */
         )
 {
     vfloat bare_scalar_products[N_COEFFS][N_COEFFS] = {};
 
-    compute_bare_scalar_products(magnitudes,cos_theta,phi,bare_scalar_products);
+    compute_bare_scalar_products(k,Q_magnitudes,cos_theta,phi,bare_scalar_products);
 
     short int a_coeffs[N_COEFFS];
     short int b_coeffs[N_COEFFS];
@@ -111,15 +113,16 @@ void compute_scalar_products(
 // Potential tests for alpha/beta:
 // alpha/beta diagonal should always be 2
 void compute_alpha_beta_tables(
-        const vfloat magnitudes[], /* in, vector magnitudes: Q1,Q2,(...),k               */
-        const vfloat cos_theta[],  /* in, cosine of polar angles of Q's                  */
-        const vfloat phi[],        /* in, azimuthal angles of Q2,Q3,...                  */
-        matrix_vfloat* alpha,      /* out, matrix of alpha-func. with possible arguments */
-        matrix_vfloat* beta        /* out, matrix of beta-func. with possible arguments  */
+        vfloat k,                    /* in, magnitude of k vector                          */
+        const vfloat Q_magnitudes[], /* in, vector magnitudes: Q1,Q2,...                   */
+        const vfloat cos_theta[],    /* in, cosine of polar angles of Q's                  */
+        const vfloat phi[],          /* in, azimuthal angles of Q2,Q3,...                  */
+        matrix_vfloat* alpha,        /* out, matrix of alpha-func. with possible arguments */
+        matrix_vfloat* beta          /* out, matrix of beta-func. with possible arguments  */
         )
 {
     matrix_vfloat* scalar_products = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
-    compute_scalar_products(magnitudes,cos_theta,phi,scalar_products);
+    compute_scalar_products(k,Q_magnitudes,cos_theta,phi,scalar_products);
 
     for (int a = 0; a < N_CONFIGS; ++a) {
         for (int b = 0; b < N_CONFIGS; ++b) {

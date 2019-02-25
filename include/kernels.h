@@ -17,6 +17,7 @@ typedef struct {
 } kernel_value;
 
 void compute_bare_scalar_products(
+        vfloat k,
         const vfloat magnitudes[],
         const vfloat cos_theta[],
         const vfloat phi[],
@@ -24,6 +25,7 @@ void compute_bare_scalar_products(
         );
 
 void compute_scalar_products(
+        vfloat k,
         const vfloat magnitudes[],
         const vfloat cos_theta[],
         const vfloat phi[],
@@ -31,6 +33,7 @@ void compute_scalar_products(
         );
 
 void compute_alpha_beta_tables(
+        vfloat k,
         const vfloat magnitudes[],
         const vfloat cos_theta[],
         const vfloat phi[],

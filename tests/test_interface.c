@@ -15,7 +15,7 @@
 #include "../include/spt_kernels.h"
 
 
-vfloat SPTkernel1Loop(int n, int component, vfloat q, vfloat k, vfloat mu) {
+vfloat SPTkernel1Loop(int n, int component, vfloat k, vfloat q, vfloat mu) {
     short int args[N_KERNEL_ARGS] = {};
 
     if (n == 1) return 1.0;
@@ -32,18 +32,17 @@ vfloat SPTkernel1Loop(int n, int component, vfloat q, vfloat k, vfloat mu) {
         args[2] = 0;   // 0 <-> -q
     }
 
-    vfloat magnitudes[N_COEFFS]    = {};
-    vfloat cos_theta[N_COEFFS - 1] = {};
+    vfloat Q_magnitudes[N_COEFFS - 1] = {};
+    vfloat cos_theta[N_COEFFS - 1]  = {};
     vfloat phi[N_COEFFS - 2];
 
-    magnitudes[0] = q;
-    magnitudes[1] = k;
-    cos_theta[0]  = mu;
+    Q_magnitudes[0] = q;
+    cos_theta[0]    = mu;
 
     matrix_vfloat* alpha = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
     matrix_vfloat* beta = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
 
-    compute_alpha_beta_tables(magnitudes,cos_theta,phi,alpha,beta);
+    compute_alpha_beta_tables(k,Q_magnitudes,cos_theta,phi,alpha,beta);
 
     // Allocate space for kernels (calloc also initializes values to 0)
     kernel_value* kernels = (kernel_value*)calloc(COMPONENTS * N_KERNELS, sizeof(kernel_value));

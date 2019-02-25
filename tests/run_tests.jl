@@ -28,7 +28,7 @@ const rel_tol = 1e-6
                 # Call c-interface to kernel-computer
                 kernel = ccall((:SPTkernel1Loop,
                                 "/home/t30/ben/ge52sir/Code/Non_linear_PS/tests/test_interface.so"),
-                               vfloat,(Int32,Int32,vfloat,vfloat,vfloat),n,component,q,k,μ);
+                               vfloat,(Int32,Int32,vfloat,vfloat,vfloat),n,component,k,q,μ);
                 @test isapprox(kernel,mathematica[b,c];atol=abs_tol,rtol=rel_tol)
             end
         end
@@ -51,7 +51,7 @@ end
                 # Call c-interface to kernel-computer
                 kernel = ccall((:SPTkernel1Loop,
                                 "/home/t30/ben/ge52sir/Code/Non_linear_PS/tests/test_interface.so"),
-                               vfloat,(Int32,Int32,vfloat,vfloat,vfloat),n,component,q,k,μ);
+                               vfloat,(Int32,Int32,vfloat,vfloat,vfloat),n,component,k,q,μ);
 
                 @test isapprox(kernel,mathematica[b,c];atol=abs_tol,rtol=rel_tol)
             end
@@ -75,7 +75,7 @@ end
                 # Call c-interface to kernel-computer
                 kernel = ccall((:SPTkernel1Loop,
                                 "/home/t30/ben/ge52sir/Code/Non_linear_PS/tests/test_interface.so"),
-                               vfloat,(Int32,Int32,vfloat,vfloat,vfloat),n,component,q,k,μ);
+                               vfloat,(Int32,Int32,vfloat,vfloat,vfloat),n,component,k,q,μ);
 
                 @test isapprox(kernel,mathematica[b,c];atol=abs_tol,rtol=rel_tol)
             end
@@ -99,7 +99,7 @@ end
                 # Call c-interface to kernel-computer
                 kernel = ccall((:SPTkernel1Loop,
                                 "/home/t30/ben/ge52sir/Code/Non_linear_PS/tests/test_interface.so"),
-                               vfloat,(Int32,Int32,vfloat,vfloat,vfloat),n,component,q,k,μ);
+                               vfloat,(Int32,Int32,vfloat,vfloat,vfloat),n,component,k,q,μ);
 
                 @test isapprox(kernel,mathematica[b,c];atol=abs_tol,rtol=rel_tol)
             end
