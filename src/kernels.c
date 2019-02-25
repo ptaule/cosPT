@@ -74,17 +74,10 @@ void compute_bare_scalar_products(
 
 
 void compute_scalar_products(
-        vfloat k,                      /* in, magnitude of k vector         */
-        const vfloat Q_magnitudes[],   /* in, vector magnitudes: Q1,Q2,...  */
-        const vfloat cos_theta[],      /* in, cosine of polar angles of Q's */
-        const vfloat phi[],            /* in, azimuthal angles of Q2,Q3,... */
-        matrix_vfloat* scalar_products /* out, scalar products */
+        const vfloat bare_scalar_products[][N_COEFFS], /* in, bare scalar products         */
+        matrix_vfloat* scalar_products                 /* out, scalar product combinations */
         )
 {
-    vfloat bare_scalar_products[N_COEFFS][N_COEFFS] = {};
-
-    compute_bare_scalar_products(k,Q_magnitudes,cos_theta,phi,bare_scalar_products);
-
     short int a_coeffs[N_COEFFS];
     short int b_coeffs[N_COEFFS];
 
@@ -113,16 +106,13 @@ void compute_scalar_products(
 // Potential tests for alpha/beta:
 // alpha/beta diagonal should always be 2
 void compute_alpha_beta_tables(
-        vfloat k,                    /* in, magnitude of k vector                          */
-        const vfloat Q_magnitudes[], /* in, vector magnitudes: Q1,Q2,...                   */
-        const vfloat cos_theta[],    /* in, cosine of polar angles of Q's                  */
-        const vfloat phi[],          /* in, azimuthal angles of Q2,Q3,...                  */
-        matrix_vfloat* alpha,        /* out, matrix of alpha-func. with possible arguments */
-        matrix_vfloat* beta          /* out, matrix of beta-func. with possible arguments  */
+        const vfloat bare_scalar_products[][N_COEFFS], /* in, bare scalar products   */
+        matrix_vfloat* alpha,                          /* out, matrix of alpha-func. */
+        matrix_vfloat* beta                            /* out, matrix of beta-func.  */
         )
 {
     matrix_vfloat* scalar_products = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
-    compute_scalar_products(k,Q_magnitudes,cos_theta,phi,scalar_products);
+    compute_scalar_products(bare_scalar_products,scalar_products);
 
     for (int a = 0; a < N_CONFIGS; ++a) {
         for (int b = 0; b < N_CONFIGS; ++b) {

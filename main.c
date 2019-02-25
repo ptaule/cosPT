@@ -53,8 +53,11 @@ void testKernelComputer() {
 
     matrix_vfloat* alpha = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
     matrix_vfloat* beta  = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
+    vfloat bare_scalar_products[N_COEFFS][N_COEFFS];
 
-    compute_alpha_beta_tables(k,Q_magnitudes,cos_theta,phi,alpha,beta);
+    compute_bare_scalar_products(k,Q_magnitudes,cos_theta,phi,bare_scalar_products);
+
+    compute_alpha_beta_tables(bare_scalar_products,alpha,beta);
 
     // Allocate space for kernels (calloc also initializes values to 0)
     kernel_value* kernels = (kernel_value*)calloc(COMPONENTS * N_KERNELS, sizeof(kernel_value));
@@ -89,10 +92,12 @@ void testAlphaBeta() {
     vfloat cos_theta[N_COEFFS - 1]   = {0.5};
     vfloat phi[N_COEFFS - 2];
 
+    vfloat bare_scalar_products[N_COEFFS][N_COEFFS];
     matrix_vfloat* alpha = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
     matrix_vfloat* beta = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
 
-    compute_alpha_beta_tables(k,Q_magnitudes,cos_theta,phi,alpha,beta);
+    compute_bare_scalar_products(k,Q_magnitudes,cos_theta,phi,bare_scalar_products);
+    compute_alpha_beta_tables(bare_scalar_products,alpha,beta);
 
     printf("alpha=\n");
     print_gsl_matrix(alpha,N_CONFIGS,N_CONFIGS);
@@ -203,14 +208,16 @@ void testBareScalarProducts() {
 
 
 void testScalarProducts() {
-    matrix_vfloat* scalar_products = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
-
     vfloat k = 2;
     vfloat Q_magnitudes[N_COEFFS - 1] = {1};
     vfloat cos_theta[N_COEFFS - 1]    = {0.5};
     vfloat phi[N_COEFFS - 2];
 
-    compute_scalar_products(k,Q_magnitudes,cos_theta,phi,scalar_products);
+    matrix_vfloat* scalar_products = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
+    vfloat bare_scalar_products[N_COEFFS][N_COEFFS];
+
+    compute_bare_scalar_products(k,Q_magnitudes,cos_theta,phi,bare_scalar_products);
+    compute_scalar_products(bare_scalar_products,scalar_products);
 
     for (int i = 0; i < N_CONFIGS; ++i) {
         for (int j = 0; j < N_CONFIGS; ++j) {

@@ -25,18 +25,12 @@ void compute_bare_scalar_products(
         );
 
 void compute_scalar_products(
-        vfloat k,
-        const vfloat magnitudes[],
-        const vfloat cos_theta[],
-        const vfloat phi[],
+        const vfloat bare_scalar_products[][N_COEFFS],
         matrix_vfloat* scalar_products
         );
 
 void compute_alpha_beta_tables(
-        vfloat k,
-        const vfloat magnitudes[],
-        const vfloat cos_theta[],
-        const vfloat phi[],
+        const vfloat bare_scalar_products[][N_COEFFS],
         matrix_vfloat* alpha,
         matrix_vfloat* beta
         );
