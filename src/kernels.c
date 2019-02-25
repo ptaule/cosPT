@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include <gsl/gsl_matrix.h>
 
 #include "../include/constants.h"
@@ -223,4 +224,58 @@ void kernel_index_from_arguments(
 
 short int combined_kernel_index(short int argument_index,short int component) {
     return argument_index * COMPONENTS + component;
+}
+
+
+
+void find_kernel_arguments(
+        short int l,          /* in, number of "left" self-loops  */
+        short int r,          /* in, number of "right" self-loops */
+        short int m,          /* in, number of "connecting" loops */
+        short int arguments[] /* out, kernel arguments            */
+        )
+{
+    if (l != 0 && r != 0) {
+        warning("Kernel indices must satisfy either l=0 or r=0.");
+        return;
+    }
+
+    // Let s be the number of self-loops
+    short int s = l > r ? l : r;
+
+    // First argument is on the form k1 = k - k2 - k3 - ... - km
+    short int config[N_COEFFS] = {};
+    config[N_COEFFS - 1] = 1; // k-coefficient is 1
+    for (size_t i = 2; i <= m; ++i) {
+        config[i-2] = -1;
+    }
+    arguments[0] = config2label(config,N_COEFFS);
+
+    // Reset config
+    memset(config,0,sizeof(config));
+
+    size_t index = 1;
+
+    // k2,k3,...,km arguments
+    for (size_t i = 2; i <= m; ++i) {
+        // If self-loops are "right" ("left") use 1 (-1)
+        config[i-2] = 1;
+        arguments[index++] = config2label(config,N_COEFFS);
+        memset(config,0,sizeof(config));
+    }
+
+    // p1/q1, p2/q2, .. arguments
+    for (size_t i = 0; i < s; ++i) {
+        config[i + m - 1] = 1;
+        arguments[index++] = config2label(config,N_COEFFS);
+        config[i + m - 1] = -1;
+        arguments[index++] = config2label(config,N_COEFFS);
+
+        memset(config,0,sizeof(config));
+    }
+
+    // Fill remaining spots with zero-label
+    while (index < N_KERNEL_ARGS) {
+        arguments[index++] = ZERO_LABEL;
+    }
 }
