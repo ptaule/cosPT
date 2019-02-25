@@ -10,5 +10,7 @@
 
 int diagram_factor(short int l, short int r, short int m);
 int integrand_symmetrization_factor(short int l, short int r, short int m);
+vfloat compute_k1(short int m, const vfloat bare_scalar_products[][N_COEFFS]);
+int heaviside_theta(short int m, vfloat k1, const vfloat Q_magnitudes[]);
 
 #endif /* ifndef INTEGRAND_H */
