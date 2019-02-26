@@ -8,8 +8,15 @@
 #ifndef INTEGRAND_H
 #define INTEGRAND_H
 
-int diagram_factor(short int l, short int r, short int m);
-int integrand_symmetrization_factor(short int l, short int r, short int m);
+
+typedef struct {
+    short int l;
+    short int r;
+    short int m;
+} diagram_t;
+
+int diagram_factor(const diagram_t* diagram);
+int integrand_symmetrization_factor(const diagram_t* diagram);
 vfloat compute_k1(short int m, const vfloat bare_scalar_products[][N_COEFFS]);
 int heaviside_theta(short int m, vfloat k1, const vfloat Q_magnitudes[]);
 

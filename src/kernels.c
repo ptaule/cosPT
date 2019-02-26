@@ -227,20 +227,11 @@ short int combined_kernel_index(short int argument_index,short int component) {
 
 
 void find_kernel_arguments(
-        short int l,          /* in, number of "left" self-loops  */
-        short int r,          /* in, number of "right" self-loops */
-        short int m,          /* in, number of "connecting" loops */
+        short int m,          /* in, number of "connection" loops */
+        short int s,          /* in, number of "self"-loops       */
         short int arguments[] /* out, kernel arguments            */
         )
 {
-    if (l != 0 && r != 0) {
-        warning("Kernel indices must satisfy either l=0 or r=0.");
-        return;
-    }
-
-    // Let s be the number of self-loops
-    short int s = l > r ? l : r;
-
     // First argument is on the form k1 = k - k2 - k3 - ... - km
     short int config[N_COEFFS] = {};
     config[N_COEFFS - 1] = 1; // k-coefficient is 1

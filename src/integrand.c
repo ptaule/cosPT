@@ -15,10 +15,15 @@
 #include "../include/utilities.h"
 #include "../include/kernels.h"
 #include "../include/spt_kernels.h"
+#include "../include/integrand.h"
 
 
 
-int diagram_factor(short int l, short int r, short int m) {
+int diagram_factor(const diagram_t* diagram) {
+    short int l = diagram->l;
+    short int r = diagram->r;
+    short int m = diagram->m;
+
     int numerator = gsl_sf_fact(2*l + m) * gsl_sf_fact(2*r + m);
     int denominator = pow(2,l+r) * gsl_sf_fact(l) * gsl_sf_fact(r) * gsl_sf_fact(m);
 
@@ -27,7 +32,11 @@ int diagram_factor(short int l, short int r, short int m) {
 
 
 
-int integrand_symmetrization_factor(short int l, short int r, short int m) {
+int integrand_symmetrization_factor(const diagram_t* diagram) {
+    short int l = diagram->l;
+    short int r = diagram->r;
+    short int m = diagram->m;
+
     int numerator = gsl_sf_fact(LOOPS) * pow(2,m-1);
     int denominator = gsl_sf_fact(m-1) * gsl_sf_fact(l) * gsl_sf_fact(r);
 
