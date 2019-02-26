@@ -16,11 +16,15 @@ typedef struct {
     bool computed;
 } kernel_value;
 
+typedef struct {
+    vfloat magnitudes[LOOPS]; /* Loop momenta magnitudes                                     */
+    vfloat cos_theta[LOOPS];  /* Cosine of polar angles of the loop momenta                  */
+    vfloat phi[LOOPS - 1];    /* We assume that the first loop momenta has azimuthal angle 0 */
+} integration_variables;
+
 void compute_bare_scalar_products(
         vfloat k,
-        const vfloat magnitudes[],
-        const vfloat cos_theta[],
-        const vfloat phi[],
+        const integration_variables* vars,
         vfloat bare_scalar_products[][N_COEFFS]
         );
 

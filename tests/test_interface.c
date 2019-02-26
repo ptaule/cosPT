@@ -32,17 +32,17 @@ vfloat SPTkernel1Loop(int n, int component, vfloat k, vfloat q, vfloat mu) {
         args[2] = 0;   // 0 <-> -q
     }
 
-    vfloat Q_magnitudes[N_COEFFS - 1] = {};
-    vfloat cos_theta[N_COEFFS - 1]  = {};
-    vfloat phi[N_COEFFS - 2];
+    integration_variables vars;
 
-    Q_magnitudes[0] = q;
-    cos_theta[0]    = mu;
+    vars.magnitudes[0] = q;
+    vars.cos_theta[0]  = mu;
 
     matrix_vfloat* alpha = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
     matrix_vfloat* beta = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
+    vfloat bare_scalar_products[N_COEFFS][N_COEFFS];
 
-    compute_alpha_beta_tables(k,Q_magnitudes,cos_theta,phi,alpha,beta);
+    compute_bare_scalar_products(k,&vars,bare_scalar_products);
+    compute_alpha_beta_tables(bare_scalar_products,alpha,beta);
 
     // Allocate space for kernels (calloc also initializes values to 0)
     kernel_value* kernels = (kernel_value*)calloc(COMPONENTS * N_KERNELS, sizeof(kernel_value));

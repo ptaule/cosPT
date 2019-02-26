@@ -18,37 +18,35 @@
 
 void compute_bare_scalar_products(
         vfloat k,                               /* in, magnitude of k vector         */
-        const vfloat Q_magnitudes[],            /* in, vector magnitudes: Q1,Q2,...  */
-        const vfloat cos_theta[],               /* in, cosine of polar angles of Q's */
-        const vfloat phi[],                     /* in, azimuthal angles of Q2,Q3,... */
+        const integration_variables* vars,      /* in, loop momenta components       */
         vfloat bare_scalar_products[][N_COEFFS] /* out, scalar product combinations  */
         )
 {
     // Diagonal products correspond to Q1*Q1, etc.
     for (int i = 0; i < N_COEFFS - 1; ++i) {
-        bare_scalar_products[i][i] = Q_magnitudes[i] * Q_magnitudes[i];
+        bare_scalar_products[i][i] = vars->magnitudes[i] * vars->magnitudes[i];
     }
     bare_scalar_products[N_COEFFS - 1][N_COEFFS - 1] = k*k;
 
     // Products involving k and Q_i has the form k*Q_i*cos(theta_i)
     for (int i = 0; i < N_COEFFS - 1; ++i) {
-        vfloat value = k * Q_magnitudes[i] * cos_theta[i];
+        vfloat value = k * vars->magnitudes[i] * vars->cos_theta[i];
         bare_scalar_products[N_COEFFS - 1][i] = value;
         bare_scalar_products[i][N_COEFFS - 1] = value;
     }
 
     // Compute Q_1 * Q_i
     // (This is a special case since phi_1 is chosen to be zero.)
-    vfloat cos_theta_1 = cos_theta[0];
+    vfloat cos_theta_1 = vars->cos_theta[0];
     vfloat sin_theta_1 = sqrt(1 - pow(cos_theta_1,2));
-    vfloat Q_1 = Q_magnitudes[0];
+    vfloat Q_1 = vars->magnitudes[0];
 
     for (int i = 1; i < N_COEFFS - 1; ++i) {
-        vfloat sin_theta_i = sqrt(1 - pow(cos_theta[i],2));
+        vfloat sin_theta_i = sqrt(1 - pow(vars->cos_theta[i],2));
         vfloat value =
-            sin_theta_1 * cos(phi[i-1]) * sin_theta_i
-            + cos_theta_1 * cos_theta[i];
-        value *= Q_1 * Q_magnitudes[i];
+            sin_theta_1 * cos(vars->phi[i-1]) * sin_theta_i
+            + cos_theta_1 * vars->cos_theta[i];
+        value *= Q_1 * vars->magnitudes[i];
 
         bare_scalar_products[i][0] = value;
         bare_scalar_products[0][i] = value;
@@ -58,15 +56,15 @@ void compute_bare_scalar_products(
     // (Q_i symbol is 1-indexed while arrays are 0-indexed)
     for (int i = 1; i < N_COEFFS - 1; ++i) {
         for (int j = 1; j < i; ++j) {
-            vfloat sin_theta_i = sqrt(1 - pow(cos_theta[i],2));
-            vfloat sin_theta_j = sqrt(1 - pow(cos_theta[j],2));
+            vfloat sin_theta_i = sqrt(1 - pow(vars->cos_theta[i],2));
+            vfloat sin_theta_j = sqrt(1 - pow(vars->cos_theta[j],2));
 
             vfloat value =
-                cos(phi[i-1]) * sin_theta_i * cos(phi[j-1]) * sin_theta_j
-              + sin(phi[i-1]) * sin_theta_i * sin(phi[j-1]) * sin_theta_j
-              + cos_theta[i] * cos_theta[j];
+                cos(vars->phi[i-1]) * sin_theta_i * cos(vars->phi[j-1]) * sin_theta_j
+              + sin(vars->phi[i-1]) * sin_theta_i * sin(vars->phi[j-1]) * sin_theta_j
+              + vars->cos_theta[i] * vars->cos_theta[j];
 
-            value *= Q_magnitudes[i] * Q_magnitudes[j];
+            value *= vars->magnitudes[i] * vars->magnitudes[j];
             bare_scalar_products[i][j] = value;
             bare_scalar_products[j][i] = value;
         }
