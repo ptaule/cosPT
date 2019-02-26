@@ -10,9 +10,13 @@
 
 #include <gsl/gsl_matrix.h>
 
-// Parameters:
-#define LOOPS 2
+// Parameters (if not set by compile options)
+#ifndef LOOPS
+#define LOOPS 3
+#endif
+#ifndef COMPONENTS
 #define COMPONENTS 2
+#endif
 
 // Which GSL interpolation routine to use
 #define INTERPOL_TYPE gsl_interp_cspline
@@ -21,7 +25,9 @@
 #define MAX_RESOLUTION 200
 
 // Debug mode. Performs additional checks during runtime
+#ifndef DEBUG
 #define DEBUG 1
+#endif
 
 // Variable precision
 typedef double vfloat;
@@ -33,7 +39,7 @@ typedef double vfloat;
 
 #define interpolate(k) gsl_spline_eval(spline,k,acc)
 
-// debug-print is optimized away if DEBUG==false
+// debug-print is optimized away if DEBUG==0
 #define debug_print(fmt, ...) \
             do { if (DEBUG) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
 #define warning(fmt) \
