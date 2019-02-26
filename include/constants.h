@@ -10,17 +10,8 @@
 
 #include <gsl/gsl_matrix.h>
 
-// Constants:
-#define PI 3.14159265359
-#define TWOPI 6.28318530718
-
+// Parameters:
 #define LOOPS 2
-#define N_COEFFS (LOOPS+1)
-#define N_CONFIGS (int)(2 * pow(3,LOOPS))
-#define N_KERNEL_ARGS (2 * LOOPS + 1)
-#define N_KERNELS (int)((pow(3,LOOPS) + 1) * pow(4,LOOPS))
-#define ZERO_LABEL zero_label()
-
 #define COMPONENTS 2
 
 // Which GSL interpolation routine to use
@@ -56,5 +47,42 @@ typedef double vfloat;
                 fprintf(stderr, "%s:%d,\tWarning: " fmt "\n",__FILE__, __LINE__, __VA_ARGS__); \
                 exit(EXIT_FAILURE);
 
+
+// Constants:
+#define PI 3.14159265359
+#define TWOPI 6.28318530718
+
+// Constants defined depending on number of loops
+#if LOOPS==1
+#define N_COEFFS       2
+#define N_CONFIGS      6
+#define N_KERNEL_ARGS  3
+#define N_KERNELS     16
+#define ZERO_LABEL     1
+#endif
+
+#if LOOPS==2
+#define N_COEFFS        3
+#define N_CONFIGS      18
+#define N_KERNEL_ARGS   5
+#define N_KERNELS     160
+#define ZERO_LABEL      4
+#endif
+
+#if LOOPS==3
+#define N_COEFFS         4
+#define N_CONFIGS       54
+#define N_KERNEL_ARGS    7
+#define N_KERNELS     1792
+#define ZERO_LABEL      13
+#endif
+
+/* General expressions:
+N_COEFFS (LOOPS+1)
+#define N_CONFIGS (int)(2 * pow(3,LOOPS))
+#define N_KERNEL_ARGS (2 * LOOPS + 1)
+#define N_KERNELS (int)((pow(3,LOOPS) + 1) * pow(4,LOOPS))
+#define ZERO_LABEL zero_label()
+*/
 
 #endif /* ifndef CONSTANTS_H */
