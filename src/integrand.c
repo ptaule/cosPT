@@ -49,7 +49,7 @@ vfloat compute_k1(short int m, const vfloat bare_scalar_products[][N_COEFFS]) {
         }
     }
 
-    return k1;
+    return sqrt(k1);
 }
 
 
@@ -64,7 +64,7 @@ int heaviside_theta(short int m, vfloat k1, const vfloat Q_magnitudes[]) {
     // Heaviside-theta (k2 - k3) etc.
     // Note that (assuming m >= 2), k2 = Q_magnitudes[0] etc.
     for (int i = 3; i <= m; ++i) {
-        if (Q_magnitudes[i-2] <= Q_magnitudes[i-1]) return 0;
+        if (Q_magnitudes[i-3] <= Q_magnitudes[i-2]) return 0;
     }
     return gsl_sf_fact(m);
 }
