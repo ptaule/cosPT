@@ -65,6 +65,7 @@ typedef double vfloat;
 #define N_KERNEL_ARGS  3
 #define N_KERNELS     16
 #define ZERO_LABEL     1
+#define N_DIAGRAMS     2
 #endif
 
 #if LOOPS==2
@@ -73,6 +74,7 @@ typedef double vfloat;
 #define N_KERNEL_ARGS   5
 #define N_KERNELS     160
 #define ZERO_LABEL      4
+#define N_DIAGRAMS      4
 #endif
 
 #if LOOPS==3
@@ -81,6 +83,7 @@ typedef double vfloat;
 #define N_KERNEL_ARGS    7
 #define N_KERNELS     1792
 #define ZERO_LABEL      13
+#define N_DIAGRAMS       6
 #endif
 
 /* General expressions:

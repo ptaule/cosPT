@@ -17,6 +17,9 @@ typedef struct {
 
 int diagram_factor(const diagram_t* diagram);
 int integrand_symmetrization_factor(const diagram_t* diagram);
+
+void possible_diagrams(diagram_t diagrams[]);
+
 vfloat compute_k1(short int m, const vfloat bare_scalar_products[][N_COEFFS]);
 int heaviside_theta(short int m, vfloat k1, const vfloat Q_magnitudes[]);
 

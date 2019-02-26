@@ -45,6 +45,33 @@ int integrand_symmetrization_factor(const diagram_t* diagram) {
 
 
 
+// Find (distinct) diagrams for L-loop
+// They satisfy: m >= 1; l,r > 0; l + r + m = L + 1
+void possible_diagrams(diagram_t diagrams[]) {
+    short int m = 0;
+
+    size_t index = 0;
+
+    for (m = 1; m <= LOOPS + 1; ++m) {
+        short int l = LOOPS + 1 - m;
+        short int r = 0;
+        while (l >= r) {
+            if (index >= N_DIAGRAMS)
+                warning_verbose("Index out of bounds, index = %ld is larger "
+                        "than N_DIAGRAMS = %d.", index, N_DIAGRAMS);
+
+            diagrams[index].l = l;
+            diagrams[index].r = r;
+            diagrams[index].m = m;
+
+            l = LOOPS + 1 - m - (++r);
+            index++;
+        };
+    }
+}
+
+
+
 vfloat compute_k1(short int m, const vfloat bare_scalar_products[][N_COEFFS]) {
     vfloat k1 = bare_scalar_products[N_COEFFS - 1][N_COEFFS - 1];
     for (int i = 2; i <= m; ++i) {
