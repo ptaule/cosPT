@@ -21,7 +21,7 @@ vfloat partial_SPT_sum(
         short int component,         /* component to compute, NB: assumed to be 0-indexed */
         const matrix_vfloat* alpha,  /* table of alpha function values for various input  */
         const matrix_vfloat* beta,   /* table of beta function values for various input   */
-        kernel_value* kernels,       /* kernel table                                      */
+        kernel_value_t* kernels,     /* kernel table                                      */
         short int n,                 /* kernel number                                     */
         short int m,                 /* sum index in kernel recursion relation            */
         short int a,                 /* coefficient: (2n+1) for F, 2 for G                */
@@ -99,7 +99,7 @@ vfloat compute_SPT_kernel(
         short int component,         /* component to compute, NB: assumed to be 0-indexed */
         const matrix_vfloat* alpha,  /* table of alpha function values for various input  */
         const matrix_vfloat* beta,   /* table of beta function values for various input   */
-        kernel_value* kernels        /* kernel table                                      */
+        kernel_value_t* kernels      /* kernel table                                      */
         )
 {
     // Compute kernel index, this depends on arguments (argument_index) and

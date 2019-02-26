@@ -38,7 +38,7 @@ int main () {
 
 void testKernelComputer() {
     vfloat k = 3;
-    integration_variables vars = {
+    integration_variables_t vars = {
         .magnitudes = {1,2},
         .cos_theta  = {0.1,0.5},
         .phi        = {0}
@@ -64,7 +64,7 @@ void testKernelComputer() {
     compute_alpha_beta_tables(bare_scalar_products,alpha,beta);
 
     // Allocate space for kernels (calloc also initializes values to 0)
-    kernel_value* kernels = (kernel_value*)calloc(COMPONENTS * N_KERNELS, sizeof(kernel_value));
+    kernel_value_t* kernels = (kernel_value_t*)calloc(COMPONENTS * N_KERNELS, sizeof(kernel_value_t));
 
     vfloat value = compute_SPT_kernel(args,component,alpha,beta,kernels);
     printf("result = %f\n",value);
@@ -92,7 +92,7 @@ void print_configs() {
 
 void testAlphaBeta() {
     vfloat k = 2;
-    integration_variables vars = {
+    integration_variables_t vars = {
         .magnitudes = {1,2},
         .cos_theta  = {0.1,0.5},
         .phi        = {0}
@@ -197,7 +197,7 @@ void testBareScalarProducts() {
     vfloat bare_scalar_products[N_COEFFS][N_COEFFS] = {};
 
     vfloat k = 2;
-    integration_variables vars = {
+    integration_variables_t vars = {
         .magnitudes = {1,2},
         .cos_theta  = {0.1,0.5},
         .phi        = {0}
@@ -217,7 +217,7 @@ void testBareScalarProducts() {
 
 void testScalarProducts() {
     vfloat k = 2;
-    integration_variables vars = {
+    integration_variables_t vars = {
         .magnitudes = {1,2},
         .cos_theta  = {0.1,0.5},
         .phi        = {0}

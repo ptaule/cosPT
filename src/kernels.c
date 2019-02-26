@@ -18,7 +18,7 @@
 
 void compute_bare_scalar_products(
         vfloat k,                               /* in, magnitude of k vector         */
-        const integration_variables* vars,      /* in, loop momenta components       */
+        const integration_variables_t* vars,    /* in, loop momenta components       */
         vfloat bare_scalar_products[][N_COEFFS] /* out, scalar product combinations  */
         )
 {

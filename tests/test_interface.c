@@ -32,7 +32,7 @@ vfloat SPTkernel1Loop(int n, int component, vfloat k, vfloat q, vfloat mu) {
         args[2] = 0;   // 0 <-> -q
     }
 
-    integration_variables vars;
+    integration_variables_t vars;
 
     vars.magnitudes[0] = q;
     vars.cos_theta[0]  = mu;
@@ -45,7 +45,7 @@ vfloat SPTkernel1Loop(int n, int component, vfloat k, vfloat q, vfloat mu) {
     compute_alpha_beta_tables(bare_scalar_products,alpha,beta);
 
     // Allocate space for kernels (calloc also initializes values to 0)
-    kernel_value* kernels = (kernel_value*)calloc(COMPONENTS * N_KERNELS, sizeof(kernel_value));
+    kernel_value_t* kernels = (kernel_value_t*)calloc(COMPONENTS * N_KERNELS, sizeof(kernel_value_t));
 
     vfloat value = compute_SPT_kernel(args,component,alpha,beta,kernels);
 
