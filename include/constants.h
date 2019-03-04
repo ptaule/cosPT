@@ -47,11 +47,11 @@ typedef double vfloat;
 #define warning_verbose(fmt, ...) \
                 fprintf(stderr, "%s:%d,\tWarning: " fmt "\n",__FILE__, __LINE__, __VA_ARGS__);
 #define error(fmt) \
-                fprintf(stderr, "%s:%d,\tWarning: " fmt "\n", __FILE__, __LINE__); \
-                exit(EXIT_FAILURE);
+    {fprintf(stderr, "%s:%d,\tWarning: " fmt "\n", __FILE__, __LINE__); \
+        exit(EXIT_FAILURE); }
 #define error_verbose(fmt, ...) \
-                fprintf(stderr, "%s:%d,\tWarning: " fmt "\n",__FILE__, __LINE__, __VA_ARGS__); \
-                exit(EXIT_FAILURE);
+    {fprintf(stderr, "%s:%d,\tWarning: " fmt "\n",__FILE__, __LINE__, __VA_ARGS__); \
+        exit(EXIT_FAILURE); }
 
 
 // Constants:
@@ -87,7 +87,7 @@ typedef double vfloat;
 #endif
 
 /* General expressions:
-N_COEFFS (LOOPS+1)
+#define N_COEFFS (LOOPS+1)
 #define N_CONFIGS (int)(2 * pow(3,LOOPS))
 #define N_KERNEL_ARGS (2 * LOOPS + 1)
 #define N_KERNELS (int)((pow(3,LOOPS) + 1) * pow(4,LOOPS))
