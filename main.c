@@ -39,7 +39,13 @@ int main () {
     possible_diagrams(diagrams);
 
     for (int i = 0; i < N_DIAGRAMS; ++i) {
-        printf("l = %d, r = %d, m = %d\n",diagrams[i].l,diagrams[i].r,diagrams[i].m);
+        printf("================================================= \n");
+        printf("m = %d, l = %d, r = %d\n",diagrams[i].m,diagrams[i].l,diagrams[i].r);
+        printf("symmetrization terms = %d\n",
+                symmetrization_factor(&diagrams[i]));
+        printf("\n");
+        /* loop_momenta_symmetrization(&diagrams[i]); */
+        printf("\n");
     }
 
 }

@@ -35,7 +35,7 @@ int diagram_factor(const diagram_t* diagram) {
 
 
 
-int integrand_symmetrization_factor(const diagram_t* diagram) {
+int symmetrization_factor(const diagram_t* diagram) {
     short int l = diagram->l;
     short int r = diagram->r;
     short int m = diagram->m;
@@ -122,7 +122,7 @@ void find_kernel_arguments(
 
         memset(config,0,sizeof(config));
     }
-    // l-loop arguments
+    // r-loop arguments
     for (size_t i = 0; i < r; ++i) {
         short int loop_momentum_index = rearrangement[i + m - 1 + l];
         config[loop_momentum_index] = 1;
@@ -179,47 +179,74 @@ int heaviside_theta(short int m, vfloat k1, const vfloat Q_magnitudes[]) {
 
 
 
-/* vfloat integrand_term( */
-/*         const diagram_t* diagram, */
-/*         const integration_input_t* data, */
-/*         const vfloat Q_magnitudes[], */
-/*         const vfloat bare_scalar_products[][N_COEFFS], */
-/*         const short int arguments_l[N_KERNEL_ARGS], */
-/*         const short int arguments_r[N_KERNEL_ARGS], */
-/*         const matrix_vfloat* alpha, */
-/*         const matrix_vfloat* beta, */
-/*         kernel_value_t* kernels */
-/*         ) */
-/* { */
-/*     short int l = diagram->l; */
-/*     short int r = diagram->r; */
-/*     short int m = diagram->m; */
+vfloat integrand_term(
+        const short int arguments_l[N_KERNEL_ARGS],
+        const short int arguments_r[N_KERNEL_ARGS],
+        const diagram_t* diagram,
+        const integration_input_t* input,
+        const table_pointers_t* data_tables
+        )
+{
+    short int m = diagram->m;
 
-/*     vfloat k1 = compute_k1(m,bare_scalar_products); */
+    vfloat k1 = compute_k1(m,data_tables->bare_scalar_products);
 
-/*     gsl_spline* spline    = data->spline; */
-/*     gsl_interp_accel* acc = data->acc; */
+    vfloat result = heaviside_theta(m,k1,data_tables->Q_magnitudes)
+        * gsl_spline_eval(input->spline,k1,input->acc)
+        * compute_SPT_kernel(arguments_l, input->component_a,
+                data_tables->alpha, data_tables->beta, data_tables->kernels)
+        * compute_SPT_kernel(arguments_r, input->component_b,
+                data_tables->alpha, data_tables->beta, data_tables->kernels);
 
-/*     vfloat result = heaviside_theta(m,k1,Q_magnitudes) * interpolate(k1) */
-/*         * compute_SPT_kernel(arguments_l, data->component_a, alpha, beta, kernels) */
-/*         * compute_SPT_kernel(arguments_r, data->component_b, alpha, beta, kernels); */
+    return result;
+}
 
-/*     // If diagram is symmetric (l == r), mutliply by 2 */
-/*     if (l == r) result *= 2; */
+vfloat sign_flip_symmetrization(
+        const short int rearrangement[],
+        const diagram_t* diagram,
+        const integration_input_t* input,
+        const table_pointers_t* data_tables
+        )
+{
+    short int m = diagram->m;
 
-/*     return result; */
-/* } */
+    // Signs of k1...km momenta (only (m-1) first elements relevant)
+    // Start with +1,+1,... signs
+    short int signs[LOOPS];
+    for (int i = 0; i < LOOPS; ++i) signs[i] = 1;
+
+    // Arguments for "left" and "right" kernels (changed in every
+    // symmetrization operation)
+    short int arguments_l[N_KERNEL_ARGS];
+    short int arguments_r[N_KERNEL_ARGS];
+
+    find_kernel_arguments(diagram, rearrangement, signs, arguments_l,
+            arguments_r);
+
+    vfloat result = 0;
+    result += integrand_term(arguments_l,arguments_r,diagram,input,data_tables);
+
+    // Loop over possible sign flips
+    for (int i = 1; i < pow(2,m-1); ++i) {
+        for (int j = 0; j < (m-1); ++j) {
+            if ((i/(j+1) % 2) == 1) {
+                signs[j] *= -1;
+                break;
+            }
+        }
+
+        find_kernel_arguments(diagram, rearrangement, signs, arguments_l,
+                arguments_r);
+        result += integrand_term(arguments_l,arguments_r,diagram,input,data_tables);
+    }
+    return result;
+}
 
 
-
-void symmetrized_integrand(
-        const diagram_t* diagram
-        /* const integration_input_t* data, */
-        /* const vfloat Q_magnitudes[], */
-        /* const vfloat bare_scalar_products[][N_COEFFS], */
-        /* const matrix_vfloat* alpha, */
-        /* const matrix_vfloat* beta, */
-        /* kernel_value_t* kernels */
+vfloat loop_momenta_symmetrization(
+        const diagram_t* diagram,
+        const integration_input_t* input,
+        const table_pointers_t* data_tables
         )
 {
     short int l = diagram->l;
@@ -230,19 +257,12 @@ void symmetrized_integrand(
     if ((m + l + r) != (LOOPS + 1)) error("m + r + l != LOOPS + 1");
 #endif
 
+    vfloat result = 0;
+
     // Tag loop momenta by number for symmetrization
     short int loop_momenta[LOOPS];
     for (int i = 0; i < LOOPS; ++i) loop_momenta[i] = i;
     short int rearrangement[LOOPS] = {};
-
-    // Signs of k1...km momenta (only (m-1) first elements relevant)
-    short int signs[LOOPS];
-    for (int i = 0; i < LOOPS; ++i) signs[i] = 1;
-
-    // Arguments for "left" and "right" kernels (changed in every
-    // symmetrization operation)
-    short int arguments_l[N_KERNEL_ARGS];
-    short int arguments_r[N_KERNEL_ARGS];
 
     // Loop momenta combinations:
     // m-1         "connection" loops
@@ -283,61 +303,16 @@ void symmetrized_integrand(
                     rearrangement[j] = loop_momenta[
                         gsl_combination_get(comb_s,gsl_combination_get(comb_r,i))];
                 }
-
-                find_kernel_arguments(diagram,
-                        rearrangement, signs, arguments_l, arguments_r);
-                printf("L: ");
-                for (int i = 0; i < N_KERNEL_ARGS; ++i) {
-                    short int config[N_COEFFS] = {};
-                    label2config(arguments_l[i], config, N_COEFFS);
-                    printf("[");
-                    for (int j = 0; j < N_COEFFS; ++j) {
-                        printf("%d, ",config[j]);
-                    }
-                    printf("]");
-                }
-                printf("\nR: ");
-                for (int i = 0; i < N_KERNEL_ARGS; ++i) {
-                    short int config[N_COEFFS] = {};
-                    label2config(arguments_r[i], config, N_COEFFS);
-                    printf("[");
-                    for (int j = 0; j < N_COEFFS; ++j) {
-                        printf("%d, ",config[j]);
-                    }
-                    printf("]");
-                }
-                printf("\n");
-
+                result += sign_flip_symmetrization(rearrangement, diagram,
+                        input, data_tables);
             } while (
                     gsl_combination_next(comb_l) == GSL_SUCCESS &&
                     gsl_combination_prev(comb_r) == GSL_SUCCESS
                     );
-            printf("\n");
         }
         else {
-            find_kernel_arguments(diagram,
-                    rearrangement, signs, arguments_l, arguments_r);
-            printf("L: ");
-            for (int i = 0; i < N_KERNEL_ARGS; ++i) {
-                short int config[N_COEFFS] = {};
-                label2config(arguments_l[i], config, N_COEFFS);
-                printf("[");
-                for (int j = 0; j < N_COEFFS; ++j) {
-                    printf("%d, ",config[j]);
-                }
-                printf("]");
-            }
-            printf("\nR: ");
-            for (int i = 0; i < N_KERNEL_ARGS; ++i) {
-                short int config[N_COEFFS] = {};
-                label2config(arguments_r[i], config, N_COEFFS);
-                printf("[");
-                for (int j = 0; j < N_COEFFS; ++j) {
-                    printf("%d, ",config[j]);
-                }
-                printf("]");
-            }
-            printf("\n");
+            result += sign_flip_symmetrization(rearrangement, diagram, input,
+                    data_tables);
         }
     } while (
             gsl_combination_next(comb_m) == GSL_SUCCESS &&
@@ -350,35 +325,63 @@ void symmetrized_integrand(
     }
     gsl_combination_free(comb_m);
     gsl_combination_free(comb_s);
+
+    return result;
 }
 
 
 
 vfloat integrand(
-        const integration_input_t* data,
+        const integration_input_t* input,
         const integration_variables_t* vars
         )
 {
-    // Initialize bare_scalar_products, alpha and beta tables
-    vfloat bare_scalar_products[N_COEFFS][N_COEFFS];
-    matrix_vfloat* alpha = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
-    matrix_vfloat* beta  = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
-    compute_bare_scalar_products(data->k,vars,bare_scalar_products);
-    compute_alpha_beta_tables(bare_scalar_products,alpha,beta);
+    // Store pointers to the computed tables in struct for convenience
+    table_pointers_t data_tables;
+    data_tables.Q_magnitudes = vars->magnitudes,
+    data_tables.alpha = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
+    data_tables.beta  = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
 
     // Allocate space for kernels (calloc also initializes values to 0)
-    kernel_value_t* kernels =
-        (kernel_value_t*)calloc(COMPONENTS * N_KERNELS, sizeof(kernel_value_t));
+    data_tables.kernels = (kernel_value_t*)
+        calloc(COMPONENTS * N_KERNELS, sizeof(kernel_value_t));
+
+
+    // Initialize bare_scalar_products, alpha and beta tables
+    compute_bare_scalar_products(input->k, vars,
+            data_tables.bare_scalar_products);
+    compute_alpha_beta_tables(data_tables.bare_scalar_products,
+            data_tables.alpha, data_tables.beta);
+
 
     diagram_t diagrams[N_DIAGRAMS];
-    possible_diagrams(diagrams)
+    possible_diagrams(diagrams);
 
+    // Loop over possible diagrams at this loop order
     vfloat result = 0;
+    for (int i = 0; i < N_DIAGRAMS; ++i) {
+        vfloat diagram_result =
+            loop_momenta_symmetrization(&(diagrams[i]),input,&data_tables);
+        // Multiply and divide by symmetrization & diagram factors
+        diagram_result /= symmetrization_factor(&(diagrams[i]));
+        diagram_result *= diagram_factor(&(diagrams[i]));
+        // If diagram is antisymmetric in l <-> r, multiply by 2 (the algorithm
+        // assumes l >= r)
+        if (diagrams[i].l != diagrams[i].r) {
+            diagram_result *= 2;
+        }
+        result += diagram_result;
+    }
+
+    for (int i = 0; i < LOOPS; ++i) {
+        result *= gsl_spline_eval(input->spline, data_tables.Q_magnitudes[i],
+                input->acc);
+    }
 
     // Free allocated memory
-    free(kernels);
-    gsl_matrix_free(alpha);
-    gsl_matrix_free(beta);
+    free(data_tables.kernels);
+    gsl_matrix_free(data_tables.alpha);
+    gsl_matrix_free(data_tables.beta);
 
     return result;
 }
