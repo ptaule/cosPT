@@ -51,15 +51,18 @@ void find_kernel_arguments(
         short int arguments_r[]
         );
 
-vfloat compute_k1(short int m, const vfloat bare_scalar_products[][N_COEFFS]);
-int heaviside_theta(short int m, vfloat k1, const vfloat Q_magnitudes[]);
+vfloat compute_k1(
+        short int m,
+        const int short rearrangement[],
+        const int short signs[],
+        const vfloat bare_scalar_products[][N_COEFFS]
+        );
 
-vfloat integrand_term(
-        const short int arguments_l[N_KERNEL_ARGS],
-        const short int arguments_r[N_KERNEL_ARGS],
-        const diagram_t* diagram,
-        const integration_input_t* input,
-        const table_pointers_t* data_tables
+int heaviside_theta(
+        short int m,
+        vfloat k1,
+        const int short rearrangement[],
+        const vfloat Q_magnitudes[]
         );
 
 vfloat sign_flip_symmetrization(

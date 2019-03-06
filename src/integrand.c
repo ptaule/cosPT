@@ -144,16 +144,26 @@ void find_kernel_arguments(
 
 
 
-vfloat compute_k1(short int m, const vfloat bare_scalar_products[][N_COEFFS]) {
+vfloat compute_k1(
+        short int m,
+        const int short rearrangement[],
+        const int short signs[],
+        const vfloat bare_scalar_products[][N_COEFFS]
+        )
+{
     vfloat k1 = bare_scalar_products[N_COEFFS - 1][N_COEFFS - 1];
     for (int i = 2; i <= m; ++i) {
-        k1 += bare_scalar_products[i-2][i-2];
-        k1 -= 2 * bare_scalar_products[N_COEFFS - 1][i-2];
+        int index = rearrangement[i-2];
+        k1 += bare_scalar_products[index][index];
+        k1 -= 2 * signs[index] * bare_scalar_products[N_COEFFS - 1][index];
     }
 
     for (int i = 2; i <= m; ++i) {
         for (int j = 2; j < i; ++j) {
-            k1 += 2 * bare_scalar_products[i-2][j-2];
+            short int index_a = rearrangement[i-2];
+            short int index_b = rearrangement[j-2];
+            k1 += 2 * signs[index_a] * signs[index_b] *
+                bare_scalar_products[index_a][index_b];
         }
     }
 
@@ -162,44 +172,28 @@ vfloat compute_k1(short int m, const vfloat bare_scalar_products[][N_COEFFS]) {
 
 
 
-int heaviside_theta(short int m, vfloat k1, const vfloat Q_magnitudes[]) {
+inline int heaviside_theta(
+        short int m,
+        vfloat k1,
+        const int short rearrangement[],
+        const vfloat Q_magnitudes[]
+        )
+{
+    if (m == 1) return 1;
+
     // Heaviside-theta (k1 - k2)
-    if (m == 2) {
-        if (k1 <= Q_magnitudes[0]) return 0;
-        return 2;
-    }
+    if (k1 <= Q_magnitudes[rearrangement[0]]) return 0;
 
     // Heaviside-theta (k2 - k3) etc.
-    // Note that (assuming m >= 2), k2 = Q_magnitudes[0] etc.
     for (int i = 3; i <= m; ++i) {
-        if (Q_magnitudes[i-3] <= Q_magnitudes[i-2]) return 0;
+        if ( Q_magnitudes[rearrangement[i-3]]
+                <= Q_magnitudes[rearrangement[i-2]])
+            return 0;
     }
     return gsl_sf_fact(m);
 }
 
 
-
-vfloat integrand_term(
-        const short int arguments_l[N_KERNEL_ARGS],
-        const short int arguments_r[N_KERNEL_ARGS],
-        const diagram_t* diagram,
-        const integration_input_t* input,
-        const table_pointers_t* data_tables
-        )
-{
-    short int m = diagram->m;
-
-    vfloat k1 = compute_k1(m,data_tables->bare_scalar_products);
-
-    vfloat result = heaviside_theta(m,k1,data_tables->Q_magnitudes)
-        * gsl_spline_eval(input->spline,k1,input->acc)
-        * compute_SPT_kernel(arguments_l, input->component_a,
-                data_tables->alpha, data_tables->beta, data_tables->kernels)
-        * compute_SPT_kernel(arguments_r, input->component_b,
-                data_tables->alpha, data_tables->beta, data_tables->kernels);
-
-    return result;
-}
 
 vfloat sign_flip_symmetrization(
         const short int rearrangement[],
@@ -220,14 +214,9 @@ vfloat sign_flip_symmetrization(
     short int arguments_l[N_KERNEL_ARGS];
     short int arguments_r[N_KERNEL_ARGS];
 
-    find_kernel_arguments(diagram, rearrangement, signs, arguments_l,
-            arguments_r);
-
     vfloat result = 0;
-    result += integrand_term(arguments_l,arguments_r,diagram,input,data_tables);
-
-    // Loop over possible sign flips
-    for (int i = 1; i < pow(2,m-1); ++i) {
+    // Loop over possible sign flips, and evaluate integrand
+    for (int i = 0; i < pow(2,m-1); ++i) {
         for (int j = 0; j < (m-1); ++j) {
             if ((i/(j+1) % 2) == 1) {
                 signs[j] *= -1;
@@ -237,7 +226,18 @@ vfloat sign_flip_symmetrization(
 
         find_kernel_arguments(diagram, rearrangement, signs, arguments_l,
                 arguments_r);
-        result += integrand_term(arguments_l,arguments_r,diagram,input,data_tables);
+
+        vfloat k1 = compute_k1(diagram->m, rearrangement, signs,
+                data_tables->bare_scalar_products);
+        result += heaviside_theta(diagram->m, k1, rearrangement,
+                data_tables->Q_magnitudes)
+            * gsl_spline_eval(input->spline,k1,input->acc)
+            * compute_SPT_kernel(arguments_l, input->component_a,
+                    data_tables->alpha, data_tables->beta,
+                    data_tables->kernels)
+            * compute_SPT_kernel(arguments_r, input->component_b,
+                    data_tables->alpha, data_tables->beta,
+                    data_tables->kernels);
     }
     return result;
 }
