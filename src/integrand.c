@@ -91,7 +91,7 @@ void find_kernel_arguments(
     short int config[N_COEFFS] = {};
     config[N_COEFFS - 1] = 1; // k-coefficient is 1
     for (size_t i = 2; i <= m; ++i) {
-        config[rearrangement[i-2]] = signs[i-2];
+        config[rearrangement[i-2]] = - signs[i-2];
     }
     arguments_l[0] = config2label(config,N_COEFFS);
     arguments_r[0] = config2label(config,N_COEFFS);
@@ -195,6 +195,55 @@ inline int heaviside_theta(
 
 
 
+static void print_integrand_info(
+        short int arguments_l[N_KERNEL_ARGS],
+        short int arguments_r[N_KERNEL_ARGS],
+        const short int signs[],
+        const diagram_t* diagram
+        )
+{
+    printf("(m,l,r) = (%d,%d,%d)\n",diagram->m,diagram->l,diagram->r);
+    printf("\tF(k");
+    short int config[N_COEFFS];
+    label2config(arguments_l[0],config,N_COEFFS);
+    for (int i = 0; i < LOOPS; ++i) {
+        if (config[i] == 0) continue;
+        else if (config[i] == -1) printf("-Q%d",i+1);
+        else if (config[i] == 1)  printf("+Q%d",i+1);
+    }
+    printf(", ");
+
+    for (int i = 1; i < N_KERNEL_ARGS; ++i) {
+        if (arguments_l[i] == ZERO_LABEL) break;
+        label2config(arguments_l[i],config,N_COEFFS);
+        for (int j = 0; j < LOOPS; ++j) {
+            if (config[j] == 0) continue;
+            else if (config[j] == -1) printf("-Q%d, ",j+1);
+            else if (config[j] == 1)  printf("+Q%d, ",j+1);
+        }
+    }
+    printf(") * F(k");
+    label2config(arguments_r[0],config,N_COEFFS);
+    for (int i = 0; i < LOOPS; ++i) {
+        if (config[i] == 0) continue;
+        else if (config[i] == -1) printf("-Q%d",i+1);
+        else if (config[i] == 1)  printf("+Q%d",i+1);
+    }
+    printf(", ");
+
+    for (int i = 1; i < N_KERNEL_ARGS; ++i) {
+        if (arguments_l[i] == ZERO_LABEL) break;
+        label2config(arguments_r[i],config,N_COEFFS);
+        for (int j = 0; j < LOOPS; ++j) {
+            if (config[j] == 0) continue;
+            else if (config[j] == -1) printf("-Q%d, ",j+1);
+            else if (config[j] == 1)  printf("+Q%d, ",j+1);
+        }
+    }
+    printf(")");
+}
+
+
 vfloat sign_flip_symmetrization(
         const short int rearrangement[],
         const diagram_t* diagram,
@@ -226,6 +275,9 @@ vfloat sign_flip_symmetrization(
 
         find_kernel_arguments(diagram, rearrangement, signs, arguments_l,
                 arguments_r);
+#if DEBUG
+        print_integrand_info(arguments_l, arguments_r, signs, diagram);
+#endif
 
         vfloat k1 = compute_k1(diagram->m, rearrangement, signs,
                 data_tables->bare_scalar_products);
@@ -238,9 +290,13 @@ vfloat sign_flip_symmetrization(
             * compute_SPT_kernel(arguments_r, input->component_b,
                     data_tables->alpha, data_tables->beta,
                     data_tables->kernels);
+#if DEBUG
+        printf("\t\t=> result = %f\n",result);
+#endif
     }
     return result;
 }
+
 
 
 vfloat loop_momenta_symmetrization(
