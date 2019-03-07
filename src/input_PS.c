@@ -69,7 +69,7 @@ void read_input_PS(
         i++;
     }
 
-    debug_print("Resolution = %d.\n",i);
+    debug_print("RESOLUTION    = %d\n",i);
 
     // Interpolate values
     *acc = gsl_interp_accel_alloc();
