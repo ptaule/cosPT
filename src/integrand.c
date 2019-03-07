@@ -22,7 +22,7 @@
 
 
 
-int diagram_factor(const diagram_t* diagram) {
+inline int diagram_factor(const diagram_t* diagram) {
     short int l = diagram->l;
     short int r = diagram->r;
     short int m = diagram->m;
@@ -35,7 +35,7 @@ int diagram_factor(const diagram_t* diagram) {
 
 
 
-int symmetrization_factor(const diagram_t* diagram) {
+inline int symmetrization_factor(const diagram_t* diagram) {
     short int l = diagram->l;
     short int r = diagram->r;
     short int m = diagram->m;
@@ -50,7 +50,7 @@ int symmetrization_factor(const diagram_t* diagram) {
 
 // Find (distinct) diagrams for L-loop
 // They satisfy: m >= 1; l,r > 0; l + r + m = L + 1
-void possible_diagrams(diagram_t diagrams[]) {
+inline void possible_diagrams(diagram_t diagrams[]) {
     short int m = 0;
 
     size_t index = 0;
@@ -144,7 +144,7 @@ void find_kernel_arguments(
 
 
 
-vfloat compute_k1(
+inline vfloat compute_k1(
         short int m,
         const int short rearrangement[],
         const int short signs[],
