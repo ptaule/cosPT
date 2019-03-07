@@ -23,6 +23,7 @@ void print_configs();
 void test_kernel_index_from_arguments();
 void testBareScalarProducts();
 void testScalarProducts();
+void testIntegrandComputation();
 
 
 
@@ -34,22 +35,38 @@ int main () {
     debug_print("ZERO_LABEL    = %d\n", ZERO_LABEL);
     debug_print("COMPONENTS    = %d\n", COMPONENTS);
 
-    diagram_t diagrams[N_DIAGRAMS] = {};
+    testIntegrandComputation();
 
-    possible_diagrams(diagrams);
-
-    for (int i = 0; i < N_DIAGRAMS; ++i) {
-        printf("================================================= \n");
-        printf("m = %d, l = %d, r = %d\n",diagrams[i].m,diagrams[i].l,diagrams[i].r);
-        printf("symmetrization terms = %d\n",
-                symmetrization_factor(&diagrams[i]));
-        printf("\n");
-        /* loop_momenta_symmetrization(&diagrams[i]); */
-        printf("\n");
-    }
-
+    return 0;
 }
 
+
+
+void testIntegrandComputation() {
+    gsl_interp_accel* acc;
+    gsl_spline* spline;
+    const char* filename = "/home/pettertaule/Dropbox/Mathematica/simple00_pk.dat";
+
+    read_input_PS(filename,&acc,&spline);
+
+    integration_variables_t vars = {
+        .magnitudes = {0.1,0.2},
+        .cos_theta  = {1,1},
+        .phi        = {0.5}
+    };
+
+    integration_input_t data = {
+        .k = 1,
+        .component_a = 0,
+        .component_b = 0,
+        .acc = acc,
+        .spline = spline
+    };
+
+    vfloat result = integrand(&data,&vars);
+    printf("result  = %f\n", result );
+
+}
 
 
 void testKernelComputer() {
