@@ -8,8 +8,6 @@
 #include <math.h>
 #include <string.h>
 
-#include <cuba.h>
-
 #include <gsl/gsl_sf.h>
 #include <gsl/gsl_spline.h>
 #include <gsl/gsl_combination.h>
@@ -281,9 +279,10 @@ vfloat sign_flip_symmetrization(
 
         vfloat k1 = compute_k1(diagram->m, rearrangement, signs,
                 data_tables->bare_scalar_products);
-        result += heaviside_theta(diagram->m, k1, rearrangement,
-                data_tables->Q_magnitudes)
-            * gsl_spline_eval(input->spline,k1,input->acc)
+        int h_theta = heaviside_theta(diagram->m, k1, rearrangement,
+                data_tables->Q_magnitudes);
+        if (h_theta == 0) continue;
+        result += h_theta * gsl_spline_eval(input->spline,k1,input->acc)
             * compute_SPT_kernel(arguments_l, input->component_a,
                     data_tables->alpha, data_tables->beta,
                     data_tables->kernels)
@@ -440,31 +439,4 @@ vfloat integrand(
     gsl_matrix_free(data_tables.beta);
 
     return result;
-}
-
-
-
-int cuba_integrand(
-        const int *ndim,
-        const cubareal xx[],
-        const int *ncomp,
-        cubareal ff[],
-        void *userdata
-        )
-{
-    integration_input_t* data = (integration_input_t*)userdata;
-
-    integration_variables_t vars;
-
-    for (int i = 0; i < LOOPS; ++i) {
-        vars.magnitudes[i] = xx[i];
-        vars.cos_theta[i]  = xx[i + LOOPS];
-    }
-    for (int i = 0; i < LOOPS - 1; ++i) {
-        vars.phi[i] = xx[i + 2*LOOPS];
-    }
-
-    ff[0] = integrand(data,&vars);
-
-    return 0;
 }

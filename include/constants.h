@@ -12,10 +12,16 @@
 
 // Parameters (if not set by compile options)
 #ifndef LOOPS
-#define LOOPS 2
+#define LOOPS 1
 #endif
 #ifndef COMPONENTS
 #define COMPONENTS 2
+#endif
+#ifndef K_MIN
+#define K_MIN 10e-5
+#endif
+#ifndef K_MAX
+#define K_MAX 1
 #endif
 
 // Which GSL interpolation routine to use
@@ -26,7 +32,7 @@
 
 // Debug mode. Performs additional checks during runtime
 #ifndef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #endif
 
 // Variable precision
