@@ -121,14 +121,17 @@ void compute_alpha_beta_tables(
             // If the first argument is the zero-vector, alpha and beta remains 0
             // If the second argument is the zero-vector, beta remains 0
             if (a != ZERO_LABEL) {
-                alpha_val = 1 +
-                    (vfloat)(matrix_get(scalar_products,a,b)) / matrix_get(scalar_products,a,a);
+                vfloat product_ab = matrix_get(scalar_products,a,b);
+                vfloat product_aa = matrix_get(scalar_products,a,a);
+
+                alpha_val = 1 + product_ab/product_aa;
+
                 if (b != ZERO_LABEL) {
-                    beta_val = matrix_get(scalar_products,a,b) / 2.0
-                        * ( 1.0 / matrix_get(scalar_products,a,a)
-                          + 1.0 / matrix_get(scalar_products,b,b)
-                          + 2.0 * matrix_get(scalar_products,a,b) /
-                          (matrix_get(scalar_products,a,a) * matrix_get(scalar_products,b,b))
+                    vfloat product_bb = matrix_get(scalar_products,b,b);
+
+                    beta_val = product_ab / 2.0
+                        * ( 1.0 / product_aa + 1.0 / product_bb
+                          + 2.0 * product_ab / (product_aa * product_bb)
                           );
                 }
             }
