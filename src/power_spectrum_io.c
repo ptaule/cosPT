@@ -1,5 +1,5 @@
 /*
-   input_PS.c
+   power_spectrum_io.c
 
    Created by Petter Taule on 25.02.2019
    Copyright (c) 2019 Petter Taule. All rights reserved.
@@ -12,7 +12,7 @@
 #include <gsl/gsl_spline.h>
 
 #include "../include/constants.h"
-#include "../include/input_PS.h"
+#include "../include/power_spectrum_io.h"
 
 
 

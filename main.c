@@ -16,8 +16,8 @@
 #include "include/utilities.h"
 #include "include/kernels.h"
 #include "include/spt_kernels.h"
-#include "include/input_PS.h"
 #include "include/integrand.h"
+#include "include/power_spectrum_io.h"
 
 
 
