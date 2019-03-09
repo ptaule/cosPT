@@ -37,9 +37,11 @@
 
 // Variable precision
 typedef double vfloat;
-#define matrix_vfloat gsl_matrix
-#define vector_vfloat gsl_vector
-#define vfloat_fmt "%lg"
+#define matrix_t     gsl_matrix
+#define matrix_alloc gsl_matrix_alloc
+#define matrix_set   gsl_matrix_set
+#define matrix_get   gsl_matrix_get
+#define matrix_free  gsl_matrix_free
 
 // Macros:
 

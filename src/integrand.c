@@ -394,8 +394,8 @@ vfloat integrand(
     // Store pointers to the computed tables in struct for convenience
     table_pointers_t data_tables;
     data_tables.Q_magnitudes = vars->magnitudes,
-    data_tables.alpha = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
-    data_tables.beta  = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
+    data_tables.alpha = matrix_alloc(N_CONFIGS,N_CONFIGS);
+    data_tables.beta  = matrix_alloc(N_CONFIGS,N_CONFIGS);
 
     // Allocate space for kernels (calloc also initializes values to 0)
     data_tables.kernels = (kernel_value_t*)
@@ -435,8 +435,8 @@ vfloat integrand(
 
     // Free allocated memory
     free(data_tables.kernels);
-    gsl_matrix_free(data_tables.alpha);
-    gsl_matrix_free(data_tables.beta);
+    matrix_free(data_tables.alpha);
+    matrix_free(data_tables.beta);
 
     return result;
 }

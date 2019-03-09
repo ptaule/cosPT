@@ -74,7 +74,7 @@ void compute_bare_scalar_products(
 
 void compute_scalar_products(
         const vfloat bare_scalar_products[][N_COEFFS], /* in, bare scalar products         */
-        matrix_vfloat* scalar_products                 /* out, scalar product combinations */
+        matrix_t* scalar_products                      /* out, scalar product combinations */
         )
 {
     short int a_coeffs[N_COEFFS];
@@ -95,7 +95,7 @@ void compute_scalar_products(
                         * bare_scalar_products[i][j];
                 }
             }
-            gsl_matrix_set(scalar_products,a,b,product_value);
+            matrix_set(scalar_products,a,b,product_value);
         }
     }
 }
@@ -106,11 +106,11 @@ void compute_scalar_products(
 // alpha/beta diagonal should always be 2
 void compute_alpha_beta_tables(
         const vfloat bare_scalar_products[][N_COEFFS], /* in, bare scalar products   */
-        matrix_vfloat* alpha,                          /* out, matrix of alpha-func. */
-        matrix_vfloat* beta                            /* out, matrix of beta-func.  */
+        matrix_t* alpha,                               /* out, matrix of alpha-func. */
+        matrix_t* beta                                 /* out, matrix of beta-func.  */
         )
 {
-    matrix_vfloat* scalar_products = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
+    matrix_t* scalar_products = matrix_alloc(N_CONFIGS,N_CONFIGS);
     compute_scalar_products(bare_scalar_products,scalar_products);
 
     for (int a = 0; a < N_CONFIGS; ++a) {
@@ -122,21 +122,21 @@ void compute_alpha_beta_tables(
             // If the second argument is the zero-vector, beta remains 0
             if (a != ZERO_LABEL) {
                 alpha_val = 1 +
-                    (vfloat)(gsl_matrix_get(scalar_products,a,b)) / gsl_matrix_get(scalar_products,a,a);
+                    (vfloat)(matrix_get(scalar_products,a,b)) / matrix_get(scalar_products,a,a);
                 if (b != ZERO_LABEL) {
-                    beta_val = gsl_matrix_get(scalar_products,a,b) / 2.0
-                        * ( 1.0 / gsl_matrix_get(scalar_products,a,a)
-                          + 1.0 / gsl_matrix_get(scalar_products,b,b)
-                          + 2.0 * gsl_matrix_get(scalar_products,a,b) /
-                          (gsl_matrix_get(scalar_products,a,a) * gsl_matrix_get(scalar_products,b,b))
+                    beta_val = matrix_get(scalar_products,a,b) / 2.0
+                        * ( 1.0 / matrix_get(scalar_products,a,a)
+                          + 1.0 / matrix_get(scalar_products,b,b)
+                          + 2.0 * matrix_get(scalar_products,a,b) /
+                          (matrix_get(scalar_products,a,a) * matrix_get(scalar_products,b,b))
                           );
                 }
             }
-            gsl_matrix_set(alpha,a,b,alpha_val);
-            gsl_matrix_set(beta,a,b,beta_val);
+            matrix_set(alpha,a,b,alpha_val);
+            matrix_set(beta,a,b,beta_val);
         }
     }
-    gsl_matrix_free(scalar_products);
+    matrix_free(scalar_products);
 }
 
 

@@ -19,8 +19,8 @@
 vfloat partial_SPT_sum(
         const short int arguments[], /* kernel arguments                                  */
         short int component,         /* component to compute, NB: assumed to be 0-indexed */
-        const matrix_vfloat* alpha,  /* table of alpha function values for various input  */
-        const matrix_vfloat* beta,   /* table of beta function values for various input   */
+        const matrix_t* alpha,       /* table of alpha function values for various input  */
+        const matrix_t* beta,        /* table of beta function values for various input   */
         kernel_value_t* kernels,     /* kernel table                                      */
         short int n,                 /* kernel number                                     */
         short int m,                 /* sum index in kernel recursion relation            */
@@ -75,8 +75,8 @@ vfloat partial_SPT_sum(
 
         // F_n <-> component 0; G_n <-> component 1
         value += compute_SPT_kernel(args_l,1,alpha,beta,kernels) *
-            (  a * gsl_matrix_get(alpha,sum_l,sum_r) * compute_SPT_kernel(args_r,0,alpha,beta,kernels)
-             + b * gsl_matrix_get(beta ,sum_l,sum_r) * compute_SPT_kernel(args_r,1,alpha,beta,kernels)
+            (  a * matrix_get(alpha,sum_l,sum_r) * compute_SPT_kernel(args_r,0,alpha,beta,kernels)
+             + b * matrix_get(beta ,sum_l,sum_r) * compute_SPT_kernel(args_r,1,alpha,beta,kernels)
             );
 
     } while (gsl_combination_next(comb_l) == GSL_SUCCESS &&
@@ -97,8 +97,8 @@ vfloat partial_SPT_sum(
 vfloat compute_SPT_kernel(
         const short int arguments[], /* kernel arguments                                  */
         short int component,         /* component to compute, NB: assumed to be 0-indexed */
-        const matrix_vfloat* alpha,  /* table of alpha function values for various input  */
-        const matrix_vfloat* beta,   /* table of beta function values for various input   */
+        const matrix_t* alpha,       /* table of alpha function values for various input  */
+        const matrix_t* beta,        /* table of beta function values for various input   */
         kernel_value_t* kernels      /* kernel table                                      */
         )
 {

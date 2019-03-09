@@ -16,8 +16,8 @@
 vfloat partial_SPT_sum(
         const short int arguments[],
         short int component,
-        const matrix_vfloat* alpha,
-        const matrix_vfloat* beta,
+        const matrix_t* alpha,
+        const matrix_t* beta,
         kernel_value_t* kernels,
         const short int n,
         const short int m,
@@ -28,8 +28,8 @@ vfloat partial_SPT_sum(
 vfloat compute_SPT_kernel(
         const short int arguments[],
         short int component,
-        const matrix_vfloat* alpha,
-        const matrix_vfloat* beta,
+        const matrix_t* alpha,
+        const matrix_t* beta,
         kernel_value_t* kernels
         );
 

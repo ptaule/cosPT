@@ -32,8 +32,8 @@ void read_input_PS(
         error_verbose("Could not open %s. Exiting.",filename);
     }
 
-    vfloat* wavenumber     = (vfloat*)malloc(sizeof(vfloat) * MAX_RESOLUTION);
-    vfloat* power_spectrum = (vfloat*)malloc(sizeof(vfloat) * MAX_RESOLUTION);
+    double* wavenumber     = (double*)malloc(sizeof(double) * MAX_RESOLUTION);
+    double* power_spectrum = (double*)malloc(sizeof(double) * MAX_RESOLUTION);
 
     int i = 0;
 

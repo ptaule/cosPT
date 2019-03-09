@@ -33,8 +33,8 @@ typedef struct {
 typedef struct {
     const vfloat* Q_magnitudes;
     vfloat bare_scalar_products[N_COEFFS][N_COEFFS];
-    matrix_vfloat* alpha;
-    matrix_vfloat* beta;
+    matrix_t* alpha;
+    matrix_t* beta;
     kernel_value_t* kernels;
 } table_pointers_t;
 

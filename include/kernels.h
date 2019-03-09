@@ -30,13 +30,13 @@ void compute_bare_scalar_products(
 
 void compute_scalar_products(
         const vfloat bare_scalar_products[][N_COEFFS],
-        matrix_vfloat* scalar_products
+        matrix_t* scalar_products
         );
 
 void compute_alpha_beta_tables(
         const vfloat bare_scalar_products[][N_COEFFS],
-        matrix_vfloat* alpha,
-        matrix_vfloat* beta
+        matrix_t* alpha,
+        matrix_t* beta
         );
 
 short int kernel_index_from_fundamental(short int argument);
