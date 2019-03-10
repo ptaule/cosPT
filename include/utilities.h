@@ -8,9 +8,8 @@
 #ifndef UTILITIES_H
 #define UTILITIES_H
 
-#include <stddef.h>
 #include <stdbool.h>
-#include <math.h>
+
 #include <gsl/gsl_matrix.h>
 
 #include "constants.h"

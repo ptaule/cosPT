@@ -8,8 +8,6 @@
 #ifndef SPT_KERNELS_H
 #define SPT_KERNELS_H
 
-#include <gsl/gsl_matrix.h>
-
 #include "constants.h"
 #include "kernels.h"
 

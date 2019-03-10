@@ -8,7 +8,6 @@
 #ifndef KERNELS_H
 #define KERNELS_H
 
-#include <gsl/gsl_matrix.h>
 #include "constants.h"
 
 typedef struct {

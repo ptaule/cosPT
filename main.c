@@ -8,8 +8,6 @@
 #include <stdio.h>
 #include <math.h>
 
-#include <gsl/gsl_matrix.h>
-
 #include <cuba.h>
 
 #include "include/constants.h"
@@ -55,7 +53,7 @@ int cuba_integrand(
 #define LAST 4
 #define SEED 0
 #define MINEVAL 0
-#define MAXEVAL 10e6
+#define MAXEVAL 1e4
 
 #define STATEFILE NULL
 #define SPIN NULL
@@ -81,27 +79,41 @@ int main () {
     read_PS(filename,&acc,&spline);
 
     integration_input_t data = {
-        .k = 0.1,
+        .k = 0.0,
         .component_a = 0,
         .component_b = 0,
         .acc = acc,
         .spline = spline
     };
 
+    double* wavenumbers    = (vfloat*)calloc(N_POINTS, sizeof(double));
+    double* power_spectrum = (vfloat*)calloc(N_POINTS, sizeof(double));
+    double* errors         = (vfloat*)calloc(N_POINTS, sizeof(double));
+
+    double delta_logk = log(K_MAX/K_MIN) / N_POINTS;
+    double k = K_MIN;
+
     int nregions, neval, fail;
     cubareal result[1], error[1], prob[1];
 
-    Suave(2, 1, cuba_integrand, &data,
-            NVEC, EPSREL, EPSABS, VERBOSE | LAST, SEED,
-            MINEVAL, MAXEVAL, NNEW, NMIN, FLATNESS,
-            STATEFILE, SPIN,
-            &nregions, &neval, &fail, result, error, prob);
+    for (int i = 0; i < N_POINTS; ++i) {
+        k *= exp(delta_logk);
+        wavenumbers[i] = k;
+        data.k = k;
 
-    printf("SUAVE RESULT:\tnregions %d\tneval %d\tfail %d\n",
-            nregions, neval, fail);
+        Suave(2, 1, cuba_integrand, &data,
+                NVEC, EPSREL, EPSABS, VERBOSE | LAST, SEED,
+                MINEVAL, MAXEVAL, NNEW, NMIN, FLATNESS,
+                STATEFILE, SPIN,
+                &nregions, &neval, &fail, result, error, prob);
 
-    printf("SUAVE RESULT:\t%.8f +- %.8f\tp = %.3f\n",
-            (double)*result, (double)*error, (double)*prob);
+        power_spectrum[i] = (double)*result;
+        errors[i] = (double)*error;
+        printf("k  = %f, result = %f, error = %f\n",
+                k, (double)*result, (double)*error);
+    }
+
+    write_PS("output.txt",N_POINTS,wavenumbers,power_spectrum);
 
     return 0;
 }
