@@ -86,9 +86,9 @@ int main () {
         .spline = spline
     };
 
-    double* wavenumbers    = (vfloat*)calloc(N_POINTS, sizeof(double));
-    double* power_spectrum = (vfloat*)calloc(N_POINTS, sizeof(double));
-    double* errors         = (vfloat*)calloc(N_POINTS, sizeof(double));
+    double* wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));
+    double* power_spectrum = (double*)calloc(N_POINTS, sizeof(double));
+    double* errors         = (double*)calloc(N_POINTS, sizeof(double));
 
     double delta_logk = log(K_MAX/K_MIN) / N_POINTS;
     double k = K_MIN;
