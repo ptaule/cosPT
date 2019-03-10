@@ -78,7 +78,7 @@ int main () {
     gsl_spline* spline;
     const char* filename = "/home/pettertaule/Dropbox/Mathematica/simple00_pk.dat";
 
-    read_input_PS(filename,&acc,&spline);
+    read_PS(filename,&acc,&spline);
 
     integration_input_t data = {
         .k = 0.1,

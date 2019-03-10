@@ -16,7 +16,7 @@
 
 
 
-void read_input_PS(
+void read_PS(
         const char* filename,   /* in, power spectrum file                          */
         gsl_interp_accel** acc, /* out, gsl_interpolation accelerated lookup object */
         gsl_spline** spline     /* out, copy of data read from file                 */
@@ -32,12 +32,10 @@ void read_input_PS(
         error_verbose("Could not open %s. Exiting.",filename);
     }
 
-    double* wavenumber     = (double*)malloc(sizeof(double) * MAX_RESOLUTION);
+    double* wavenumbers    = (double*)malloc(sizeof(double) * MAX_RESOLUTION);
     double* power_spectrum = (double*)malloc(sizeof(double) * MAX_RESOLUTION);
 
     int i = 0;
-
-    // Read line-by-line
     while ((read = getline(&line,&n,fp) != -1)) {
         char * p = line;
         size_t len = strlen(line);
@@ -55,13 +53,15 @@ void read_input_PS(
         if (*p == '#') continue;
 
         if(i == MAX_RESOLUTION) {
+            fclose(fp);
             error_verbose("Number of points in input file %s exceeds "
                     "MAX_RESOLUTION = %d. Exiting.", filename,MAX_RESOLUTION);
         }
 
-        int items = sscanf(line,"%lg" "\t" "%lg",&wavenumber[i],&power_spectrum[i]);
+        int items = sscanf(line,"%lg" "\t" "%lg",&wavenumbers[i],&power_spectrum[i]);
 
         if (items != 2) {
+            fclose(fp);
             error_verbose("Reading %s: Found row where the number of items "
                     "does not equal two. Exiting.", filename);
         }
@@ -74,10 +74,36 @@ void read_input_PS(
     // Interpolate values
     *acc = gsl_interp_accel_alloc();
     *spline = gsl_spline_alloc(INTERPOL_TYPE, i);
-    gsl_spline_init(*spline,wavenumber,power_spectrum,i);
+    gsl_spline_init(*spline,wavenumbers,power_spectrum,i);
 
     fclose(fp);
     free(line);
-    free(wavenumber);
+    free(wavenumbers);
     free(power_spectrum);
+}
+
+void write_PS(
+        const char* filename,
+        int n_points,
+        const double wavenumbers[],
+        const double power_spectrum[]
+        )
+{
+    FILE* fp;
+
+    fp = fopen(filename,"w");
+    if (fp == NULL) {
+        warning_verbose("Could not open %s for writing.",filename);
+    }
+
+    fprintf(fp,"Matter power spectrum P(k) at %d-loop\n",LOOPS);
+    fprintf(fp,"for k=%e to %e (h/Mpc)\n",K_MIN,K_MAX);
+    fprintf(fp,"number of wavenumbers: %d", n_points);
+
+    fprintf(fp,"\tk\t\tP(k)");
+    for (int i = 0; i < n_points; ++i) {
+        fprintf(fp,"\t%e\t%e\n", wavenumbers[i], power_spectrum[i]);
+    }
+
+    fclose(fp);
 }
