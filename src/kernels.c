@@ -220,9 +220,3 @@ void kernel_index_from_arguments(
         warning("More than one kernel argument is k-type.");
 #endif
 }
-
-
-
-short int combined_kernel_index(short int argument_index,short int component) {
-    return argument_index * COMPONENTS + component;
-}

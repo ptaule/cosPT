@@ -38,8 +38,13 @@ void compute_alpha_beta_tables(
         matrix_t* beta
         );
 
-short int kernel_index_from_fundamental(short int argument);
 void kernel_index_from_arguments(const short int arguments[], short int* index, short int* n);
-short int combined_kernel_index(short int argument_index,short int component);
+
+
+inline short int combined_kernel_index(
+        short int argument_index,short int component)
+{
+    return argument_index * COMPONENTS + component;
+}
 
 #endif /* ifndef KERNELS_H */
