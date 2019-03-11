@@ -70,8 +70,10 @@ typedef double vfloat;
 #define TWOPI 6.28318530718
 
 // Constants defined depending on number of loops
+#define N_COEFFS LOOPS+1
+#define N_DIMS   3*LOOPS + 1
+
 #if LOOPS==1
-#define N_COEFFS       2
 #define N_CONFIGS      6
 #define N_KERNEL_ARGS  3
 #define N_KERNELS     16
@@ -80,7 +82,6 @@ typedef double vfloat;
 #endif
 
 #if LOOPS==2
-#define N_COEFFS        3
 #define N_CONFIGS      18
 #define N_KERNEL_ARGS   5
 #define N_KERNELS     160
@@ -89,7 +90,6 @@ typedef double vfloat;
 #endif
 
 #if LOOPS==3
-#define N_COEFFS         4
 #define N_CONFIGS       54
 #define N_KERNEL_ARGS    7
 #define N_KERNELS     1792

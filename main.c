@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <math.h>
 
+#include <gsl/gsl_sf.h>
+
 #include <cuba.h>
 
 #include "include/constants.h"
@@ -30,18 +32,29 @@ int cuba_integrand(
     integration_input_t* data = (integration_input_t*)userdata;
     integration_variables_t vars;
 
-    vfloat log_interval = log(K_MAX/K_MIN);
+    vfloat ratio = K_MAX/K_MIN;
 
-    vars.magnitudes[0] = K_MIN * exp(log_interval * xx[0]);
-    vars.cos_theta[0] = xx[1];
+    vfloat jacobian = 0.0;
+    switch (LOOPS) {
+        case 1:
+            vars.magnitudes[0] = K_MIN * pow(ratio,xx[0]);
+            vars.cos_theta[0] = xx[1];
+            jacobian = K_MIN * log(ratio);
+            break;
+        case 2:
+            vars.magnitudes[0] = K_MIN * pow(ratio,xx[0]);
+            vars.magnitudes[1] = K_MIN * pow(ratio, xx[0] * xx[1]);
+            vars.cos_theta[0] = xx[2];
+            vars.cos_theta[1] = xx[3];
+            vars.phi[0] = xx[4] * TWOPI;
+            jacobian = TWOPI * pow(K_MIN * log(ratio),2)
+                * xx[0] * pow(K_MIN/K_MAX,xx[0]*(1 + xx[1]));
+            break;
+        default:
+            warning_verbose("No jacobian for LOOPS = %d",LOOPS);
+    }
 
-    vfloat jacobian = K_MIN * log_interval;
-
-    // Only integrating over cos_theta between 0 and 1, multiply by 2 to obtain
-    // [-1,1] (integrand symmetric w.r.t spatial inversion of loop momentum)
-    int sym_factor = 2;
-
-    ff[0] = sym_factor * jacobian * integrand(data,&vars);
+    ff[0] = jacobian * integrand(data,&vars);
     return 0;
 }
 
@@ -88,32 +101,45 @@ int main () {
 
     double* wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));
     double* power_spectrum = (double*)calloc(N_POINTS, sizeof(double));
-    double* errors         = (double*)calloc(N_POINTS, sizeof(double));
 
-    double delta_logk = log(K_MAX/K_MIN) / N_POINTS;
-    double k = K_MIN;
+    // Overall factors:
+    // - Only integrating over cos_theta_i between 0 and 1, multiply by 2 to
+    //   obtain [-1,1]
+    // - Assuming Q1 > Q2 > ..., hence multiply result by LOOPS factorial
+    // - Phi integration of first loop momenta gives a factor 2pi
+    // - Conventionally divide by (2pi)^3
+    vfloat overall_factor = pow(2,LOOPS) * gsl_sf_fact(LOOPS) / pow(TWOPI,2);
 
     int nregions, neval, fail;
     cubareal result[1], error[1], prob[1];
+
+    double delta_logk = log(K_MAX/K_MIN) / N_POINTS;
+    double k = K_MIN;
 
     for (int i = 0; i < N_POINTS; ++i) {
         k *= exp(delta_logk);
         wavenumbers[i] = k;
         data.k = k;
 
-        Suave(2, 1, cuba_integrand, &data,
+        Suave(N_DIMS, 1, cuba_integrand, &data,
                 NVEC, EPSREL, EPSABS, VERBOSE | LAST, SEED,
                 MINEVAL, MAXEVAL, NNEW, NMIN, FLATNESS,
                 STATEFILE, SPIN,
                 &nregions, &neval, &fail, result, error, prob);
 
-        power_spectrum[i] = (double)*result;
-        errors[i] = (double)*error;
-        printf("k  = %f, result = %f, error = %f\n",
-                k, (double)*result, (double)*error);
+        result[0] *= overall_factor;
+        error[0] *= overall_factor;
+
+        power_spectrum[i] = (double)result[0];
+
+        printf("k  = %f, result = %f, error = %f, prob = %f\n",
+                k, (double)*result, (double)error[0], (double)prob[0]);
     }
 
     write_PS("output.txt",N_POINTS,wavenumbers,power_spectrum);
+
+    free(wavenumbers);
+    free(power_spectrum);
 
     return 0;
 }
