@@ -12,7 +12,7 @@
 
 // Parameters (if not set by compile options)
 #ifndef LOOPS
-#define LOOPS 1
+#define LOOPS 2
 #endif
 #ifndef COMPONENTS
 #define COMPONENTS 2
