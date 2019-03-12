@@ -176,7 +176,6 @@ void kernel_index_from_arguments(
     if (!unique_elements(arguments,N_KERNEL_ARGS,ZERO_LABEL))
         warning("Duplicate vector arguments passed to kernel.");
 #endif
-    //-------------------------------------------//
 
     // Define temp index used in calculation
     short int temp_index = 0;
@@ -186,7 +185,6 @@ void kernel_index_from_arguments(
     // Define block size. A block consists of all fundamental vector argument
     // combinations.
     short int block_size = pow(4,LOOPS);
-    // Store zero-label for comparison
 
     for (int i = 0; i < N_KERNEL_ARGS; ++i) {
         // First, check if argument is a zero vector
