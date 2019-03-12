@@ -22,8 +22,7 @@ short int zero_label();
 bool is_fundamental(short int label);
 bool unique_elements(const short int array[],size_t length, short int skip);
 
-short int sum_two_vectors(short int label_a, short int label_b);
-short int sum_vectors(const short int labels[], size_t size);
+short int sum_vectors(const short int labels[], size_t n_vecs);
 
 void print_gsl_matrix(const gsl_matrix* m, size_t height, size_t width);
 

@@ -55,16 +55,16 @@ bool unique_elements(const short int array[], size_t length, short int skip) {
 
 
 
-short int sum_two_vectors(short int label_a, short int label_b) {
-    short int a_coeffs[N_COEFFS]   = {};
-    short int b_coeffs[N_COEFFS]   = {};
-    short int res_coeffs[N_COEFFS] = {};
+short int sum_vectors(const short int labels[], size_t n_vecs) {
+    short int temp_coeffs[N_COEFFS] = {};
+    short int res_coeffs[N_COEFFS]  = {};
 
-    label2config(label_a,a_coeffs,N_COEFFS);
-    label2config(label_b,b_coeffs,N_COEFFS);
-
-    for (int i = 0; i < N_COEFFS; ++i) {
-        res_coeffs[i] = a_coeffs[i] + b_coeffs[i];
+    for (size_t i = 0; i < n_vecs; ++i) {
+        if (labels[i] == ZERO_LABEL) continue;
+        label2config(labels[i],temp_coeffs,N_COEFFS);
+        for (int j = 0; j < N_COEFFS; ++j) {
+            res_coeffs[j] += temp_coeffs[j];
+        }
     }
 
     // If DEBUG==true, check that sum is an appropriate vector configuration, i.e. that Q-coefficients are elements of (-1,0,1) and k-coefficient is an element of (0,1)
@@ -72,30 +72,16 @@ short int sum_two_vectors(short int label_a, short int label_b) {
     for (int i = 0; i < N_COEFFS - 1; ++i) {
         short int c = res_coeffs[i];
         if (!(c == -1 || c == 0 || c == 1))
-            warning_verbose("Sum of vectors with labels (%d,%d) does not "
-                    "correspond to an appropriate configuration.", label_a,label_b);
+            warning("Sum of vectors does not correspond to an appropriate "
+                    "configuration.")
     }
     short int c = res_coeffs[N_COEFFS - 1];
     if (!(c == 0 || c == 1))
-        warning_verbose("Sum of vectors with labels (%d,%d) does not "
-                "correspond to an appropriate configuration.", label_a,label_b);
+        warning("Sum of vectors does not correspond to an appropriate "
+                "configuration.")
 #endif
 
     return config2label(res_coeffs,N_COEFFS);
-}
-
-
-
-short int sum_vectors(const short int labels[], size_t size) {
-    if (size == 1) return labels[0];
-
-    short int result = sum_two_vectors(labels[0],labels[1]);
-
-    for (size_t i = 2; i < size; ++i) {
-        if (labels[i] == ZERO_LABEL) continue;
-        result = sum_two_vectors(result,labels[i]);
-    }
-    return result;
 }
 
 
