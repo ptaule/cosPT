@@ -55,46 +55,50 @@ bool unique_elements(const short int array[], size_t length, short int skip) {
 
 
 
-short int sum_two_vectors(short int label_a, short int label_b) {
-    short int a_coeffs[N_COEFFS]   = {};
-    short int b_coeffs[N_COEFFS]   = {};
-    short int res_coeffs[N_COEFFS] = {};
-
-    label2config(label_a,a_coeffs,N_COEFFS);
-    label2config(label_b,b_coeffs,N_COEFFS);
-
-    for (int i = 0; i < N_COEFFS; ++i) {
-        res_coeffs[i] = a_coeffs[i] + b_coeffs[i];
-    }
-
-    // If DEBUG==true, check that sum is an appropriate vector configuration, i.e. that Q-coefficients are elements of (-1,0,1) and k-coefficient is an element of (0,1)
-#if DEBUG
-    for (int i = 0; i < N_COEFFS - 1; ++i) {
-        short int c = res_coeffs[i];
-        if (!(c == -1 || c == 0 || c == 1))
-            warning_verbose("Sum of vectors with labels (%d,%d) does not "
-                    "correspond to an appropriate configuration.", label_a,label_b);
-    }
-    short int c = res_coeffs[N_COEFFS - 1];
-    if (!(c == 0 || c == 1))
-        warning_verbose("Sum of vectors with labels (%d,%d) does not "
-                "correspond to an appropriate configuration.", label_a,label_b);
-#endif
-
-    return config2label(res_coeffs,N_COEFFS);
-}
-
-
-
 short int sum_vectors(const short int labels[], size_t size) {
     if (size == 1) return labels[0];
 
-    short int result = sum_two_vectors(labels[0],labels[1]);
+    short int temp_coeff;
+    short int result = 0;
 
-    for (size_t i = 2; i < size; ++i) {
-        if (labels[i] == ZERO_LABEL) continue;
-        result = sum_two_vectors(result,labels[i]);
+    // Q-coefficients are element in (-1,0,1)
+    for (int i = 0; i < N_COEFFS - 1; ++i) {
+        temp_coeff = 0;
+        int Q_coeff_power = (int)pow(3,i);
+        for (int j = 0; j < size; ++j) {
+            short int tempi = (labels[j]/Q_coeff_power) % 3;
+            temp_coeff += tempi;
+        }
+        result += (temp_coeff - size + 1) * Q_coeff_power;
     }
+
+    // k-coefficients are element in (0,1)
+    int k_coeff_power = (int)pow(3,N_COEFFS - 1);
+    temp_coeff = 0;
+    for (int j = 0; j < size; ++j) {
+        short int tempi = (labels[j]/k_coeff_power) % 3;
+        temp_coeff += tempi;
+    }
+    result += temp_coeff * k_coeff_power;
+
+    // If DEBUG==true, check that sum is an appropriate vector configuration,
+    // i.e. that Q-coefficients are elements of (-1,0,1) and k-coefficient is
+    // an element of (0,1)
+#if DEBUG
+    short int res_coeffs[N_COEFFS];
+    label2config(result,res_coeffs,N_COEFFS);
+    for (int i = 0; i < N_COEFFS - 1; ++i) {
+        short int c = res_coeffs[i];
+        if (!(c == -1 || c == 0 || c == 1))
+            warning("Sum of vectors does not correspond to an appropriate "
+                    "configuration.");
+    }
+    short int c = res_coeffs[N_COEFFS - 1];
+    if (!(c == 0 || c == 1))
+        warning("Sum of vectors does not correspond to an appropriate "
+                "configuration.");
+#endif
+
     return result;
 }
 
