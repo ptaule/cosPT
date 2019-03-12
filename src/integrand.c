@@ -193,6 +193,51 @@ inline int heaviside_theta(
 
 
 
+inline static vfloat integrand_term(
+        const short int arguments_l[N_KERNEL_ARGS],
+        const short int arguments_r[N_KERNEL_ARGS],
+        const diagram_t* diagram,
+        const integration_input_t* input,
+        const table_pointers_t* data_tables
+        )
+{
+    short int m = diagram->m;
+    short int l = diagram->l;
+    short int r = diagram->r;
+
+    vfloat result = 1;
+    // If right kernel has only one argument, its value is 1
+    if (m == 1 && r == 0) {
+        result *= compute_SPT_kernel(arguments_l, input->component_a,
+                data_tables->alpha, data_tables->beta,
+                data_tables->kernels);
+    }
+    // If there are no "self" loops, and the components to compute are
+    // equal, the kernels are equal
+    else if (l == 0 && r == 0 && input->component_a == input->component_b) {
+        result *= pow(compute_SPT_kernel(arguments_l, input->component_a,
+                    data_tables->alpha, data_tables->beta,
+                    data_tables->kernels) ,2);
+    // In DEBUG-mode, check that kernel arguments in fact are equal in this
+    // case
+#if DEBUG
+        for (int i = 0; i < N_KERNEL_ARGS; ++i) {
+            if (arguments_l[i] != arguments_r[i])
+                warning("Arguments l & r were wrongly assumed equal.");
+        }
+#endif
+    }
+    else {
+        result *= compute_SPT_kernel(arguments_l, input->component_a,
+                data_tables->alpha, data_tables->beta, data_tables->kernels)
+            * compute_SPT_kernel(arguments_r, input->component_b,
+                    data_tables->alpha, data_tables->beta, data_tables->kernels);
+    }
+    return result;
+}
+
+
+
 static void print_integrand_info(
         short int arguments_l[N_KERNEL_ARGS],
         short int arguments_r[N_KERNEL_ARGS],
@@ -242,6 +287,7 @@ static void print_integrand_info(
 }
 
 
+
 vfloat sign_flip_symmetrization(
         const short int rearrangement[],
         const diagram_t* diagram,
@@ -276,22 +322,18 @@ vfloat sign_flip_symmetrization(
 #if DEBUG
         print_integrand_info(arguments_l, arguments_r, signs, diagram);
 #endif
-
         vfloat k1 = compute_k1(diagram->m, rearrangement, signs,
                 data_tables->bare_scalar_products);
         int h_theta = heaviside_theta(diagram->m, k1, rearrangement,
                 data_tables->Q_magnitudes);
         if (h_theta == 0) continue;
-        result += h_theta * gsl_spline_eval(input->spline,k1,input->acc)
-            * compute_SPT_kernel(arguments_l, input->component_a,
-                    data_tables->alpha, data_tables->beta,
-                    data_tables->kernels)
-            * compute_SPT_kernel(arguments_r, input->component_b,
-                    data_tables->alpha, data_tables->beta,
-                    data_tables->kernels);
+
+        vfloat partial_result = h_theta * gsl_spline_eval(input->spline,k1,input->acc);
+        partial_result *= integrand_term(arguments_l, arguments_r, diagram, input, data_tables);
 #if DEBUG
-        printf("\t\t=> result = %f\n",result);
+        printf("\t\t=> partial result = %f\n",partial_result);
 #endif
+        result += partial_result;
     }
     return result;
 }
