@@ -146,7 +146,7 @@ void compute_alpha_beta_tables(
 
 // This function computes (addition to) kernel index for fundamental vector
 // arguments. (It assumes that the arguments are fundamentals.)
-short int kernel_index_from_fundamental(short int argument) {
+inline static short int kernel_index_from_fundamental(short int argument) {
     short int index = 0;
     short int coeffs[N_COEFFS] = {};
     label2config(argument,coeffs,N_COEFFS);
