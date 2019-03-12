@@ -51,20 +51,6 @@ void find_kernel_arguments(
         short int arguments_r[]
         );
 
-vfloat compute_k1(
-        short int m,
-        const int short rearrangement[],
-        const int short signs[],
-        const vfloat bare_scalar_products[][N_COEFFS]
-        );
-
-int heaviside_theta(
-        short int m,
-        vfloat k1,
-        const int short rearrangement[],
-        const vfloat Q_magnitudes[]
-        );
-
 vfloat sign_flip_symmetrization(
         const short int rearrangement[],
         const diagram_t* diagram,
