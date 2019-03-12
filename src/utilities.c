@@ -13,45 +13,6 @@
 
 
 
-void label2config(
-        short int label,    // in, label element in [0, N_CONFIG - 1]
-        short int config[], // out, array of base 3 digits
-        size_t size   // in, size of coefficients
-        )
-{
-    // Q-coefficients are element in (-1,0,1)
-    for (size_t i = 0; i < size - 1; ++i) {
-        config[i] = (label % 3) - 1;
-        label /= 3;
-    }
-
-    // k-coefficient (last coefficient) is element in (0,1)
-
-    config[size - 1] = label % 3;
-}
-
-
-
-short int config2label(
-        const short int config[], // in, array of base 3 digits
-        size_t size         // in, size of coefficients
-        )
-{
-    short int label = 0;
-
-    // For Q-coefficients, add 1 to obtain range (0,1,2)
-    for (size_t i = 0; i < size - 1; ++i) {
-        label += (config[i] + 1) * pow(3,i);
-    }
-
-    // For k-coefficient, do _not_ add 1, range is (0,1)
-    label += config[size-1] * pow(3,size - 1);
-
-    return label;
-}
-
-
-
 short int zero_label() {
     const short int coeffs[N_COEFFS] = {};
     return config2label(coeffs, N_COEFFS);
