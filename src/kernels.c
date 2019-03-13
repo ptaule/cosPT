@@ -172,7 +172,7 @@ void kernel_index_from_arguments(
         )
 {
     // In DEBUG-mode, check that non-zero arguments (zero_label) are unique
-#if DEBUG
+#if DEBUG >= 1
     if (!unique_elements(arguments,N_KERNEL_ARGS,ZERO_LABEL))
         warning("Duplicate vector arguments passed to kernel.");
 #endif
@@ -201,7 +201,7 @@ void kernel_index_from_arguments(
         }
         else {
             // In DEBUG-mode, check that this is in fact a fundamental vector
-#if DEBUG
+#if DEBUG >= 1
             if(!is_fundamental(arguments[i]))
                 warning("Kernel argument is neither 0, k-type, nor fundamental.");
 #endif
@@ -215,7 +215,7 @@ void kernel_index_from_arguments(
     *index = temp_index;
     *n = n_k_vectors + n_fundamentals;
 
-#if DEBUG
+#if DEBUG >= 1
     if (n_k_vectors > 1)
         warning("More than one kernel argument is k-type.");
 #endif

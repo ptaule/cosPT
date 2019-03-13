@@ -220,7 +220,7 @@ inline static vfloat integrand_term(
                     data_tables->kernels) ,2);
     // In DEBUG-mode, check that kernel arguments in fact are equal in this
     // case
-#if DEBUG
+#if DEBUG >= 1
         for (int i = 0; i < N_KERNEL_ARGS; ++i) {
             if (arguments_l[i] != arguments_r[i])
                 warning("Arguments l & r were wrongly assumed equal.");
@@ -319,7 +319,7 @@ vfloat sign_flip_symmetrization(
 
         find_kernel_arguments(diagram, rearrangement, signs, arguments_l,
                 arguments_r);
-#if DEBUG
+#if DEBUG >= 2
         print_integrand_info(arguments_l, arguments_r, signs, diagram);
 #endif
         vfloat k1 = compute_k1(diagram->m, rearrangement, signs,
@@ -330,7 +330,7 @@ vfloat sign_flip_symmetrization(
 
         vfloat partial_result = h_theta * gsl_spline_eval(input->spline,k1,input->acc);
         partial_result *= integrand_term(arguments_l, arguments_r, diagram, input, data_tables);
-#if DEBUG
+#if DEBUG >= 2
         printf("\t\t=> partial result = %f\n",partial_result);
 #endif
         result += partial_result;
@@ -350,8 +350,8 @@ vfloat loop_momenta_symmetrization(
     short int r = diagram->r;
     short int m = diagram->m;
 
-#if DEBUG
-    if ((m + l + r) != (LOOPS + 1)) error("m + r + l != LOOPS + 1");
+#if DEBUG >= 1
+    if ((m + l + r) != (LOOPS + 1)) warning("m + r + l != LOOPS + 1.");
 #endif
 
     vfloat result = 0;

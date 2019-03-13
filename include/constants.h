@@ -33,7 +33,9 @@
 // Maximum input power spectrum resolution
 #define MAX_RESOLUTION 200
 
-// Debug mode. Performs additional checks during runtime
+// Debug modes:
+// 1: Perform additional checks during runtime.
+// 2: In addition, print info during runtime.
 #ifndef DEBUG
 #define DEBUG 0
 #endif

@@ -67,8 +67,10 @@ short int sum_vectors(const short int labels[], size_t n_vecs) {
         }
     }
 
-    // If DEBUG==true, check that sum is an appropriate vector configuration, i.e. that Q-coefficients are elements of (-1,0,1) and k-coefficient is an element of (0,1)
-#if DEBUG
+    // If DEBUG==true, check that sum is an appropriate vector configuration,
+    // i.e. that Q-coefficients are elements of (-1,0,1) and k-coefficient is
+    // an element of (0,1)
+#if DEBUG >= 1
     for (int i = 0; i < N_COEFFS - 1; ++i) {
         short int c = res_coeffs[i];
         if (!(c == -1 || c == 0 || c == 1))
