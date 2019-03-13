@@ -97,7 +97,8 @@ void write_PS(
     }
 
     fprintf(fp,"Matter power spectrum P(k) at %d-loop\n",LOOPS);
-    fprintf(fp,"for k=%e to %e (h/Mpc)\n",K_MIN,K_MAX);
+    fprintf(fp,"for k=%e to %e (h/Mpc)\n",
+            wavenumbers[0], wavenumbers[n_points-1]);
     fprintf(fp,"number of wavenumbers: %d\n", n_points);
     fprintf(fp,"\tk\t\tP(k)\n");
 

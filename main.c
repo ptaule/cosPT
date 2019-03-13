@@ -19,6 +19,36 @@
 #include "include/integrand.h"
 #include "include/power_spectrum_io.h"
 
+// Min/max wavenumber
+#define K_MIN 1e-4
+#define K_MAX 6.6
+
+// Number of evaluation points between k=K_MIN and k=K_MAX
+#define N_POINTS 114
+
+// Input power spectrum file
+#define INPUT_FILE \
+    "/home/pettertaule/Downloads/class_public-2.7.1/output/ps_z0pk.dat"
+// Output power spectrum to file
+#define OUTPUT_FILE \
+    "output_" TOSTRING(LOOPS) "loop.dat"
+
+// CUBA settings
+#define NVEC 1
+#define EPSREL 1e-3
+#define EPSABS 1e-12
+#define VERBOSE 0
+#define LAST 4
+#define SEED 0
+#define MINEVAL 0
+#define MAXEVAL 1e5
+
+#define STATEFILE NULL
+#define SPIN NULL
+
+#define NNEW 1000
+#define NMIN 2
+#define FLATNESS 25.
 
 
 int cuba_integrand(
@@ -58,23 +88,6 @@ int cuba_integrand(
     return 0;
 }
 
-/* CUBA settings */
-#define NVEC 1
-#define EPSREL 1e-3
-#define EPSABS 1e-12
-#define VERBOSE 0
-#define LAST 4
-#define SEED 0
-#define MINEVAL 0
-#define MAXEVAL 1e4
-
-#define STATEFILE NULL
-#define SPIN NULL
-
-#define NNEW 1000
-#define NMIN 2
-#define FLATNESS 25.
-
 
 
 int main () {
@@ -87,9 +100,8 @@ int main () {
 
     gsl_interp_accel* acc;
     gsl_spline* spline;
-    const char* filename = "/home/pettertaule/Dropbox/Mathematica/simple00_pk.dat";
 
-    read_PS(filename,&acc,&spline);
+    read_PS(INPUT_FILE,&acc,&spline);
 
     integration_input_t data = {
         .k = 0.0,
@@ -136,7 +148,7 @@ int main () {
                 k, (double)*result, (double)error[0], (double)prob[0]);
     }
 
-    write_PS("output.txt",N_POINTS,wavenumbers,power_spectrum);
+    write_PS(OUTPUT_FILE,N_POINTS,wavenumbers,power_spectrum);
 
     free(wavenumbers);
     free(power_spectrum);

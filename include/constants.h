@@ -17,15 +17,6 @@
 #ifndef COMPONENTS
 #define COMPONENTS 2
 #endif
-#ifndef K_MIN
-#define K_MIN 10e-5
-#endif
-#ifndef K_MAX
-#define K_MAX 0.7
-#endif
-
-// Number of evaluation points between k=K_MIN and k=K_MAX
-#define N_POINTS 114
 
 // Which GSL interpolation routine to use
 #define INTERPOL_TYPE gsl_interp_cspline
@@ -66,6 +57,8 @@ typedef double vfloat;
     {fprintf(stderr, "%s:%d,\tWarning: " fmt "\n",__FILE__, __LINE__, __VA_ARGS__); \
         exit(EXIT_FAILURE); }
 
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
 
 // Constants:
 #define PI 3.14159265359
