@@ -58,25 +58,16 @@ vfloat partial_SPT_sum(
         for (int i = 0; i < n - m; ++i) {
             args_r[i] = arguments[gsl_combination_get(comb_r,i)];
         }
-        /* printf("args_l = "); */
-        /* for (int i = 0; i < N_KERNEL_ARGS; ++i) { */
-        /*     printf("%d, ",args_l[i]); */
-        /* } */
-        /* printf("args_r = "); */
-        /* for (int i = 0; i < N_KERNEL_ARGS; ++i) { */
-        /*     printf("%d, ",args_r[i]); */
-        /* } */
-        /* printf("\t|\t"); */
 
         short int sum_l = sum_vectors(args_l,N_KERNEL_ARGS);
         short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS);
-        /* printf("sum_l  = %i, ", sum_l ); */
-        /* printf("sum_r  = %i\n", sum_r ); */
 
         // F_n <-> component 0; G_n <-> component 1
         value += compute_SPT_kernel(args_l,1,alpha,beta,kernels) *
-            (  a * matrix_get(alpha,sum_l,sum_r) * compute_SPT_kernel(args_r,0,alpha,beta,kernels)
-             + b * matrix_get(beta ,sum_l,sum_r) * compute_SPT_kernel(args_r,1,alpha,beta,kernels)
+            (  a * matrix_get(alpha,sum_l,sum_r)
+               * compute_SPT_kernel(args_r,0,alpha,beta,kernels)
+             + b * matrix_get(beta ,sum_l,sum_r)
+               * compute_SPT_kernel(args_r,1,alpha,beta,kernels)
             );
 
     } while (gsl_combination_next(comb_l) == GSL_SUCCESS &&
@@ -107,13 +98,13 @@ vfloat compute_SPT_kernel(
     short int argument_index = 0;
     short int n = 0;
     kernel_index_from_arguments(arguments,&argument_index,&n);
-    short int index = combined_kernel_index(argument_index,component);
 
     // For SPT kernels, F_1 = G_1 = ... = 1
     if (n == 1) {
         return 1.0;
     }
 
+    short int index = combined_kernel_index(argument_index,component);
     // Check if the kernel is already computed
     if (kernels[index].computed) return kernels[index].value;
 
