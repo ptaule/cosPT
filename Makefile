@@ -29,7 +29,7 @@ run: all
 	./$(EXE)
 
 $(EXE): main.o $(OBJ)
-	$(CC) $(LDFLAGS) $(LDFLAGS_GSL) $^ $(LDLIBS) $(LDLIBS_GSL) $(LDLIBS_CUBA) -o $@
+	$(CC) $(LDFLAGS) $(LDFLAGS_GSL) $(LDFLAGS_CUBA) $^ $(LDLIBS) $(LDLIBS_GSL) $(LDLIBS_CUBA) -o $@
 
 main.o: main.c $(HEADERS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
