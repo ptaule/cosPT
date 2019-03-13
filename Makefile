@@ -22,15 +22,16 @@ LDLIBS_CUBA  = -lcuba
 LDFLAGS += $(LDFLAGS_GSL) $(LDFLAGS_CUBA)
 LDLIBS += $(LDLIBS_GSL) $(LDLIBS_CUBA) -lm
 
-all:   CFLAGS   += -O3
-1loop: CPPFLAGS += -DDEBUG=0 -DLOOPS=1
-1loop: CFLAGS   += -O3
-2loop: CPPFLAGS += -DDEBUG=0 -DLOOPS=2
-2loop: CFLAGS   += -O3
-debug: CPPFLAGS += -DDEBUG=2 -DN_CORES=0
-debug: CFLAGS   += -O0 -g
+all:   			CFLAGS   += -O3
+1loop: 			CPPFLAGS += -DDEBUG=0 -DLOOPS=1
+1loop: 			CFLAGS   += -O3
+2loop: 			CPPFLAGS += -DDEBUG=0 -DLOOPS=2
+2loop: 			CFLAGS   += -O3
+debug: 			CPPFLAGS += -DDEBUG=2 -DN_CORES=0
+debug: 			CFLAGS   += -O0 -g
+profile:		CFLAGS   += -O3 -g -pg
 
-.PHONY: all clean run 1loop 2loop test_interface
+.PHONY: all clean run 1loop 2loop profile
 
 all: $(EXE)
 1loop: $(EXE)
@@ -42,6 +43,9 @@ run: all
 
 $(EXE): main.o $(OBJ)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+profile: main.o $(OBJ)
+	$(CC) -g -pg $(LDFLAGS) $(LDFLAGS_GSL) $(LDFLAGS_CUBA) $^ $(LDLIBS) $(LDLIBS_GSL) $(LDLIBS_CUBA) -o $(EXE)
 
 main.o: main.c $(HEADERS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
