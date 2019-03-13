@@ -326,10 +326,16 @@ vfloat sign_flip_symmetrization(
                 data_tables->bare_scalar_products);
         int h_theta = heaviside_theta(diagram->m, k1, rearrangement,
                 data_tables->Q_magnitudes);
-        if (h_theta == 0) continue;
+        if (h_theta == 0) {
+#if DEBUG >= 2
+        printf("\t\t=> partial result = 0\n");
+#endif
+            continue;
+        }
 
         vfloat partial_result = h_theta * gsl_spline_eval(input->spline,k1,input->acc);
-        partial_result *= integrand_term(arguments_l, arguments_r, diagram, input, data_tables);
+        partial_result *= integrand_term(arguments_l, arguments_r, diagram,
+                input, data_tables);
 #if DEBUG >= 2
         printf("\t\t=> partial result = %f\n",partial_result);
 #endif
