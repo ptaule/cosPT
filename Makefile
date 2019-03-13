@@ -25,9 +25,10 @@ all:            CFLAGS += -O3
 1loop:          CFLAGS += -O3 -DDEBUG=0 -DLOOPS=1
 2loop:          CFLAGS += -O3 -DDEBUG=0 -DLOOPS=2
 debug:          CFLAGS += -O0 -DDEBUG=2 -g
+profile:		CFLAGS += -O3 -g -pg
 test_interface: CFLAGS += -fPIC
 
-.PHONY: all clean run 1loop 2loop test_interface
+.PHONY: all clean run 1loop 2loop profile test_interface
 
 all: $(EXE)
 1loop: $(EXE)
@@ -39,6 +40,9 @@ run: all
 
 $(EXE): main.o $(OBJ)
 	$(CC) $(LDFLAGS) $(LDFLAGS_GSL) $(LDFLAGS_CUBA) $^ $(LDLIBS_GSL) $(LDLIBS_CUBA) $(LDLIBS) -o $@
+
+profile: main.o $(OBJ)
+	$(CC) -g -pg $(LDFLAGS) $(LDFLAGS_GSL) $(LDFLAGS_CUBA) $^ $(LDLIBS) $(LDLIBS_GSL) $(LDLIBS_CUBA) -o $(EXE)
 
 main.o: main.c $(HEADERS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
