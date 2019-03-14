@@ -69,7 +69,7 @@ int cuba_integrand(
         case 1:
             vars.magnitudes[0] = K_MIN * pow(ratio,xx[0]);
             vars.cos_theta[0] = xx[1];
-            jacobian = K_MIN * log(ratio);
+            jacobian = K_MIN * log(ratio) * pow(vars.magnitudes[0],2);
             break;
         case 2:
             vars.magnitudes[0] = K_MIN * pow(ratio,xx[0]);
@@ -78,7 +78,8 @@ int cuba_integrand(
             vars.cos_theta[1] = xx[3];
             vars.phi[0] = xx[4] * TWOPI;
             jacobian = TWOPI * pow(K_MIN * log(ratio),2)
-                * xx[0] * pow(K_MIN/K_MAX,xx[0]*(1 + xx[1]));
+                * xx[0] * pow(K_MIN/K_MAX,xx[0]*(1 + xx[1]))
+                * pow(vars.magnitudes[0],2) * pow(vars.magnitudes[1],2);
             break;
         default:
             warning_verbose("No jacobian for LOOPS = %d",LOOPS);
