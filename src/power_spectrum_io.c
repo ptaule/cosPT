@@ -96,11 +96,11 @@ void write_PS(
         warning_verbose("Could not open %s for writing.",filename);
     }
 
-    fprintf(fp,"Matter power spectrum P(k) at %d-loop\n",LOOPS);
-    fprintf(fp,"for k=%e to %e (h/Mpc)\n",
+    fprintf(fp,"# Matter power spectrum P(k) at %d-loop\n",LOOPS);
+    fprintf(fp,"# for k=%e to %e (h/Mpc)\n",
             wavenumbers[0], wavenumbers[n_points-1]);
-    fprintf(fp,"number of wavenumbers: %d\n", n_points);
-    fprintf(fp,"\tk\t\tP(k)\n");
+    fprintf(fp,"# number of wavenumbers: %d\n", n_points);
+    fprintf(fp,"# \tk\t\tP(k)\n");
 
     for (int i = 0; i < n_points; ++i) {
         fprintf(fp,"\t%e\t%e\n", wavenumbers[i], power_spectrum[i]);
