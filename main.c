@@ -21,10 +21,10 @@
 
 // Min/max wavenumber
 #define K_MIN 1e-4
-#define K_MAX 6.6
+#define K_MAX 44.
 
 // Number of evaluation points between k=K_MIN and k=K_MAX
-#define N_POINTS 114
+#define N_POINTS 132
 
 // Input power spectrum file
 #define INPUT_FILE \
@@ -41,7 +41,7 @@
 #define LAST 4
 #define SEED 0
 #define MINEVAL 0
-#define MAXEVAL 1e5
+#define MAXEVAL 1e6
 
 #define STATEFILE NULL
 #define SPIN NULL
@@ -120,7 +120,7 @@ int main () {
     // - Assuming Q1 > Q2 > ..., hence multiply result by LOOPS factorial
     // - Phi integration of first loop momenta gives a factor 2pi
     // - Conventionally divide by (2pi)^3
-    vfloat overall_factor = pow(2,LOOPS) * gsl_sf_fact(LOOPS) / pow(TWOPI,2);
+    vfloat overall_factor = pow(2,LOOPS) * gsl_sf_fact(LOOPS) * TWOPI;
 
     int nregions, neval, fail;
     cubareal result[1], error[1], prob[1];
