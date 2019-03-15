@@ -25,6 +25,7 @@ vfloat partial_SPT_sum(
 
 vfloat compute_SPT_kernel(
         const short int arguments[],
+        short int n,
         short int component,
         const matrix_t* alpha,
         const matrix_t* beta,

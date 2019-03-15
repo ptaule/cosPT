@@ -38,7 +38,7 @@ void compute_alpha_beta_tables(
         matrix_t* beta
         );
 
-void kernel_index_from_arguments(const short int arguments[], short int* index, short int* n);
+short int kernel_index_from_arguments(const short int arguments[]);
 
 
 inline short int combined_kernel_index(

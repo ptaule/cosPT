@@ -165,23 +165,15 @@ inline static short int kernel_index_from_fundamental(short int argument) {
 
 
 
-void kernel_index_from_arguments(
-        const short int arguments[], /* in, kernel arguments                            */
-        short int* index,            /* out, kernel index                               */
-        short int* n                 /* out, number of non-zero arguments/kernel number */
-        )
-{
+short int kernel_index_from_arguments(const short int arguments[]) {
     // In DEBUG-mode, check that non-zero arguments (zero_label) are unique
 #if DEBUG >= 1
     if (!unique_elements(arguments,N_KERNEL_ARGS,ZERO_LABEL))
         warning("Duplicate vector arguments passed to kernel.");
+    short int n_k_vectors = 0;
 #endif
 
-    // Define temp index used in calculation
-    short int temp_index = 0;
-    // Define counters for k-type vectors and fundamentals
-    short int n_k_vectors = 0;
-    short int n_fundamentals = 0;
+    short int index = 0;
     // Define block size. A block consists of all fundamental vector argument
     // combinations.
     short int block_size = pow(4,LOOPS);
@@ -194,27 +186,26 @@ void kernel_index_from_arguments(
         // present. In our vector-label convention, k is the last coefficient,
         // hence k is present if label >= N_CONFIGS/2
         if (arguments[i] >= N_CONFIGS/2) {
+            index += (arguments[i] - N_CONFIGS/2 + 1) * block_size;
+#if DEBUG >= 1
             n_k_vectors++;
-            temp_index += (arguments[i] - N_CONFIGS/2 + 1) * block_size;
+#endif
         }
         else {
             // In DEBUG-mode, check that this is in fact a fundamental vector
 #if DEBUG >= 1
             if(!is_fundamental(arguments[i]))
-                warning("Kernel argument is neither 0, k-type, nor fundamental.");
+                warning("Kernel argument is neither 0, k-type, nor "
+                        "fundamental.");
 #endif
 
-            n_fundamentals++;
-            temp_index += kernel_index_from_fundamental(arguments[i]);
+            index += kernel_index_from_fundamental(arguments[i]);
         }
     }
-
-    // Set out-parameters
-    *index = temp_index;
-    *n = n_k_vectors + n_fundamentals;
-
 #if DEBUG >= 1
     if (n_k_vectors > 1)
         warning("More than one kernel argument is k-type.");
 #endif
+
+    return index;
 }

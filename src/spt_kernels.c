@@ -63,11 +63,11 @@ vfloat partial_SPT_sum(
         short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS);
 
         // F_n <-> component 0; G_n <-> component 1
-        value += compute_SPT_kernel(args_l,1,alpha,beta,kernels) *
+        value += compute_SPT_kernel(args_l,m,1,alpha,beta,kernels) *
             (  a * matrix_get(alpha,sum_l,sum_r)
-               * compute_SPT_kernel(args_r,0,alpha,beta,kernels)
+               * compute_SPT_kernel(args_r,n-m,0,alpha,beta,kernels)
              + b * matrix_get(beta ,sum_l,sum_r)
-               * compute_SPT_kernel(args_r,1,alpha,beta,kernels)
+               * compute_SPT_kernel(args_r,n-m,1,alpha,beta,kernels)
             );
 
     } while (gsl_combination_next(comb_l) == GSL_SUCCESS &&
@@ -87,24 +87,33 @@ vfloat partial_SPT_sum(
 
 vfloat compute_SPT_kernel(
         const short int arguments[], /* kernel arguments                                  */
+        short int n,                 /* order in perturbation theory expansion            */
         short int component,         /* component to compute, NB: assumed to be 0-indexed */
         const matrix_t* alpha,       /* table of alpha function values for various input  */
         const matrix_t* beta,        /* table of beta function values for various input   */
         kernel_value_t* kernels      /* kernel table                                      */
         )
 {
-    // Compute kernel index, this depends on arguments (argument_index) and
-    // which component is to be computed
-    short int argument_index = 0;
-    short int n = 0;
-    kernel_index_from_arguments(arguments,&argument_index,&n);
+    // DEBUG: check that the number of non-zero arguments is in fact n
+#if DEBUG >= 1
+    int n_args = 0;
+    for (int i = 0; i < N_KERNEL_ARGS; ++i) {
+        if (arguments[i] != ZERO_LABEL) n_args++;
+    }
+    if (n_args != n)
+        warning_verbose("Number of arguments is %d, while n is %d.", n_args,n);
+#endif
 
     // For SPT kernels, F_1 = G_1 = ... = 1
     if (n == 1) {
         return 1.0;
     }
 
-    short int index = combined_kernel_index(argument_index,component);
+    // Compute kernel index, this depends on arguments (argument_index) and
+    // which component is to be computed
+    short int argument_index = kernel_index_from_arguments(arguments);
+    short int index          = combined_kernel_index(argument_index,component);
+
     // Check if the kernel is already computed
     if (kernels[index].computed) return kernels[index].value;
 
