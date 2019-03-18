@@ -28,7 +28,7 @@
 
 // Input power spectrum file
 #define INPUT_FILE \
-    "/home/pettertaule/Downloads/class_public-2.7.1/output/ps_z0pk.dat"
+    "/scratch/class_public-2.7.1/output/PS_linear_z000_pk.dat"
 // Output power spectrum to file
 #define OUTPUT_FILE \
     "output_" TOSTRING(LOOPS) "loop.dat"
