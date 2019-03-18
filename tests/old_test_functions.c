@@ -6,7 +6,7 @@ void testIntegrandComputation() {
     gsl_spline* spline;
     const char* filename = "/home/pettertaule/Dropbox/Mathematica/simple00_pk.dat";
 
-    read_input_PS(filename,&acc,&spline);
+    read_PS(filename,&acc,&spline);
 
     integration_variables_t vars = {
         .magnitudes = {0.2},
@@ -46,10 +46,10 @@ void testKernelComputer() {
     // Q_1     <-> 5
     // - Q_1   <-> 3
     // Q_2     <-> 7
-    // - Q_2   <-> 7
+    // - Q_2   <-> 1
 
-    matrix_vfloat* alpha = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
-    matrix_vfloat* beta  = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
+    matrix_t* alpha = matrix_alloc(N_CONFIGS,N_CONFIGS);
+    matrix_t* beta  = matrix_alloc(N_CONFIGS,N_CONFIGS);
     vfloat bare_scalar_products[N_COEFFS][N_COEFFS];
 
     compute_bare_scalar_products(k,&vars,bare_scalar_products);
@@ -64,8 +64,8 @@ void testKernelComputer() {
 
     // Free allocated memory
     free(kernels);
-    gsl_matrix_free(alpha);
-    gsl_matrix_free(beta);
+    matrix_free(alpha);
+    matrix_free(beta);
 }
 
 
@@ -92,8 +92,8 @@ void testAlphaBeta() {
     };
 
     vfloat bare_scalar_products[N_COEFFS][N_COEFFS];
-    matrix_vfloat* alpha = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
-    matrix_vfloat* beta = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
+    matrix_t* alpha = matrix_alloc(N_CONFIGS,N_CONFIGS);
+    matrix_t* beta =  matrix_alloc(N_CONFIGS,N_CONFIGS);
 
     compute_bare_scalar_products(k,&vars,bare_scalar_products);
     compute_alpha_beta_tables(bare_scalar_products,alpha,beta);
@@ -103,8 +103,8 @@ void testAlphaBeta() {
     printf("beta=\n");
     print_gsl_matrix(beta,N_CONFIGS,N_CONFIGS);
 
-    gsl_matrix_free(alpha);
-    gsl_matrix_free(beta);
+    matrix_free(alpha);
+    matrix_free(beta);
 }
 
 
@@ -216,7 +216,7 @@ void testScalarProducts() {
         .phi        = {0}
     };
 
-    matrix_vfloat* scalar_products = gsl_matrix_alloc(N_CONFIGS,N_CONFIGS);
+    matrix_t* scalar_products = matrix_alloc(N_CONFIGS,N_CONFIGS);
     vfloat bare_scalar_products[N_COEFFS][N_COEFFS];
 
     compute_bare_scalar_products(k,&vars,bare_scalar_products);
@@ -224,9 +224,8 @@ void testScalarProducts() {
 
     for (int i = 0; i < N_CONFIGS; ++i) {
         for (int j = 0; j < N_CONFIGS; ++j) {
-            printf("%2.2f  ",gsl_matrix_get(scalar_products,i,j));
+            printf("%2.2f  ",matrix_get(scalar_products,i,j));
         }
         printf("\n");
     }
 }
-*/
