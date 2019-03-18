@@ -80,11 +80,10 @@ void compute_scalar_products(
     short int a_coeffs[N_COEFFS];
     short int b_coeffs[N_COEFFS];
 
-    // The scalar_products matrix is symmetric, this should be tested for
-    // Diagonally symmetric as well as mirrored around middle row/column
-
+    // Scalar product matrix is symmetric, hence compute indices [a,b] and
+    // [b,a] simultaneously
     for (int a = 0; a < N_CONFIGS; ++a) {
-        for (int b = 0; b < N_CONFIGS; ++b) {
+        for (int b = 0; b <= a; ++b) {
             vfloat product_value = 0;
 
             label2config(a,a_coeffs,N_COEFFS);
@@ -95,15 +94,19 @@ void compute_scalar_products(
                         * bare_scalar_products[i][j];
                 }
             }
-            matrix_set(scalar_products,a,b,product_value);
+            if (a == b) {
+                matrix_set(scalar_products,a,a,product_value);
+            }
+            else {
+                matrix_set(scalar_products,a,b,product_value);
+                matrix_set(scalar_products,b,a,product_value);
+            }
         }
     }
 }
 
 
 
-// Potential tests for alpha/beta:
-// alpha/beta diagonal should always be 2
 void compute_alpha_beta_tables(
         const vfloat bare_scalar_products[][N_COEFFS], /* in, bare scalar products   */
         matrix_t* alpha,                               /* out, matrix of alpha-func. */
@@ -115,6 +118,13 @@ void compute_alpha_beta_tables(
 
     for (int a = 0; a < N_CONFIGS; ++a) {
         for (int b = 0; b < N_CONFIGS; ++b) {
+            // Special case when a == b
+            if (a == b) {
+                matrix_set(alpha,a,b,2.0);
+                matrix_set(beta,a,b,2.0);
+                continue;
+            }
+
             vfloat alpha_val = 0.0;
             vfloat beta_val  = 0.0;
 
