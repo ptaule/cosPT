@@ -77,9 +77,11 @@ int cuba_integrand(
             vars.cos_theta[0] = xx[2];
             vars.cos_theta[1] = xx[3];
             vars.phi[0] = xx[4] * TWOPI;
-            jacobian = TWOPI * pow(K_MIN * log(ratio),2)
-                * xx[0] * pow(K_MIN/K_MAX,xx[0]*(1 + xx[1]))
-                * pow(vars.magnitudes[0],2) * pow(vars.magnitudes[1],2);
+            jacobian = TWOPI * xx[0]
+                * pow(K_MIN * log(ratio),2)
+                * pow(K_MIN/K_MAX,xx[0]*(1 + xx[1]))
+                * pow(vars.magnitudes[0],2)
+                * pow(vars.magnitudes[1],2);
             break;
         default:
             warning_verbose("No jacobian for LOOPS = %d",LOOPS);
@@ -145,7 +147,7 @@ int main () {
 
         power_spectrum[i] = (double)result[0];
 
-        printf("k  = %f, result = %f, error = %f, prob = %f\n",
+        printf("k  = %f, result = %e, error = %f, prob = %f\n",
                 k, (double)*result, (double)error[0], (double)prob[0]);
     }
 
