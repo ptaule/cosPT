@@ -193,55 +193,9 @@ inline static int heaviside_theta(
 
 
 
-inline static vfloat integrand_term(
+static void print_integrand_info(
         const short int arguments_l[N_KERNEL_ARGS],
         const short int arguments_r[N_KERNEL_ARGS],
-        const diagram_t* diagram,
-        const integration_input_t* input,
-        const table_pointers_t* data_tables
-        )
-{
-    short int m = diagram->m;
-    short int l = diagram->l;
-    short int r = diagram->r;
-
-    vfloat result = 1;
-    // If right kernel has only one argument, its value is 1
-    if (m == 1 && r == 0) {
-        result *= compute_SPT_kernel(arguments_l, 2*l + m, input->component_a,
-                data_tables->alpha, data_tables->beta, data_tables->kernels);
-    }
-    // If there are no "self" loops, and the components to compute are
-    // equal, the kernels are equal
-    else if (l == 0 && r == 0 && input->component_a == input->component_b) {
-        result *= pow(compute_SPT_kernel(arguments_l, m, input->component_a,
-                    data_tables->alpha, data_tables->beta,
-                    data_tables->kernels) ,2);
-    // In DEBUG-mode, check that kernel arguments in fact are equal in this
-    // case
-#if DEBUG >= 1
-        for (int i = 0; i < N_KERNEL_ARGS; ++i) {
-            if (arguments_l[i] != arguments_r[i])
-                warning("Arguments l & r were wrongly assumed equal.");
-        }
-#endif
-    }
-    else {
-        result *= compute_SPT_kernel(arguments_l, 2*l + m, input->component_a,
-                data_tables->alpha, data_tables->beta, data_tables->kernels)
-            * compute_SPT_kernel(arguments_r, 2*r + m, input->component_b,
-                    data_tables->alpha, data_tables->beta,
-                    data_tables->kernels);
-    }
-    return result;
-}
-
-
-
-static void print_integrand_info(
-        short int arguments_l[N_KERNEL_ARGS],
-        short int arguments_r[N_KERNEL_ARGS],
-        const short int signs[],
         const diagram_t* diagram
         )
 {
@@ -288,6 +242,51 @@ static void print_integrand_info(
 
 
 
+inline static vfloat integrand_term(
+        const short int arguments_l[N_KERNEL_ARGS],
+        const short int arguments_r[N_KERNEL_ARGS],
+        const diagram_t* diagram,
+        const integration_input_t* input,
+        const table_pointers_t* data_tables
+        )
+{
+    short int m = diagram->m;
+    short int l = diagram->l;
+    short int r = diagram->r;
+
+    vfloat result = 1;
+    // If right kernel has only one argument, its value is 1
+    if (m == 1 && r == 0) {
+        result *= compute_SPT_kernel(arguments_l, 2*l + m, input->component_a,
+                data_tables->alpha, data_tables->beta, data_tables->kernels);
+    }
+    // If there are no "self" loops, and the components to compute are
+    // equal, the kernels are equal
+    else if (l == 0 && r == 0 && input->component_a == input->component_b) {
+        result *= pow(compute_SPT_kernel(arguments_l, m, input->component_a,
+                    data_tables->alpha, data_tables->beta,
+                    data_tables->kernels) ,2);
+    // In DEBUG-mode, check that kernel arguments in fact are equal in this
+    // case
+#if DEBUG >= 1
+        for (int i = 0; i < N_KERNEL_ARGS; ++i) {
+            if (arguments_l[i] != arguments_r[i])
+                warning("Arguments l & r were wrongly assumed equal.");
+        }
+#endif
+    }
+    else {
+        result *= compute_SPT_kernel(arguments_l, 2*l + m, input->component_a,
+                data_tables->alpha, data_tables->beta, data_tables->kernels)
+            * compute_SPT_kernel(arguments_r, 2*r + m, input->component_b,
+                    data_tables->alpha, data_tables->beta,
+                    data_tables->kernels);
+    }
+    return result;
+}
+
+
+
 vfloat sign_flip_symmetrization(
         const short int rearrangement[],
         const diagram_t* diagram,
@@ -320,7 +319,7 @@ vfloat sign_flip_symmetrization(
         find_kernel_arguments(diagram, rearrangement, signs, arguments_l,
                 arguments_r);
 #if DEBUG >= 2
-        print_integrand_info(arguments_l, arguments_r, signs, diagram);
+        print_integrand_info(arguments_l, arguments_r, diagram);
 #endif
         vfloat k1 = compute_k1(diagram->m, rearrangement, signs,
                 data_tables->bare_scalar_products);
@@ -455,7 +454,6 @@ vfloat integrand(
             data_tables.bare_scalar_products);
     compute_alpha_beta_tables(data_tables.bare_scalar_products,
             data_tables.alpha, data_tables.beta);
-
 
     diagram_t diagrams[N_DIAGRAMS];
     possible_diagrams(diagrams);
