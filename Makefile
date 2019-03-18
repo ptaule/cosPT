@@ -11,7 +11,7 @@ HEADERS = $(wildcard $(INC_DIR)/*.h)
 
 TEST_INTERFACE = $(TEST_DIR)/test_interface
 
-CFLAGS   += -Wall -O3 -fPIC
+CFLAGS   += -Wall -O3
 CPPFLAGS += -I/scratch/Cuba-4.2/ -I/scratch/gsl-2.5/
 
 LDFLAGS_GSL  = -L/scratch/gsl-2.5/.libs/ -L/scratch/gsl-2.5/cblas/.libs
@@ -29,7 +29,7 @@ run: all
 	./$(EXE)
 
 $(EXE): main.o $(OBJ)
-	$(CC) $(LDFLAGS) $(LDFLAGS_GSL) $(LDFLAGS_CUBA) $^ $(LDLIBS) $(LDLIBS_GSL) $(LDLIBS_CUBA) -o $@
+	$(CC) $(LDFLAGS) $(LDFLAGS_GSL) $(LDFLAGS_CUBA) $^ $(LDLIBS_GSL) $(LDLIBS_CUBA) $(LDLIBS) -o $@
 
 main.o: main.c $(HEADERS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
