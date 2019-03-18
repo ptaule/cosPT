@@ -12,6 +12,10 @@
 #include "../include/utilities.h"
 
 
+extern void label2config(short int label, short int config[], size_t size);
+extern short int config2label(const short int config[], size_t size);
+
+
 
 short int zero_label() {
     const short int coeffs[N_COEFFS] = {};

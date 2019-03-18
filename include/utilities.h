@@ -17,17 +17,6 @@
 
 // Utility functions
 
-short int zero_label();
-
-bool is_fundamental(short int label);
-bool unique_elements(const short int array[],size_t length, short int skip);
-
-short int sum_vectors(const short int labels[], size_t n_vecs);
-
-void print_gsl_matrix(const gsl_matrix* m, size_t height, size_t width);
-
-
-
 inline void label2config(
         short int label,    // in, label element in [0, N_CONFIG - 1]
         short int config[], // out, array of base 3 digits
@@ -64,5 +53,15 @@ inline short int config2label(
 
     return label;
 }
+
+short int sum_vectors(const short int labels[], size_t n_vecs);
+
+short int zero_label();
+
+bool is_fundamental(short int label);
+bool unique_elements(const short int array[],size_t length, short int skip);
+
+void print_gsl_matrix(const gsl_matrix* m, size_t height, size_t width);
+
 
 #endif /* ifndef UTILITIES_H */
