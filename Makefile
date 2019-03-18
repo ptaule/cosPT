@@ -11,7 +11,6 @@ HEADERS = $(wildcard $(INC_DIR)/*.h)
 
 TEST_INTERFACE = $(TEST_DIR)/test_interface
 
-CFLAGS   += -Wall -O3
 CPPFLAGS += -I/scratch/Cuba-4.2/ -I/scratch/gsl-2.5/
 
 LDFLAGS_GSL  = -L/scratch/gsl-2.5/.libs/ -L/scratch/gsl-2.5/cblas/.libs
@@ -21,9 +20,18 @@ LDLIBS_CUBA  = -lcuba
 
 LDLIBS += -lm
 
-.PHONY: all clean run test_interface
+all:            CFLAGS += -Wall -O3
+1loop:          CFLAGS += -Wall -O3 -DDEBUG=0 -DLOOPS=1
+2loop:          CFLAGS += -Wall -O3 -DDEBUG=0 -DLOOPS=2
+debug:          CFLAGS += -Wall -O0 -DDEBUG=2 -g
+test_interface: CFLAGS += -Wall -fPIC
+
+.PHONY: all clean run 1loop 2loop test_interface
 
 all: $(EXE)
+1loop: $(EXE)
+2loop: $(EXE)
+debug: $(EXE)
 
 run: all
 	./$(EXE)
