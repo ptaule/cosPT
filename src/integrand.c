@@ -246,7 +246,7 @@ static void print_integrand_info(
         )
 {
     printf("(m,l,r) = (%d,%d,%d)\n",diagram->m,diagram->l,diagram->r);
-    printf("\tF(k");
+    printf("\tF%d(k",2*diagram->l + diagram->m);
     short int config[N_COEFFS];
     label2config(arguments_l[0],config,N_COEFFS);
     for (int i = 0; i < LOOPS; ++i) {
@@ -265,7 +265,7 @@ static void print_integrand_info(
             else if (config[j] == 1)  printf("+Q%d, ",j+1);
         }
     }
-    printf(") * F(k");
+    printf(") * F%d(k",2*diagram->r + diagram->m);
     label2config(arguments_r[0],config,N_COEFFS);
     for (int i = 0; i < LOOPS; ++i) {
         if (config[i] == 0) continue;
