@@ -21,10 +21,10 @@
 
 // Min/max wavenumber
 #define K_MIN 1e-4
-#define K_MAX 44.
+#define K_MAX 1e2
 
 // Number of evaluation points between k=K_MIN and k=K_MAX
-#define N_POINTS 132
+#define N_POINTS 139
 
 // Input power spectrum file
 #define INPUT_FILE \
@@ -73,7 +73,7 @@ int cuba_integrand(
             break;
         case 2:
             vars.magnitudes[0] = K_MIN * pow(ratio,xx[0]);
-            vars.magnitudes[1] = K_MIN * pow(ratio, xx[0] * xx[1]);
+            vars.magnitudes[1] = K_MIN * pow(ratio,xx[0] * xx[1]);
             vars.cos_theta[0] = xx[2];
             vars.cos_theta[1] = xx[3];
             vars.phi[0] = xx[4] * TWOPI;
