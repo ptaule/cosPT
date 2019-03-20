@@ -93,12 +93,12 @@ int cuba_integrand(
 
 
 int main () {
-    debug_print("LOOPS         = %d\n", LOOPS);
-    debug_print("N_CONFIGS     = %d\n", N_CONFIGS);
-    debug_print("N_KERNELS     = %d\n", N_KERNELS);
-    debug_print("N_KERNEL_ARGS = %d\n", N_KERNEL_ARGS);
-    debug_print("ZERO_LABEL    = %d\n", ZERO_LABEL);
-    debug_print("COMPONENTS    = %d\n", COMPONENTS);
+    printf("LOOPS         = %d\n", LOOPS);
+    printf("N_CONFIGS     = %d\n", N_CONFIGS);
+    printf("N_KERNELS     = %d\n", N_KERNELS);
+    printf("N_KERNEL_ARGS = %d\n", N_KERNEL_ARGS);
+    printf("ZERO_LABEL    = %d\n", ZERO_LABEL);
+    printf("COMPONENTS    = %d\n", COMPONENTS);
 
     gsl_interp_accel* acc;
     gsl_spline* spline;
