@@ -15,11 +15,23 @@ typedef struct {
     bool computed;
 } kernel_value_t;
 
+// Struct storing integration variables
 typedef struct {
     vfloat magnitudes[LOOPS]; /* Loop momenta magnitudes                                     */
     vfloat cos_theta[LOOPS];  /* Cosine of polar angles of the loop momenta                  */
     vfloat phi[LOOPS - 1];    /* We assume that the first loop momenta has azimuthal angle 0 */
 } integration_variables_t;
+
+// Struct storing bare_scalar_products and pointers to various other data
+// tables.
+typedef struct {
+    const vfloat* Q_magnitudes;
+    vfloat bare_scalar_products[N_COEFFS][N_COEFFS];
+    short int sum_table[N_CONFIGS][N_CONFIGS];
+    matrix_t* alpha;
+    matrix_t* beta;
+    kernel_value_t* kernels;
+} table_pointers_t;
 
 void compute_bare_scalar_products(
         vfloat k,

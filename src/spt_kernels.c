@@ -19,13 +19,11 @@
 inline vfloat partial_SPT_sum(
         const short int arguments[], /* kernel arguments                                  */
         short int component,         /* component to compute, NB: assumed to be 0-indexed */
-        const matrix_t* alpha,       /* table of alpha function values for various input  */
-        const matrix_t* beta,        /* table of beta function values for various input   */
-        kernel_value_t* kernels,     /* kernel table                                      */
         short int n,                 /* kernel number                                     */
         short int m,                 /* sum index in kernel recursion relation            */
         short int a,                 /* coefficient: (2n+1) for F, 2 for G                */
-        short int b                  /* coefficient: 3 for F, 2n for G                    */
+        short int b,                 /* coefficient: 3 for F, 2n for G                    */
+        const table_pointers_t* data_tables
         )
 {
     vfloat value = 0;
@@ -59,15 +57,15 @@ inline vfloat partial_SPT_sum(
             args_r[i] = arguments[gsl_combination_get(comb_r,i)];
         }
 
-        short int sum_l = sum_vectors(args_l,N_KERNEL_ARGS);
-        short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS);
+        short int sum_l = sum_vectors(args_l,N_KERNEL_ARGS,data_tables->sum_table);
+        short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS,data_tables->sum_table);
 
         // F_n <-> component 0; G_n <-> component 1
-        value += compute_SPT_kernel(args_l,m,1,alpha,beta,kernels) *
-            (  a * matrix_get(alpha,sum_l,sum_r)
-               * compute_SPT_kernel(args_r,n-m,0,alpha,beta,kernels)
-             + b * matrix_get(beta ,sum_l,sum_r)
-               * compute_SPT_kernel(args_r,n-m,1,alpha,beta,kernels)
+        value += compute_SPT_kernel(args_l,m,1,data_tables) *
+            (  a * matrix_get(data_tables->alpha,sum_l,sum_r)
+               * compute_SPT_kernel(args_r,n-m,0,data_tables)
+             + b * matrix_get(data_tables->beta ,sum_l,sum_r)
+               * compute_SPT_kernel(args_r,n-m,1,data_tables)
             );
 
     } while (gsl_combination_next(comb_l) == GSL_SUCCESS &&
@@ -89,9 +87,7 @@ vfloat compute_SPT_kernel(
         const short int arguments[], /* kernel arguments                                  */
         short int n,                 /* order in perturbation theory expansion            */
         short int component,         /* component to compute, NB: assumed to be 0-indexed */
-        const matrix_t* alpha,       /* table of alpha function values for various input  */
-        const matrix_t* beta,        /* table of beta function values for various input   */
-        kernel_value_t* kernels      /* kernel table                                      */
+        const table_pointers_t* data_tables
         )
 {
     // DEBUG: check that the number of non-zero arguments is in fact n
@@ -114,6 +110,9 @@ vfloat compute_SPT_kernel(
     short int argument_index = kernel_index_from_arguments(arguments);
     short int index          = combined_kernel_index(argument_index,component);
 
+    // const pointer alias to data_tables->kernels
+    kernel_value_t* const kernels = data_tables->kernels;
+
     // Check if the kernel is already computed
     if (kernels[index].computed) return kernels[index].value;
 
@@ -131,7 +130,7 @@ vfloat compute_SPT_kernel(
     vfloat value = 0.0;
 
     for (int m = 1; m < n; ++m) {
-        value += partial_SPT_sum(arguments,component,alpha,beta,kernels,n,m,a,b);
+        value += partial_SPT_sum(arguments,component,n,m,a,b,data_tables);
     }
 
     // Divide by overall factor in SPT recursion relation

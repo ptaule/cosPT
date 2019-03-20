@@ -14,6 +14,37 @@
 
 extern void label2config(short int label, short int config[], size_t size);
 extern short int config2label(const short int config[], size_t size);
+extern short int sum_vectors(const short int labels[], size_t n_vecs, const short int sum_table[][N_CONFIGS]);
+
+
+
+inline short int sum_two_vectors(short int a, short int b) {
+    short int a_coeffs[N_COEFFS]   = {};
+    short int b_coeffs[N_COEFFS]   = {};
+    short int res_coeffs[N_COEFFS] = {};
+
+    label2config(a,a_coeffs,N_COEFFS);
+    label2config(b,b_coeffs,N_COEFFS);
+
+    for (int i = 0; i < N_COEFFS; ++i) {
+        res_coeffs[i] = a_coeffs[i] + b_coeffs[i];
+    }
+    return config2label(res_coeffs,N_COEFFS);
+}
+
+
+
+void compute_sum_table(short int sum_table[][N_CONFIGS]) {
+    for (int a = 0; a < N_CONFIGS; ++a) {
+        for (int b = 0; b < N_CONFIGS; ++b) {
+            if (a == ZERO_LABEL)      sum_table[a][b] = b;
+            else if (b == ZERO_LABEL) sum_table[a][b] = a;
+            else {
+                sum_table[a][b] = sum_two_vectors(a,b);
+            }
+        }
+    }
+}
 
 
 
@@ -55,39 +86,6 @@ bool unique_elements(const short int array[], size_t length, short int skip) {
         }
     }
     return true;
-}
-
-
-
-short int sum_vectors(const short int labels[], size_t n_vecs) {
-    short int temp_coeffs[N_COEFFS] = {};
-    short int res_coeffs[N_COEFFS]  = {};
-
-    for (size_t i = 0; i < n_vecs; ++i) {
-        if (labels[i] == ZERO_LABEL) continue;
-        label2config(labels[i],temp_coeffs,N_COEFFS);
-        for (int j = 0; j < N_COEFFS; ++j) {
-            res_coeffs[j] += temp_coeffs[j];
-        }
-    }
-
-    // If DEBUG==true, check that sum is an appropriate vector configuration,
-    // i.e. that Q-coefficients are elements of (-1,0,1) and k-coefficient is
-    // an element of (0,1)
-#if DEBUG >= 1
-    for (int i = 0; i < N_COEFFS - 1; ++i) {
-        short int c = res_coeffs[i];
-        if (!(c == -1 || c == 0 || c == 1))
-            warning("Sum of vectors does not correspond to an appropriate "
-                    "configuration.");
-    }
-    short int c = res_coeffs[N_COEFFS - 1];
-    if (!(c == 0 || c == 1))
-        warning("Sum of vectors does not correspond to an appropriate "
-                "configuration.");
-#endif
-
-    return config2label(res_coeffs,N_COEFFS);
 }
 
 

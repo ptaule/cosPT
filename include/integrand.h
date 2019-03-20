@@ -28,16 +28,6 @@ typedef struct {
     gsl_spline* spline;
 } integration_input_t;
 
-// Struct storing bare_scalar_products and pointers to various other data
-// tables.
-typedef struct {
-    const vfloat* Q_magnitudes;
-    vfloat bare_scalar_products[N_COEFFS][N_COEFFS];
-    matrix_t* alpha;
-    matrix_t* beta;
-    kernel_value_t* kernels;
-} table_pointers_t;
-
 int diagram_factor(const diagram_t* diagram);
 int symmetrization_factor(const diagram_t* diagram);
 
