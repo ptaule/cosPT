@@ -79,12 +79,12 @@ short int sum_vectors(const short int labels[], size_t n_vecs) {
         short int c = res_coeffs[i];
         if (!(c == -1 || c == 0 || c == 1))
             warning("Sum of vectors does not correspond to an appropriate "
-                    "configuration.")
+                    "configuration.");
     }
     short int c = res_coeffs[N_COEFFS - 1];
     if (!(c == 0 || c == 1))
         warning("Sum of vectors does not correspond to an appropriate "
-                "configuration.")
+                "configuration.");
 #endif
 
     return config2label(res_coeffs,N_COEFFS);
