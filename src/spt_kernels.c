@@ -16,7 +16,7 @@
 #include "../include/spt_kernels.h"
 
 
-vfloat partial_SPT_sum(
+inline vfloat partial_SPT_sum(
         const short int arguments[], /* kernel arguments                                  */
         short int component,         /* component to compute, NB: assumed to be 0-indexed */
         const matrix_t* alpha,       /* table of alpha function values for various input  */
