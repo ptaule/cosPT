@@ -330,7 +330,7 @@ vfloat sign_flip_symmetrization(
         partial_result *= integrand_term(arguments_l, arguments_r, diagram,
                 input, data_tables);
 #if DEBUG >= 2
-        printf("\t\t=> partial result = %f\n",partial_result);
+        printf("\t\t=> partial result = " vfloat_fmt "\n",partial_result);
 #endif
         result += partial_result;
     }

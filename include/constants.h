@@ -33,6 +33,7 @@
 
 // Variable precision
 typedef long double vfloat;
+#define vfloat_fmt   "%Le"
 #define matrix_t     gsl_matrix_long_double
 #define matrix_alloc gsl_matrix_long_double_alloc
 #define matrix_set   gsl_matrix_long_double_set
