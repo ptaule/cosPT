@@ -144,8 +144,8 @@ void find_kernel_arguments(
 
 inline static vfloat compute_k1(
         short int m,
-        const int short rearrangement[],
-        const int short signs[],
+        const short int rearrangement[],
+        const short int signs[],
         const vfloat bare_scalar_products[][N_COEFFS]
         )
 {
@@ -173,7 +173,7 @@ inline static vfloat compute_k1(
 inline static int heaviside_theta(
         short int m,
         vfloat k1,
-        const int short rearrangement[],
+        const short int rearrangement[],
         const vfloat Q_magnitudes[]
         )
 {
