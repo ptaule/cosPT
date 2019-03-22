@@ -153,15 +153,15 @@ inline static vfloat compute_k1(
     for (int i = 2; i <= m; ++i) {
         int index = rearrangement[i-2];
         k1 += bare_scalar_products[index][index];
-        k1 -= 2 * signs[index] * bare_scalar_products[N_COEFFS - 1][index];
+        // Note that elements in the signs-array correspond to rearranged loop
+        // momenta, thus we use <i-2>, no <index> as index here
+        k1 -= 2 * signs[i-2] * bare_scalar_products[N_COEFFS - 1][index];
     }
 
-    for (int i = 2; i <= m; ++i) {
+    for (int i = 3; i <= m; ++i) {
         for (int j = 2; j < i; ++j) {
-            short int index_a = rearrangement[i-2];
-            short int index_b = rearrangement[j-2];
-            k1 += 2 * signs[index_a] * signs[index_b] *
-                bare_scalar_products[index_a][index_b];
+            k1 += 2 * signs[i-2] * signs[j-2] *
+                bare_scalar_products[rearrangement[i-2]][rearrangement[j-2]];
         }
     }
 
