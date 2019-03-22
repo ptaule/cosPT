@@ -142,7 +142,7 @@ void find_kernel_arguments(
 
 
 
-inline static vfloat compute_k1(
+vfloat compute_k1(
         short int m,
         const short int rearrangement[],
         const short int signs[],
@@ -324,9 +324,11 @@ vfloat sign_flip_symmetrization(
                 data_tables->bare_scalar_products);
         int h_theta = heaviside_theta(diagram->m, k1, rearrangement,
                 data_tables->Q_magnitudes);
+        printf("\tk1  = %Le", k1 );
+        printf("\th_theta  = %i", h_theta );
         if (h_theta == 0) {
 #if DEBUG >= 2
-        printf("\t\t=> partial result = 0\n");
+        printf("\t=> partial result = 0\n");
 #endif
             continue;
         }
@@ -335,7 +337,7 @@ vfloat sign_flip_symmetrization(
         partial_result *= integrand_term(arguments_l, arguments_r, diagram,
                 input, data_tables);
 #if DEBUG >= 2
-        printf("\t\t=> partial result = " vfloat_fmt "\n",partial_result);
+        printf("\t=> partial result = " vfloat_fmt "\n",partial_result);
 #endif
         result += partial_result;
     }
@@ -467,17 +469,17 @@ vfloat integrand(
         diagram_result /= symmetrization_factor(&(diagrams[i]));
         diagram_result *= diagram_factor(&(diagrams[i]));
         // If diagram is antisymmetric in l <-> r, multiply by 2 (the algorithm
-        // assumes l >= r)
+        // only computes diagrams for which l >= r)
         if (diagrams[i].l != diagrams[i].r) {
             diagram_result *= 2;
         }
         result += diagram_result;
     }
 
-    for (int i = 0; i < LOOPS; ++i) {
-        result *= gsl_spline_eval(input->spline, data_tables.Q_magnitudes[i],
-                input->acc);
-    }
+    /* for (int i = 0; i < LOOPS; ++i) { */
+    /*     result *= gsl_spline_eval(input->spline, data_tables.Q_magnitudes[i], */
+    /*             input->acc); */
+    /* } */
 
     // Free allocated memory
     free(data_tables.kernels);

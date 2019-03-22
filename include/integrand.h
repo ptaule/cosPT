@@ -33,6 +33,13 @@ int symmetrization_factor(const diagram_t* diagram);
 
 void possible_diagrams(diagram_t diagrams[]);
 
+vfloat compute_k1(
+        short int m,
+        const short int rearrangement[],
+        const short int signs[],
+        const vfloat bare_scalar_products[][N_COEFFS]
+        );
+
 void find_kernel_arguments(
         const diagram_t* diagram,
         const short int rearrangement[],

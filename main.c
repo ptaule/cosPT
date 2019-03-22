@@ -10,8 +10,6 @@
 
 #include <gsl/gsl_sf.h>
 
-#include <cuba.h>
-
 #include "include/constants.h"
 #include "include/utilities.h"
 #include "include/kernels.h"
@@ -31,127 +29,131 @@
 // Output power spectrum to file
 #define OUTPUT_FILE "output_" TOSTRING(LOOPS) "loop.dat"
 
-// CUBA settings
-#define NVEC 1
-#define EPSREL 1e-3
-#define EPSABS 1e-12
-#define VERBOSE 0
-#define LAST 4
-#define SEED 0
-#define MINEVAL 0
-#define MAXEVAL 1e6
-
-#define STATEFILE NULL
-#define SPIN NULL
-
-#define NNEW 1000
-#define NMIN 2
-#define FLATNESS 25.
-
-
-int cuba_integrand(
-        const int *ndim,
-        const cubareal xx[],
-        const int *ncomp,
-        cubareal ff[],
-        void *userdata
-        )
-{
-    integration_input_t* data = (integration_input_t*)userdata;
-    integration_variables_t vars;
-
-    vfloat ratio = K_MAX/K_MIN;
-
-    vfloat jacobian = 0.0;
-    switch (LOOPS) {
-        case 1:
-            vars.magnitudes[0] = K_MIN * pow(ratio,xx[0]);
-            vars.cos_theta[0] = xx[1];
-            jacobian = log(ratio) * pow(vars.magnitudes[0],3);
-            break;
-        case 2:
-            vars.magnitudes[0] = K_MIN * pow(ratio,xx[0]);
-            vars.magnitudes[1] = K_MIN * pow(ratio,xx[0] * xx[1]);
-            vars.cos_theta[0] = xx[2];
-            vars.cos_theta[1] = xx[3];
-            vars.phi[0] = xx[4] * TWOPI;
-            jacobian = TWOPI * xx[0]
-                * pow(log(ratio),2)
-                * pow(vars.magnitudes[0],3)
-                * pow(vars.magnitudes[1],3);
-            break;
-        default:
-            warning_verbose("No jacobian for LOOPS = %d",LOOPS);
-    }
-
-    ff[0] = jacobian * integrand(data,&vars);
-    return 0;
-}
-
+void testKernelComputer(vfloat k, const integration_variables_t* vars);
 
 
 int main () {
-    printf("LOOPS         = %d\n", LOOPS);
-    printf("N_CONFIGS     = %d\n", N_CONFIGS);
-    printf("N_KERNELS     = %d\n", N_KERNELS);
-    printf("N_KERNEL_ARGS = %d\n", N_KERNEL_ARGS);
-    printf("ZERO_LABEL    = %d\n", ZERO_LABEL);
-    printf("COMPONENTS    = %d\n", COMPONENTS);
-
     gsl_interp_accel* acc;
     gsl_spline* spline;
 
     read_PS(INPUT_FILE,&acc,&spline);
 
+    integration_variables_t vars = {
+        .magnitudes = {0.3,0.2},
+        .cos_theta  = {1,1},
+        .phi        = {0}
+    };
+
     integration_input_t data = {
-        .k = 0.0,
+        .k = 100,
         .component_a = 0,
         .component_b = 0,
         .acc = acc,
         .spline = spline
     };
 
-    double* wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));
-    double* power_spectrum = (double*)calloc(N_POINTS, sizeof(double));
+    printf("k     = %Lf\n",data.k);
+    printf("Q1    = %Lf\n",vars.magnitudes[0]);
+    printf("Q2    = %Lf\n",vars.magnitudes[1]);
+    printf("cosk1 = %Lf\n",vars.cos_theta[0]);
+    printf("cosk2 = %Lf\n",vars.cos_theta[1]);
+    printf("phi   = %Lf\n",vars.phi[0]);
 
-    // Overall factors:
-    // - Only integrating over cos_theta_i between 0 and 1, multiply by 2 to
-    //   obtain [-1,1]
-    // - Assuming Q1 > Q2 > ..., hence multiply result by LOOPS factorial
-    // - Phi integration of first loop momenta gives a factor 2pi
-    // - Conventionally divide by (2pi)^3
-    vfloat overall_factor = pow(2,LOOPS) * gsl_sf_fact(LOOPS) * TWOPI;
+    printf("====================================\n");
 
-    int nregions, neval, fail;
-    cubareal result[1], error[1], prob[1];
+    double result = integrand(&data,&vars);
+    printf("result  = %e\n", result );
 
-    double delta_logk = log(K_MAX/K_MIN) / N_POINTS;
-    double k = K_MIN;
-
-    for (int i = 0; i < N_POINTS; ++i) {
-        k *= exp(delta_logk);
-        wavenumbers[i] = k;
-        data.k = k;
-
-        Suave(N_DIMS, 1, cuba_integrand, &data,
-                NVEC, EPSREL, EPSABS, VERBOSE | LAST, SEED,
-                MINEVAL, MAXEVAL, NNEW, NMIN, FLATNESS,
-                STATEFILE, SPIN,
-                &nregions, &neval, &fail, result, error, prob);
-
-        result[0] *= overall_factor;
-        error[0] *= overall_factor;
-
-        power_spectrum[i] = (double)result[0];
-
-        printf("k  = %f, result = %e, error = %f, prob = %f\n",
-                k, (double)*result, (double)error[0], (double)prob[0]);
-    }
-
-    write_PS(OUTPUT_FILE,N_POINTS,wavenumbers,power_spectrum);
-
-    free(wavenumbers);
-    free(power_spectrum);
+    testKernelComputer(data.k,&vars);
 
     return 0;
+}
+
+
+
+void testKernelComputer(vfloat k, const integration_variables_t* vars) {
+    printf("testKernelComputer\n");
+
+    short int component = 0;
+
+    short int rearrangement[LOOPS] = {0,1};
+    short int signs[LOOPS] = {1,1};
+
+    diagram_t diagram = {.m = 1, .l = 1, .r = 1};
+
+    short int args_l[N_KERNEL_ARGS] = {};
+    short int args_r[N_KERNEL_ARGS] = {};
+
+    find_kernel_arguments(&diagram,rearrangement,signs,args_l,args_r);
+
+    table_pointers_t data_tables;
+    data_tables.alpha = matrix_alloc(N_CONFIGS,N_CONFIGS);
+    data_tables.beta  = matrix_alloc(N_CONFIGS,N_CONFIGS);
+
+    compute_sum_table(data_tables.sum_table);
+    compute_bare_scalar_products(k,vars,data_tables.bare_scalar_products);
+    compute_alpha_beta_tables(data_tables.bare_scalar_products,data_tables.alpha,data_tables.beta);
+
+    // Allocate space for kernels (calloc also initializes values to 0)
+    data_tables.kernels = (kernel_value_t*)calloc(COMPONENTS * N_KERNELS, sizeof(kernel_value_t));
+
+    vfloat k1 = compute_k1(diagram.m,rearrangement,signs,data_tables.bare_scalar_products);
+    printf("k1 = %Le\n",k1);
+
+    vfloat value_l = compute_SPT_kernel(args_l,diagram.m + 2*diagram.l,component,&data_tables);
+    vfloat value_r = compute_SPT_kernel(args_r,diagram.m + 2*diagram.r,component,&data_tables);
+
+
+    printf("F(k");
+    short int config[N_COEFFS];
+    label2config(args_l[0],config,N_COEFFS);
+    for (int i = 0; i < LOOPS; ++i) {
+        if (config[i] == 0) continue;
+        else if (config[i] == -1) printf("-Q%d",i+1);
+        else if (config[i] == 1)  printf("+Q%d",i+1);
+    }
+    printf(", ");
+
+    for (int i = 1; i < N_KERNEL_ARGS; ++i) {
+        if (args_l[i] == ZERO_LABEL) break;
+        label2config(args_l[i],config,N_COEFFS);
+        for (int j = 0; j < LOOPS; ++j) {
+            if (config[j] == 0) continue;
+            else if (config[j] == -1) printf("-Q%d, ",j+1);
+            else if (config[j] == 1)  printf("+Q%d, ",j+1);
+        }
+    }
+    printf(") = %Le\n",value_l);
+    printf("F(k");
+    label2config(args_r[0],config,N_COEFFS);
+    for (int i = 0; i < LOOPS; ++i) {
+        if (config[i] == 0) continue;
+        else if (config[i] == -1) printf("-Q%d",i+1);
+        else if (config[i] == 1)  printf("+Q%d",i+1);
+    }
+    printf(", ");
+    for (int i = 1; i < N_KERNEL_ARGS; ++i) {
+        if (args_r[i] == ZERO_LABEL) break;
+        label2config(args_r[i],config,N_COEFFS);
+        for (int j = 0; j < LOOPS; ++j) {
+            if (config[j] == 0) continue;
+            else if (config[j] == -1) printf("-Q%d, ",j+1);
+            else if (config[j] == 1)  printf("+Q%d, ",j+1);
+        }
+    }
+    printf(") = %Lf\n",value_r);
+
+    printf("bare_scalar_products:\n");
+    for (int i = 0; i < N_COEFFS; ++i) {
+        for (int j = 0; j < N_COEFFS; ++j) {
+            printf("%Le  ",data_tables.bare_scalar_products[i][j]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+
+    // Free allocated memory
+    free(data_tables.kernels);
+    matrix_free(data_tables.alpha);
+    matrix_free(data_tables.beta);
 }

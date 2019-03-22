@@ -12,7 +12,7 @@
 
 // Parameters (if not set by compile options)
 #ifndef LOOPS
-#define LOOPS 1
+#define LOOPS 2
 #endif
 #ifndef COMPONENTS
 #define COMPONENTS 2
@@ -28,7 +28,7 @@
 // 1: Perform additional checks during runtime.
 // 2: In addition, print info during runtime.
 #ifndef DEBUG
-#define DEBUG 0
+#define DEBUG 2
 #endif
 
 // Variable precision
