@@ -18,7 +18,7 @@ extern short int sum_vectors(const short int labels[], size_t n_vecs, const shor
 
 
 
-inline short int sum_two_vectors(short int a, short int b) {
+static inline short int sum_two_vectors(short int a, short int b) {
     short int a_coeffs[N_COEFFS]   = {};
     short int b_coeffs[N_COEFFS]   = {};
     short int res_coeffs[N_COEFFS] = {};
