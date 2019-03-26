@@ -182,13 +182,18 @@ inline static int heaviside_theta(
     // Heaviside-theta (k1 - k2)
     if (k1 <= Q_magnitudes[rearrangement[0]]) return 0;
 
-    // Heaviside-theta (k2 - k3) etc.
+#if DEBUG >= 1
+    // Check that the heaviside-theta (k2 - k3) etc. are satisfied by
+    // (reparametrized) momenta from CUBA
     for (int i = 3; i <= m; ++i) {
         if ( Q_magnitudes[rearrangement[i-3]]
-                <= Q_magnitudes[rearrangement[i-2]])
-            return 0;
+                < Q_magnitudes[rearrangement[i-2]])
+            warning_verbose("Heaviside theta: Q%d < Q%d\n",
+                    rearrangement[i-3] + 1,
+                    rearrangement[i-2] + 1);
     }
-    return gsl_sf_fact(m);
+#endif
+    return m;
 }
 
 
