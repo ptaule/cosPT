@@ -16,7 +16,7 @@
 #include "../include/spt_kernels.h"
 
 
-inline vfloat partial_SPT_sum(
+vfloat partial_SPT_sum(
         const short int arguments[], /* kernel arguments                                  */
         short int component,         /* component to compute, NB: assumed to be 0-indexed */
         short int n,                 /* kernel number                                     */

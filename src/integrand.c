@@ -48,7 +48,7 @@ inline int symmetrization_factor(const diagram_t* diagram) {
 
 // Find (distinct) diagrams for L-loop
 // They satisfy: m >= 1; l,r > 0; l + r + m = L + 1
-inline void possible_diagrams(diagram_t diagrams[]) {
+void possible_diagrams(diagram_t diagrams[]) {
     short int m = 0;
 
     size_t index = 0;
@@ -142,7 +142,7 @@ void find_kernel_arguments(
 
 
 
-inline static vfloat compute_k1(
+static vfloat compute_k1(
         short int m,
         const short int rearrangement[],
         const short int signs[],
@@ -247,7 +247,7 @@ static void print_integrand_info(
 
 
 
-inline static vfloat integrand_term(
+static vfloat integrand_term(
         const short int arguments_l[N_KERNEL_ARGS],
         const short int arguments_r[N_KERNEL_ARGS],
         const diagram_t* diagram,
