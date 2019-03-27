@@ -40,23 +40,31 @@ typedef long double vfloat;
 #define matrix_get   gsl_matrix_long_double_get
 #define matrix_free  gsl_matrix_long_double_free
 
-// Macros:
+// Various colors for debug output
 
-#define interpolate(k) gsl_spline_eval(spline,k,acc)
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
 
-// debug-print is optimized away if DEBUG==0
+// debug_print() is optimized away if DEBUG==0
 #define debug_print(fmt, ...) \
             do { if (DEBUG) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
 #define warning(fmt) \
-                fprintf(stderr, "%s:%d,\tWarning: " fmt "\n", __FILE__, __LINE__);
+    fprintf(stderr, ANSI_COLOR_BLUE "%s:%d:\tWarning: " fmt ANSI_COLOR_RESET "\n", \
+            __FILE__, __LINE__);
 #define warning_verbose(fmt, ...) \
-                fprintf(stderr, "%s:%d,\tWarning: " fmt "\n",__FILE__, __LINE__, __VA_ARGS__);
+    fprintf(stderr, ANSI_COLOR_BLUE "%s:%d:\tWarning: " fmt ANSI_COLOR_RESET "\n", \
+            __FILE__, __LINE__, __VA_ARGS__);
 #define error(fmt) \
-    {fprintf(stderr, "%s:%d,\tWarning: " fmt "\n", __FILE__, __LINE__); \
-        exit(EXIT_FAILURE); }
+    {fprintf(stderr, ANSI_COLOR_RED "%s:%d:\tError: " fmt ANSI_COLOR_RESET "\n", \
+            __FILE__, __LINE__); exit(EXIT_FAILURE); }
 #define error_verbose(fmt, ...) \
-    {fprintf(stderr, "%s:%d,\tWarning: " fmt "\n",__FILE__, __LINE__, __VA_ARGS__); \
-        exit(EXIT_FAILURE); }
+    {fprintf(stderr, ANSI_COLOR_RED "%s:%d:\tError: " fmt ANSI_COLOR_RESET "\n", \
+            __FILE__, __LINE__, __VA_ARGS__); exit(EXIT_FAILURE); }
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
@@ -67,7 +75,7 @@ typedef long double vfloat;
 
 // Constants defined depending on number of loops
 #define N_COEFFS LOOPS+1
-#define N_DIMS   3*LOOPS + 1
+#define N_DIMS   3*LOOPS+1
 
 #if LOOPS==1
 #define N_CONFIGS      6
