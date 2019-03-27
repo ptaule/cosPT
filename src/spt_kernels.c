@@ -168,6 +168,8 @@ vfloat compute_SPT_kernel(
     // Divide by overall factor in SPT recursion relation
     value /= (2*n + 3) * (n - 1);
 
+    print_kernel_info(arguments,n,component,value);
+
     // Update kernel table
     kernels[index].value = value;
     kernels[index].computed = true;
