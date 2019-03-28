@@ -204,8 +204,8 @@ static void print_integrand_info(
         const diagram_t* diagram
         )
 {
-    printf("(m,l,r) = (%d,%d,%d)\n",diagram->m,diagram->l,diagram->r);
-    printf("\tF%d(k",2*diagram->l + diagram->m);
+    printf(ANSI_COLOR_MAGENTA "(m,l,r) = (%d,%d,%d)\t",diagram->m,diagram->l,diagram->r);
+    printf(ANSI_COLOR_BLUE "F%d(k",2*diagram->l + diagram->m);
     short int config[N_COEFFS];
     label2config(arguments_l[0],config,N_COEFFS);
     for (int i = 0; i < LOOPS; ++i) {
@@ -242,7 +242,7 @@ static void print_integrand_info(
             else if (config[j] == 1)  printf("+Q%d, ",j+1);
         }
     }
-    printf(")");
+    printf(")" ANSI_COLOR_RESET);
 }
 
 
