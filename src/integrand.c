@@ -5,6 +5,7 @@
    Copyright (c) 2019 Petter Taule. All rights reserved.
 */
 
+#include <stdlib.h>
 #include <math.h>
 #include <string.h>
 
