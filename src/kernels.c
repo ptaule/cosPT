@@ -157,20 +157,18 @@ void compute_alpha_beta_tables(
 // This function computes (addition to) kernel index for fundamental vector
 // arguments. (It assumes that the arguments are fundamentals.)
 inline static short int kernel_index_from_fundamental(short int argument) {
-    short int index = 0;
     short int coeffs[N_COEFFS] = {};
     label2config(argument,coeffs,N_COEFFS);
 
     // The last coefficient is for k, hence we can skip this (j < N_COEFFS - 1)
     for (int i = 0; i < N_COEFFS - 1; ++i) {
-        /* This formula converts fundamental configs to corresponding index
-         * if   Q_i is not present, add 0 * 2^(2i + 1/2) = 0        to index
-         * if - Q_i is present, add     1 * 2^(2i + 0/2) = 2^(2i)   to index
-         * if + Q_i is present, add     1 * 2^(2i + 2/2) = 2^(2i+1) to index
-         */
-        index += abs(coeffs[i]) * pow(2, 2 * i + (coeffs[i] + 1)/2);
+         /* if - Q_i is present, return 2^(2i + 0/2) = 2^(2i)   */
+         /* if + Q_i is present, return 2^(2i + 2/2) = 2^(2i+1) */
+        if (coeffs[i] != 0) {
+            return pow(2, 2 * i + (coeffs[i] + 1)/2);
+        }
     }
-    return index;
+    return 0;
 }
 
 
