@@ -15,9 +15,11 @@
 #include <cuba.h>
 
 #include "include/constants.h"
+#include "include/utilities.h"
 #include "include/tables.h"
-#include "include/integrand.h"
 #include "include/io.h"
+#include "include/diagrams.h"
+#include "include/integrand.h"
 
 void init_worker(table_ptrs_t* worker_mem, const int* core);
 void exit_worker(table_ptrs_t* worker_mem, const int* core);
@@ -79,12 +81,17 @@ int main (int argc, char* argv[]) {
     cubainit(init_worker, worker_mem);
     cubaexit(exit_worker, worker_mem);
 
+    // Initialize diagrams to compute at this order in PT
+    diagram_t diagrams[N_DIAGRAMS];
+    initialize_diagrams(diagrams);
+
     integration_input_t input = {
         .k = 0.0,
         .component_a = 0,
         .component_b = 0,
         .ps_acc = ps_acc,
         .ps_spline = ps_spline,
+        .diagrams = diagrams,
         .params = &params,
         .worker_mem = worker_mem
     };
@@ -136,6 +143,8 @@ int main (int argc, char* argv[]) {
     }
 
     write_PS(output_ps_file, N_POINTS, wavenumbers, power_spectrum, errors);
+
+    diagrams_gc(diagrams);
 
     free(wavenumbers);
     free(power_spectrum);
