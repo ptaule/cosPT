@@ -22,6 +22,7 @@ vfloat partial_SPT_sum(
         );
 
 vfloat compute_SPT_kernel(
+        short int kernel_index,
         const short int arguments[],
         short int n,
         short int component,

@@ -113,6 +113,10 @@ static vfloat integrand_term(
         input->diagrams[diagram_index].argument_configs_l[rearrangement_index][sign_config_index];
     const short int* const arguments_r =
         input->diagrams[diagram_index].argument_configs_r[rearrangement_index][sign_config_index];
+    short int kernel_index_l =
+        input->diagrams[diagram_index].kernel_indices_l[rearrangement_index][sign_config_index];
+    short int kernel_index_r =
+        input->diagrams[diagram_index].kernel_indices_r[rearrangement_index][sign_config_index];
 
 #if DEBUG >= 2
     print_integrand_info(m,l,r,arguments_l, arguments_r);
@@ -134,18 +138,21 @@ static vfloat integrand_term(
 
     // If right kernel only has one argument, its value is 1
     if (m == 1 && r == 0) {
-        result *= compute_SPT_kernel(arguments_l, 2*l + m,
+        result *= compute_SPT_kernel(kernel_index_l, arguments_l, 2*l + m,
                 input->component_a, data_tables);
     }
     // If there are no "self" loops, and the components to compute are
     // equal, the kernels are equal
     else if (l == 0 && r == 0 && input->component_a == input->component_b) {
-        result *= pow(compute_SPT_kernel(arguments_l, m,
+        result *= pow(compute_SPT_kernel(kernel_index_l, arguments_l, m,
                     input->component_a, data_tables) ,2);
 
     // In DEBUG-mode, check that kernel arguments in fact are equal in this
     // case
 #if DEBUG >= 1
+        if (kernel_index_l != kernel_index_r) {
+            warning("Arguments l & r were wrongly assumed equal.");
+        }
         for (int i = 0; i < N_KERNEL_ARGS; ++i) {
             if (arguments_l[i] != arguments_r[i])
                 warning("Arguments l & r were wrongly assumed equal.");
@@ -153,9 +160,9 @@ static vfloat integrand_term(
 #endif
     }
     else {
-        result *= compute_SPT_kernel(arguments_l, 2*l + m,
+        result *= compute_SPT_kernel(kernel_index_l, arguments_l, 2*l + m,
                     input->component_a, data_tables)
-                * compute_SPT_kernel(arguments_r, 2*r + m,
+                * compute_SPT_kernel(kernel_index_r, arguments_r, 2*r + m,
                     input->component_b, data_tables);
     }
 

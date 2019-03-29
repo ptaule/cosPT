@@ -52,6 +52,8 @@ static void integrand_kernel_arguments(
         short int r,
         const short int rearrangement[],
         const bool signs[],
+        short int* kernel_index_l,            /* out */
+        short int* kernel_index_r,            /* out */
         short int arguments_l[N_KERNEL_ARGS], /* out */
         short int arguments_r[N_KERNEL_ARGS]  /* out */
         )
@@ -112,6 +114,23 @@ static void integrand_kernel_arguments(
     while (index_r < N_KERNEL_ARGS) {
         arguments_r[index_r++] = ZERO_LABEL;
     }
+
+    *kernel_index_l = kernel_index_from_arguments(arguments_l);
+    *kernel_index_r = kernel_index_from_arguments(arguments_r);
+
+    // DEBUG: check that kernel_index is in fact equivalent to arguments
+#if DEBUG >= 1
+    short int argument_index_l = kernel_index_from_arguments(arguments_l);
+    short int argument_index_r = kernel_index_from_arguments(arguments_r);
+    if (argument_index_l != *kernel_index_l) {
+        warning_verbose("Index computed from kernel arguments (%d) does not "
+                "equal kernel_index (%d).", argument_index_l, *kernel_index_l);
+    }
+    if (argument_index_r != *kernel_index_r) {
+        warning_verbose("Index computed from kernel arguments (%d) does not "
+                "equal kernel_index (%d).", argument_index_r, *kernel_index_r);
+    }
+#endif
 }
 
 
@@ -245,11 +264,21 @@ void initialize_arguments(diagram_t* diagram) {
     diagram->argument_configs_r = (short int***)
         calloc(diagram->n_rearrangements,sizeof(short int**));
 
+    diagram->kernel_indices_l = (short int**)
+        calloc(diagram->n_rearrangements, sizeof(short int**));
+    diagram->kernel_indices_r = (short int**)
+        calloc(diagram->n_rearrangements, sizeof(short int**));
+
     for (int a = 0; a < diagram->n_rearrangements; ++a) {
         diagram->argument_configs_l[a] = (short int**)
             calloc(diagram->n_sign_configs, sizeof(short int*));
         diagram->argument_configs_r[a] = (short int**)
             calloc(diagram->n_sign_configs, sizeof(short int*));
+
+        diagram->kernel_indices_l[a] = (short int*)
+            calloc(diagram->n_sign_configs, sizeof(short int));
+        diagram->kernel_indices_r[a] = (short int*)
+            calloc(diagram->n_sign_configs, sizeof(short int));
 
         for (int b = 0; b < diagram->n_sign_configs; ++b) {
             diagram->argument_configs_l[a][b] = (short int*)
@@ -259,11 +288,13 @@ void initialize_arguments(diagram_t* diagram) {
         }
     }
 
-    // Initialize arguments
+    // Initialize arguments and kernel_indices
     for (int a = 0; a < diagram->n_rearrangements; ++a) {
         for (int b = 0; b < diagram->n_sign_configs; ++b) {
             integrand_kernel_arguments(diagram->m, diagram->l, diagram->r,
                     diagram->rearrangements[a], diagram->sign_configs[b],
+                    &(diagram->kernel_indices_l[a][b]),
+                    &(diagram->kernel_indices_r[a][b]),
                     diagram->argument_configs_l[a][b],
                     diagram->argument_configs_r[a][b]
                     );
@@ -315,6 +346,8 @@ void diagrams_gc(diagram_t diagrams[]) {
             }
             free(dg->argument_configs_l[a]);
             free(dg->argument_configs_r[a]);
+            free(dg->kernel_indices_l[a]);
+            free(dg->kernel_indices_r[a]);
         }
         for (int b = 0; b < dg->n_sign_configs; ++b) {
             free(dg->sign_configs[b]);
@@ -323,6 +356,8 @@ void diagrams_gc(diagram_t diagrams[]) {
         free(dg->sign_configs);
         free(dg->argument_configs_l);
         free(dg->argument_configs_r);
+        free(dg->kernel_indices_l);
+        free(dg->kernel_indices_r);
     }
 }
 

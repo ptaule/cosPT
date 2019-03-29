@@ -21,6 +21,8 @@ typedef struct {
     short int    n_sign_configs;     /* Number of sign flips                           */
     short int**  rearrangements;     /* Table of rearrangements                        */
     bool**       sign_configs;       /* Table of sign flips, true <-> +1, false <-> -1 */
+    short int**  kernel_indices_l;
+    short int**  kernel_indices_r;
     short int*** argument_configs_l;
     short int*** argument_configs_r;
 } diagram_t;

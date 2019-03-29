@@ -57,15 +57,18 @@ vfloat partial_SPT_sum(
             args_r[i] = arguments[gsl_combination_get(comb_r,i)];
         }
 
+        short int kernel_index_l = kernel_index_from_arguments(args_l);
+        short int kernel_index_r = kernel_index_from_arguments(args_r);
+
         short int sum_l = sum_vectors(args_l,N_KERNEL_ARGS,data_tables->sum_table);
         short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS,data_tables->sum_table);
 
         // F_n <-> component 0; G_n <-> component 1
-        value += compute_SPT_kernel(args_l,m,1,data_tables) *
+        value += compute_SPT_kernel(kernel_index_l, args_l,m,1,data_tables) *
             (  a * matrix_get(data_tables->alpha,sum_l,sum_r)
-               * compute_SPT_kernel(args_r,n-m,0,data_tables)
+               * compute_SPT_kernel(kernel_index_r,args_r,n-m,0,data_tables)
              + b * matrix_get(data_tables->beta ,sum_l,sum_r)
-               * compute_SPT_kernel(args_r,n-m,1,data_tables)
+               * compute_SPT_kernel(kernel_index_r,args_r,n-m,1,data_tables)
             );
 
     } while (gsl_combination_next(comb_l) == GSL_SUCCESS &&
@@ -83,15 +86,31 @@ vfloat partial_SPT_sum(
 
 
 
+/* Compute SPT kernel at order n. If component == 0, F kernel is computed,
+ * while G kernel is computed if component == 1. The three function arguments
+ * 'arguments', 'kernel_index' and 'n' provide overlapping information: there
+ * is a one-to-one correspondance between arguments and kernel_index, and n
+ * should be the number of arguments which are not the zero-label.
+ * Nevertheless, providing this information reduces overhead. If DEBUG >= 1,
+ * the function checks that arguments and kernel_index are equivalent, and that
+ * n in fact is the number of non-zero-label arguments.*/
 vfloat compute_SPT_kernel(
-        const short int arguments[], /* kernel arguments                                  */
-        short int n,                 /* order in perturbation theory expansion            */
-        short int component,         /* component to compute, NB: assumed to be 0-indexed */
+        short int kernel_index,      /* index for kernel table (to be combined with comp.) */
+        const short int arguments[], /* kernel arguments                                   */
+        short int n,                 /* order in perturbation theory expansion             */
+        short int component,         /* component to compute, NB: assumed to be 0-indexed  */
         const table_pointers_t* data_tables
         )
 {
-    // DEBUG: check that the number of non-zero arguments is in fact n
+    // DEBUG: check that the number of non-zero arguments is in fact n, and
+    // that kernel_index is in fact equivalent to arguments
 #if DEBUG >= 1
+    short int argument_index = kernel_index_from_arguments(arguments);
+    if (argument_index != kernel_index) {
+        warning_verbose("Index computed from kernel arguments (%d) does not "
+                "equal kernel_index (%d).", argument_index, kernel_index);
+    }
+
     int n_args = 0;
     for (int i = 0; i < N_KERNEL_ARGS; ++i) {
         if (arguments[i] != ZERO_LABEL) n_args++;
@@ -105,10 +124,9 @@ vfloat compute_SPT_kernel(
         return 1.0;
     }
 
-    // Compute kernel index, this depends on arguments (argument_index) and
-    // which component is to be computed
-    short int argument_index = kernel_index_from_arguments(arguments);
-    short int index          = combined_kernel_index(argument_index,component);
+    // Compute index in kernel-table, this depends on arguments (kernel_index)
+    // and which component is to be computed
+    short int index = combined_kernel_index(kernel_index,component);
 
     // const pointer alias to data_tables->kernels
     kernel_value_t* const kernels = data_tables->kernels;
