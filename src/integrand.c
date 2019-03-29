@@ -119,6 +119,10 @@ static vfloat integrand_term(
         input->diagrams[diagram_index].argument_configs_l[rearrangement_index][sign_config_index];
     const short int* const arguments_r =
         input->diagrams[diagram_index].argument_configs_r[rearrangement_index][sign_config_index];
+    short int kernel_index_l =
+        input->diagrams[diagram_index].kernel_indices_l[rearrangement_index][sign_config_index];
+    short int kernel_index_r =
+        input->diagrams[diagram_index].kernel_indices_r[rearrangement_index][sign_config_index];
 
 #if DEBUG >= 2
     print_integrand_info(m,l,r,arguments_l, arguments_r);
@@ -143,15 +147,19 @@ static vfloat integrand_term(
     if (l == 0 && r == 0 && input->component_a == input->component_b) {
 
         // First, compute SPT initial condition
-        short int index = compute_SPT_kernels(arguments_l, m, tables);
+        compute_SPT_kernels(arguments_l, kernel_index_l, m, tables);
         // Then, evolve kernels
-        kernel_evolution(arguments_l, index, m, input->params,
+        kernel_evolution(arguments_l, kernel_index_l, m, input->params,
                 tables);
 
-        result *= pow(tables->kernels[index].values[TIME_STEPS - 1][input->component_a] ,2);
+        result *=
+            pow(tables->kernels[kernel_index_l].values[TIME_STEPS-1][input->component_a] ,2);
     // In DEBUG-mode, check that kernel arguments in fact are equal in this
     // case
 #if DEBUG >= 1
+        if (kernel_index_l != kernel_index_r) {
+            warning("Arguments l & r were wrongly assumed equal.");
+        }
         for (int i = 0; i < N_KERNEL_ARGS; ++i) {
             if (arguments_l[i] != arguments_r[i])
                 warning("Arguments l & r were wrongly assumed equal.");
@@ -160,18 +168,18 @@ static vfloat integrand_term(
     }
     else {
         // First, compute SPT initial condition
-        short int index_l = compute_SPT_kernels(arguments_l, 2*l + m, tables);
-        short int index_r = compute_SPT_kernels(arguments_r, 2*r + m, tables);
+        compute_SPT_kernels(arguments_l, kernel_index_l, 2*l + m, tables);
+        compute_SPT_kernels(arguments_r, kernel_index_r, 2*r + m, tables);
         // Then, evolve kernels
-        kernel_evolution(arguments_l, index_l, 2*l + m, input->params,
+        kernel_evolution(arguments_l, kernel_index_l, 2*l + m, input->params,
                 tables);
-        kernel_evolution(arguments_r, index_r, 2*r + m, input->params,
+        kernel_evolution(arguments_r, kernel_index_r, 2*r + m, input->params,
                 tables);
 
         result *= tables->
-                kernels[index_l].values[TIME_STEPS - 1][input->component_a]
+                kernels[kernel_index_l].values[TIME_STEPS - 1][input->component_a]
             * tables->
-                kernels[index_r].values[TIME_STEPS - 1][input->component_b];
+                kernels[kernel_index_r].values[TIME_STEPS - 1][input->component_b];
     }
 #if DEBUG >= 2
         printf("\t\t=> Partial result = " vfloat_fmt "\n",result);

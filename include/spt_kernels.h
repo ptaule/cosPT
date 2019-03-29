@@ -13,6 +13,7 @@
 
 short int compute_SPT_kernels(
         const short int arguments[],
+        short int kernel_index,
         short int n,
         const table_ptrs_t* tables
         );

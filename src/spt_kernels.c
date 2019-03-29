@@ -31,8 +31,8 @@ static inline vfloat SPT_term(
 {
     short int n = m_l + m_r;
 
-    short int index_l = compute_SPT_kernels(args_l,m_l,tables);
-    short int index_r = compute_SPT_kernels(args_r,m_r,tables);
+    short int index_l = compute_SPT_kernels(args_l,-1,m_l,tables);
+    short int index_r = compute_SPT_kernels(args_r,-1,m_r,tables);
 
     short int a,b;
     switch (component) {
@@ -138,13 +138,21 @@ static void partial_SPT_sum(
 
 
 short int compute_SPT_kernels(
-        const short int arguments[], /* kernel arguments                                    */
-        short int n,                 /* order in perturbation theory expansion              */
+        const short int arguments[], /* kernel arguments                       */
+        short int kernel_index,      /* index for kernel table                 */
+        short int n,                 /* order in perturbation theory expansion */
         const table_ptrs_t* tables
         )
 {
-    // DEBUG: check that the number of non-zero arguments is in fact n
+    // DEBUG: check that the number of non-zero arguments is in fact n, and
+    // that kernel_index is in fact equivalent to arguments
 #if DEBUG >= 1
+    short int argument_index = kernel_index_from_arguments(arguments);
+    if (kernel_index != -1 && argument_index != kernel_index) {
+        warning_verbose("Index computed from kernel arguments (%d) does not "
+                "equal kernel_index (%d).", argument_index, kernel_index);
+    }
+
     int n_args = 0;
     for (int i = 0; i < N_KERNEL_ARGS; ++i) {
         if (arguments[i] != ZERO_LABEL) n_args++;
@@ -153,7 +161,10 @@ short int compute_SPT_kernels(
         warning_verbose("Number of arguments is %d, while n is %d.", n_args,n);
 #endif
 
-    short int kernel_index = kernel_index_from_arguments(arguments);
+    // If kernel_index is not known, -1 is sent as argument
+    if (kernel_index == -1) {
+        kernel_index = kernel_index_from_arguments(arguments);
+    }
 
     // Alias pointer to kernel we are working with for convenience/readability
     kernel_t* const kernel = &tables->kernels[kernel_index];
