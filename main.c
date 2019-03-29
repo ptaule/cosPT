@@ -16,8 +16,9 @@
 #include "include/utilities.h"
 #include "include/kernels.h"
 #include "include/spt_kernels.h"
-#include "include/integrand.h"
 #include "include/power_spectrum_io.h"
+#include "include/diagrams.h"
+#include "include/integrand.h"
 
 // Min/max wavenumber
 #define K_MIN 1e-4
@@ -103,10 +104,15 @@ int main () {
 
     read_PS(INPUT_FILE,&acc,&spline);
 
+    // Initialize diagrams to compute at this order in PT
+    diagram_t diagrams[N_DIAGRAMS];
+    initialize_diagrams(diagrams);
+
     integration_input_t data = {
         .k = 0.0,
         .component_a = 0,
         .component_b = 0,
+        .diagrams = diagrams,
         .acc = acc,
         .spline = spline
     };
@@ -150,8 +156,13 @@ int main () {
 
     write_PS(OUTPUT_FILE,N_POINTS,wavenumbers,power_spectrum);
 
+    diagrams_gc(diagrams);
+
     free(wavenumbers);
     free(power_spectrum);
+
+    gsl_spline_free(spline);
+    gsl_interp_accel_free(acc);
 
     return 0;
 }

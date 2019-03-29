@@ -178,8 +178,9 @@ inline static short int kernel_index_from_fundamental(short int argument) {
 short int kernel_index_from_arguments(const short int arguments[]) {
     // In DEBUG-mode, check that non-zero arguments (zero_label) are unique
 #if DEBUG >= 1
-    if (!unique_elements(arguments,N_KERNEL_ARGS,ZERO_LABEL))
-        warning("Duplicate vector arguments passed to kernel.");
+    if (!unique_elements(arguments,N_KERNEL_ARGS,ZERO_LABEL)) {
+        warning("In kernel_index_from_arguments(): Duplicate vector arguments.");
+    }
     short int n_k_vectors = 0;
 #endif
 

@@ -90,6 +90,35 @@ bool unique_elements(const short int array[], size_t length, short int skip) {
 
 
 
+void print_label(short int label) {
+    if (label == ZERO_LABEL) return;
+
+    short int config[N_COEFFS];
+    label2config(label,config,N_COEFFS);
+
+    if (config[N_COEFFS - 1] == 1) printf("k");
+    for (int i = 0; i < LOOPS; ++i) {
+        if (config[i] == 0) continue;
+        else if (config[i] == -1) printf("-Q%d",i+1);
+        else if (config[i] == 1)  printf("+Q%d",i+1);
+    }
+}
+
+
+
+void print_labels(const short int labels[])
+{
+    printf("(");
+    for (int i = 0; i < N_KERNEL_ARGS; ++i) {
+        if (labels[i] == ZERO_LABEL) continue;
+        print_label(labels[i]);
+        printf(", ");
+    }
+    printf(")");
+}
+
+
+
 void print_gsl_matrix(const gsl_matrix* m, size_t height, size_t width) {
     for (size_t i = 0; i < height; ++i) {
         for (size_t j = 0; j < width; ++j) {

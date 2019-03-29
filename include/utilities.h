@@ -92,16 +92,14 @@ inline short int sum_vectors(
     return result;
 }
 
-
-
 void compute_sum_table(short int sum_table[][N_CONFIGS]);
 
-short int zero_label();
-
-bool is_fundamental(short int label);
-bool unique_elements(const short int array[],size_t length, short int skip);
-
+void print_label(short int label);
+void print_labels(const short int labels[]);
 void print_gsl_matrix(const gsl_matrix* m, size_t height, size_t width);
 
+short int zero_label();
+bool is_fundamental(short int label);
+bool unique_elements(const short int array[],size_t length, short int skip);
 
 #endif /* ifndef UTILITIES_H */
