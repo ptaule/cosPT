@@ -199,6 +199,8 @@ inline static int heaviside_theta(
 
 
 
+// For debuggin purposes
+__attribute__((unused))
 static void print_integrand_info(
         const short int arguments_l[N_KERNEL_ARGS],
         const short int arguments_r[N_KERNEL_ARGS],

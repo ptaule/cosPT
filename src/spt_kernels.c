@@ -84,6 +84,7 @@ vfloat partial_SPT_sum(
 
 
 // For debuggin purposes
+__attribute__((unused))
 static void print_kernel_info(
         const short int arguments[],
         short int n,
