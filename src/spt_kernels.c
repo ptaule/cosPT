@@ -68,6 +68,18 @@ vfloat partial_SPT_sum(
                * compute_SPT_kernel(args_r,n-m,1,data_tables)
             );
 
+        // When m != (n - m), we may additionally compute the (n-m)-term by
+        // swapping args_l, sum_l, m with args_r, sum_r and (n-m). Then
+        // compute_SPT_kernel() only needs to sum up to (including) floor(n/2).
+        if (m != n - m) {
+            value += compute_SPT_kernel(args_r,n-m,1,data_tables) *
+                (  a * matrix_get(data_tables->alpha,sum_r,sum_l)
+                   * compute_SPT_kernel(args_l,m,0,data_tables)
+                   + b * matrix_get(data_tables->beta ,sum_r,sum_l)
+                   * compute_SPT_kernel(args_l,m,1,data_tables)
+                );
+        }
+
     } while (gsl_combination_next(comb_l) == GSL_SUCCESS &&
              gsl_combination_prev(comb_r) == GSL_SUCCESS
             );
@@ -162,7 +174,9 @@ vfloat compute_SPT_kernel(
 
     vfloat value = 0.0;
 
-    for (int m = 1; m < n; ++m) {
+    // Only sum up to (including) floor(n/2), since partial_SPT_sum()
+    // simultaneously computes terms m and (n-m)
+    for (int m = 1; m <= n/2; ++m) {
         value += partial_SPT_sum(arguments,component,n,m,a,b,data_tables);
     }
 
