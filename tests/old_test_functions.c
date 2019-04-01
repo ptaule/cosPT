@@ -38,6 +38,7 @@ void testKernelComputer() {
     };
 
     short int component = 0;
+    short int n = 5;
 
     short int args[N_KERNEL_ARGS] = {13,5,3,7,1};
     // 2-loop:
@@ -48,24 +49,29 @@ void testKernelComputer() {
     // Q_2     <-> 7
     // - Q_2   <-> 1
 
-    matrix_t* alpha = matrix_alloc(N_CONFIGS,N_CONFIGS);
-    matrix_t* beta  = matrix_alloc(N_CONFIGS,N_CONFIGS);
-    vfloat bare_scalar_products[N_COEFFS][N_COEFFS];
-
-    compute_bare_scalar_products(k,&vars,bare_scalar_products);
-
-    compute_alpha_beta_tables(bare_scalar_products,alpha,beta);
+    table_pointers_t data_tables;
+    data_tables.Q_magnitudes = vars.magnitudes,
+    data_tables.alpha = matrix_alloc(N_CONFIGS,N_CONFIGS);
+    data_tables.beta  = matrix_alloc(N_CONFIGS,N_CONFIGS);
 
     // Allocate space for kernels (calloc also initializes values to 0)
-    kernel_value_t* kernels = (kernel_value_t*)calloc(COMPONENTS * N_KERNELS, sizeof(kernel_value_t));
+    data_tables.kernels = (kernel_value_t*)
+        calloc(COMPONENTS * N_KERNELS, sizeof(kernel_value_t));
 
-    vfloat value = compute_SPT_kernel(args,component,alpha,beta,kernels);
-    printf("result = %f\n",value);
+    // Initialize sum-, bare_scalar_products-, alpha- and beta-tables
+    compute_sum_table(data_tables.sum_table);
+    compute_bare_scalar_products(k, &vars,
+            data_tables.bare_scalar_products);
+    compute_alpha_beta_tables(data_tables.bare_scalar_products,
+            data_tables.alpha, data_tables.beta);
+
+    vfloat value = compute_SPT_kernel(args,n,component,&data_tables);
+    printf("result = " vfloat_fmt "\n",value);
 
     // Free allocated memory
-    free(kernels);
-    matrix_free(alpha);
-    matrix_free(beta);
+    free(data_tables.kernels);
+    matrix_free(data_tables.alpha);
+    matrix_free(data_tables.beta);
 }
 
 
