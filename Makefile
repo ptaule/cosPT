@@ -54,6 +54,10 @@ $(TEST_INTERFACE).so: $(TEST_INTERFACE).o $(OBJ)
 $(TEST_INTERFACE).o: $(TEST_INTERFACE).c $(HEADERS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
+diff_eq:
+	$(CC) $(CPPFLAGS) $(CFLAGS) gsl_diff_eq.c \
+		$(LDFLAGS) $(LDFLAGS_GSL) $^ $(LDLIBS_GSL) $(LDLIBS) -o diff_eq.prog
+	./diff_eq.prog
 
 clean:
 	$(RM) $(OBJ) main.o $(TEST_INTERFACE).o
