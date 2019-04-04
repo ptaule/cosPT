@@ -150,9 +150,11 @@ vfloat compute_SPT_kernel(
     }
 
     // Compute kernel index, this depends on arguments (argument_index) and
-    // which component is to be computed
+    // which component is to be computed. Additionally, the
+    // combined_kernel_index takes a 'time_step' argument, used when evolving
+    // the kernels in time. For the SPT kernels, we use time_step = 0
     short int argument_index = kernel_index_from_arguments(arguments);
-    short int index          = combined_kernel_index(argument_index,component);
+    short int index          = combined_kernel_index(argument_index,component,0);
 
     // const pointer alias to data_tables->kernels
     kernel_value_t* const kernels = data_tables->kernels;

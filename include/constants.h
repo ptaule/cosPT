@@ -14,9 +14,9 @@
 #ifndef LOOPS
 #define LOOPS 1
 #endif
-#ifndef COMPONENTS
+
 #define COMPONENTS 2
-#endif
+#define TIME_STEPS 100
 
 // Which GSL interpolation routine to use
 #define INTERPOL_TYPE gsl_interp_cspline
