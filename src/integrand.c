@@ -87,9 +87,9 @@ void find_kernel_arguments(
     short int m = diagram->m;
 
     // First argument is on the form k1 = k - k2 - k3 - ... - km
-    short int config[N_COEFFS] = {};
+    short int config[N_COEFFS] = {0};
     config[N_COEFFS - 1] = 1; // k-coefficient is 1
-    for (size_t i = 2; i <= m; ++i) {
+    for (int i = 2; i <= m; ++i) {
         config[rearrangement[i-2]] = - signs[i-2];
     }
     arguments_l[0] = config2label(config,N_COEFFS);
@@ -104,7 +104,7 @@ void find_kernel_arguments(
 
     // k2,k3,...,km arguments, the ordering of which is stored by the first
     // (m-1) entries of rearrangement[]
-    for (size_t i = 2; i <= m; ++i) {
+    for (int i = 2; i <= m; ++i) {
         config[rearrangement[i-2]] = signs[i-2];
         arguments_l[index_l++] = config2label(config,N_COEFFS);
         arguments_r[index_r++] = config2label(config,N_COEFFS);
@@ -112,7 +112,7 @@ void find_kernel_arguments(
     }
 
     // l-loop arguments
-    for (size_t i = 0; i < l; ++i) {
+    for (int i = 0; i < l; ++i) {
         short int loop_momentum_index = rearrangement[i + m - 1];
         config[loop_momentum_index] = 1;
         arguments_l[index_l++] = config2label(config,N_COEFFS);
@@ -122,7 +122,7 @@ void find_kernel_arguments(
         memset(config,0,sizeof(config));
     }
     // r-loop arguments
-    for (size_t i = 0; i < r; ++i) {
+    for (int i = 0; i < r; ++i) {
         short int loop_momentum_index = rearrangement[i + m - 1 + l];
         config[loop_momentum_index] = 1;
         arguments_r[index_r++] = config2label(config,N_COEFFS);
@@ -366,7 +366,7 @@ vfloat loop_momenta_symmetrization(
     // Tag loop momenta by number for symmetrization
     short int loop_momenta[LOOPS];
     for (int i = 0; i < LOOPS; ++i) loop_momenta[i] = i;
-    short int rearrangement[LOOPS] = {};
+    short int rearrangement[LOOPS] = {0};
 
     // Loop momenta combinations:
     // m-1         "connection" loops
@@ -455,7 +455,8 @@ vfloat integrand(
     compute_sum_table(data_tables.sum_table);
     compute_bare_scalar_products(input->k, vars,
             data_tables.bare_scalar_products);
-    compute_alpha_beta_tables(data_tables.bare_scalar_products,
+    // Cast bare_scalar_products to const vfloat 2D-array
+    compute_alpha_beta_tables((const vfloat (*)[])data_tables.bare_scalar_products,
             data_tables.alpha, data_tables.beta);
 
     diagram_t diagrams[N_DIAGRAMS];

@@ -35,12 +35,12 @@ void compute_bare_scalar_products(
         bare_scalar_products[i][N_COEFFS - 1] = value;
     }
 
+#if LOOPS >= 2
     // Compute Q_1 * Q_i
     // (This is a special case since phi_1 is chosen to be zero.)
     vfloat cos_theta_1 = vars->cos_theta[0];
     vfloat sin_theta_1 = sqrt(1 - pow(cos_theta_1,2));
     vfloat Q_1 = vars->magnitudes[0];
-
     for (int i = 1; i < N_COEFFS - 1; ++i) {
         vfloat sin_theta_i = sqrt(1 - pow(vars->cos_theta[i],2));
         vfloat value =
@@ -69,6 +69,7 @@ void compute_bare_scalar_products(
             bare_scalar_products[j][i] = value;
         }
     }
+#endif
 }
 
 
@@ -157,7 +158,7 @@ void compute_alpha_beta_tables(
 // This function computes (addition to) kernel index for fundamental vector
 // arguments. (It assumes that the arguments are fundamentals.)
 inline static short int kernel_index_from_fundamental(short int argument) {
-    short int coeffs[N_COEFFS] = {};
+    short int coeffs[N_COEFFS] = {0};
     label2config(argument,coeffs,N_COEFFS);
 
     // The last coefficient is for k, hence we can skip this (j < N_COEFFS - 1)

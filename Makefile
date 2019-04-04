@@ -11,6 +11,7 @@ HEADERS = $(wildcard $(INC_DIR)/*.h)
 
 TEST_INTERFACE = $(TEST_DIR)/test_interface
 
+CFLAGS += -Wall -Wextra -Wpedantic
 CPPFLAGS += -I/scratch/Cuba-4.2/ -I/scratch/gsl-2.5/
 
 LDFLAGS_GSL  = -L/scratch/gsl-2.5/.libs/ -L/scratch/gsl-2.5/cblas/.libs
@@ -20,11 +21,11 @@ LDLIBS_CUBA  = -lcuba
 
 LDLIBS += -lm
 
-all:            CFLAGS += -Wall -O3
-1loop:          CFLAGS += -Wall -O3 -DDEBUG=0 -DLOOPS=1
-2loop:          CFLAGS += -Wall -O3 -DDEBUG=0 -DLOOPS=2
-debug:          CFLAGS += -Wall -O0 -DDEBUG=2 -g
-test_interface: CFLAGS += -Wall -fPIC
+all:            CFLAGS += -O3
+1loop:          CFLAGS += -O3 -DDEBUG=0 -DLOOPS=1
+2loop:          CFLAGS += -O3 -DDEBUG=0 -DLOOPS=2
+debug:          CFLAGS += -O0 -DDEBUG=2 -g
+test_interface: CFLAGS += -fPIC
 
 .PHONY: all clean run 1loop 2loop test_interface
 

@@ -18,7 +18,6 @@
 
 vfloat partial_SPT_sum(
         const short int arguments[], /* kernel arguments                                  */
-        short int component,         /* component to compute, NB: assumed to be 0-indexed */
         short int n,                 /* kernel number                                     */
         short int m,                 /* sum index in kernel recursion relation            */
         short int a,                 /* coefficient: (2n+1) for F, 2 for G                */
@@ -28,8 +27,8 @@ vfloat partial_SPT_sum(
 {
     vfloat value = 0;
 
-    short int args_l[N_KERNEL_ARGS] = {};
-    short int args_r[N_KERNEL_ARGS] = {};
+    short int args_l[N_KERNEL_ARGS] = {0};
+    short int args_r[N_KERNEL_ARGS] = {0};
 
     for (int i = 0; i < N_KERNEL_ARGS; ++i) {
         args_l[i] = ZERO_LABEL;
@@ -177,7 +176,7 @@ vfloat compute_SPT_kernel(
     // Only sum up to (including) floor(n/2), since partial_SPT_sum()
     // simultaneously computes terms m and (n-m)
     for (int m = 1; m <= n/2; ++m) {
-        value += partial_SPT_sum(arguments,component,n,m,a,b,data_tables);
+        value += partial_SPT_sum(arguments,n,m,a,b,data_tables);
     }
 
     // Divide by overall factor in SPT recursion relation

@@ -51,9 +51,9 @@
 
 
 int cuba_integrand(
-        const int *ndim,
+        __attribute__((unused)) const int *ndim,
         const cubareal xx[],
-        const int *ncomp,
+        __attribute__((unused)) const int *ncomp,
         cubareal ff[],
         void *userdata
         )
@@ -64,26 +64,23 @@ int cuba_integrand(
     vfloat ratio = K_MAX/K_MIN;
 
     vfloat jacobian = 0.0;
-    switch (LOOPS) {
-        case 1:
-            vars.magnitudes[0] = K_MIN * pow(ratio,xx[0]);
-            vars.cos_theta[0] = xx[1];
-            jacobian = log(ratio) * pow(vars.magnitudes[0],3);
-            break;
-        case 2:
-            vars.magnitudes[0] = K_MIN * pow(ratio,xx[0]);
-            vars.magnitudes[1] = K_MIN * pow(ratio,xx[0] * xx[1]);
-            vars.cos_theta[0] = xx[2];
-            vars.cos_theta[1] = xx[3];
-            vars.phi[0] = xx[4] * TWOPI;
-            jacobian = TWOPI * xx[0]
-                * pow(log(ratio),2)
-                * pow(vars.magnitudes[0],3)
-                * pow(vars.magnitudes[1],3);
-            break;
-        default:
-            warning_verbose("No jacobian for LOOPS = %d",LOOPS);
-    }
+#if LOOPS == 1
+    vars.magnitudes[0] = K_MIN * pow(ratio,xx[0]);
+    vars.cos_theta[0] = xx[1];
+    jacobian = log(ratio) * pow(vars.magnitudes[0],3);
+#elif LOOPS == 2
+    vars.magnitudes[0] = K_MIN * pow(ratio,xx[0]);
+    vars.magnitudes[1] = K_MIN * pow(ratio,xx[0] * xx[1]);
+    vars.cos_theta[0] = xx[2];
+    vars.cos_theta[1] = xx[3];
+    vars.phi[0] = xx[4] * TWOPI;
+    jacobian = TWOPI * xx[0]
+        * pow(log(ratio),2)
+        * pow(vars.magnitudes[0],3)
+        * pow(vars.magnitudes[1],3);
+#else
+    warning_verbose("Monte-carlo integration not implemented for LOOPS = %d.",LOOPS);
+#endif
 
     ff[0] = jacobian * integrand(data,&vars);
     return 0;

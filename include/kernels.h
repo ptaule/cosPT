@@ -8,6 +8,7 @@
 #ifndef KERNELS_H
 #define KERNELS_H
 
+#include <stdbool.h>
 #include "constants.h"
 
 typedef struct {
@@ -19,7 +20,11 @@ typedef struct {
 typedef struct {
     vfloat magnitudes[LOOPS]; /* Loop momenta magnitudes                                     */
     vfloat cos_theta[LOOPS];  /* Cosine of polar angles of the loop momenta                  */
-    vfloat phi[LOOPS - 1];    /* We assume that the first loop momenta has azimuthal angle 0 */
+
+    /* We assume that the first loop momenta has azimuthal angle 0 */
+#if LOOPS >= 2
+    vfloat phi[LOOPS - 1];
+#endif
 } integration_variables_t;
 
 // Struct storing bare_scalar_products and pointers to various other data

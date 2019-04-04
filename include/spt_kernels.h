@@ -13,7 +13,6 @@
 
 vfloat partial_SPT_sum(
         const short int arguments[],
-        short int component,
         const short int n,
         const short int m,
         const short int a,

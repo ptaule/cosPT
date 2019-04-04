@@ -99,7 +99,7 @@ void compute_sum_table(short int sum_table[][N_CONFIGS]);
 short int zero_label();
 
 bool is_fundamental(short int label);
-bool unique_elements(const short int array[],size_t length, short int skip);
+bool unique_elements(const short int array[], short int length, short int skip);
 
 void print_gsl_matrix(const gsl_matrix* m, size_t height, size_t width);
 
