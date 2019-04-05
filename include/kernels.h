@@ -12,9 +12,9 @@
 #include "constants.h"
 
 typedef struct {
-    vfloat value;
+    vfloat* values;
     bool computed;
-} kernel_value_t;
+} kernel_values_t;
 
 // Struct storing integration variables
 typedef struct {
@@ -35,7 +35,7 @@ typedef struct {
     short int sum_table[N_CONFIGS][N_CONFIGS];
     matrix_t* alpha;
     matrix_t* beta;
-    kernel_value_t* kernels;
+    kernel_values_t* kernels;
 } table_pointers_t;
 
 void compute_bare_scalar_products(
@@ -58,10 +58,9 @@ void compute_alpha_beta_tables(
 short int kernel_index_from_arguments(const short int arguments[]);
 
 
-inline short int combined_kernel_index(
-        short int argument_index, short int component, short int time_step)
+inline short int combined_kernel_index(short int argument_index, short int component)
 {
-    return argument_index * COMPONENTS * TIME_STEPS + component * TIME_STEPS + time_step;
+    return argument_index * COMPONENTS + component;
 }
 
 #endif /* ifndef KERNELS_H */

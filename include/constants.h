@@ -32,13 +32,13 @@
 #endif
 
 // Variable precision
-typedef long double vfloat;
-#define vfloat_fmt   "%Le"
-#define matrix_t     gsl_matrix_long_double
-#define matrix_alloc gsl_matrix_long_double_alloc
-#define matrix_set   gsl_matrix_long_double_set
-#define matrix_get   gsl_matrix_long_double_get
-#define matrix_free  gsl_matrix_long_double_free
+typedef double vfloat;
+#define vfloat_fmt   "%e"
+#define matrix_t     gsl_matrix
+#define matrix_alloc gsl_matrix_alloc
+#define matrix_set   gsl_matrix_set
+#define matrix_get   gsl_matrix_get
+#define matrix_free  gsl_matrix_free
 
 // Various colors for debug output
 
