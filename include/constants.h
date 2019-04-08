@@ -20,6 +20,8 @@
 
 // Which GSL interpolation routine to use
 #define INTERPOL_TYPE gsl_interp_cspline
+// Which GSL ODE routine to use
+#define ODE_ROUTINE gsl_odeiv2_step_rkf45
 
 // Maximum input power spectrum resolution
 #define MAX_RESOLUTION 200

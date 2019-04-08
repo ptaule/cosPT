@@ -265,7 +265,7 @@ static vfloat integrand_term(
     vfloat result = 1;
     // If right kernel has only one argument, its value is 1
     if (m == 1 && r == 0) {
-        result *= compute_SPT_kernel(arguments_l, 2*l + m, input->component_a, data_tables);
+        result *= compute_SPT_kernels(arguments_l, 2*l + m, input->component_a, data_tables);
     }
     // If there are no "self" loops, and the components to compute are
     // equal, the kernels are equal
@@ -447,9 +447,16 @@ vfloat integrand(
     data_tables.beta  = matrix_alloc(N_CONFIGS,N_CONFIGS);
 
     // Allocate space for kernels (calloc also initializes values to 0)
-    data_tables.kernels = (kernel_value_t*)
-        calloc(COMPONENTS * N_KERNELS, sizeof(kernel_value_t));
+    data_tables.kernels = (kernel_t*)
+        calloc(N_KERNELS, sizeof(kernel_t));
 
+    // Allocate time/component dimensions of kernels
+    for (int i = 0; i < N_KERNELS; ++i) {
+        data_tables.kernels[i].values = (vfloat**)calloc(TIME_STEPS, sizeof(vfloat*));
+        for (int j = 0; j < TIME_STEPS; ++j) {
+            data_tables.kernels[i].values[j] = (vfloat*)calloc(COMPONENTS, sizeof(vfloat));
+        }
+    }
 
     // Initialize sum-, bare_scalar_products-, alpha- and beta-tables
     compute_sum_table(data_tables.sum_table);
