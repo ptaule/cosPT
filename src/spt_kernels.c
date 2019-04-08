@@ -16,17 +16,60 @@
 #include "../include/spt_kernels.h"
 
 
-vfloat partial_SPT_sum(
-        const short int arguments[], /* kernel arguments                                  */
-        short int n,                 /* kernel number                                     */
-        short int m,                 /* sum index in kernel recursion relation            */
-        short int a,                 /* coefficient: (2n+1) for F, 2 for G                */
-        short int b,                 /* coefficient: 3 for F, 2n for G                    */
+
+static inline void SPT_term(
+        short int m_l,
+        short int m_r,
+        short int index,
+        short int component,
+        short int time_step,
+        short int args_l[],
+        short int args_r[],
+        short int sum_l,
+        short int sum_r,
         const table_pointers_t* data_tables
         )
 {
-    vfloat value = 0;
+    short int n = m_l + m_r;
 
+    short int index_l = compute_SPT_kernels(args_l,m_l,time_step,data_tables);
+    short int index_r = compute_SPT_kernels(args_r,m_r,time_step,data_tables);
+
+    short int a,b;
+    switch (component) {
+        case 0:
+            a = 2 * n + 1;
+            b = 2;
+            break;
+        case 1:
+            a = 3;
+            b = 2 * n;
+            break;
+        default:
+            warning("SPT_term() does not accept argument 'component' which does "
+                    "not equal 0 or 1.")
+    }
+
+    data_tables->kernels[index].values[time_step][component] +=
+        data_tables->kernels[index_l].values[time_step][1] *
+        (  a * matrix_get(data_tables->alpha,sum_l,sum_r)
+           * data_tables->kernels[index_r].values[time_step][0]
+           + b * matrix_get(data_tables->beta ,sum_l,sum_r)
+           * data_tables->kernels[index_r].values[time_step][1]
+        );
+}
+
+
+
+static void partial_SPT_sum(
+        const short int arguments[], /* kernel arguments                                  */
+        short int n,                 /* kernel number                                     */
+        short int m,                 /* sum index in kernel recursion relation            */
+        short int index,             /* kernel index */
+        short int time_step,
+        const table_pointers_t* data_tables
+        )
+{
     short int args_l[N_KERNEL_ARGS] = {0};
     short int args_r[N_KERNEL_ARGS] = {0};
 
@@ -59,37 +102,30 @@ vfloat partial_SPT_sum(
         short int sum_l = sum_vectors(args_l,N_KERNEL_ARGS,data_tables->sum_table);
         short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS,data_tables->sum_table);
 
-        // F_n <-> component 0; G_n <-> component 1
-        value += compute_SPT_kernel(args_l,m,1,data_tables) *
-            (  a * matrix_get(data_tables->alpha,sum_l,sum_r)
-               * compute_SPT_kernel(args_r,n-m,0,data_tables)
-             + b * matrix_get(data_tables->beta ,sum_l,sum_r)
-               * compute_SPT_kernel(args_r,n-m,1,data_tables)
-            );
+        // Component 0 (F)
+        for (int i = 0; i < COMPONENTS; ++i) {
+            SPT_term(m,n-m,index,i,time_step,args_l,args_r,sum_l,sum_r,data_tables);
+        }
 
         // When m != (n - m), we may additionally compute the (n-m)-term by
         // swapping args_l, sum_l, m with args_r, sum_r and (n-m). Then
         // compute_SPT_kernel() only needs to sum up to (including) floor(n/2).
         if (m != n - m) {
-            value += compute_SPT_kernel(args_r,n-m,1,data_tables) *
-                (  a * matrix_get(data_tables->alpha,sum_r,sum_l)
-                   * compute_SPT_kernel(args_l,m,0,data_tables)
-                   + b * matrix_get(data_tables->beta ,sum_r,sum_l)
-                   * compute_SPT_kernel(args_l,m,1,data_tables)
-                );
+            for (int i = 0; i < COMPONENTS; ++i) {
+                SPT_term(n-m,m,index,i,time_step,args_r,args_l,sum_r,sum_l,data_tables);
+            }
         }
-
     } while (gsl_combination_next(comb_l) == GSL_SUCCESS &&
              gsl_combination_prev(comb_r) == GSL_SUCCESS
             );
 
     // Devide through by symmetrization factor (n choose m)
-    value /= gsl_sf_choose(n,m);
+    for (int i = 0; i < COMPONENTS; ++i) {
+        data_tables->kernels[index].values[time_step][i] /= gsl_sf_choose(n,m);
+    }
 
     gsl_combination_free(comb_l);
     gsl_combination_free(comb_r);
-
-    return value;
 }
 
 
@@ -127,10 +163,10 @@ static void print_kernel_info(
 
 
 
-vfloat compute_SPT_kernel(
-        const short int arguments[], /* kernel arguments                                  */
-        short int n,                 /* order in perturbation theory expansion            */
-        short int component,         /* component to compute, NB: assumed to be 0-indexed */
+short int compute_SPT_kernels(
+        const short int arguments[], /* kernel arguments                                    */
+        short int n,                 /* order in perturbation theory expansion              */
+        short int time_step,         /* time step where SPT kernels are stored, should be 0 */
         const table_pointers_t* data_tables
         )
 {
@@ -144,49 +180,32 @@ vfloat compute_SPT_kernel(
         warning_verbose("Number of arguments is %d, while n is %d.", n_args,n);
 #endif
 
+    short int index = kernel_index_from_arguments(arguments);
+
+    // Check if the SPT kernels are already computed
+    if (data_tables->kernels[index].ic_computed) return index;
+
     // For SPT kernels, F_1 = G_1 = ... = 1
     if (n == 1) {
-        return 1.0;
+        for (int i = 0; i < COMPONENTS; ++i) {
+            data_tables->kernels[index].values[time_step][i] = 1.0;
+        }
+        return index;
     }
-
-    // Compute kernel index, this depends on arguments (argument_index) and
-    // which component is to be computed. Additionally, the
-    // combined_kernel_index takes a 'time_step' argument, used when evolving
-    // the kernels in time. For the SPT kernels, we use time_step = 0
-    short int argument_index = kernel_index_from_arguments(arguments);
-    short int index          = combined_kernel_index(argument_index,component,0);
-
-    // const pointer alias to data_tables->kernels
-    kernel_value_t* const kernels = data_tables->kernels;
-
-    // Check if the kernel is already computed
-    if (kernels[index].computed) return kernels[index].value;
-
-    // Define some factors dependent on component to compute
-    short int a,b;
-    if (component == 0) {
-        a = 2 * n + 1;
-        b = 2;
-    }
-    else {
-        a = 3;
-        b = 2 * n;
-    }
-
-    vfloat value = 0.0;
 
     // Only sum up to (including) floor(n/2), since partial_SPT_sum()
     // simultaneously computes terms m and (n-m)
     for (int m = 1; m <= n/2; ++m) {
-        value += partial_SPT_sum(arguments,n,m,a,b,data_tables);
+        partial_SPT_sum(arguments,n,m,index,time_step,data_tables);
     }
 
     // Divide by overall factor in SPT recursion relation
-    value /= (2*n + 3) * (n - 1);
+    for (int i = 0; i < COMPONENTS; ++i) {
+        data_tables->kernels[index].values[time_step][i] /= (2*n + 3) * (n - 1);
+    }
 
     // Update kernel table
-    kernels[index].value = value;
-    kernels[index].computed = true;
+    data_tables->kernels[index].ic_computed = true;
 
-    return value;
+    return index;
 }

@@ -11,19 +11,10 @@
 #include "constants.h"
 #include "kernels.h"
 
-vfloat partial_SPT_sum(
-        const short int arguments[],
-        const short int n,
-        const short int m,
-        const short int a,
-        const short int b,
-        const table_pointers_t* data_tables
-        );
-
-vfloat compute_SPT_kernel(
+short int compute_SPT_kernels(
         const short int arguments[],
         short int n,
-        short int component,
+        short int time_step,
         const table_pointers_t* data_tables
         );
 
