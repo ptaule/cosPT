@@ -20,7 +20,7 @@
 
 inline static void initialize_timesteps(vfloat eta[], vfloat eta_i, vfloat eta_f) {
     // Linear time step:
-    vfloat d_eta = abs(eta_f - eta_i)/(TIME_STEPS - 1);
+    vfloat d_eta = fabs(eta_f - eta_i)/(TIME_STEPS - 1);
     for (int i = 0; i < TIME_STEPS; ++i) {
         eta[i] = eta_i + i*d_eta;
     }
@@ -28,8 +28,8 @@ inline static void initialize_timesteps(vfloat eta[], vfloat eta_i, vfloat eta_f
 
 
 static void vertex(
-        short int m1,
-        short int m2,
+        short int m_l,
+        short int m_r,
         const short int args_l[],
         const short int args_r[],
         short int sum_l,
@@ -40,62 +40,67 @@ static void vertex(
         const table_pointers_t* data_tables
         )
 {
-    // Compute RHS expression depending on component
-
     vfloat alpha_lr = matrix_get(data_tables->alpha,sum_l,sum_r);
     vfloat alpha_rl = matrix_get(data_tables->alpha,sum_r,sum_l);
-    vfloat beta     = matrix_get(data_tables->beta ,sum_r,sum_l);
+    vfloat beta     = matrix_get(data_tables->beta ,sum_l,sum_r);
 
-    short int index_l = kernel_evolution(args_l, -1, m1, omega, params, data_tables);
-    short int index_r = kernel_evolution(args_r, -1, m2, omega, params, data_tables);
+    short int index_l = kernel_evolution(args_l, -1, m_l, omega, params, data_tables);
+    short int index_r = kernel_evolution(args_r, -1, m_r, omega, params, data_tables);
 
     short int a,b,c;
 
     // Note: all components are zero-indexed
     for (int i = 0; i < TIME_STEPS; ++i) {
-        // Component a = 0, two contributing terms:
-        {
-            a = 0, b = 0, c = 1;
-            // gamma_001 = alpha_lr
-            rhs_sum[a][i] += 0.5 * alpha_lr
-                * data_tables->kernels[index_l].values[i][b]
-                * data_tables->kernels[index_r].values[i][c];
 
-            b = 1, c = 0;
-            // gamma_010 = alpha_rl
-            rhs_sum[a][i] += 0.5 * alpha_rl
-                * data_tables->kernels[index_l].values[i][b]
-                * data_tables->kernels[index_r].values[i][c];
-        }
-        // Component a = 1, one contributing term
-        {
-            a = 1, b = 1, c = 1;
-            // gamma_111 = beta
-            rhs_sum[a][i] += beta
-                * data_tables->kernels[index_l].values[i][b]
-                * data_tables->kernels[index_r].values[i][c];
-        }
-        // Component a = 2, two contributing terms
-        {
-            a = 2, b = 2, c = 3;
-            // gamma_223 = alpha_lr
-            rhs_sum[a][i] += 0.5 * alpha_lr
-                * data_tables->kernels[index_l].values[i][b]
-                * data_tables->kernels[index_r].values[i][c];
+        switch (COMPONENTS) {
+            case 4:
+                // Component a = 2, two contributing terms
+                a = 2, b = 2, c = 3;
+                // gamma_223 = alpha_lr
+                rhs_sum[a][i] += 0.5 * alpha_lr
+                    * data_tables->kernels[index_l].values[i][b]
+                    * data_tables->kernels[index_r].values[i][c];
 
-            b = 3, c = 2;
-            // gamma_232 = alpha_rl
-            rhs_sum[a][i] += 0.5 * alpha_rl
-                * data_tables->kernels[index_l].values[i][b]
-                * data_tables->kernels[index_r].values[i][c];
-        }
-        // Component a = 3, one contributing term
-        {
-            a = 2, b = 2, c = 3;
-            // gamma_444 = beta
-            rhs_sum[a][i] += beta
-                * data_tables->kernels[index_l].values[i][b]
-                * data_tables->kernels[index_r].values[i][c];
+                b = 3, c = 2;
+                // gamma_232 = alpha_rl
+                rhs_sum[a][i] += 0.5 * alpha_rl
+                    * data_tables->kernels[index_l].values[i][b]
+                    * data_tables->kernels[index_r].values[i][c];
+
+                // Component a = 3, one contributing term
+                a = 3, b = 3, c = 3;
+                // gamma_444 = beta
+                rhs_sum[a][i] += beta
+                    * data_tables->kernels[index_l].values[i][b]
+                    * data_tables->kernels[index_r].values[i][c];
+
+            // Use switch fallthrough; for case 4 also code in case 2 should be
+            // executed
+            __attribute__((fallthrough));
+            case 2:
+                // Component a = 0, two contributing terms:
+                a = 0, b = 0, c = 1;
+                // gamma_001 = alpha_lr
+                rhs_sum[a][i] += 0.5 * alpha_lr
+                    * data_tables->kernels[index_l].values[i][b]
+                    * data_tables->kernels[index_r].values[i][c];
+
+                b = 1, c = 0;
+                // gamma_010 = alpha_rl
+                rhs_sum[a][i] += 0.5 * alpha_rl
+                    * data_tables->kernels[index_l].values[i][b]
+                    * data_tables->kernels[index_r].values[i][c];
+
+                // Component a = 1, one contributing term
+                a = 1, b = 1, c = 1;
+                // gamma_111 = beta
+                rhs_sum[a][i] += beta
+                    * data_tables->kernels[index_l].values[i][b]
+                    * data_tables->kernels[index_r].values[i][c];
+
+                break;
+            default:
+                warning_verbose("No vertex implemented for COMPONENTS = %d.",COMPONENTS)
         }
     }
 }
@@ -157,9 +162,9 @@ void compute_RHS_sum(
 
             // When m != (n - m), we may additionally compute the (n-m)-term by
             // swapping args_l, sum_l, m with args_r, sum_r and (n-m). Then
-            // compute_SPT_kernel() only needs to sum up to (including) floor(n/2).
+            // compute_RHS_sum() only needs to sum up to (including) floor(n/2).
             if (m != n - m) {
-                vertex(n-m, m, args_l, args_r, sum_l, sum_r, rhs_sum, omega, params,
+                vertex(n-m, m, args_r, args_l, sum_r, sum_l, rhs_sum, omega, params,
                         data_tables);
             }
         } while (gsl_combination_next(comb_l) == GSL_SUCCESS &&
@@ -300,7 +305,7 @@ short int kernel_evolution(
         short int argument_index = kernel_index_from_arguments(arguments);
         if (argument_index != index) {
             warning_verbose("Index computed from kernel arguments (%d) does not "
-                    "equal kernel_index (%d).", argument_index, kernel_index);
+                    "equal index argument (%d).", argument_index, index);
         }
     }
 #endif
