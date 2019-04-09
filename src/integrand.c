@@ -203,50 +203,21 @@ inline static int heaviside_theta(
 // For debuggin purposes
 __attribute__((unused))
 static void print_integrand_info(
-        const short int arguments_l[N_KERNEL_ARGS],
-        const short int arguments_r[N_KERNEL_ARGS],
-        const diagram_t* diagram
+        const diagram_t* diagram,
+        const short int arguments_l[],
+        const short int arguments_r[]
         )
 {
-    printf(ANSI_COLOR_MAGENTA "(m,l,r) = (%d,%d,%d)\t",diagram->m,diagram->l,diagram->r);
-    printf(ANSI_COLOR_BLUE "F%d(k",2*diagram->l + diagram->m);
-    short int config[N_COEFFS];
-    label2config(arguments_l[0],config,N_COEFFS);
-    for (int i = 0; i < LOOPS; ++i) {
-        if (config[i] == 0) continue;
-        else if (config[i] == -1) printf("-Q%d",i+1);
-        else if (config[i] == 1)  printf("+Q%d",i+1);
-    }
-    printf(", ");
+    short int m = diagram->m;
+    short int l = diagram->l;
+    short int r = diagram->r;
 
-    for (int i = 1; i < N_KERNEL_ARGS; ++i) {
-        if (arguments_l[i] == ZERO_LABEL) break;
-        label2config(arguments_l[i],config,N_COEFFS);
-        for (int j = 0; j < LOOPS; ++j) {
-            if (config[j] == 0) continue;
-            else if (config[j] == -1) printf("-Q%d, ",j+1);
-            else if (config[j] == 1)  printf("+Q%d, ",j+1);
-        }
-    }
-    printf(") * F%d(k",2*diagram->r + diagram->m);
-    label2config(arguments_r[0],config,N_COEFFS);
-    for (int i = 0; i < LOOPS; ++i) {
-        if (config[i] == 0) continue;
-        else if (config[i] == -1) printf("-Q%d",i+1);
-        else if (config[i] == 1)  printf("+Q%d",i+1);
-    }
-    printf(", ");
-
-    for (int i = 1; i < N_KERNEL_ARGS; ++i) {
-        if (arguments_l[i] == ZERO_LABEL) break;
-        label2config(arguments_r[i],config,N_COEFFS);
-        for (int j = 0; j < LOOPS; ++j) {
-            if (config[j] == 0) continue;
-            else if (config[j] == -1) printf("-Q%d, ",j+1);
-            else if (config[j] == 1)  printf("+Q%d, ",j+1);
-        }
-    }
-    printf(")" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_MAGENTA "(m,l,r) = (%d,%d,%d)\t" ANSI_COLOR_BLUE,m,l,r);
+    printf("F%d",m + 2*l);
+    print_labels(arguments_l);
+    printf(" * F%d",m + 2*r);
+    print_labels(arguments_r);
+    printf(ANSI_COLOR_RESET);
 }
 
 
@@ -336,7 +307,7 @@ vfloat sign_flip_symmetrization(
         find_kernel_arguments(diagram, rearrangement, signs, arguments_l,
                 arguments_r);
 #if DEBUG >= 2
-        print_integrand_info(arguments_l, arguments_r, diagram);
+        print_integrand_info(diagram, arguments_l, arguments_r);
 #endif
         vfloat k1 = compute_k1(diagram->m, rearrangement, signs,
                 data_tables->bare_scalar_products);
