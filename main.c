@@ -58,7 +58,7 @@ int cuba_integrand(
         void *userdata
         )
 {
-    integration_input_t* data = (integration_input_t*)userdata;
+    integration_input_t* input = (integration_input_t*)userdata;
     integration_variables_t vars;
 
     vfloat ratio = K_MAX/K_MIN;
@@ -82,7 +82,7 @@ int cuba_integrand(
     warning_verbose("Monte-carlo integration not implemented for LOOPS = %d.",LOOPS);
 #endif
 
-    ff[0] = jacobian * integrand(data,&vars);
+    ff[0] = jacobian * integrand(input,&vars);
     return 0;
 }
 
@@ -101,7 +101,7 @@ int main () {
 
     read_PS(INPUT_FILE,&acc,&spline);
 
-    integration_input_t data = {
+    integration_input_t input = {
         .k = 0.0,
         .component_a = 0,
         .component_b = 0,
@@ -109,8 +109,8 @@ int main () {
         .spline = spline
     };
 
-    double* wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));
-    double* power_spectrum = (double*)calloc(N_POINTS, sizeof(double));
+    double* const wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));
+    double* const power_spectrum = (double*)calloc(N_POINTS, sizeof(double));
 
     // Overall factors:
     // - Only integrating over cos_theta_i between 0 and 1, multiply by 2 to
@@ -129,9 +129,9 @@ int main () {
     for (int i = 0; i < N_POINTS; ++i) {
         k *= exp(delta_logk);
         wavenumbers[i] = k;
-        data.k = k;
+        input.k = k;
 
-        Suave(N_DIMS, 1, cuba_integrand, &data,
+        Suave(N_DIMS, 1, cuba_integrand, &input,
                 NVEC, EPSREL, EPSABS, VERBOSE | LAST, SEED,
                 MINEVAL, MAXEVAL, NNEW, NMIN, FLATNESS,
                 STATEFILE, SPIN,
