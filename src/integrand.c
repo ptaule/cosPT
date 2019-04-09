@@ -17,6 +17,7 @@
 #include "../include/utilities.h"
 #include "../include/kernels.h"
 #include "../include/spt_kernels.h"
+#include "../include/evolve_kernels.h"
 #include "../include/integrand.h"
 
 
@@ -263,14 +264,17 @@ static vfloat integrand_term(
     short int r = diagram->r;
 
     vfloat result = 1;
-    // If right kernel has only one argument, its value is 1
-    if (m == 1 && r == 0) {
-        result *= compute_SPT_kernels(arguments_l, 2*l + m, input->component_a, data_tables);
-    }
+
     // If there are no "self" loops, and the components to compute are
     // equal, the kernels are equal
-    else if (l == 0 && r == 0 && input->component_a == input->component_b) {
-        result *= pow(compute_SPT_kernel(arguments_l, m, input->component_a, data_tables) ,2);
+    if (l == 0 && r == 0 && input->component_a == input->component_b) {
+
+        // First, compute SPT initial condition (time_step == 0)
+        short int index = compute_SPT_kernels(arguments_l, m, 0, data_tables);
+        // Then, evolve kernels
+        kernel_evolution(arguments_l, index, m, input->omega, input->params, data_tables);
+
+        result *= pow(data_tables->kernels[index].values[TIME_STEPS - 1][input->component_a] ,2);
     // In DEBUG-mode, check that kernel arguments in fact are equal in this
     // case
 #if DEBUG >= 1
@@ -281,8 +285,19 @@ static vfloat integrand_term(
 #endif
     }
     else {
-        result *= compute_SPT_kernel(arguments_l, 2*l + m, input->component_a, data_tables)
-                * compute_SPT_kernel(arguments_r, 2*r + m, input->component_b, data_tables);
+        // First, compute SPT initial condition (time_step == 0)
+        short int index_l = compute_SPT_kernels(arguments_l, 2*l + m, 0, data_tables);
+        short int index_r = compute_SPT_kernels(arguments_r, 2*r + m, 0, data_tables);
+        // Then, evolve kernels
+        kernel_evolution(arguments_l, index_l, 2*l + m, input->omega,
+                input->params, data_tables);
+        kernel_evolution(arguments_r, index_r, 2*r + m, input->omega,
+                input->params, data_tables);
+
+        result *= data_tables->
+                kernels[index_l].values[TIME_STEPS - 1][input->component_a]
+            * data_tables->
+                kernels[index_r].values[TIME_STEPS - 1][input->component_b];
     }
     return result;
 }

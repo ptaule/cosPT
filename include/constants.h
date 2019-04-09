@@ -111,4 +111,13 @@ typedef double vfloat;
 #define ZERO_LABEL zero_label()
 */
 
+// Parameters type
+typedef struct {
+    vfloat omega_m0;
+    vfloat f2;
+    vfloat f_nu;
+    vfloat eta_i;
+    vfloat eta_f;
+} parameters_t;
+
 #endif /* ifndef CONSTANTS_H */

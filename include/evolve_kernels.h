@@ -14,19 +14,11 @@
 #include "constants.h"
 #include "kernels.h"
 
-typedef struct {
-    vfloat omega_m0;
-    vfloat f2;
-    vfloat f_nu;
-    vfloat eta_i;
-    vfloat eta_f;
-    matrix_t* omega;
-} parameters_t;
-
-
-short int compute_time_dependent_kernels(
+short int kernel_evolution(
         const short int arguments[],
+        short int index,
         short int n,
+        matrix_t* omega,
         const parameters_t* params,
         const table_pointers_t* data_tables
         );

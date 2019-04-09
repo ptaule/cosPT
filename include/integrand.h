@@ -26,6 +26,8 @@ typedef struct {
     short int component_b;
     gsl_interp_accel* acc;
     gsl_spline* spline;
+    matrix_t* omega;
+    const parameters_t* params;
 } integration_input_t;
 
 int diagram_factor(const diagram_t* diagram);

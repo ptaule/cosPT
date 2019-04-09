@@ -101,16 +101,26 @@ int main () {
 
     read_PS(INPUT_FILE,&acc,&spline);
 
-    integration_input_t data = {
+    const parameters_t params = {
+        .omega_m0 = 0.26,
+        .f2 = 1,
+        .f_nu = 0,
+        .eta_i = - log(25 + 1),
+        .eta_f = 0,
+    };
+
+    integration_input_t input = {
         .k = 0.0,
         .component_a = 0,
         .component_b = 0,
         .acc = acc,
-        .spline = spline
+        .spline = spline,
+        .params = &params,
+        .omega = matrix_alloc(COMPONENTS, COMPONENTS)
     };
 
-    double* wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));
-    double* power_spectrum = (double*)calloc(N_POINTS, sizeof(double));
+    double* const wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));
+    double* const power_spectrum = (double*)calloc(N_POINTS, sizeof(double));
 
     // Overall factors:
     // - Only integrating over cos_theta_i between 0 and 1, multiply by 2 to
@@ -129,9 +139,9 @@ int main () {
     for (int i = 0; i < N_POINTS; ++i) {
         k *= exp(delta_logk);
         wavenumbers[i] = k;
-        data.k = k;
+        input.k = k;
 
-        Suave(N_DIMS, 1, cuba_integrand, &data,
+        Suave(N_DIMS, 1, cuba_integrand, &input,
                 NVEC, EPSREL, EPSABS, VERBOSE | LAST, SEED,
                 MINEVAL, MAXEVAL, NNEW, NMIN, FLATNESS,
                 STATEFILE, SPIN,
@@ -150,6 +160,7 @@ int main () {
 
     free(wavenumbers);
     free(power_spectrum);
+    matrix_free(input.omega);
 
     gsl_spline_free(spline);
     gsl_interp_accel_free(acc);
