@@ -353,7 +353,15 @@ short int kernel_evolution(
         }
     }
 
+
+    // Free GSL ODE driver
     gsl_odeiv2_driver_free(driver);
+    // Free GSL interpolation objects
+    for (int i = 0; i < COMPONENTS; ++i) {
+        gsl_spline_free(splines[i]);
+        gsl_interp_accel_free(accs[i]);
+    }
+
 
     data_tables->kernels[index].evolved = true;
     return index;

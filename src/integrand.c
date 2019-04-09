@@ -506,6 +506,13 @@ vfloat integrand(
     }
 
     // Free allocated memory
+    for (int i = 0; i < N_KERNELS; ++i) {
+        for (int j = 0; j < TIME_STEPS; ++j) {
+            free(data_tables.kernels[i].values[j]);
+        }
+        free(data_tables.kernels[i].values);
+    }
+
     free(data_tables.kernels);
     matrix_free(data_tables.alpha);
     matrix_free(data_tables.beta);
