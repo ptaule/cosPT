@@ -57,7 +57,7 @@ int cuba_integrand(
         void *userdata
         )
 {
-    integration_input_t* data = (integration_input_t*)userdata;
+    integration_input_t* input = (integration_input_t*)userdata;
     integration_variables_t vars;
 
     vfloat ratio = K_MAX/K_MIN;
@@ -81,7 +81,7 @@ int cuba_integrand(
     warning_verbose("Monte-carlo integration not implemented for LOOPS = %d.",LOOPS);
 #endif
 
-    ff[0] = jacobian * integrand(data,&vars);
+    ff[0] = jacobian * integrand(input,&vars);
     return 0;
 }
 
