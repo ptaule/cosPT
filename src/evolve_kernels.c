@@ -5,6 +5,8 @@
    Copyright (c) 2019 Petter Taule. All rights reserved.
 */
 
+#include <string.h>
+
 #include <gsl/gsl_combination.h>
 #include <gsl/gsl_sf.h>
 #include <gsl/gsl_interp.h>
@@ -114,8 +116,8 @@ void compute_RHS_sum(
         const parameters_t* params,
         const table_pointers_t* data_tables,
         const vfloat eta[],
-        gsl_spline* spline[],   /* out, interpolated RHS sum for each component      */
-        gsl_interp_accel* acc[] /* out, gsl_interpolation accelerated lookup objects */
+        gsl_spline* splines[],   /* out, interpolated RHS sum for each component      */
+        gsl_interp_accel* accs[] /* out, gsl_interpolation accelerated lookup objects */
         )
 {
     // Allocate memory for rhs_sum
@@ -185,9 +187,9 @@ void compute_RHS_sum(
 
     // Interpolate rhs_sum's
     for (int component = 0; component < COMPONENTS; ++component) {
-        acc[component] = gsl_interp_accel_alloc();
-        spline[component] = gsl_spline_alloc(INTERPOL_TYPE, TIME_STEPS);
-        gsl_spline_init(spline[component], eta, rhs_sum[component], TIME_STEPS);
+        accs[component] = gsl_interp_accel_alloc();
+        splines[component] = gsl_spline_alloc(INTERPOL_TYPE, TIME_STEPS);
+        gsl_spline_init(splines[component], eta, rhs_sum[component], TIME_STEPS);
 
         // Free allocated memory
         free(rhs_sum[component]);
@@ -344,7 +346,11 @@ short int kernel_evolution(
     vfloat eta_temp = params->eta_i;
     for (int i = 1; i < TIME_STEPS; i++)
     {
+        // y is a pointer to the kernel table at time i
         vfloat* y = data_tables->kernels[index].values[i];
+        // First copy previous values (i-1) to y
+        memcpy(y, data_tables->kernels[index].values[i-1], COMPONENTS * sizeof(vfloat));
+        // Then evolve y to time i
         int status = gsl_odeiv2_driver_apply(driver, &eta_temp, eta[i], y);
 
         if (status != GSL_SUCCESS) {
