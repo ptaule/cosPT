@@ -17,10 +17,9 @@
 
 
 
-static inline void SPT_term(
+static inline vfloat SPT_term(
         short int m_l,
         short int m_r,
-        short int index,
         short int component,
         short int time_step,
         short int args_l[],
@@ -50,11 +49,10 @@ static inline void SPT_term(
                     "not equal 0 or 1.")
     }
 
-    data_tables->kernels[index].values[time_step][component] +=
-        data_tables->kernels[index_l].values[time_step][1] *
-        (  a * matrix_get(data_tables->alpha,sum_l,sum_r)
+    return data_tables->kernels[index_l].values[time_step][1] *
+        (    a * matrix_get(data_tables->alpha,sum_l,sum_r)
            * data_tables->kernels[index_r].values[time_step][0]
-           + b * matrix_get(data_tables->beta ,sum_l,sum_r)
+           + b * matrix_get(data_tables->beta, sum_l,sum_r)
            * data_tables->kernels[index_r].values[time_step][1]
         );
 }
@@ -65,11 +63,13 @@ static void partial_SPT_sum(
         const short int arguments[], /* kernel arguments                                  */
         short int n,                 /* kernel number                                     */
         short int m,                 /* sum index in kernel recursion relation            */
-        short int index,             /* kernel index */
+        short int kernel_index,
         short int time_step,
         const table_pointers_t* data_tables
         )
 {
+    vfloat kernel_values[COMPONENTS] = {0};
+
     short int args_l[N_KERNEL_ARGS] = {0};
     short int args_r[N_KERNEL_ARGS] = {0};
 
@@ -102,17 +102,17 @@ static void partial_SPT_sum(
         short int sum_l = sum_vectors(args_l,N_KERNEL_ARGS,data_tables->sum_table);
         short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS,data_tables->sum_table);
 
-        // Component 0 (F)
         for (int i = 0; i < COMPONENTS; ++i) {
-            SPT_term(m,n-m,index,i,time_step,args_l,args_r,sum_l,sum_r,data_tables);
+            kernel_values[i] += SPT_term(m,n-m,i,time_step,args_l,args_r,sum_l,sum_r,data_tables);
         }
 
         // When m != (n - m), we may additionally compute the (n-m)-term by
         // swapping args_l, sum_l, m with args_r, sum_r and (n-m). Then
-        // compute_SPT_kernel() only needs to sum up to (including) floor(n/2).
+        // compute_SPT_kernels() only needs to sum up to (including) floor(n/2).
         if (m != n - m) {
             for (int i = 0; i < COMPONENTS; ++i) {
-                SPT_term(n-m,m,index,i,time_step,args_r,args_l,sum_r,sum_l,data_tables);
+                kernel_values[i] +=
+                    SPT_term(n-m,m,i,time_step,args_r,args_l,sum_r,sum_l,data_tables);
             }
         }
     } while (gsl_combination_next(comb_l) == GSL_SUCCESS &&
@@ -121,7 +121,13 @@ static void partial_SPT_sum(
 
     // Devide through by symmetrization factor (n choose m)
     for (int i = 0; i < COMPONENTS; ++i) {
-        data_tables->kernels[index].values[time_step][i] /= gsl_sf_choose(n,m);
+        kernel_values[i] /= gsl_sf_choose(n,m);
+    }
+
+    // Add calculated term for each component to kernel table
+    for (int i = 0; i < COMPONENTS; ++i) {
+        data_tables->kernels[kernel_index].values[time_step][i]
+            += kernel_values[i];
     }
 
     gsl_combination_free(comb_l);
@@ -180,32 +186,33 @@ short int compute_SPT_kernels(
         warning_verbose("Number of arguments is %d, while n is %d.", n_args,n);
 #endif
 
-    short int index = kernel_index_from_arguments(arguments);
+    short int kernel_index = kernel_index_from_arguments(arguments);
 
     // Check if the SPT kernels are already computed
-    if (data_tables->kernels[index].ic_computed) return index;
+    if (data_tables->kernels[kernel_index].ic_computed) return kernel_index;
 
     // For SPT kernels, F_1 = G_1 = ... = 1
     if (n == 1) {
         for (int i = 0; i < COMPONENTS; ++i) {
-            data_tables->kernels[index].values[time_step][i] = 1.0;
+            data_tables->kernels[kernel_index].values[time_step][i] = 1.0;
         }
-        return index;
+        return kernel_index;
     }
 
     // Only sum up to (including) floor(n/2), since partial_SPT_sum()
     // simultaneously computes terms m and (n-m)
     for (int m = 1; m <= n/2; ++m) {
-        partial_SPT_sum(arguments,n,m,index,time_step,data_tables);
+        partial_SPT_sum(arguments,n,m,kernel_index,time_step,data_tables);
     }
 
     // Divide by overall factor in SPT recursion relation
     for (int i = 0; i < COMPONENTS; ++i) {
-        data_tables->kernels[index].values[time_step][i] /= (2*n + 3) * (n - 1);
+        data_tables->kernels[kernel_index].values[time_step][i] /= (2*n + 3) * (n - 1);
     }
 
     // Update kernel table
-    data_tables->kernels[index].ic_computed = true;
+    data_tables->kernels[kernel_index].ic_computed = true;
 
-    return index;
+
+    return kernel_index;
 }
