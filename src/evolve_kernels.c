@@ -285,7 +285,7 @@ int evolve_kernels(double eta, const double y[], double f[], void *ode_input) {
 
 short int kernel_evolution(
         const short int arguments[],
-        short int index,             /* index, if known, else -1 */
+        short int kernel_index,             /* -1 indicates not known */
         short int n,
         matrix_t* omega,
         const parameters_t* params,
@@ -301,23 +301,28 @@ short int kernel_evolution(
     if (n_args != n)
         warning_verbose("Number of arguments is %d, while n is %d.", n_args,n);
 
-    // DEBUG: check that if an index is provided (index != -1), it is in fact
-    // equivalent to arguments
-    if (index != -1) {
+    // DEBUG: check that if an kernel_index is provided (kernel_index != -1),
+    // it is in fact equivalent to arguments
+    if (kernel_index != -1) {
         short int argument_index = kernel_index_from_arguments(arguments);
-        if (argument_index != index) {
+        if (argument_index != kernel_index) {
             warning_verbose("Index computed from kernel arguments (%d) does not "
-                    "equal index argument (%d).", argument_index, index);
+                    "equal kernel_index argument (%d).", argument_index,
+                    kernel_index);
         }
     }
 #endif
 
-    if (index == -1) {
-        index = kernel_index_from_arguments(arguments);
+    if (kernel_index == -1) {
+        kernel_index = kernel_index_from_arguments(arguments);
     }
 
-    // Check if the kernel is already computed
-    if (data_tables->kernels[index].evolved) return index;
+    // Alias pointer to kernel (TIME_STEPS x COMPONENTS table) we are working
+    // with for convenience/readability
+    kernel_t* const kernel = &data_tables->kernels[kernel_index];
+
+    // If the kernel is already computed, return kernel_index
+    if (kernel->evolved) return kernel_index;
 
     // GSL interpolation variables for interpolated RHS
     gsl_spline*       splines[COMPONENTS];
@@ -341,17 +346,17 @@ short int kernel_evolution(
 
     gsl_odeiv2_system sys = {evolve_kernels, NULL, COMPONENTS, &input};
     gsl_odeiv2_driver* driver = gsl_odeiv2_driver_alloc_y_new(
-            &sys, gsl_odeiv2_step_rkf45, 1e-6, 1e-6, 1e-6);
+            &sys, gsl_odeiv2_step_rkf45, 1e-6, 1e-6, 0);
 
-    vfloat eta_temp = params->eta_i;
+    vfloat eta_current = params->eta_i;
     for (int i = 1; i < TIME_STEPS; i++)
     {
         // y is a pointer to the kernel table at time i
-        vfloat* y = data_tables->kernels[index].values[i];
+        vfloat* y = kernel->values[i];
         // First copy previous values (i-1) to y
-        memcpy(y, data_tables->kernels[index].values[i-1], COMPONENTS * sizeof(vfloat));
+        memcpy(y, kernel->values[i-1], COMPONENTS * sizeof(vfloat));
         // Then evolve y to time i
-        int status = gsl_odeiv2_driver_apply(driver, &eta_temp, eta[i], y);
+        int status = gsl_odeiv2_driver_apply(driver, &eta_current, eta[i], y);
 
         if (status != GSL_SUCCESS) {
             warning_verbose("GLS ODE driver gave error value = %d.", status);
@@ -368,7 +373,6 @@ short int kernel_evolution(
         gsl_interp_accel_free(accs[i]);
     }
 
-
-    data_tables->kernels[index].evolved = true;
-    return index;
+    kernel->evolved = true;
+    return kernel_index;
 }

@@ -188,13 +188,17 @@ short int compute_SPT_kernels(
 
     short int kernel_index = kernel_index_from_arguments(arguments);
 
+    // Alias pointer to kernel (TIME_STEPS x COMPONENTS table) we are working
+    // with for convenience/readability
+    kernel_t* const kernel = &data_tables->kernels[kernel_index];
+
     // Check if the SPT kernels are already computed
-    if (data_tables->kernels[kernel_index].ic_computed) return kernel_index;
+    if (kernel->ic_computed) return kernel_index;
 
     // For SPT kernels, F_1 = G_1 = ... = 1
     if (n == 1) {
         for (int i = 0; i < COMPONENTS; ++i) {
-            data_tables->kernels[kernel_index].values[time_step][i] = 1.0;
+            kernel->values[time_step][i] = 1.0;
         }
         return kernel_index;
     }
@@ -207,12 +211,11 @@ short int compute_SPT_kernels(
 
     // Divide by overall factor in SPT recursion relation
     for (int i = 0; i < COMPONENTS; ++i) {
-        data_tables->kernels[kernel_index].values[time_step][i] /= (2*n + 3) * (n - 1);
+        kernel->values[time_step][i] /= (2*n + 3) * (n - 1);
     }
 
     // Update kernel table
-    data_tables->kernels[kernel_index].ic_computed = true;
-
+    kernel->ic_computed = true;
 
     return kernel_index;
 }
