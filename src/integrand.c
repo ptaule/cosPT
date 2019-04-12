@@ -256,26 +256,26 @@ static vfloat integrand_term(
 
     vfloat result = 1;
 
-    // If there are no "self" loops, and the components to compute are
-    // equal, the kernels are equal
-    if (l == 0 && r == 0 && input->component_a == input->component_b) {
+    /* // If there are no "self" loops, and the components to compute are */
+    /* // equal, the kernels are equal */
+    /* if (l == 0 && r == 0 && input->component_a == input->component_b) { */
 
-        // First, compute SPT initial condition (time_step == 0)
-        short int index = compute_SPT_kernels(arguments_l, m, 0, data_tables);
-        // Then, evolve kernels
-        kernel_evolution(arguments_l, index, m, input->omega, input->params, data_tables);
+    /*     // First, compute SPT initial condition (time_step == 0) */
+    /*     short int index = compute_SPT_kernels(arguments_l, m, 0, data_tables); */
+    /*     // Then, evolve kernels */
+    /*     kernel_evolution(arguments_l, index, m, input->omega, input->params, data_tables); */
 
-        result *= pow(data_tables->kernels[index].values[TIME_STEPS - 1][input->component_a] ,2);
-    // In DEBUG-mode, check that kernel arguments in fact are equal in this
-    // case
-#if DEBUG >= 1
-        for (int i = 0; i < N_KERNEL_ARGS; ++i) {
-            if (arguments_l[i] != arguments_r[i])
-                warning("Arguments l & r were wrongly assumed equal.");
-        }
-#endif
-    }
-    else {
+    /*     result *= pow(data_tables->kernels[index].values[TIME_STEPS - 1][input->component_a] ,2); */
+    /* // In DEBUG-mode, check that kernel arguments in fact are equal in this */
+    /* // case */
+/* #if DEBUG >= 1 */
+    /*     for (int i = 0; i < N_KERNEL_ARGS; ++i) { */
+    /*         if (arguments_l[i] != arguments_r[i]) */
+    /*             warning("Arguments l & r were wrongly assumed equal."); */
+    /*     } */
+/* #endif */
+    /* } */
+    /* else { */
         // First, compute SPT initial condition (time_step == 0)
         short int index_l = compute_SPT_kernels(arguments_l, 2*l + m, 0, data_tables);
         short int index_r = compute_SPT_kernels(arguments_r, 2*r + m, 0, data_tables);
@@ -285,11 +285,14 @@ static vfloat integrand_term(
         kernel_evolution(arguments_r, index_r, 2*r + m, input->omega,
                 input->params, data_tables);
 
+        print_evolved_kernel(arguments_l,index_l,2*l+m, data_tables);
+        print_evolved_kernel(arguments_r,index_r,2*r+m, data_tables);
+
         result *= data_tables->
                 kernels[index_l].values[TIME_STEPS - 1][input->component_a]
             * data_tables->
                 kernels[index_r].values[TIME_STEPS - 1][input->component_b];
-    }
+    /* } */
     return result;
 }
 
