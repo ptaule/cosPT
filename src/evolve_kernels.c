@@ -222,8 +222,10 @@ typedef struct {
 
 
 inline static void set_omega_matrix(matrix_t* omega, vfloat eta, const parameters_t* params) {
-    double hubble_factor = params->omega_m0 * exp(-3*eta) + (1 - params->omega_m0);
-    double omega_M = params->omega_m0 * exp(-3*eta)/ hubble_factor;
+    (void)eta;
+    (void)params;
+    /* double hubble_factor = params->omega_m0 * exp(-3*eta) + (1 - params->omega_m0); */
+    /* double omega_M = params->omega_m0 * exp(-3*eta)/ hubble_factor; */
 
     /* double k_FS = 0.908 * sqrt(params->omega_m0) * params->m_nu/3 * exp(eta/2); */
 
@@ -235,8 +237,10 @@ inline static void set_omega_matrix(matrix_t* omega, vfloat eta, const parameter
     matrix_set(omega,0,0,  0);
     matrix_set(omega,0,1, -1);
     // Second row
-    matrix_set(omega,1,0, -3/2.0 * omega_M/params->f2    );
-    matrix_set(omega,1,1,  3/2.0 * omega_M/params->f2 - 1);
+    /* matrix_set(omega,1,0, -3/2.0 * omega_M/params->f2    ); */
+    /* matrix_set(omega,1,1,  3/2.0 * omega_M/params->f2 - 1); */
+    matrix_set(omega,1,0, -1.5);
+    matrix_set(omega,1,1, 0.5);
 
 /*
     // First row
