@@ -59,4 +59,11 @@ vfloat loop_momenta_symmetrization(
 vfloat integrand(const integration_input_t* data,
         const integration_variables_t* vars);
 
+void print_evolved_kernel(
+        const short int arguments[],
+        short int index,
+        short int n,
+        const table_pointers_t* data_tables
+        );
+
 #endif /* ifndef INTEGRAND_H */
