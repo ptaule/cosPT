@@ -138,39 +138,6 @@ static void partial_SPT_sum(
 
 
 
-// For debuggin purposes
-__attribute__((unused))
-static void print_kernel_info(
-        const short int arguments[],
-        short int n,
-        short int component,
-        vfloat value
-        )
-{
-    printf("F%d(k",n);
-    short int config[N_COEFFS];
-    label2config(arguments[0],config,N_COEFFS);
-    for (int i = 0; i < LOOPS; ++i) {
-        if (config[i] == 0) continue;
-        else if (config[i] == -1) printf("-Q%d",i+1);
-        else if (config[i] == 1)  printf("+Q%d",i+1);
-    }
-    printf(", ");
-
-    for (int i = 1; i < N_KERNEL_ARGS; ++i) {
-        if (arguments[i] == ZERO_LABEL) break;
-        label2config(arguments[i],config,N_COEFFS);
-        for (int j = 0; j < LOOPS; ++j) {
-            if (config[j] == 0) continue;
-            else if (config[j] == -1) printf("-Q%d, ",j+1);
-            else if (config[j] == 1)  printf("+Q%d, ",j+1);
-        }
-    }
-    printf(") (comp. %d) \t\t\t= " vfloat_fmt "\n",component, value);
-}
-
-
-
 short int compute_SPT_kernels(
         const short int arguments[], /* kernel arguments                                    */
         short int n,                 /* order in perturbation theory expansion              */
