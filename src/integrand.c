@@ -220,11 +220,31 @@ static void print_integrand_info(
     printf(ANSI_COLOR_RESET);
 }
 
+// For debuggin purposes
+/* __attribute__((unused)) */
+void print_evolved_kernel(
+        const short int arguments[],
+        short int index,
+        short int n,
+        const table_pointers_t* data_tables
+        )
+{
+    printf("F%d",n);
+    print_labels(arguments);
+    printf("\n");
+    for (int i = 0; i < TIME_STEPS; ++i) {
+        for (int j = 0; j < COMPONENTS; ++j) {
+            printf("%.5e\t",data_tables->kernels[index].values[i][j]);
+        }
+        printf("\n");
+    }
+}
+
 
 
 static vfloat integrand_term(
-        const short int arguments_l[N_KERNEL_ARGS],
-        const short int arguments_r[N_KERNEL_ARGS],
+        const short int arguments_l[],
+        const short int arguments_r[],
         const diagram_t* diagram,
         const integration_input_t* input,
         const table_pointers_t* data_tables
@@ -433,8 +453,7 @@ vfloat integrand(
     data_tables.beta  = matrix_alloc(N_CONFIGS,N_CONFIGS);
 
     // Allocate space for kernels (calloc also initializes values to 0)
-    data_tables.kernels = (kernel_t*)
-        calloc(N_KERNELS, sizeof(kernel_t));
+    data_tables.kernels = (kernel_t*)calloc(N_KERNELS, sizeof(kernel_t));
 
     // Allocate time/component dimensions of kernels
     for (int i = 0; i < N_KERNELS; ++i) {
