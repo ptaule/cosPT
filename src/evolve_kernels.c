@@ -36,7 +36,7 @@ static void vertex(
         const short int args_r[],
         short int sum_l,
         short int sum_r,
-        vfloat** rhs_sum,
+        vfloat** partial_rhs_sum,
         matrix_t* omega,
         const parameters_t* params,
         const table_pointers_t* data_tables
@@ -59,20 +59,20 @@ static void vertex(
                 // Component a = 2, two contributing terms
                 a = 2, b = 2, c = 3;
                 // gamma_223 = alpha_lr
-                rhs_sum[a][i] += 0.5 * alpha_lr
+                partial_rhs_sum[a][i] += 0.5 * alpha_lr
                     * data_tables->kernels[index_l].values[i][b]
                     * data_tables->kernels[index_r].values[i][c];
 
                 b = 3, c = 2;
                 // gamma_232 = alpha_rl
-                rhs_sum[a][i] += 0.5 * alpha_rl
+                partial_rhs_sum[a][i] += 0.5 * alpha_rl
                     * data_tables->kernels[index_l].values[i][b]
                     * data_tables->kernels[index_r].values[i][c];
 
                 // Component a = 3, one contributing term
                 a = 3, b = 3, c = 3;
                 // gamma_444 = beta
-                rhs_sum[a][i] += beta
+                partial_rhs_sum[a][i] += beta
                     * data_tables->kernels[index_l].values[i][b]
                     * data_tables->kernels[index_r].values[i][c];
 
@@ -83,20 +83,20 @@ static void vertex(
                 // Component a = 0, two contributing terms:
                 a = 0, b = 0, c = 1;
                 // gamma_001 = alpha_lr
-                rhs_sum[a][i] += 0.5 * alpha_lr
+                partial_rhs_sum[a][i] += 0.5 * alpha_lr
                     * data_tables->kernels[index_l].values[i][b]
                     * data_tables->kernels[index_r].values[i][c];
 
                 b = 1, c = 0;
                 // gamma_010 = alpha_rl
-                rhs_sum[a][i] += 0.5 * alpha_rl
+                partial_rhs_sum[a][i] += 0.5 * alpha_rl
                     * data_tables->kernels[index_l].values[i][b]
                     * data_tables->kernels[index_r].values[i][c];
 
                 // Component a = 1, one contributing term
                 a = 1, b = 1, c = 1;
                 // gamma_111 = beta
-                rhs_sum[a][i] += beta
+                partial_rhs_sum[a][i] += beta
                     * data_tables->kernels[index_l].values[i][b]
                     * data_tables->kernels[index_r].values[i][c];
 
@@ -120,16 +120,26 @@ void compute_RHS_sum(
         gsl_interp_accel* accs[] /* out, gsl_interpolation accelerated lookup objects */
         )
 {
-    // Allocate memory for rhs_sum
+    // Allocate memory for rhs_sum and partial_rhs_sum (the last is used within the m-loop)
     vfloat** const rhs_sum = (vfloat**)calloc(COMPONENTS, sizeof(vfloat*));
+    vfloat** const partial_rhs_sum = (vfloat**)calloc(COMPONENTS, sizeof(vfloat*));
     for (int i = 0; i < COMPONENTS; ++i) {
         rhs_sum[i] = (vfloat*)calloc(TIME_STEPS, sizeof(vfloat));
+        partial_rhs_sum[i] = (vfloat*)calloc(TIME_STEPS, sizeof(vfloat));
     }
 
     short int args_l[N_KERNEL_ARGS] = {0};
     short int args_r[N_KERNEL_ARGS] = {0};
 
     for (int m = 1; m <= n/2; ++m) {
+        // Initialize partial_rhs_sum to 0
+        for (int i = 0; i < COMPONENTS; ++i) {
+            for (int j = 0; j < TIME_STEPS; ++j) {
+                partial_rhs_sum[i][j] = 0;
+            }
+        }
+
+        // Initialize args_l and args_r
         for (int i = 0; i < N_KERNEL_ARGS; ++i) {
             args_l[i] = ZERO_LABEL;
             args_r[i] = ZERO_LABEL;
@@ -159,14 +169,14 @@ void compute_RHS_sum(
             short int sum_l = sum_vectors(args_l,N_KERNEL_ARGS,data_tables->sum_table);
             short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS,data_tables->sum_table);
 
-            vertex(m, n-m, args_l, args_r, sum_l, sum_r, rhs_sum, omega, params,
+            vertex(m, n-m, args_l, args_r, sum_l, sum_r, partial_rhs_sum, omega, params,
                     data_tables);
 
             // When m != (n - m), we may additionally compute the (n-m)-term by
             // swapping args_l, sum_l, m with args_r, sum_r and (n-m). Then
             // compute_RHS_sum() only needs to sum up to (including) floor(n/2).
             if (m != n - m) {
-                vertex(n-m, m, args_r, args_l, sum_r, sum_l, rhs_sum, omega, params,
+                vertex(n-m, m, args_r, args_l, sum_r, sum_l, partial_rhs_sum, omega, params,
                         data_tables);
             }
         } while (gsl_combination_next(comb_l) == GSL_SUCCESS &&
@@ -177,7 +187,7 @@ void compute_RHS_sum(
         int n_choose_m = gsl_sf_choose(n,m);
         for (int i = 0; i < COMPONENTS; ++i) {
             for (int j = 0; j < TIME_STEPS; ++j) {
-                rhs_sum[i][j] /= n_choose_m;
+                rhs_sum[i][j] += partial_rhs_sum[i][j] / n_choose_m;
             }
         }
 
@@ -186,14 +196,16 @@ void compute_RHS_sum(
     }
 
     // Interpolate rhs_sum's
-    for (int component = 0; component < COMPONENTS; ++component) {
-        accs[component] = gsl_interp_accel_alloc();
-        splines[component] = gsl_spline_alloc(INTERPOL_TYPE, TIME_STEPS);
-        gsl_spline_init(splines[component], eta, rhs_sum[component], TIME_STEPS);
+    for (int i = 0; i < COMPONENTS; ++i) {
+        accs[i] = gsl_interp_accel_alloc();
+        splines[i] = gsl_spline_alloc(INTERPOL_TYPE, TIME_STEPS);
+        gsl_spline_init(splines[i], eta, rhs_sum[i], TIME_STEPS);
 
         // Free allocated memory
-        free(rhs_sum[component]);
+        free(partial_rhs_sum[i]);
+        free(rhs_sum[i]);
     }
+    free(partial_rhs_sum);
     free(rhs_sum);
 }
 
@@ -345,8 +357,8 @@ short int kernel_evolution(
     };
 
     gsl_odeiv2_system sys = {evolve_kernels, NULL, COMPONENTS, &input};
-    gsl_odeiv2_driver* driver = gsl_odeiv2_driver_alloc_y_new(
-            &sys, gsl_odeiv2_step_rkf45, 1e-6, 1e-6, 0);
+    gsl_odeiv2_driver* driver = gsl_odeiv2_driver_alloc_y_new(&sys,
+            gsl_odeiv2_step_rkf45, 1e-6, 1e-6, 0);
 
     vfloat eta_current = params->eta_i;
     for (int i = 1; i < TIME_STEPS; i++)
@@ -363,7 +375,6 @@ short int kernel_evolution(
             break;
         }
     }
-
 
     // Free GSL ODE driver
     gsl_odeiv2_driver_free(driver);

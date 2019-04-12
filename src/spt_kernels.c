@@ -73,6 +73,7 @@ static void partial_SPT_sum(
     short int args_l[N_KERNEL_ARGS] = {0};
     short int args_r[N_KERNEL_ARGS] = {0};
 
+    // Initialize args_l and args_r
     for (int i = 0; i < N_KERNEL_ARGS; ++i) {
         args_l[i] = ZERO_LABEL;
         args_r[i] = ZERO_LABEL;
