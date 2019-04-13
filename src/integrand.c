@@ -138,13 +138,13 @@ static vfloat integrand_term(
 
     // If right kernel only has one argument, its value is 1
     if (m == 1 && r == 0) {
-        result *= compute_SPT_kernel(kernel_index_l, arguments_l, 2*l + m,
+        result *= compute_SPT_kernel(arguments_l, kernel_index_l, 2*l + m,
                 input->component_a, data_tables);
     }
     // If there are no "self" loops, and the components to compute are
     // equal, the kernels are equal
     else if (l == 0 && r == 0 && input->component_a == input->component_b) {
-        result *= pow(compute_SPT_kernel(kernel_index_l, arguments_l, m,
+        result *= pow(compute_SPT_kernel(arguments_l, kernel_index_l, m,
                     input->component_a, data_tables) ,2);
 
     // In DEBUG-mode, check that kernel arguments in fact are equal in this
@@ -160,9 +160,9 @@ static vfloat integrand_term(
 #endif
     }
     else {
-        result *= compute_SPT_kernel(kernel_index_l, arguments_l, 2*l + m,
+        result *= compute_SPT_kernel(arguments_l, kernel_index_l, 2*l + m,
                     input->component_a, data_tables)
-                * compute_SPT_kernel(kernel_index_r, arguments_r, 2*r + m,
+                * compute_SPT_kernel(arguments_r, kernel_index_r, 2*r + m,
                     input->component_b, data_tables);
     }
 

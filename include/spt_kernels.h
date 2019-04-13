@@ -12,8 +12,8 @@
 #include "kernels.h"
 
 vfloat compute_SPT_kernel(
-        short int kernel_index,
         const short int arguments[],
+        short int kernel_index,
         short int n,
         short int component,
         const table_pointers_t* data_tables
