@@ -12,9 +12,10 @@
 #include "constants.h"
 
 typedef struct {
-    vfloat** values;  /* TIME_STEPS x COMPONENTS table of kernels */
-    bool ic_computed; /* initial condition (SPT) kernel computed? */
-    bool evolved;     /* Evolved by GSL ODE routine?              */
+    double** values;    /* TIME_STEPS x COMPONENTS table of kernels  */
+    vfloat* spt_values; /* COMPONENTS array of initial kernels (SPT) */
+    bool evolved;       /* Evolved by GSL ODE routine?               */
+    bool ic_computed;   /* initial condition (SPT) kernel computed?  */
 } kernel_t;
 
 // Struct storing integration variables

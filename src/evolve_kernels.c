@@ -22,7 +22,7 @@
 
 inline static void initialize_timesteps(vfloat eta[], vfloat eta_i, vfloat eta_f) {
     // Linear time step:
-    vfloat d_eta = fabs(eta_f - eta_i)/(TIME_STEPS - 1);
+    vfloat d_eta = fabs(eta_f - eta_i)/(TIME_STEPS + 1);
     for (int i = 0; i < TIME_STEPS; ++i) {
         eta[i] = eta_i + i*d_eta;
     }
@@ -348,10 +348,15 @@ short int kernel_evolution(
     vfloat eta[TIME_STEPS];
     initialize_timesteps(eta, params->eta_i, params->eta_f);
 
+    // Copy ICs from SPT kernels
+    for (int i = 0; i < COMPONENTS; ++i) {
+        kernel->values[0][i] = (double)kernel->spt_values[i];
+    }
+
     // Compute RHS sum in evolution equation
     compute_RHS_sum(arguments, n, omega, params, data_tables, eta, splines, accs);
 
-    // Set up ODE system
+    // Set up ODE input and system
     ode_input_t input = {
         .n = n,
         .parameters = params,
@@ -365,12 +370,13 @@ short int kernel_evolution(
             gsl_odeiv2_step_rkf45, 1e-6, 1e-6, 0);
 
     vfloat eta_current = params->eta_i;
-    for (int i = 1; i < TIME_STEPS; i++)
-    {
+
+    // Evolve system
+    for (int i = 1; i < TIME_STEPS; i++) {
         // y is a pointer to the kernel table at time i
         vfloat* y = kernel->values[i];
         // First copy previous values (i-1) to y
-        memcpy(y, kernel->values[i-1], COMPONENTS * sizeof(vfloat));
+        memcpy(y, kernel->values[i-1], COMPONENTS * sizeof(double));
         // Then evolve y to time i
         int status = gsl_odeiv2_driver_apply(driver, &eta_current, eta[i], y);
 
