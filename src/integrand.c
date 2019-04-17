@@ -457,10 +457,10 @@ vfloat integrand(
 
     // Allocate time/component dimensions of kernels
     for (int i = 0; i < N_KERNELS; ++i) {
-        data_tables.kernels[i].values = (vfloat**)calloc(TIME_STEPS, sizeof(vfloat*));
+        data_tables.kernels[i].values = (double**)calloc(TIME_STEPS, sizeof(double*));
         data_tables.kernels[i].spt_values = (vfloat*)calloc(COMPONENTS, sizeof(vfloat));
         for (int j = 0; j < TIME_STEPS; ++j) {
-            data_tables.kernels[i].values[j] = (vfloat*)calloc(COMPONENTS, sizeof(vfloat));
+            data_tables.kernels[i].values[j] = (double*)calloc(COMPONENTS, sizeof(double));
         }
     }
 

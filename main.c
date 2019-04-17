@@ -116,7 +116,7 @@ int main () {
         .acc = acc,
         .spline = spline,
         .params = &params,
-        .omega = matrix_alloc(COMPONENTS, COMPONENTS)
+        .omega = gsl_matrix_alloc(COMPONENTS, COMPONENTS)
     };
 
     double* const wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));
@@ -160,7 +160,7 @@ int main () {
 
     free(wavenumbers);
     free(power_spectrum);
-    matrix_free(input.omega);
+    gsl_matrix_free(input.omega);
 
     gsl_spline_free(spline);
     gsl_interp_accel_free(acc);

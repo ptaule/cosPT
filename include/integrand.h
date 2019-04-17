@@ -26,7 +26,7 @@ typedef struct {
     short int component_b;
     gsl_interp_accel* acc;
     gsl_spline* spline;
-    matrix_t* omega;
+    gsl_matrix* omega;
     const parameters_t* params;
 } integration_input_t;
 

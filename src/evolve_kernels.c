@@ -20,9 +20,9 @@
 #include "../include/evolve_kernels.h"
 
 
-inline static void initialize_timesteps(vfloat eta[], vfloat eta_i, vfloat eta_f) {
+inline static void initialize_timesteps(double eta[], double eta_i, double eta_f) {
     // Linear time step:
-    vfloat d_eta = fabs(eta_f - eta_i)/(TIME_STEPS + 1);
+    double d_eta = fabs(eta_f - eta_i)/(TIME_STEPS + 1);
     for (int i = 0; i < TIME_STEPS; ++i) {
         eta[i] = eta_i + i*d_eta;
     }
@@ -37,7 +37,7 @@ static void vertex(
         short int sum_l,
         short int sum_r,
         vfloat** partial_rhs_sum,
-        matrix_t* omega,
+        gsl_matrix* omega,
         const parameters_t* params,
         const table_pointers_t* data_tables
         )
@@ -112,19 +112,19 @@ static void vertex(
 void compute_RHS_sum(
         const short int arguments[],
         short int n,
-        matrix_t* omega,
+        gsl_matrix* omega,
         const parameters_t* params,
         const table_pointers_t* data_tables,
-        const vfloat eta[],
+        const double eta[],
         gsl_spline* splines[],   /* out, interpolated RHS sum for each component      */
         gsl_interp_accel* accs[] /* out, gsl_interpolation accelerated lookup objects */
         )
 {
     // Allocate memory for rhs_sum and partial_rhs_sum (the last is used within the m-loop)
-    vfloat** const rhs_sum = (vfloat**)calloc(COMPONENTS, sizeof(vfloat*));
+    double** const rhs_sum = (double**)calloc(COMPONENTS, sizeof(double*));
     vfloat** const partial_rhs_sum = (vfloat**)calloc(COMPONENTS, sizeof(vfloat*));
     for (int i = 0; i < COMPONENTS; ++i) {
-        rhs_sum[i] = (vfloat*)calloc(TIME_STEPS, sizeof(vfloat));
+        rhs_sum[i] = (double*)calloc(TIME_STEPS, sizeof(double));
         partial_rhs_sum[i] = (vfloat*)calloc(TIME_STEPS, sizeof(vfloat));
     }
 
@@ -216,12 +216,12 @@ typedef struct {
     gsl_spline** splines;
     gsl_interp_accel** accs;
     const parameters_t* parameters;
-    matrix_t* omega;
+    gsl_matrix* omega;
 } ode_input_t;
 
 
 
-inline static void set_omega_matrix(matrix_t* omega, vfloat eta, const parameters_t* params) {
+inline static void set_omega_matrix(gsl_matrix* omega, double eta, const parameters_t* params) {
     (void)eta;
     (void)params;
     /* double hubble_factor = params->omega_m0 * exp(-3*eta) + (1 - params->omega_m0); */
@@ -234,13 +234,13 @@ inline static void set_omega_matrix(matrix_t* omega, vfloat eta, const parameter
     }
 
     // First row
-    matrix_set(omega,0,0,  0);
-    matrix_set(omega,0,1, -1);
+    gsl_matrix_set(omega,0,0,  0);
+    gsl_matrix_set(omega,0,1, -1);
     // Second row
     /* matrix_set(omega,1,0, -3/2.0 * omega_M/params->f2    ); */
     /* matrix_set(omega,1,1,  3/2.0 * omega_M/params->f2 - 1); */
-    matrix_set(omega,1,0, -1.5);
-    matrix_set(omega,1,1, 0.5);
+    gsl_matrix_set(omega,1,0, -1.5);
+    gsl_matrix_set(omega,1,1, 0.5);
 
 /*
     // First row
@@ -273,7 +273,7 @@ int evolve_kernels(double eta, const double y[], double f[], void *ode_input) {
     short int n = input.n;
     const parameters_t* params = input.parameters;
 
-    matrix_t* omega = input.omega;
+    gsl_matrix* omega = input.omega;
 
     set_omega_matrix(omega, eta, params);
 
@@ -285,10 +285,10 @@ int evolve_kernels(double eta, const double y[], double f[], void *ode_input) {
 
     for (int i = 0; i < COMPONENTS; ++i) {
         // Subtract n*I from omega
-        vfloat value = matrix_get(omega,i,i);
-        matrix_set(omega,i,i,value - n);
+        double value = gsl_matrix_get(omega,i,i);
+        gsl_matrix_set(omega,i,i,value - n);
 
-        vfloat rhs = gsl_spline_eval(input.splines[i], eta, input.accs[i]);
+        double rhs = gsl_spline_eval(input.splines[i], eta, input.accs[i]);
         gsl_vector_set(&f_vec.vector, i, rhs);
     }
 
@@ -303,7 +303,7 @@ short int kernel_evolution(
         const short int arguments[],
         short int kernel_index,             /* -1 indicates not known */
         short int n,
-        matrix_t* omega,
+        gsl_matrix* omega,
         const parameters_t* params,
         const table_pointers_t* data_tables
         )
@@ -345,7 +345,7 @@ short int kernel_evolution(
     gsl_interp_accel* accs   [COMPONENTS];
 
     // Initialize time steps in eta
-    vfloat eta[TIME_STEPS];
+    double eta[TIME_STEPS];
     initialize_timesteps(eta, params->eta_i, params->eta_f);
 
     // Copy ICs from SPT kernels
@@ -369,12 +369,12 @@ short int kernel_evolution(
     gsl_odeiv2_driver* driver = gsl_odeiv2_driver_alloc_y_new(&sys,
             gsl_odeiv2_step_rkf45, 1e-6, 1e-6, 0);
 
-    vfloat eta_current = params->eta_i;
+    double eta_current = params->eta_i;
 
     // Evolve system
     for (int i = 1; i < TIME_STEPS; i++) {
         // y is a pointer to the kernel table at time i
-        vfloat* y = kernel->values[i];
+        double* y = kernel->values[i];
         // First copy previous values (i-1) to y
         memcpy(y, kernel->values[i-1], COMPONENTS * sizeof(double));
         // Then evolve y to time i
