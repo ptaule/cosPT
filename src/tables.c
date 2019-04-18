@@ -1,5 +1,5 @@
 /*
-   kernels.c
+   tables.c
 
    Created by Petter Taule on 18.02.2019
    Copyright (c) 2019 Petter Taule. All rights reserved.
@@ -13,7 +13,75 @@
 
 #include "../include/constants.h"
 #include "../include/utilities.h"
-#include "../include/kernels.h"
+#include "../include/tables.h"
+
+
+static short int sum_two_vectors(short int a, short int b) {
+    short int a_coeffs[N_COEFFS]   = {0};
+    short int b_coeffs[N_COEFFS]   = {0};
+    short int res_coeffs[N_COEFFS] = {0};
+
+    label2config(a,a_coeffs,N_COEFFS);
+    label2config(b,b_coeffs,N_COEFFS);
+
+    for (int i = 0; i < N_COEFFS; ++i) {
+        res_coeffs[i] = a_coeffs[i] + b_coeffs[i];
+    }
+    return config2label(res_coeffs,N_COEFFS);
+}
+
+
+
+void compute_sum_table(short int sum_table[][N_CONFIGS]) {
+    for (int a = 0; a < N_CONFIGS; ++a) {
+        for (int b = 0; b < N_CONFIGS; ++b) {
+            if (a == ZERO_LABEL)      sum_table[a][b] = b;
+            else if (b == ZERO_LABEL) sum_table[a][b] = a;
+            else {
+                sum_table[a][b] = sum_two_vectors(a,b);
+            }
+        }
+    }
+}
+
+
+
+short int sum_vectors(
+        const short int labels[],
+        size_t n_vecs,
+        const short int sum_table[][N_CONFIGS]
+        )
+{
+    if (n_vecs == 1) return labels[0];
+
+    short int result = labels[0];
+
+    for (size_t i = 1; i < n_vecs; ++i) {
+        if (labels[i] == ZERO_LABEL) continue;
+        result = sum_table[result][labels[i]];
+    }
+
+    // If DEBUG==true, check that sum is an appropriate vector configuration,
+    // i.e. that Q-coefficients are elements of (-1,0,1) and k-coefficient is
+    // an element of (0,1)
+#if DEBUG >= 1
+    short int res_coeffs[N_COEFFS];
+    label2config(result,res_coeffs,N_COEFFS);
+    for (int i = 0; i < N_COEFFS - 1; ++i) {
+        short int c = res_coeffs[i];
+        if (!(c == -1 || c == 0 || c == 1))
+            warning("Sum of vectors does not correspond to an appropriate "
+                    "configuration.");
+    }
+    short int c = res_coeffs[N_COEFFS - 1];
+    if (!(c == 0 || c == 1))
+        warning("Sum of vectors does not correspond to an appropriate "
+                "configuration.");
+#endif
+
+    return result;
+}
+
 
 
 void compute_bare_scalar_products(

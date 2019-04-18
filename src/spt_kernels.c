@@ -13,6 +13,7 @@
 
 #include "../include/constants.h"
 #include "../include/utilities.h"
+#include "../include/tables.h"
 #include "../include/spt_kernels.h"
 
 

@@ -12,7 +12,7 @@
 #include <gsl/gsl_spline.h>
 
 #include "constants.h"
-#include "kernels.h"
+#include "tables.h"
 
 short int kernel_evolution(
         const short int arguments[],

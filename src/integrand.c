@@ -15,7 +15,7 @@
 
 #include "../include/constants.h"
 #include "../include/utilities.h"
-#include "../include/kernels.h"
+#include "../include/tables.h"
 #include "../include/spt_kernels.h"
 #include "../include/evolve_kernels.h"
 #include "../include/integrand.h"

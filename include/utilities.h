@@ -54,46 +54,6 @@ inline short int config2label(
     return label;
 }
 
-
-
-inline short int sum_vectors(
-        const short int labels[],
-        size_t n_vecs,
-        const short int sum_table[][N_CONFIGS]
-        )
-{
-    if (n_vecs == 1) return labels[0];
-
-    short int result = labels[0];
-
-    for (size_t i = 1; i < n_vecs; ++i) {
-        if (labels[i] == ZERO_LABEL) continue;
-        result = sum_table[result][labels[i]];
-    }
-
-    // If DEBUG==true, check that sum is an appropriate vector configuration,
-    // i.e. that Q-coefficients are elements of (-1,0,1) and k-coefficient is
-    // an element of (0,1)
-#if DEBUG >= 1
-    short int res_coeffs[N_COEFFS];
-    label2config(result,res_coeffs,N_COEFFS);
-    for (int i = 0; i < N_COEFFS - 1; ++i) {
-        short int c = res_coeffs[i];
-        if (!(c == -1 || c == 0 || c == 1))
-            warning("Sum of vectors does not correspond to an appropriate "
-                    "configuration.");
-    }
-    short int c = res_coeffs[N_COEFFS - 1];
-    if (!(c == 0 || c == 1))
-        warning("Sum of vectors does not correspond to an appropriate "
-                "configuration.");
-#endif
-
-    return result;
-}
-
-void compute_sum_table(short int sum_table[][N_CONFIGS]);
-
 void print_label(short int label);
 void print_labels(const short int labels[]);
 void print_gsl_matrix(const gsl_matrix* m, size_t height, size_t width);

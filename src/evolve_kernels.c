@@ -16,7 +16,7 @@
 
 #include "../include/constants.h"
 #include "../include/utilities.h"
-#include "../include/kernels.h"
+#include "../include/tables.h"
 #include "../include/evolve_kernels.h"
 
 

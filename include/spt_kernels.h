@@ -9,7 +9,7 @@
 #define SPT_KERNELS_H
 
 #include "constants.h"
-#include "kernels.h"
+#include "tables.h"
 
 short int compute_SPT_kernels(
         const short int arguments[],
