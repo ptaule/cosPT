@@ -286,7 +286,3 @@ short int kernel_index_from_arguments(const short int arguments[]) {
 
     return index;
 }
-
-
-
-extern short int combined_kernel_index(short int argument_index, short int component);
