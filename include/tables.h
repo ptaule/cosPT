@@ -1,5 +1,5 @@
 /*
-   kernels.h
+   tables.h
 
    Created by Petter Taule on 18.02.2019
    Copyright (c) 2019 Petter Taule. All rights reserved.
@@ -37,6 +37,14 @@ typedef struct {
     matrix_t* beta;
     kernel_value_t* kernels;
 } table_pointers_t;
+
+short int sum_vectors(
+        const short int labels[],
+        size_t n_vecs,
+        const short int sum_table[][N_CONFIGS]
+        );
+
+void compute_sum_table(short int sum_table[][N_CONFIGS]);
 
 void compute_bare_scalar_products(
         vfloat k,

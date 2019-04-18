@@ -14,37 +14,6 @@
 
 extern void label2config(short int label, short int config[], size_t size);
 extern short int config2label(const short int config[], size_t size);
-extern short int sum_vectors(const short int labels[], size_t n_vecs, const short int sum_table[][N_CONFIGS]);
-
-
-
-static inline short int sum_two_vectors(short int a, short int b) {
-    short int a_coeffs[N_COEFFS]   = {0};
-    short int b_coeffs[N_COEFFS]   = {0};
-    short int res_coeffs[N_COEFFS] = {0};
-
-    label2config(a,a_coeffs,N_COEFFS);
-    label2config(b,b_coeffs,N_COEFFS);
-
-    for (int i = 0; i < N_COEFFS; ++i) {
-        res_coeffs[i] = a_coeffs[i] + b_coeffs[i];
-    }
-    return config2label(res_coeffs,N_COEFFS);
-}
-
-
-
-void compute_sum_table(short int sum_table[][N_CONFIGS]) {
-    for (int a = 0; a < N_CONFIGS; ++a) {
-        for (int b = 0; b < N_CONFIGS; ++b) {
-            if (a == ZERO_LABEL)      sum_table[a][b] = b;
-            else if (b == ZERO_LABEL) sum_table[a][b] = a;
-            else {
-                sum_table[a][b] = sum_two_vectors(a,b);
-            }
-        }
-    }
-}
 
 
 

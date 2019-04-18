@@ -10,7 +10,7 @@
 
 #include <gsl/gsl_spline.h>
 #include "constants.h"
-#include "kernels.h"
+#include "tables.h"
 
 // Struct for labeling different diagrams
 typedef struct {

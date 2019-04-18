@@ -9,7 +9,7 @@
 #define SPT_KERNELS_H
 
 #include "constants.h"
-#include "kernels.h"
+#include "tables.h"
 
 vfloat partial_SPT_sum(
         const short int arguments[],
