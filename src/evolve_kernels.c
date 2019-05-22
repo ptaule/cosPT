@@ -109,6 +109,42 @@ static void vertex(
 
 
 
+void write_RHS_sum_2_file(gsl_spline* splines[], gsl_interp_accel* accs[], const double eta[], const
+        short int arguments[], short int n) {
+    FILE* fp;
+
+    fp = fopen("RHS_sum.txt","a");
+    if (fp == NULL) {
+        warning("Could not open RHS_sum.txt for writing.");
+    }
+    fprintf(fp, "F%d", n);
+    fprintf(fp, "(");
+    for (int i = 0; i < N_KERNEL_ARGS; ++i) {
+        if (arguments[i] == ZERO_LABEL) continue;
+        short int config[N_COEFFS];
+        label2config(arguments[i],config,N_COEFFS);
+
+        if (config[N_COEFFS - 1] == 1) fprintf(fp,"k");
+        for (int j = 0; j < LOOPS; ++j) {
+            if (config[j] == 0) continue;
+            else if (config[j] == -1) fprintf(fp,"-Q%d",j+1);
+            else if (config[j] == 1)  fprintf(fp,"+Q%d",j+1);
+        }
+        fprintf(fp,", ");
+    }
+    fprintf(fp, ")\n");
+
+    for (int i = 0; i < TIME_STEPS; ++i) {
+        for (int j = 0; j < COMPONENTS; ++j) {
+            fprintf(fp, "%e\t",gsl_spline_eval(splines[j], eta[i], accs[j]));
+        }
+        fprintf(fp, "\n");
+    }
+    fclose(fp);
+}
+
+
+
 void compute_RHS_sum(
         const short int arguments[],
         short int n,
@@ -207,6 +243,8 @@ void compute_RHS_sum(
     }
     free(partial_rhs_sum);
     free(rhs_sum);
+
+    /* write_RHS_sum_2_file(splines,accs,eta,arguments,n); */
 }
 
 
