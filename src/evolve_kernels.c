@@ -57,13 +57,13 @@ static void vertex(
         switch (COMPONENTS) {
             case 4:
                 // Component a = 2, two contributing terms
-                a = 2, b = 2, c = 3;
+                a = 2, b = 3, c = 2;
                 // gamma_223 = alpha_lr
                 partial_rhs_sum[a][i] += 0.5 * alpha_lr
                     * data_tables->kernels[index_l].values[i][b]
                     * data_tables->kernels[index_r].values[i][c];
 
-                b = 3, c = 2;
+                b = 2, c = 3;
                 // gamma_232 = alpha_rl
                 partial_rhs_sum[a][i] += 0.5 * alpha_rl
                     * data_tables->kernels[index_l].values[i][b]
@@ -81,13 +81,13 @@ static void vertex(
             __attribute__((fallthrough));
             case 2:
                 // Component a = 0, two contributing terms:
-                a = 0, b = 0, c = 1;
+                a = 0, b = 1, c = 0;
                 // gamma_001 = alpha_lr
                 partial_rhs_sum[a][i] += 0.5 * alpha_lr
                     * data_tables->kernels[index_l].values[i][b]
                     * data_tables->kernels[index_r].values[i][c];
 
-                b = 1, c = 0;
+                b = 0, c = 1;
                 // gamma_010 = alpha_rl
                 partial_rhs_sum[a][i] += 0.5 * alpha_rl
                     * data_tables->kernels[index_l].values[i][b]
