@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 
 #include <gsl/gsl_sf.h>
 
@@ -133,10 +134,15 @@ int main () {
     double delta_logk = log(K_MAX/K_MIN) / N_POINTS;
     double k = K_MIN;
 
+    // Timing
+    time_t beginning, end;
+
     for (int i = 0; i < N_POINTS; ++i) {
         k *= exp(delta_logk);
         wavenumbers[i] = k;
         input.k = k;
+
+        time(&beginning);
 
         Suave(N_DIMS, 1, cuba_integrand, &input,
                 NVEC, EPSREL, EPSABS, VERBOSE | LAST, SEED,
@@ -144,13 +150,17 @@ int main () {
                 STATEFILE, SPIN,
                 &nregions, &neval, &fail, result, error, prob);
 
+        time(&end);
+
         result[0] *= overall_factor;
         error[0] *= overall_factor;
 
         power_spectrum[i] = (double)result[0];
 
-        printf("k  = %f, result = %e, error = %f, prob = %f\n",
-                k, (double)*result, (double)error[0], (double)prob[0]);
+        printf("k  = %f, result = %e, error = %e, prob = %f, "
+                "elapsed time = %.1fs\n",
+                k, (double)*result, (double)error[0], (double)prob[0],
+                difftime(end,beginning));
     }
 
     write_PS(OUTPUT_FILE,N_POINTS,wavenumbers,power_spectrum);
