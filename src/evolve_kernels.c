@@ -222,48 +222,23 @@ typedef struct {
 
 
 inline static void set_omega_matrix(gsl_matrix* omega, double eta, const parameters_t* params) {
-    (void)eta;
-    (void)params;
-    /* double hubble_factor = params->omega_m0 * exp(-3*eta) + (1 - params->omega_m0); */
-    /* double omega_M = params->omega_m0 * exp(-3*eta)/ hubble_factor; */
+    double hubble_factor = params->omega_m0 * exp(-3*eta) + (1 - params->omega_m0);
+    double omega_M = params->omega_m0 * exp(-3*eta)/ hubble_factor;
+
+    double omega_M_ninth_root = pow(omega_M, -1.0/9.0);
 
     /* double k_FS = 0.908 * sqrt(params->omega_m0) * params->m_nu/3 * exp(eta/2); */
 
-    if (COMPONENTS != 2) {
-        warning_verbose("No implementation for COMPONENTS = %d (yet).",COMPONENTS);
-    }
+#if COMPONENTS != 2
+    warning_verbose("No implementation for COMPONENTS = %d (yet).",COMPONENTS);
+#endif
 
     // First row
     gsl_matrix_set(omega,0,0,  0);
     gsl_matrix_set(omega,0,1, -1);
     // Second row
-    /* matrix_set(omega,1,0, -3/2.0 * omega_M/params->f2    ); */
-    /* matrix_set(omega,1,1,  3/2.0 * omega_M/params->f2 - 1); */
-    gsl_matrix_set(omega,1,0, -1.5);
-    gsl_matrix_set(omega,1,1, 0.5);
-
-/*
-    // First row
-    matrix_set(omega,0,0,  0);
-    matrix_set(omega,0,1, -1);
-    matrix_set(omega,0,2,  0);
-    matrix_set(omega,0,3,  0);
-    // Second row
-    matrix_set(omega,1,0, -3/2.0 * omega_M * (1 - params->f_nu));
-    matrix_set(omega,1,1,  2 - 3/2.0 * omega_M                 );
-    matrix_set(omega,1,2, -3/2.0 * omega_M * params->f_nu      );
-    matrix_set(omega,1,3,  0                                   );
-    // Third row
-    matrix_set(omega,2,0,  0);
-    matrix_set(omega,2,1,  0);
-    matrix_set(omega,2,2,  0);
-    matrix_set(omega,2,3, -1);
-    // Fourth row
-    matrix_set(omega,3,0, -3/2.0 * omega_M * (1 - params->f_nu)     );
-    matrix_set(omega,3,1,  0                                        );
-    matrix_set(omega,3,2, -3/2.0 * omega_M * (F_NU - pow(k/k_FS,2)) );
-    matrix_set(omega,3,3,  2 - 3/2.0 * omega_M                      );
-*/
+    gsl_matrix_set(omega,1,0, -1.5 * omega_M_ninth_root);
+    gsl_matrix_set(omega,1,1,  1.5 * omega_M_ninth_root - 1);
 }
 
 
@@ -367,7 +342,7 @@ short int kernel_evolution(
 
     gsl_odeiv2_system sys = {evolve_kernels, NULL, COMPONENTS, &input};
     gsl_odeiv2_driver* driver = gsl_odeiv2_driver_alloc_y_new(&sys,
-            gsl_odeiv2_step_rkf45, 1e-6, 1e-6, 0);
+            gsl_odeiv2_step_rkf45, 1e-4, 1e-4, 1e-6);
 
     double eta_current = params->eta_i;
 

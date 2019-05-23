@@ -26,7 +26,7 @@
 #define N_POINTS 139
 
 // Input power spectrum file
-#define INPUT_FILE "input/PS_linear_z000_pk.dat"
+#define INPUT_FILE "input/PS_linear_z2500_pk.dat"
 // Output power spectrum to file
 #define OUTPUT_FILE "output_" TOSTRING(LOOPS) "loop.dat"
 
@@ -38,7 +38,7 @@
 #define LAST 4
 #define SEED 0
 #define MINEVAL 0
-#define MAXEVAL 1e6
+#define MAXEVAL 1e5
 
 #define STATEFILE NULL
 #define SPIN NULL
@@ -101,8 +101,7 @@ int main () {
 
     const parameters_t params = {
         .omega_m0 = 0.26,
-        .f2 = 1,
-        .f_nu = 0,
+        /* .f_nu = 0, */
         .eta_i = - log(25 + 1),
         .eta_f = 0,
     };

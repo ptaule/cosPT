@@ -114,8 +114,7 @@ typedef long double vfloat;
 // Parameters type
 typedef struct {
     vfloat omega_m0;
-    vfloat f2;
-    vfloat f_nu;
+    /* vfloat f_nu; */
     vfloat eta_i;
     vfloat eta_f;
 } parameters_t;
