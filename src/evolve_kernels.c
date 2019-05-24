@@ -102,7 +102,7 @@ static void vertex(
 
                 break;
             default:
-                warning_verbose("No vertex implemented for COMPONENTS = %d.",COMPONENTS)
+                warning_verbose("No vertex implemented for COMPONENTS = %d.",COMPONENTS);
         }
     }
 }

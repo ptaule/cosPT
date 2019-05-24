@@ -47,7 +47,7 @@ static inline vfloat SPT_term(
             break;
         default:
             warning("SPT_term() does not accept argument 'component' which does "
-                    "not equal 0 or 1.")
+                    "not equal 0 or 1.");
     }
 
     return data_tables->kernels[index_l].spt_values[1] *
