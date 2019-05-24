@@ -222,8 +222,7 @@ typedef struct {
 
 
 inline static void set_omega_matrix(gsl_matrix* omega, double eta, const parameters_t* params) {
-    double hubble_factor = params->omega_m0 * exp(-3*eta) + (1 - params->omega_m0);
-    double omega_M = params->omega_m0 * exp(-3*eta)/ hubble_factor;
+    double omega_M = pow(1 + (1/params->omega_m0 - 1) * exp(3*eta), -1);
 
     double omega_M_ninth_root = pow(omega_M, -1.0/9.0);
 
