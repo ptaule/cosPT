@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
 #include <gsl/gsl_interp.h>
 #include <gsl/gsl_spline.h>
 
@@ -20,7 +21,7 @@
 void read_PS(
         const char* filename,   /* in, power spectrum file                          */
         gsl_interp_accel** acc, /* out, gsl_interpolation accelerated lookup object */
-        gsl_spline** spline     /* out, copy of data read from file                 */
+        gsl_spline** spline     /* out, gsl_spline of power spectrum read from file */
         )
 {
     FILE* fp;
@@ -64,7 +65,7 @@ void read_PS(
         if (items != 2) {
             fclose(fp);
             error_verbose("Reading %s: Found row where the number of items "
-                    "does not equal two. Exiting.", filename);
+                    "is not equal to two. Exiting.", filename);
         }
 
         i++;

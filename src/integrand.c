@@ -156,7 +156,7 @@ static vfloat compute_k1(
         int index = rearrangement[i-2];
         k1 += bare_scalar_products[index][index];
         // Note that elements in the signs-array correspond to rearranged loop
-        // momenta, thus we use <i-2>, no <index> as index here
+        // momenta, thus we use <i-2>, not <index> as index here
         k1 -= 2 * signs[i-2] * bare_scalar_products[N_COEFFS - 1][index];
     }
 
@@ -335,7 +335,7 @@ vfloat sign_flip_symmetrization(
                 data_tables->Q_magnitudes);
         if (h_theta == 0) {
 #if DEBUG >= 2
-        printf("\t\t=> partial result = 0\n");
+            printf("\t\t=> partial result = 0\n");
 #endif
             continue;
         }
