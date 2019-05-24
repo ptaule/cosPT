@@ -18,6 +18,14 @@
 #define COMPONENTS 2
 #define TIME_STEPS 100
 
+// Debug modes (if not set by compile options):
+//
+// 1: Perform additional checks during runtime.
+// 2: In addition, print info during runtime.
+#ifndef DEBUG
+#define DEBUG 0
+#endif
+
 // Which GSL interpolation routine to use
 #define INTERPOL_TYPE gsl_interp_cspline
 // Which GSL ODE routine to use
@@ -29,13 +37,6 @@
 
 // Maximum input power spectrum resolution
 #define MAX_RESOLUTION 200
-
-// Debug modes:
-// 1: Perform additional checks during runtime.
-// 2: In addition, print info during runtime.
-#ifndef DEBUG
-#define DEBUG 0
-#endif
 
 // Variable precision
 typedef long double vfloat;

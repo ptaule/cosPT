@@ -89,11 +89,8 @@ int cuba_integrand(
 
 int main () {
     printf("LOOPS         = %d\n", LOOPS);
-    printf("N_CONFIGS     = %d\n", N_CONFIGS);
-    printf("N_KERNELS     = %d\n", N_KERNELS);
-    printf("N_KERNEL_ARGS = %d\n", N_KERNEL_ARGS);
-    printf("ZERO_LABEL    = %d\n", ZERO_LABEL);
     printf("COMPONENTS    = %d\n", COMPONENTS);
+    printf("TIME STEPS    = %d\n", TIME_STEPS);
 
     gsl_interp_accel* acc;
     gsl_spline* spline;
