@@ -161,7 +161,7 @@ inline static short int kernel_index_from_fundamental(short int argument) {
     short int coeffs[N_COEFFS] = {0};
     label2config(argument,coeffs,N_COEFFS);
 
-    // The last coefficient is for k, hence we can skip this (j < N_COEFFS - 1)
+    // The last coefficient is for k, hence we can skip this (i < N_COEFFS - 1)
     for (int i = 0; i < N_COEFFS - 1; ++i) {
          /* if - Q_i is present, return 2^(2i + 0/2) = 2^(2i)   */
          /* if + Q_i is present, return 2^(2i + 2/2) = 2^(2i+1) */
@@ -178,7 +178,8 @@ short int kernel_index_from_arguments(const short int arguments[]) {
     // In DEBUG-mode, check that non-zero arguments (zero_label) are unique
 #if DEBUG >= 1
     if (!unique_elements(arguments,N_KERNEL_ARGS,ZERO_LABEL))
-        warning("Duplicate vector arguments passed to kernel.");
+        warning("Duplicate vector arguments passed to "
+                "kernel_index_from_arguments().");
     short int n_k_vectors = 0;
 #endif
 
