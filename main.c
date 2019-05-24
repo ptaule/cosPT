@@ -27,7 +27,7 @@
 #define N_POINTS 139
 
 // Input power spectrum file
-#define INPUT_FILE "input/PS_linear_z2500_pk.dat"
+#define INPUT_FILE "input/PS_linear_z000_pk.dat"
 // Output power spectrum to file
 #define OUTPUT_FILE "output_" TOSTRING(LOOPS) "loop.dat"
 
