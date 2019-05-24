@@ -22,6 +22,10 @@
 #define INTERPOL_TYPE gsl_interp_cspline
 // Which GSL ODE routine to use
 #define ODE_ROUTINE gsl_odeiv2_step_rkf45
+// GSL ODE routine parameters
+#define ODE_HSTART 1e-4 /* Initial step size */
+#define ODE_ATOL 1e-6
+#define ODE_RTOL 1e-4
 
 // Maximum input power spectrum resolution
 #define MAX_RESOLUTION 200

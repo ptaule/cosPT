@@ -341,7 +341,7 @@ short int kernel_evolution(
 
     gsl_odeiv2_system sys = {evolve_kernels, NULL, COMPONENTS, &input};
     gsl_odeiv2_driver* driver = gsl_odeiv2_driver_alloc_y_new(&sys,
-            gsl_odeiv2_step_rkf45, 1e-4, 1e-4, 1e-6);
+            gsl_odeiv2_step_rkf45, ODE_HSTART, ODE_RTOL, ODE_ATOL);
 
     double eta_current = params->eta_i;
 
