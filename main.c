@@ -19,13 +19,6 @@
 #include "include/integrand.h"
 #include "include/power_spectrum_io.h"
 
-// Min/max wavenumber
-#define K_MIN 1e-4
-#define K_MAX 1e2
-
-// Number of evaluation points between k=K_MIN and k=K_MAX
-#define N_POINTS 139
-
 // Input power spectrum file
 #define INPUT_FILE "input/PS_linear_z000_pk.dat"
 // Output power spectrum to file

@@ -18,6 +18,13 @@
 #define COMPONENTS 2
 #define TIME_STEPS 100
 
+// Min/max wavenumber
+#define K_MIN 1e-4
+#define K_MAX 1e2
+
+// Number of evaluation points between k=K_MIN and k=K_MAX
+#define N_POINTS 139
+
 // Debug modes (if not set by compile options):
 //
 // 1: Perform additional checks during runtime.
@@ -47,37 +54,16 @@ typedef long double vfloat;
 #define matrix_get   gsl_matrix_long_double_get
 #define matrix_free  gsl_matrix_long_double_free
 
-// Various colors for debug output
-
-#define ANSI_COLOR_RED     "\x1b[31m"
-#define ANSI_COLOR_GREEN   "\x1b[32m"
-#define ANSI_COLOR_YELLOW  "\x1b[33m"
-#define ANSI_COLOR_BLUE    "\x1b[34m"
-#define ANSI_COLOR_MAGENTA "\x1b[35m"
-#define ANSI_COLOR_CYAN    "\x1b[36m"
-#define ANSI_COLOR_RESET   "\x1b[0m"
-
-// debug_print() is optimized away if DEBUG==0
-#define debug_print(fmt, ...) \
-            do { if (DEBUG) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
-#define warning(fmt) \
-    fprintf(stderr, ANSI_COLOR_BLUE "%s:%d:\tWarning: " fmt ANSI_COLOR_RESET "\n", \
-            __FILE__, __LINE__);
-#define warning_verbose(fmt, ...) \
-    fprintf(stderr, ANSI_COLOR_BLUE "%s:%d:\tWarning: " fmt ANSI_COLOR_RESET "\n", \
-            __FILE__, __LINE__, __VA_ARGS__);
-#define error(fmt) \
-    {fprintf(stderr, ANSI_COLOR_RED "%s:%d:\tError: " fmt ANSI_COLOR_RESET "\n", \
-            __FILE__, __LINE__); exit(EXIT_FAILURE); }
-#define error_verbose(fmt, ...) \
-    {fprintf(stderr, ANSI_COLOR_RED "%s:%d:\tError: " fmt ANSI_COLOR_RESET "\n", \
-            __FILE__, __LINE__, __VA_ARGS__); exit(EXIT_FAILURE); }
-
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
+// Parameters type
+typedef struct {
+    vfloat omega_m0;
+    /* vfloat f_nu; */
+    vfloat eta_i;
+    vfloat eta_f;
+} parameters_t;
 
 // Constants:
-#define PI 3.14159265359
+#define PI    3.14159265359
 #define TWOPI 6.28318530718
 
 // Constants defined depending on number of loops
@@ -116,12 +102,32 @@ typedef long double vfloat;
 #define ZERO_LABEL zero_label()
 */
 
-// Parameters type
-typedef struct {
-    vfloat omega_m0;
-    /* vfloat f_nu; */
-    vfloat eta_i;
-    vfloat eta_f;
-} parameters_t;
+// Various colors for debug output
+
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
+// Warning/error commands which print filename, line number and (optionally) a
+// message.
+#define warning(fmt) \
+    fprintf(stderr, ANSI_COLOR_BLUE "%s:%d:\tWarning: " fmt ANSI_COLOR_RESET "\n", \
+            __FILE__, __LINE__);
+#define warning_verbose(fmt, ...) \
+    fprintf(stderr, ANSI_COLOR_BLUE "%s:%d:\tWarning: " fmt ANSI_COLOR_RESET "\n", \
+            __FILE__, __LINE__, __VA_ARGS__);
+#define error(fmt) \
+    {fprintf(stderr, ANSI_COLOR_RED "%s:%d:\tError: " fmt ANSI_COLOR_RESET "\n", \
+            __FILE__, __LINE__); exit(EXIT_FAILURE); }
+#define error_verbose(fmt, ...) \
+    {fprintf(stderr, ANSI_COLOR_RED "%s:%d:\tError: " fmt ANSI_COLOR_RESET "\n", \
+            __FILE__, __LINE__, __VA_ARGS__); exit(EXIT_FAILURE); }
+
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
 
 #endif /* ifndef CONSTANTS_H */
