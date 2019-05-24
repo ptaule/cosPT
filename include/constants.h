@@ -68,7 +68,7 @@ typedef struct {
 
 // Constants defined depending on number of loops
 #define N_COEFFS LOOPS+1
-#define N_DIMS   3*LOOPS+1
+#define N_DIMS   3*LOOPS-1
 
 #if LOOPS==1
 #define N_CONFIGS      6
