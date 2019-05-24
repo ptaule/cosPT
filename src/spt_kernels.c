@@ -22,7 +22,6 @@ static inline vfloat SPT_term(
         short int m_l,
         short int m_r,
         short int component,
-        short int time_step,
         short int args_l[],
         short int args_r[],
         short int sum_l,
@@ -32,8 +31,8 @@ static inline vfloat SPT_term(
 {
     short int n = m_l + m_r;
 
-    short int index_l = compute_SPT_kernels(args_l,m_l,time_step,data_tables);
-    short int index_r = compute_SPT_kernels(args_r,m_r,time_step,data_tables);
+    short int index_l = compute_SPT_kernels(args_l,m_l,data_tables);
+    short int index_r = compute_SPT_kernels(args_r,m_r,data_tables);
 
     short int a,b;
     switch (component) {
@@ -65,7 +64,6 @@ static void partial_SPT_sum(
         short int n,                 /* kernel number                                     */
         short int m,                 /* sum index in kernel recursion relation            */
         short int kernel_index,
-        short int time_step,
         const table_pointers_t* data_tables
         )
 {
@@ -105,7 +103,7 @@ static void partial_SPT_sum(
         short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS,data_tables->sum_table);
 
         for (int i = 0; i < COMPONENTS; ++i) {
-            kernel_values[i] += SPT_term(m,n-m,i,time_step,args_l,args_r,sum_l,sum_r,data_tables);
+            kernel_values[i] += SPT_term(m,n-m,i,args_l,args_r,sum_l,sum_r,data_tables);
         }
 
         // When m != (n - m), we may additionally compute the (n-m)-term by
@@ -114,7 +112,7 @@ static void partial_SPT_sum(
         if (m != n - m) {
             for (int i = 0; i < COMPONENTS; ++i) {
                 kernel_values[i] +=
-                    SPT_term(n-m,m,i,time_step,args_r,args_l,sum_r,sum_l,data_tables);
+                    SPT_term(n-m,m,i,args_r,args_l,sum_r,sum_l,data_tables);
             }
         }
     } while (gsl_combination_next(comb_l) == GSL_SUCCESS &&
@@ -141,7 +139,6 @@ static void partial_SPT_sum(
 short int compute_SPT_kernels(
         const short int arguments[], /* kernel arguments                                    */
         short int n,                 /* order in perturbation theory expansion              */
-        short int time_step,         /* time step where SPT kernels are stored, should be 0 */
         const table_pointers_t* data_tables
         )
 {
@@ -157,8 +154,7 @@ short int compute_SPT_kernels(
 
     short int kernel_index = kernel_index_from_arguments(arguments);
 
-    // Alias pointer to kernel (TIME_STEPS x COMPONENTS table) we are working
-    // with for convenience/readability
+    // Alias pointer to kernel we are working with for convenience/readability
     kernel_t* const kernel = &data_tables->kernels[kernel_index];
 
     // Check if the SPT kernels are already computed
@@ -175,7 +171,7 @@ short int compute_SPT_kernels(
     // Only sum up to (including) floor(n/2), since partial_SPT_sum()
     // simultaneously computes terms m and (n-m)
     for (int m = 1; m <= n/2; ++m) {
-        partial_SPT_sum(arguments,n,m,kernel_index,time_step,data_tables);
+        partial_SPT_sum(arguments,n,m,kernel_index,data_tables);
     }
 
     // Divide by overall factor in SPT recursion relation

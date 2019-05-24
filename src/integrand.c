@@ -260,8 +260,8 @@ static vfloat integrand_term(
     // equal, the kernels are equal
     if (l == 0 && r == 0 && input->component_a == input->component_b) {
 
-        // First, compute SPT initial condition (time_step == 0)
-        short int index = compute_SPT_kernels(arguments_l, m, 0, data_tables);
+        // First, compute SPT initial condition
+        short int index = compute_SPT_kernels(arguments_l, m, data_tables);
         // Then, evolve kernels
         kernel_evolution(arguments_l, index, m, input->omega, input->params, data_tables);
 
@@ -276,9 +276,9 @@ static vfloat integrand_term(
 #endif
     }
     else {
-        // First, compute SPT initial condition (time_step == 0)
-        short int index_l = compute_SPT_kernels(arguments_l, 2*l + m, 0, data_tables);
-        short int index_r = compute_SPT_kernels(arguments_r, 2*r + m, 0, data_tables);
+        // First, compute SPT initial condition
+        short int index_l = compute_SPT_kernels(arguments_l, 2*l + m, data_tables);
+        short int index_r = compute_SPT_kernels(arguments_r, 2*r + m, data_tables);
         // Then, evolve kernels
         kernel_evolution(arguments_l, index_l, 2*l + m, input->omega,
                 input->params, data_tables);
