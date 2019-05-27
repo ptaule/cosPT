@@ -148,8 +148,8 @@ int main () {
 
         power_spectrum[i] = (double)result[0];
 
-        printf("k  = %f, result = %e, error = %e, prob = %f, "
-                "elapsed time = %.1fs\n",
+        printf("k = %f, result = %e, error = %e, prob = %f, "
+                "elapsed time = %.0fs\n",
                 k, (double)*result, (double)error[0], (double)prob[0],
                 difftime(end,beginning));
     }
