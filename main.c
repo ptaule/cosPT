@@ -20,7 +20,8 @@
 #include "include/power_spectrum_io.h"
 
 // Input power spectrum file
-#define INPUT_FILE "input/PS_linear_z000_pk.dat"
+#define INPUT_PS "input/PS_linear_z000_pk.dat"
+#define INPUT_ZETA "input/zeta.dat"
 // Output power spectrum to file
 #define OUTPUT_FILE "output_" TOSTRING(LOOPS) "loop.dat"
 
@@ -85,26 +86,27 @@ int main () {
     printf("COMPONENTS    = %d\n", COMPONENTS);
     printf("TIME STEPS    = %d\n", TIME_STEPS);
 
-    gsl_interp_accel* acc;
-    gsl_spline* spline;
+    gsl_interp_accel *ps_acc, *zeta_acc;
+    gsl_spline *ps_spline, *zeta_spline;
 
-    read_and_interpolate(INPUT_FILE,&acc,&spline);
+    read_and_interpolate(INPUT_PS,&ps_acc,&ps_spline);
+    read_and_interpolate(INPUT_ZETA,&zeta_acc,&zeta_spline);
 
-    const parameters_t params = {
-        .omega_m0 = 0.26,
-        /* .f_nu = 0, */
+    const evolution_params_t params = {
         .eta_i = - log(25 + 1),
         .eta_f = 0,
+        .zeta_acc = zeta_acc,
+        .zeta_spline = zeta_spline,
+        .omega = gsl_matrix_alloc(COMPONENTS, COMPONENTS)
     };
 
     integration_input_t input = {
         .k = 0.0,
         .component_a = 0,
         .component_b = 0,
-        .acc = acc,
-        .spline = spline,
+        .ps_acc = ps_acc,
+        .ps_spline = ps_spline,
         .params = &params,
-        .omega = gsl_matrix_alloc(COMPONENTS, COMPONENTS)
     };
 
     double* const wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));
@@ -157,10 +159,13 @@ int main () {
 
     free(wavenumbers);
     free(power_spectrum);
-    gsl_matrix_free(input.omega);
+    gsl_matrix_free(params.omega);
 
-    gsl_spline_free(spline);
-    gsl_interp_accel_free(acc);
+    gsl_spline_free(ps_spline);
+    gsl_interp_accel_free(ps_acc);
+
+    gsl_spline_free(zeta_spline);
+    gsl_interp_accel_free(zeta_acc);
 
     return 0;
 }

@@ -18,8 +18,7 @@ short int kernel_evolution(
         const short int arguments[],
         short int index,
         short int n,
-        gsl_matrix* omega,
-        const parameters_t* params,
+        const evolution_params_t* params,
         const table_pointers_t* data_tables
         );
 

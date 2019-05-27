@@ -37,8 +37,7 @@ static void vertex(
         short int sum_l,
         short int sum_r,
         vfloat** partial_rhs_sum,
-        gsl_matrix* omega,
-        const parameters_t* params,
+        const evolution_params_t* params,
         const table_pointers_t* data_tables
         )
 {
@@ -46,8 +45,8 @@ static void vertex(
     vfloat alpha_rl = matrix_get(data_tables->alpha,sum_r,sum_l);
     vfloat beta     = matrix_get(data_tables->beta ,sum_l,sum_r);
 
-    short int index_l = kernel_evolution(args_l, -1, m_l, omega, params, data_tables);
-    short int index_r = kernel_evolution(args_r, -1, m_r, omega, params, data_tables);
+    short int index_l = kernel_evolution(args_l, -1, m_l, params, data_tables);
+    short int index_r = kernel_evolution(args_r, -1, m_r, params, data_tables);
 
     short int a,b,c;
 
@@ -112,12 +111,11 @@ static void vertex(
 void compute_RHS_sum(
         const short int arguments[],
         short int n,
-        gsl_matrix* omega,
-        const parameters_t* params,
+        const evolution_params_t* params,
         const table_pointers_t* data_tables,
         const double eta[],
-        gsl_spline* splines[],   /* out, interpolated RHS sum for each component      */
-        gsl_interp_accel* accs[] /* out, gsl_interpolation accelerated lookup objects */
+        gsl_spline* rhs_splines[],   /* out, interpolated RHS sum for each component      */
+        gsl_interp_accel* rhs_accs[] /* out, gsl_interpolation accelerated lookup objects */
         )
 {
     // Allocate memory for rhs_sum and partial_rhs_sum (the last is used within the m-loop)
@@ -169,14 +167,14 @@ void compute_RHS_sum(
             short int sum_l = sum_vectors(args_l,N_KERNEL_ARGS,data_tables->sum_table);
             short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS,data_tables->sum_table);
 
-            vertex(m, n-m, args_l, args_r, sum_l, sum_r, partial_rhs_sum, omega, params,
+            vertex(m, n-m, args_l, args_r, sum_l, sum_r, partial_rhs_sum, params,
                     data_tables);
 
             // When m != (n - m), we may additionally compute the (n-m)-term by
             // swapping args_l, sum_l, m with args_r, sum_r and (n-m). Then
             // compute_RHS_sum() only needs to sum up to (including) floor(n/2).
             if (m != n - m) {
-                vertex(n-m, m, args_r, args_l, sum_r, sum_l, partial_rhs_sum, omega, params,
+                vertex(n-m, m, args_r, args_l, sum_r, sum_l, partial_rhs_sum, params,
                         data_tables);
             }
         } while (gsl_combination_next(comb_l) == GSL_SUCCESS &&
@@ -197,9 +195,9 @@ void compute_RHS_sum(
 
     // Interpolate rhs_sum's
     for (int i = 0; i < COMPONENTS; ++i) {
-        accs[i] = gsl_interp_accel_alloc();
-        splines[i] = gsl_spline_alloc(INTERPOL_TYPE, TIME_STEPS);
-        gsl_spline_init(splines[i], eta, rhs_sum[i], TIME_STEPS);
+        rhs_accs[i] = gsl_interp_accel_alloc();
+        rhs_splines[i] = gsl_spline_alloc(INTERPOL_TYPE, TIME_STEPS);
+        gsl_spline_init(rhs_splines[i], eta, rhs_sum[i], TIME_STEPS);
 
         // Free allocated memory
         free(partial_rhs_sum[i]);
@@ -213,20 +211,15 @@ void compute_RHS_sum(
 
 typedef struct {
     short int n;
-    gsl_spline** splines;
-    gsl_interp_accel** accs;
-    const parameters_t* parameters;
-    gsl_matrix* omega;
+    gsl_spline** rhs_splines;
+    gsl_interp_accel** rhs_accs;
+    const evolution_params_t* parameters;
 } ode_input_t;
 
 
 
-inline static void set_omega_matrix(gsl_matrix* omega, double eta, const parameters_t* params) {
-    double omega_M = pow(1 + (1/params->omega_m0 - 1) * exp(3*eta), -1);
-
-    double omega_M_ninth_root = pow(omega_M, -1.0/9.0);
-
-    /* double k_FS = 0.908 * sqrt(params->omega_m0) * params->m_nu/3 * exp(eta/2); */
+inline static void set_omega_matrix(gsl_matrix* omega, double eta, const evolution_params_t* params) {
+    double zeta = gsl_spline_eval(params->zeta_spline, eta, params->zeta_acc);
 
 #if COMPONENTS != 2
     warning_verbose("No implementation for COMPONENTS = %d (yet).",COMPONENTS);
@@ -236,8 +229,17 @@ inline static void set_omega_matrix(gsl_matrix* omega, double eta, const paramet
     gsl_matrix_set(omega,0,0,  0);
     gsl_matrix_set(omega,0,1, -1);
     // Second row
-    gsl_matrix_set(omega,1,0, -1.5 * omega_M_ninth_root);
-    gsl_matrix_set(omega,1,1,  1.5 * omega_M_ninth_root - 1);
+    gsl_matrix_set(omega,1,0, -1.5*zeta );
+    gsl_matrix_set(omega,1,1,  1.5*zeta  - 1);
+
+    /* SPT limit
+    // First row
+    gsl_matrix_set(omega,0,0,  0);
+    gsl_matrix_set(omega,0,1, -1);
+    // Second row
+    gsl_matrix_set(omega,1,0, -1.5);
+    gsl_matrix_set(omega,1,1,  1.5);
+    */
 }
 
 
@@ -245,9 +247,8 @@ inline static void set_omega_matrix(gsl_matrix* omega, double eta, const paramet
 int evolve_kernels(double eta, const double y[], double f[], void *ode_input) {
     ode_input_t input = *(ode_input_t*)ode_input;
     short int n = input.n;
-    const parameters_t* params = input.parameters;
-
-    gsl_matrix* omega = input.omega;
+    const evolution_params_t* params = input.parameters;
+    gsl_matrix* omega = params->omega;
 
     set_omega_matrix(omega, eta, params);
 
@@ -262,7 +263,7 @@ int evolve_kernels(double eta, const double y[], double f[], void *ode_input) {
         double value = gsl_matrix_get(omega,i,i);
         gsl_matrix_set(omega,i,i,value - n);
 
-        double rhs = gsl_spline_eval(input.splines[i], eta, input.accs[i]);
+        double rhs = gsl_spline_eval(input.rhs_splines[i], eta, input.rhs_accs[i]);
         gsl_vector_set(&f_vec.vector, i, rhs);
     }
 
@@ -277,8 +278,7 @@ short int kernel_evolution(
         const short int arguments[],
         short int kernel_index,             /* -1 indicates not known */
         short int n,
-        gsl_matrix* omega,
-        const parameters_t* params,
+        const evolution_params_t* params,
         const table_pointers_t* data_tables
         )
 {
@@ -315,8 +315,8 @@ short int kernel_evolution(
     if (kernel->evolved) return kernel_index;
 
     // GSL interpolation variables for interpolated RHS
-    gsl_spline*       splines[COMPONENTS];
-    gsl_interp_accel* accs   [COMPONENTS];
+    gsl_spline*       rhs_splines[COMPONENTS];
+    gsl_interp_accel* rhs_accs   [COMPONENTS];
 
     // Initialize time steps in eta
     double eta[TIME_STEPS];
@@ -328,15 +328,14 @@ short int kernel_evolution(
     }
 
     // Compute RHS sum in evolution equation
-    compute_RHS_sum(arguments, n, omega, params, data_tables, eta, splines, accs);
+    compute_RHS_sum(arguments, n, params, data_tables, eta, rhs_splines, rhs_accs);
 
     // Set up ODE input and system
     ode_input_t input = {
         .n = n,
         .parameters = params,
-        .splines = splines,
-        .accs = accs,
-        .omega = omega
+        .rhs_splines = rhs_splines,
+        .rhs_accs = rhs_accs,
     };
 
     gsl_odeiv2_system sys = {evolve_kernels, NULL, COMPONENTS, &input};
@@ -364,8 +363,8 @@ short int kernel_evolution(
     gsl_odeiv2_driver_free(driver);
     // Free GSL interpolation objects
     for (int i = 0; i < COMPONENTS; ++i) {
-        gsl_spline_free(splines[i]);
-        gsl_interp_accel_free(accs[i]);
+        gsl_spline_free(rhs_splines[i]);
+        gsl_interp_accel_free(rhs_accs[i]);
     }
 
     kernel->evolved = true;

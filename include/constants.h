@@ -9,6 +9,8 @@
 #define CONSTANTS_H
 
 #include <gsl/gsl_matrix.h>
+#include <gsl/gsl_interp.h>
+#include <gsl/gsl_spline.h>
 
 // Parameters (if not set by compile options)
 #ifndef LOOPS
@@ -53,11 +55,12 @@ typedef long double vfloat;
 
 // Parameters type
 typedef struct {
-    vfloat omega_m0;
-    /* vfloat f_nu; */
     vfloat eta_i;
     vfloat eta_f;
-} parameters_t;
+    gsl_interp_accel* zeta_acc;
+    gsl_spline* zeta_spline;
+    gsl_matrix* omega;
+} evolution_params_t;
 
 // Constants:
 #define PI    3.14159265359

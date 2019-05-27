@@ -24,10 +24,9 @@ typedef struct {
     vfloat k;
     short int component_a;
     short int component_b;
-    gsl_interp_accel* acc;
-    gsl_spline* spline;
-    gsl_matrix* omega;
-    const parameters_t* params;
+    gsl_interp_accel* ps_acc;
+    gsl_spline* ps_spline;
+    const evolution_params_t* params;
 } integration_input_t;
 
 int diagram_factor(const diagram_t* diagram);

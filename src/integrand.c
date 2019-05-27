@@ -263,7 +263,7 @@ static vfloat integrand_term(
         // First, compute SPT initial condition
         short int index = compute_SPT_kernels(arguments_l, m, data_tables);
         // Then, evolve kernels
-        kernel_evolution(arguments_l, index, m, input->omega, input->params, data_tables);
+        kernel_evolution(arguments_l, index, m, input->params, data_tables);
 
         result *= pow(data_tables->kernels[index].values[TIME_STEPS - 1][input->component_a] ,2);
     // In DEBUG-mode, check that kernel arguments in fact are equal in this
@@ -280,10 +280,10 @@ static vfloat integrand_term(
         short int index_l = compute_SPT_kernels(arguments_l, 2*l + m, data_tables);
         short int index_r = compute_SPT_kernels(arguments_r, 2*r + m, data_tables);
         // Then, evolve kernels
-        kernel_evolution(arguments_l, index_l, 2*l + m, input->omega,
-                input->params, data_tables);
-        kernel_evolution(arguments_r, index_r, 2*r + m, input->omega,
-                input->params, data_tables);
+        kernel_evolution(arguments_l, index_l, 2*l + m, input->params,
+                data_tables);
+        kernel_evolution(arguments_r, index_r, 2*r + m, input->params,
+                data_tables);
 
         result *= data_tables->
                 kernels[index_l].values[TIME_STEPS - 1][input->component_a]
@@ -340,7 +340,8 @@ vfloat sign_flip_symmetrization(
             continue;
         }
 
-        vfloat partial_result = h_theta * gsl_spline_eval(input->spline,k1,input->acc);
+        vfloat partial_result = h_theta
+            * gsl_spline_eval(input->ps_spline, k1, input->ps_acc);
         partial_result *= integrand_term(arguments_l, arguments_r, diagram,
                 input, data_tables);
 #if DEBUG >= 2
@@ -492,8 +493,8 @@ vfloat integrand(
     }
 
     for (int i = 0; i < LOOPS; ++i) {
-        result *= gsl_spline_eval(input->spline, data_tables.Q_magnitudes[i],
-                input->acc);
+        result *= gsl_spline_eval(input->ps_spline, data_tables.Q_magnitudes[i],
+                input->ps_acc);
     }
 
     // Free allocated memory
