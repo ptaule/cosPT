@@ -42,9 +42,6 @@
 #define ODE_ATOL 1e-6
 #define ODE_RTOL 1e-4
 
-// Maximum input power spectrum resolution
-#define MAX_RESOLUTION 200
-
 // Variable precision
 typedef long double vfloat;
 #define vfloat_fmt   "%Le"

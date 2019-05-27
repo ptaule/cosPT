@@ -88,7 +88,7 @@ int main () {
     gsl_interp_accel* acc;
     gsl_spline* spline;
 
-    read_PS(INPUT_FILE,&acc,&spline);
+    read_and_interpolate(INPUT_FILE,&acc,&spline);
 
     const parameters_t params = {
         .omega_m0 = 0.26,

@@ -16,12 +16,13 @@
 #include "../include/constants.h"
 #include "../include/power_spectrum_io.h"
 
+// Maximum input power spectrum resolution
+#define MAX_RESOLUTION 500
 
-
-void read_PS(
+void read_and_interpolate(
         const char* filename,   /* in, power spectrum file                          */
         gsl_interp_accel** acc, /* out, gsl_interpolation accelerated lookup object */
-        gsl_spline** spline     /* out, gsl_spline of power spectrum read from file */
+        gsl_spline** spline     /* out, gsl_spline of values read from file         */
         )
 {
     FILE* fp;
@@ -34,8 +35,8 @@ void read_PS(
         error_verbose("Could not open %s. Exiting.",filename);
     }
 
-    double* wavenumbers    = (double*)malloc(sizeof(double) * MAX_RESOLUTION);
-    double* power_spectrum = (double*)malloc(sizeof(double) * MAX_RESOLUTION);
+    double* x = (double*)malloc(sizeof(double) * MAX_RESOLUTION);
+    double* y = (double*)malloc(sizeof(double) * MAX_RESOLUTION);
 
     int i = 0;
     while ((read = getline(&line,&n,fp) != -1)) {
@@ -60,7 +61,7 @@ void read_PS(
                     "MAX_RESOLUTION = %d. Exiting.", filename,MAX_RESOLUTION);
         }
 
-        int items = sscanf(line,"%lg" "\t" "%lg",&wavenumbers[i],&power_spectrum[i]);
+        int items = sscanf(line,"%lg" "\t" "%lg",&x[i],&y[i]);
 
         if (items != 2) {
             fclose(fp);
@@ -71,18 +72,18 @@ void read_PS(
         i++;
     }
 
-    printf("RESOLUTION    = %d\n",i);
-
     // Interpolate values
     *acc = gsl_interp_accel_alloc();
     *spline = gsl_spline_alloc(INTERPOL_TYPE, i);
-    gsl_spline_init(*spline,wavenumbers,power_spectrum,i);
+    gsl_spline_init(*spline,x,y,i);
 
     fclose(fp);
     free(line);
-    free(wavenumbers);
-    free(power_spectrum);
+    free(x);
+    free(y);
 }
+
+
 
 void write_PS(
         const char* filename,
