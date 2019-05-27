@@ -5,8 +5,8 @@
    Copyright (c) 2019 Petter Taule. All rights reserved.
 */
 
-#ifndef KERNELS_H
-#define KERNELS_H
+#ifndef TABLES_H
+#define TABLES_H
 
 #include <stdbool.h>
 #include "constants.h"
@@ -67,4 +67,4 @@ void compute_alpha_beta_tables(
 
 short int kernel_index_from_arguments(const short int arguments[]);
 
-#endif /* ifndef KERNELS_H */
+#endif /* ifndef TABLES_H */
