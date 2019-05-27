@@ -114,10 +114,9 @@ int main () {
 
     // Overall factors:
     // - Only integrating over cos_theta_i between 0 and 1, multiply by 2 to
-    //   obtain [-1,1]
+    //   obtain [-1,1] (for each loop momenta)
     // - Assuming Q1 > Q2 > ..., hence multiply result by LOOPS factorial
     // - Phi integration of first loop momenta gives a factor 2pi
-    // - Conventionally divide by (2pi)^3
     vfloat overall_factor = pow(2,LOOPS) * gsl_sf_fact(LOOPS) * TWOPI;
 
     int nregions, neval, fail;
