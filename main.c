@@ -19,11 +19,6 @@
 #include "include/integrand.h"
 #include "include/power_spectrum_io.h"
 
-// Input power spectrum file
-#define INPUT_PS "input/PS_linear_z000_pk.dat"
-#define INPUT_ZETA "input/zeta.dat"
-// Output power spectrum to file
-#define OUTPUT_FILE "output_" TOSTRING(LOOPS) "loop.dat"
 
 
 int cuba_integrand(
@@ -64,16 +59,32 @@ int cuba_integrand(
 
 
 
-int main () {
-    printf("LOOPS         = %d\n", LOOPS);
-    printf("COMPONENTS    = %d\n", COMPONENTS);
-    printf("TIME STEPS    = %d\n", TIME_STEPS);
+int main (int argc, char* argv[]) {
+    char* input_ps_file   = "input/PS_linear_z000_pk.dat";
+    char* input_zeta_file = "input/zeta.dat";
+    char* output_ps_file  = "output/PS_" TOSTRING(LOOPS) "loop.dat";
+
+    if (argc == 2) {
+        input_ps_file = argv[1];
+    }
+    else if (argc == 3) {
+        input_ps_file = argv[1];
+        output_ps_file = argv[2];
+    }
+
+    printf("LOOPS                 = %d\n", LOOPS);
+    printf("COMPONENTS            = %d\n", COMPONENTS);
+    printf("TIME STEPS            = %d\n", TIME_STEPS);
+    printf("MONTE CARLO MAX EVALS = %.2e\n", CUBA_MAXEVAL);
+    printf("Reading input power spectrum from %s.\n",input_ps_file);
+    printf("Reading input zeta function from %s.\n",input_zeta_file);
+    printf("Results will be written to %s.\n",output_ps_file);
 
     gsl_interp_accel *ps_acc, *zeta_acc;
     gsl_spline *ps_spline, *zeta_spline;
 
-    read_and_interpolate(INPUT_PS,&ps_acc,&ps_spline);
-    read_and_interpolate(INPUT_ZETA,&zeta_acc,&zeta_spline);
+    read_and_interpolate(input_ps_file,&ps_acc,&ps_spline);
+    read_and_interpolate(input_zeta_file,&zeta_acc,&zeta_spline);
 
     const evolution_params_t params = {
         .eta_i = -3.18,
@@ -137,7 +148,7 @@ int main () {
                 difftime(end,beginning));
     }
 
-    write_PS(OUTPUT_FILE,N_POINTS,wavenumbers,power_spectrum);
+    write_PS(output_ps_file,N_POINTS,wavenumbers,power_spectrum);
 
     free(wavenumbers);
     free(power_spectrum);
