@@ -12,7 +12,7 @@
 #include <gsl/gsl_interp.h>
 #include <gsl/gsl_spline.h>
 
-// Parameters (if not set by compile options)
+// Number of loops (if not set by compile options)
 #ifndef LOOPS
 #define LOOPS 1
 #endif
@@ -27,13 +27,22 @@
 // Number of evaluation points between k=K_MIN and k=K_MAX
 #define N_POINTS 139
 
-// Debug modes (if not set by compile options):
-//
-// 1: Perform additional checks during runtime.
-// 2: In addition, print info during runtime.
-#ifndef DEBUG
-#define DEBUG 0
-#endif
+// CUBA settings
+#define CUBA_NVEC 1
+#define CUBA_EPSREL 1e-3
+#define CUBA_EPSABS 1e-12
+#define CUBA_VERBOSE 0
+#define CUBA_LAST 4
+#define CUBA_SEED 0
+#define CUBA_MINEVAL 0
+#define CUBA_MAXEVAL 1e5
+
+#define CUBA_STATEFILE NULL
+#define CUBA_SPIN NULL
+
+#define CUBA_NNEW 1000
+#define CUBA_NMIN 2
+#define CUBA_FLATNESS 25.
 
 // Which GSL interpolation routine to use
 #define INTERPOL_TYPE gsl_interp_cspline
@@ -43,6 +52,14 @@
 #define ODE_HSTART 1e-4 /* Initial step size */
 #define ODE_ATOL 1e-6
 #define ODE_RTOL 1e-4
+
+// Debug modes (if not set by compile options):
+//
+// 1: Perform additional checks during runtime.
+// 2: In addition, print info during runtime.
+#ifndef DEBUG
+#define DEBUG 0
+#endif
 
 // Variable precision
 typedef long double vfloat;

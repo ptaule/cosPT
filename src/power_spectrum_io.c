@@ -99,11 +99,21 @@ void write_PS(
         warning_verbose("Could not open %s for writing.",filename);
     }
 
-    fprintf(fp,"# Matter power spectrum P(k) at %d-loop\n",LOOPS);
+    fprintf(fp,"# Matter power spectrum P(k) at %d-loop (%d "
+        "components)\n",LOOPS, COMPONENTS);
     fprintf(fp,"# for k=%e to %e (h/Mpc)\n",
             wavenumbers[0], wavenumbers[n_points-1]);
-    fprintf(fp,"# number of wavenumbers: %d\n", n_points);
-    fprintf(fp,"# \tk\t\tP(k)\n");
+    fprintf(fp,"# Number of wavenumbers: %d\n", n_points);
+
+    fprintf(fp,"#\n# Settings/constants used:\n");
+    fprintf(fp,"# Number of time steps                  = %d\n",TIME_STEPS);
+
+    fprintf(fp,"# Monte Carlo abstol, reltol            = %.2e, %.2e\n", CUBA_EPSABS, CUBA_EPSREL);
+    fprintf(fp,"# Monte Carlo max num. of evals         = %.2e\n", CUBA_MAXEVAL);
+    fprintf(fp,"# ODE initial step size, abstol, reltol = %.2e, %.2e, %.2e\n",
+            ODE_HSTART, ODE_ATOL, ODE_RTOL);
+    fprintf(fp,"# ODE routine                           = %s\n", TOSTRING(ODE_ROUTINE));
+    fprintf(fp,"#\n# \tk\t\t\tP(k)\n");
 
     for (int i = 0; i < n_points; ++i) {
         fprintf(fp,"\t%e\t%e\n", wavenumbers[i], power_spectrum[i]);

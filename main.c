@@ -25,23 +25,6 @@
 // Output power spectrum to file
 #define OUTPUT_FILE "output_" TOSTRING(LOOPS) "loop.dat"
 
-// CUBA settings
-#define NVEC 1
-#define EPSREL 1e-3
-#define EPSABS 1e-12
-#define VERBOSE 0
-#define LAST 4
-#define SEED 0
-#define MINEVAL 0
-#define MAXEVAL 1e5
-
-#define STATEFILE NULL
-#define SPIN NULL
-
-#define NNEW 1000
-#define NMIN 2
-#define FLATNESS 25.
-
 
 int cuba_integrand(
         __attribute__((unused)) const int *ndim,
@@ -93,7 +76,7 @@ int main () {
     read_and_interpolate(INPUT_ZETA,&zeta_acc,&zeta_spline);
 
     const evolution_params_t params = {
-        .eta_i = - log(25 + 1),
+        .eta_i = -3.18,
         .eta_f = 0,
         .zeta_acc = zeta_acc,
         .zeta_spline = zeta_spline,
@@ -135,10 +118,10 @@ int main () {
 
         time(&beginning);
 
-        Suave(N_DIMS, 1, cuba_integrand, &input,
-                NVEC, EPSREL, EPSABS, VERBOSE | LAST, SEED,
-                MINEVAL, MAXEVAL, NNEW, NMIN, FLATNESS,
-                STATEFILE, SPIN,
+        Suave(N_DIMS, 1, cuba_integrand, &input, CUBA_NVEC, CUBA_EPSREL,
+                CUBA_EPSABS, CUBA_VERBOSE | CUBA_LAST, CUBA_SEED, CUBA_MINEVAL,
+                CUBA_MAXEVAL, CUBA_NNEW, CUBA_NMIN, CUBA_FLATNESS,
+                CUBA_STATEFILE, CUBA_SPIN,
                 &nregions, &neval, &fail, result, error, prob);
 
         time(&end);
