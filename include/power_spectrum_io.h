@@ -15,7 +15,8 @@ void read_and_interpolate(const char* filename, gsl_interp_accel** acc, gsl_spli
 void write_PS(const char* filename,
         int n_points,
         const double wavenumbers[],
-        const double power_spectrum[]
+        const double power_spectrum[],
+        const double errors[]
         );
 
 #endif /* ifndef POWER_SPECTRUM_IO_H */

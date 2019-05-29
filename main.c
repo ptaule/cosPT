@@ -105,6 +105,7 @@ int main (int argc, char* argv[]) {
 
     double* const wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));
     double* const power_spectrum = (double*)calloc(N_POINTS, sizeof(double));
+    double* const errors         = (double*)calloc(N_POINTS, sizeof(double));
 
     // Overall factors:
     // - Only integrating over cos_theta_i between 0 and 1, multiply by 2 to
@@ -141,6 +142,7 @@ int main (int argc, char* argv[]) {
         error[0] *= overall_factor;
 
         power_spectrum[i] = (double)result[0];
+        errors[i]         = (double)error[0];
 
         printf("k = %f, result = %e, error = %e, prob = %f, "
                 "elapsed time = %.0fs\n",
@@ -148,7 +150,7 @@ int main (int argc, char* argv[]) {
                 difftime(end,beginning));
     }
 
-    write_PS(output_ps_file,N_POINTS,wavenumbers,power_spectrum);
+    write_PS(output_ps_file, N_POINTS, wavenumbers, power_spectrum, errors);
 
     free(wavenumbers);
     free(power_spectrum);

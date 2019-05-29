@@ -89,7 +89,8 @@ void write_PS(
         const char* filename,
         int n_points,
         const double wavenumbers[],
-        const double power_spectrum[]
+        const double power_spectrum[],
+        const double errors[]
         )
 {
     FILE* fp;
@@ -113,10 +114,10 @@ void write_PS(
     fprintf(fp,"# ODE initial step size, abstol, reltol = %.2e, %.2e, %.2e\n",
             ODE_HSTART, ODE_ATOL, ODE_RTOL);
     fprintf(fp,"# ODE routine                           = %s\n", TOSTRING(ODE_ROUTINE));
-    fprintf(fp,"#\n# \tk\t\t\tP(k)\n");
+    fprintf(fp,"#\n# \tk\t\t\t\tP(k)\t\t\terror\n");
 
     for (int i = 0; i < n_points; ++i) {
-        fprintf(fp,"\t%e\t%e\n", wavenumbers[i], power_spectrum[i]);
+        fprintf(fp,"\t%e\t%e\t%e\n", wavenumbers[i], power_spectrum[i], errors[i]);
     }
 
     fclose(fp);
