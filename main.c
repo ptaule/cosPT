@@ -111,6 +111,7 @@ int main () {
 
     double* const wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));
     double* const power_spectrum = (double*)calloc(N_POINTS, sizeof(double));
+    double* const errors         = (double*)calloc(N_POINTS, sizeof(double));
 
     // Overall factors:
     // - Only integrating over cos_theta_i between 0 and 1, multiply by 2 to
@@ -141,12 +142,13 @@ int main () {
         error[0] *= overall_factor;
 
         power_spectrum[i] = (double)result[0];
+        errors[i]         = (double)error[0];
 
         printf("k  = %f, result = %e, error = %f, prob = %f\n",
                 k, (double)*result, (double)error[0], (double)prob[0]);
     }
 
-    write_PS(OUTPUT_FILE,N_POINTS,wavenumbers,power_spectrum);
+    write_PS(OUTPUT_FILE,N_POINTS,wavenumbers,power_spectrum, errors);
 
     free(wavenumbers);
     free(power_spectrum);
