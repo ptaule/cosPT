@@ -18,7 +18,10 @@
 #endif
 
 #define COMPONENTS 2
+
+#ifndef TIME_STEPS
 #define TIME_STEPS 100
+#endif
 
 // Number of evaluation points,
 #define N_POINTS 50
@@ -37,7 +40,10 @@
 #define CUBA_LAST 4
 #define CUBA_SEED 0
 #define CUBA_MINEVAL 0
-#define CUBA_MAXEVAL 1e5
+
+#ifndef CUBA_MAXEVAL
+#define CUBA_MAXEVAL 1e6
+#endif
 
 #define CUBA_STATEFILE NULL
 #define CUBA_SPIN NULL
@@ -51,9 +57,9 @@
 // Which GSL ODE routine to use
 #define ODE_ROUTINE gsl_odeiv2_step_rkf45
 // GSL ODE routine parameters
-#define ODE_HSTART 1e-4 /* Initial step size */
+#define ODE_HSTART 1e-3 /* Initial step size */
 #define ODE_ATOL 1e-6
-#define ODE_RTOL 1e-4
+#define ODE_RTOL 1e-3
 
 // Debug modes (if not set by compile options):
 //

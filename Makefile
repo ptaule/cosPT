@@ -12,7 +12,7 @@ HEADERS = $(wildcard $(INC_DIR)/*.h)
 TEST_INTERFACE = $(TEST_DIR)/test_interface
 
 CFLAGS += -Wall -Wextra -Wpedantic
-CPPFLAGS += -I/scratch/Cuba-4.2/ -I/scratch/gsl-2.5/
+CPPFLAGS += -I/scratch/Cuba-4.2/ -I/scratch/gsl-2.5/ $(OPTIONS)
 
 LDFLAGS_GSL  = -L/scratch/gsl-2.5/.libs/ -L/scratch/gsl-2.5/cblas/.libs
 LDLIBS_GSL   = -lgsl -lgslcblas
