@@ -23,11 +23,6 @@
 #define TIME_STEPS 100
 #endif
 
-// Number of evaluation points,
-#define N_POINTS 50
-#define K_MIN 1e-2
-#define K_MAX 1e1
-
 // Integration limits
 #define Q_MIN 1e-4
 #define Q_MAX 1e2

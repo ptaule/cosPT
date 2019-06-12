@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <time.h>
 
@@ -32,16 +33,32 @@ int cuba_integrand(const int *ndim, const cubareal xx[], const int *ncomp,
 int main (int argc, char* argv[]) {
     char* input_ps_file   = "input/PS_linear_z000_pk.dat";
     char* input_zeta_file = "input/zeta.dat";
-    char* output_ps_file  = "output/PS_" TOSTRING(LOOPS) "loop.dat";
+    char* input_wavenumbers = "input/wavenumbers.dat";
+
+    // Wavenumber index
+    int a = 0;
 
     if (argc == 2) {
-        input_ps_file = argv[1];
+        a = atoi(argv[1]);
     }
-    else if (argc == 3) {
-        input_ps_file = argv[1];
-        output_ps_file = argv[2];
+    else {
+        error("Please provide wavenumber index as command argument.");
     }
 
+    double k = get_wavenumber(input_wavenumbers, a);
+
+    char output_ps_file[100];
+    char num[20];
+
+    sprintf(num,"%e",k);
+
+    strcpy(output_ps_file, "output/lcdm_L" TOSTRING(LOOPS) "_nT"
+        TOSTRING(TIME_STEPS) "_N" TOSTRING(CUBA_MAXEVAL));
+    strcat(output_ps_file, "/k_");
+    strcat(output_ps_file, num);
+    strcat(output_ps_file, ".dat");
+
+    printf("k                     = %e\n", k);
     printf("LOOPS                 = %d\n", LOOPS);
     printf("COMPONENTS            = %d\n", COMPONENTS);
     printf("TIME STEPS            = %d\n", TIME_STEPS);
@@ -91,7 +108,7 @@ int main (int argc, char* argv[]) {
     initialize_diagrams(diagrams);
 
     integration_input_t input = {
-        .k = 0.0,
+        .k = k,
         .component_a = 0,
         .component_b = 0,
         .ps_acc = ps_acc,
@@ -101,9 +118,9 @@ int main (int argc, char* argv[]) {
         .worker_mem = worker_mem
     };
 
-    double* const wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));
-    double* const power_spectrum = (double*)calloc(N_POINTS, sizeof(double));
-    double* const errors         = (double*)calloc(N_POINTS, sizeof(double));
+    double* const wavenumbers    = (double*)calloc(1, sizeof(double));
+    double* const power_spectrum = (double*)calloc(1, sizeof(double));
+    double* const errors         = (double*)calloc(1, sizeof(double));
 
     // Overall factors:
     // - Only integrating over cos_theta_i between 0 and 1, multiply by 2 to
@@ -117,39 +134,31 @@ int main (int argc, char* argv[]) {
     int nregions, neval, fail;
     cubareal result[1], error[1], prob[1];
 
-    double delta_factor = pow((double)K_MAX/K_MIN, 1.0/N_POINTS);
-    double k = K_MIN;
-
     // Timing
     time_t beginning, end;
+    time(&beginning);
 
-    for (int i = 0; i < N_POINTS; ++i) {
-        k *= delta_factor;
-        wavenumbers[i] = k;
-        input.k = k;
+    Suave(N_DIMS, 1, (integrand_t)cuba_integrand, &input, CUBA_NVEC,
+            CUBA_EPSREL, CUBA_EPSABS, CUBA_VERBOSE | CUBA_LAST, CUBA_SEED,
+            CUBA_MINEVAL, CUBA_MAXEVAL, CUBA_NNEW, CUBA_NMIN,
+            CUBA_FLATNESS, CUBA_STATEFILE, CUBA_SPIN, &nregions, &neval,
+            &fail, result, error, prob);
 
-        time(&beginning);
+    time(&end);
 
-        Suave(N_DIMS, 1, (integrand_t)cuba_integrand, &input, CUBA_NVEC,
-                CUBA_EPSREL, CUBA_EPSABS, CUBA_VERBOSE | CUBA_LAST, CUBA_SEED,
-                CUBA_MINEVAL, CUBA_MAXEVAL, CUBA_NNEW, CUBA_NMIN,
-                CUBA_FLATNESS, CUBA_STATEFILE, CUBA_SPIN, &nregions, &neval,
-                &fail, result, error, prob);
+    result[0] *= overall_factor;
+    error[0] *= overall_factor;
 
-        time(&end);
+    wavenumbers[0]    = k;
+    power_spectrum[0] = (double)result[0];
+    errors[0]         = (double)error[0];
 
-        result[0] *= overall_factor;
-        error[0] *= overall_factor;
+    printf("k = %f, result = %e, error = %e, prob = %f, "
+            "elapsed time = %.0fs\n",
+            k, (double)*result, (double)error[0], (double)prob[0],
+            difftime(end,beginning));
 
-        power_spectrum[i] = (double)result[0];
-        errors[i]         = (double)error[0];
-
-        printf("k = %f, result = %e, error = %e, prob = %f, elapsed time = "
-                "%.0fs\n", k, (double)*result, (double)error[0],
-                (double)prob[0], difftime(end,beginning));
-    }
-
-    write_PS(output_ps_file, N_POINTS, wavenumbers, power_spectrum, errors);
+    write_PS(output_ps_file, 1, wavenumbers, power_spectrum, errors);
 
     diagrams_gc(diagrams);
 

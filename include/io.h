@@ -12,6 +12,7 @@
 #include <gsl/gsl_spline.h>
 
 void read_and_interpolate(const char* filename, gsl_interp_accel** acc, gsl_spline** spline);
+double get_wavenumber(const char* filename, int a);
 void write_PS(const char* filename,
         int n_points,
         const double wavenumbers[],
