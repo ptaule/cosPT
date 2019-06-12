@@ -20,34 +20,10 @@
 #include "include/integrand.h"
 #include "include/power_spectrum_io.h"
 
-// Min/max wavenumber
-#define K_MIN 1e-4
-#define K_MAX 1e2
-
-// Number of evaluation points between k=K_MIN and k=K_MAX
-#define N_POINTS 139
-
 // Input power spectrum file
 #define INPUT_FILE "input/PS_linear_z000_pk.dat"
 // Output power spectrum to file
 #define OUTPUT_FILE "output_" TOSTRING(LOOPS) "loop.dat"
-
-// CUBA settings
-#define NVEC 1
-#define EPSREL 1e-3
-#define EPSABS 1e-12
-#define VERBOSE 0
-#define LAST 4
-#define SEED 0
-#define MINEVAL 0
-#define MAXEVAL 1e6
-
-#define STATEFILE NULL
-#define SPIN NULL
-
-#define NNEW 1000
-#define NMIN 2
-#define FLATNESS 25.
 
 
 int cuba_integrand(
@@ -61,16 +37,16 @@ int cuba_integrand(
     integration_input_t* input = (integration_input_t*)userdata;
     integration_variables_t vars;
 
-    vfloat ratio = K_MAX/K_MIN;
+    vfloat ratio = Q_MAX/Q_MIN;
 
     vfloat jacobian = 0.0;
 #if LOOPS == 1
-    vars.magnitudes[0] = K_MIN * pow(ratio,xx[0]);
+    vars.magnitudes[0] = Q_MIN * pow(ratio,xx[0]);
     vars.cos_theta[0] = xx[1];
     jacobian = log(ratio) * pow(vars.magnitudes[0],3);
 #elif LOOPS == 2
-    vars.magnitudes[0] = K_MIN * pow(ratio,xx[0]);
-    vars.magnitudes[1] = K_MIN * pow(ratio,xx[0] * xx[1]);
+    vars.magnitudes[0] = Q_MIN * pow(ratio,xx[0]);
+    vars.magnitudes[1] = Q_MIN * pow(ratio,xx[0] * xx[1]);
     vars.cos_theta[0] = xx[2];
     vars.cos_theta[1] = xx[3];
     vars.phi[0] = xx[4] * TWOPI;
@@ -132,11 +108,11 @@ int main () {
         wavenumbers[i] = k;
         input.k = k;
 
-        Suave(N_DIMS, 1, cuba_integrand, &input,
-                NVEC, EPSREL, EPSABS, VERBOSE | LAST, SEED,
-                MINEVAL, MAXEVAL, NNEW, NMIN, FLATNESS,
-                STATEFILE, SPIN,
-                &nregions, &neval, &fail, result, error, prob);
+        Suave(N_DIMS, 1, cuba_integrand, &input, CUBA_NVEC, CUBA_EPSREL,
+                CUBA_EPSABS, CUBA_VERBOSE | CUBA_LAST, CUBA_SEED, CUBA_MINEVAL,
+                CUBA_MAXEVAL, CUBA_NNEW, CUBA_NMIN, CUBA_FLATNESS,
+                CUBA_STATEFILE, CUBA_SPIN, &nregions, &neval, &fail, result,
+                error, prob);
 
         result[0] *= overall_factor;
         error[0] *= overall_factor;
