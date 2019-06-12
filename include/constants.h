@@ -21,11 +21,6 @@
 #define TIME_STEPS 100
 #endif
 
-// Number of evaluation points,
-#define N_POINTS 50
-#define K_MIN 1e-2
-#define K_MAX 1e1
-
 // Integration limits
 #define Q_MIN 1e-4
 #define Q_MAX 1e2
@@ -39,7 +34,7 @@
 #define CUBA_NVEC 1
 #define CUBA_EPSREL 1e-3
 #define CUBA_EPSABS 1e-12
-#define CUBA_VERBOSE 0
+#define CUBA_VERBOSE 1
 #define CUBA_LAST 4
 #define CUBA_SEED 0
 #define CUBA_MINEVAL 0
@@ -60,9 +55,7 @@
 #define MAXCORES 10
 #endif
 
-#define CUBA_STATEFILE NULL
 #define CUBA_SPIN NULL
-
 #define CUBA_NNEW 1000
 #define CUBA_NMIN 2
 #define CUBA_FLATNESS 25.

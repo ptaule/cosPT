@@ -210,6 +210,49 @@ void read_and_interpolate_2d(
 
 
 
+double get_wavenumber(
+        const char* filename, /* in, name of file to be read                 */
+        int a                 /* wavenumber (zero-based) index;              */
+                              /* which index (linenumber) in list to be read */
+        )
+{
+    FILE* fp;
+    char* line = NULL;
+    size_t n = 0; // Buffer size, changed by getline()
+    ssize_t read; // getline() success/error flag
+
+    fp = fopen(filename,"r");
+    if (fp == NULL) {
+        error_verbose("Could not open %s. Exiting.",filename);
+    }
+
+    int i = 0;
+
+    while ((read = getline(&line,&n,fp) != -1)) {
+        if (!strip_line(line)) continue;
+
+        if (i == a) {
+            double wavenumber = 0;
+            sscanf(line,"%lg",&wavenumber);
+            fclose(fp);
+            free(line);
+
+            return wavenumber;
+        }
+
+        i++;
+    }
+
+    fclose(fp);
+    free(line);
+
+    warning_verbose("Wavenumber index given (%d) is outside range of list in "
+            "%s. Using k=1.0", a, filename);
+    return 1.0;
+}
+
+
+
 void write_PS(
         const char* filename,
         int n_points,

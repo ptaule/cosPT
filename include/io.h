@@ -25,6 +25,7 @@ void read_and_interpolate(const char* filename, gsl_interp_accel** acc, gsl_spli
 void read_and_interpolate_2d(const char* filename, gsl_interp_accel** x_acc,
         gsl_interp_accel** y_acc, gsl_spline2d** spline);
 
+double get_wavenumber(const char* filename, int a);
 void write_PS(const char* filename, int n_points, const output_t* output);
 
 #endif /* ifndef IO_H */

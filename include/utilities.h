@@ -52,6 +52,8 @@ inline short int config2label(
     return label;
 }
 
+bool does_directory_exist(const char dir_path[]);
+
 void print_label(short int label);
 void print_labels(const short int labels[], size_t size);
 void print_gsl_matrix(void* matrix, int type, size_t height, size_t width);

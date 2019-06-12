@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <time.h>
 
@@ -27,29 +28,51 @@ void exit_worker(tables_t* worker_mem, const int* core);
 
 int cuba_integrand(const int *ndim, const cubareal xx[], const int *ncomp,
         cubareal ff[], void *userdata, const int *nvec, const int *core);
+void set_output_filepaths(char output_ps_file[], char cuba_statefile[], int a,
+        double k);
 
+
+// System specific paths
+#define INPUT_PATH  "/home/t30/all/ge52sir/non_linear_PS/input/"
+#define OUTPUT_PATH "/space/ge52sir/non_linear_PS/output/"
+#define CUBA_STATEPATH "/space/ge52sir/non_linear_PS/output/CUBA_statefiles/"
+
+#ifndef DESCRIPTION
+#define DESCRIPTION "lcdm"
+#endif
 
 
 int main (int argc, char* argv[]) {
-    char* input_ps_file   = "input/PS_linear_z000_pk.dat";
-    char* input_zeta_file = "input/zeta.dat";
-    char* output_ps_file  = "output/PS_" TOSTRING(LOOPS) "loop.dat";
+    char* input_ps_file     = INPUT_PATH "PS_linear_z000_pk.dat";
+    char* input_zeta_file   = INPUT_PATH "zeta.dat";
+    char* input_wavenumbers = INPUT_PATH "wavenumbers.dat";
+
+    // Wavenumber index
+    int a = 0;
 
     if (argc == 2) {
-        input_ps_file = argv[1];
+        a = atoi(argv[1]);
     }
-    else if (argc == 3) {
-        input_ps_file = argv[1];
-        output_ps_file = argv[2];
+    else {
+        error("Please provide wavenumber index as command argument.");
     }
 
+    double k = get_wavenumber(input_wavenumbers, a);
+
+    char output_ps_file[100];
+    char cuba_statefile[100];
+    set_output_filepaths(output_ps_file, cuba_statefile, a, k);
+
+    printf("k                     = %e\n", k);
     printf("LOOPS                 = %d\n", LOOPS);
     printf("COMPONENTS            = %d\n", COMPONENTS);
     printf("TIME STEPS            = %d\n", TIME_STEPS);
     printf("MONTE CARLO MAX EVALS = %.2e\n", CUBA_MAXEVAL);
-    printf("Reading input power spectrum from %s.\n",input_ps_file);
-    printf("Reading input zeta function from %s.\n",input_zeta_file);
-    printf("Results will be written to %s.\n",output_ps_file);
+
+    printf("Reading input power spectrum from %s.\n", input_ps_file);
+    printf("Reading input zeta function from %s.\n", input_zeta_file);
+    printf("Results will be written to %s.\n", output_ps_file);
+    printf("Cuba statefile: %s.\n", cuba_statefile);
 
 #if N_CORES >= 0
     cubacores(N_CORES, 10000);
@@ -85,7 +108,7 @@ int main (int argc, char* argv[]) {
     };
 
     integration_input_t input = {
-        .k = 0.0,
+        .k = k,
         .component_a = 0,
         .component_b = 0,
         .ps_acc = NULL,
@@ -100,10 +123,10 @@ int main (int argc, char* argv[]) {
 
     output_t output = {
         .input_ps_file = input_ps_file,
-        .wavenumbers = (double*)calloc(N_POINTS, sizeof(double)),
-        .lin_ps      = (double*)calloc(N_POINTS, sizeof(double)),
-        .non_lin_ps  = (double*)calloc(N_POINTS, sizeof(double)),
-        .errors      = (double*)calloc(N_POINTS, sizeof(double))
+        .wavenumbers = (double*)calloc(1, sizeof(double)),
+        .lin_ps      = (double*)calloc(1, sizeof(double)),
+        .non_lin_ps  = (double*)calloc(1, sizeof(double)),
+        .errors      = (double*)calloc(1, sizeof(double))
     };
 
     // Overall factors:
@@ -118,45 +141,35 @@ int main (int argc, char* argv[]) {
     int nregions, neval, fail;
     cubareal result[1], error[1], prob[1];
 
-    double delta_factor = pow((double)K_MAX/K_MIN, 1.0/N_POINTS);
-    double k = K_MIN;
-
     // Timing
     time_t beginning, end;
+    time(&beginning);
 
-    for (int i = 0; i < N_POINTS; ++i) {
-        k *= delta_factor;
-        output.wavenumbers[i] = k;
-        input.k = k;
+    Suave(N_DIMS, 1, (integrand_t)cuba_integrand, &input, CUBA_NVEC,
+            CUBA_EPSREL, CUBA_EPSABS, CUBA_VERBOSE | CUBA_LAST, CUBA_SEED,
+            CUBA_MINEVAL, CUBA_MAXEVAL, CUBA_NNEW, CUBA_NMIN, CUBA_FLATNESS,
+            cuba_statefile, CUBA_SPIN, &nregions, &neval, &fail, result,
+            error, prob);
 
+    time(&end);
 
-        time(&beginning);
+    output.wavenumbers[0] = k;
+    output.non_lin_ps[0]  = (double)result[0] * overall_factor;
+    output.errors[0]      = (double)error[0]  * overall_factor;
 
-        Suave(N_DIMS, 1, (integrand_t)cuba_integrand, &input, CUBA_NVEC,
-                CUBA_EPSREL, CUBA_EPSABS, CUBA_VERBOSE | CUBA_LAST, CUBA_SEED,
-                CUBA_MINEVAL, CUBA_MAXEVAL, CUBA_NNEW, CUBA_NMIN,
-                CUBA_FLATNESS, CUBA_STATEFILE, CUBA_SPIN, &nregions, &neval,
-                &fail, result, error, prob);
+    /* (F1(z_0) */
+    double F1[COMPONENTS];
+    compute_F1(k, input.params, eta, F1);
 
-        time(&end);
+    output.lin_ps[0] = gsl_spline_eval(input.ps_spline, k, input.ps_acc)
+        * F1[input.component_a] * F1[input.component_b];
 
-        output.non_lin_ps[i] = (double)result[0] * overall_factor;
-        output.errors[i]     = (double)error[0]  * overall_factor;
+    printf("k = %f, lin_ps = %e, %d-loop = %e, error = %e, prob = %f, "
+            "elapsed time = %.0fs\n", k, output.lin_ps[0], LOOPS,
+            output.non_lin_ps[0], output.errors[0], (double)prob[0],
+            difftime(end,beginning));
 
-        /* (F1(z_0) */
-        double F1[COMPONENTS];
-        compute_F1(k, input.params, eta, F1);
-
-        output.lin_ps[i] = gsl_spline_eval(input.ps_spline, k, input.ps_acc)
-            * F1[input.component_a] * F1[input.component_b];
-
-        printf("k = %f, lin_ps = %e, %d-loop = %e, error = %e, prob = %f, "
-                "elapsed time = %.0fs\n", k, output.lin_ps[i], LOOPS,
-                output.non_lin_ps[i], output.errors[i], (double)prob[0],
-                difftime(end,beginning));
-    }
-
-    write_PS(output_ps_file, N_POINTS, &output);
+    write_PS(output_ps_file, 1, &output);
 
     diagrams_gc(diagrams);
 
@@ -256,4 +269,34 @@ int cuba_integrand(
 
     ff[0] = jacobian * integrand(input,tables);
     return 0;
+}
+
+
+
+void set_output_filepaths(char output_ps_file[], char cuba_statefile[], int a,
+        double k)
+{
+    char a_string[4];
+    char k_string[20];
+    sprintf(a_string,"%02d",a);
+    sprintf(k_string,"%e",k);
+
+    // The name of the output directory is defined through parameter values
+    strcpy(output_ps_file, OUTPUT_PATH TOSTRING(DESCRIPTION) "_L"
+            TOSTRING(LOOPS) "_nT" TOSTRING(TIME_STEPS) "_N"
+            TOSTRING(CUBA_MAXEVAL) "/");
+
+    // Check that directory exists
+    if (!does_directory_exist(output_ps_file)) {
+        error_verbose("Directory %s does not exist.", output_ps_file);
+    }
+
+    // Basename of output file is defined by a-int
+    strcat(output_ps_file, a_string);
+    strcat(output_ps_file, ".dat");
+
+    // CUBA statefile
+    strcpy(cuba_statefile, CUBA_STATEPATH TOSTRING(DESCRIPTION) "_L"
+            TOSTRING(LOOPS) "_nT" TOSTRING(TIME_STEPS) "_k_");
+    strcat(cuba_statefile, k_string);
 }
