@@ -117,14 +117,14 @@ int main (int argc, char* argv[]) {
     int nregions, neval, fail;
     cubareal result[1], error[1], prob[1];
 
-    double delta_logk = log(K_MAX/K_MIN) / N_POINTS;
+    double delta_factor = pow(K_MAX/K_MIN, 1.0/N_POINTS);
     double k = K_MIN;
 
     // Timing
     time_t beginning, end;
 
     for (int i = 0; i < N_POINTS; ++i) {
-        k *= exp(delta_logk);
+        k *= delta_factor;
         wavenumbers[i] = k;
         input.k = k;
 
