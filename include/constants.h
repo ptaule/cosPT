@@ -20,12 +20,14 @@
 #define COMPONENTS 2
 #define TIME_STEPS 100
 
-// Min/max wavenumber
-#define K_MIN 1e-4
-#define K_MAX 1e2
+// Number of evaluation points,
+#define N_POINTS 50
+#define K_MIN 1e-2
+#define K_MAX 1e1
 
-// Number of evaluation points between k=K_MIN and k=K_MAX
-#define N_POINTS 139
+// Integration limits
+#define Q_MIN 1e-4
+#define Q_MAX 1e2
 
 // CUBA settings
 #define CUBA_NVEC 1

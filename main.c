@@ -32,16 +32,16 @@ int cuba_integrand(
     integration_input_t* input = (integration_input_t*)userdata;
     integration_variables_t vars;
 
-    vfloat ratio = K_MAX/K_MIN;
+    vfloat ratio = Q_MAX/Q_MIN;
 
     vfloat jacobian = 0.0;
 #if LOOPS == 1
-    vars.magnitudes[0] = K_MIN * pow(ratio,xx[0]);
+    vars.magnitudes[0] = Q_MIN * pow(ratio,xx[0]);
     vars.cos_theta[0] = xx[1];
     jacobian = log(ratio) * pow(vars.magnitudes[0],3);
 #elif LOOPS == 2
-    vars.magnitudes[0] = K_MIN * pow(ratio,xx[0]);
-    vars.magnitudes[1] = K_MIN * pow(ratio,xx[0] * xx[1]);
+    vars.magnitudes[0] = Q_MIN * pow(ratio,xx[0]);
+    vars.magnitudes[1] = Q_MIN * pow(ratio,xx[0] * xx[1]);
     vars.cos_theta[0] = xx[2];
     vars.cos_theta[1] = xx[3];
     vars.phi[0] = xx[4] * TWOPI;
