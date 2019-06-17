@@ -31,9 +31,9 @@ int cuba_integrand(const int *ndim, const cubareal xx[], const int *ncomp,
 
 
 int main (int argc, char* argv[]) {
-    char* input_ps_file   = "input/PS_linear_z000_pk.dat";
-    char* input_zeta_file = "input/zeta.dat";
-    char* input_wavenumbers = "input/wavenumbers.dat";
+    char* input_ps_file     = "/home/t30/all/ge52sir/non_linear_PS/input/PS_linear_z000_pk.dat";
+    char* input_zeta_file   = "/home/t30/all/ge52sir/non_linear_PS/input/zeta.dat";
+    char* input_wavenumbers = "/home/t30/all/ge52sir/non_linear_PS/input/wavenumbers.dat";
 
     // Wavenumber index
     int a = 0;
@@ -52,8 +52,9 @@ int main (int argc, char* argv[]) {
 
     sprintf(num,"%e",k);
 
-    strcpy(output_ps_file, "output/lcdm_L" TOSTRING(LOOPS) "_nT"
-        TOSTRING(TIME_STEPS) "_N" TOSTRING(CUBA_MAXEVAL));
+    strcpy(output_ps_file, "/space/ge52sir/non_linear_PS/output/lcdm_L"
+            TOSTRING(LOOPS) "_nT" TOSTRING(TIME_STEPS) "_N"
+            TOSTRING(CUBA_MAXEVAL));
     strcat(output_ps_file, "/k_");
     strcat(output_ps_file, num);
     strcat(output_ps_file, ".dat");
