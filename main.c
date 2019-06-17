@@ -17,7 +17,7 @@
 #include "include/constants.h"
 #include "include/tables.h"
 #include "include/integrand.h"
-#include "include/power_spectrum_io.h"
+#include "include/io.h"
 
 
 

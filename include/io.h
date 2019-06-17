@@ -1,12 +1,12 @@
 /*
-   power_spectrum_io.h
+   io.h
 
    Created by Petter Taule on 25.02.2019
    Copyright (c) 2019 Petter Taule. All rights reserved.
 */
 
-#ifndef POWER_SPECTRUM_IO_H
-#define POWER_SPECTRUM_IO_H
+#ifndef IO_H
+#define IO_H
 
 #include <gsl/gsl_interp.h>
 #include <gsl/gsl_spline.h>
@@ -19,4 +19,4 @@ void write_PS(const char* filename,
         const double errors[]
         );
 
-#endif /* ifndef POWER_SPECTRUM_IO_H */
+#endif /* ifndef IO_H */
