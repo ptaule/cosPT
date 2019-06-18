@@ -120,8 +120,9 @@ static void partial_SPT_sum(
             );
 
     // Devide through by symmetrization factor (n choose m)
+    int n_choose_m = gsl_sf_choose(n,m);
     for (int i = 0; i < COMPONENTS; ++i) {
-        kernel_values[i] /= gsl_sf_choose(n,m);
+        kernel_values[i] /= n_choose_m;
     }
 
     // Add calculated term for each component to kernel table
