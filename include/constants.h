@@ -35,7 +35,7 @@
 #define CUBA_NVEC 1
 #define CUBA_EPSREL 1e-3
 #define CUBA_EPSABS 1e-12
-#define CUBA_VERBOSE 0
+#define CUBA_VERBOSE 1
 #define CUBA_LAST 4
 #define CUBA_SEED 0
 #define CUBA_MINEVAL 0
