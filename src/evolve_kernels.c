@@ -225,20 +225,24 @@ inline static void set_omega_matrix(gsl_matrix* omega, double eta, const evoluti
     warning_verbose("No implementation for COMPONENTS = %d (yet).",COMPONENTS);
 #endif
 
+    // Note that 'omega -> - omega' here, compared to analytic def., since then
+    // the program does not need to perform this scaling (corresponding to
+    // moving omega to RHS of evolution equation) for each computation.
+
     // First row
-    gsl_matrix_set(omega,0,0,  0);
-    gsl_matrix_set(omega,0,1, -1);
+    gsl_matrix_set(omega,0,0, 0);
+    gsl_matrix_set(omega,0,1, 1);
     // Second row
-    gsl_matrix_set(omega,1,0, -1.5*zeta );
-    gsl_matrix_set(omega,1,1,  1.5*zeta  - 1);
+    gsl_matrix_set(omega,1,0,  1.5*zeta );
+    gsl_matrix_set(omega,1,1, -1.5*zeta + 1);
 
     /* SPT limit
     // First row
-    gsl_matrix_set(omega,0,0,  0);
-    gsl_matrix_set(omega,0,1, -1);
+    gsl_matrix_set(omega,0,0, 0);
+    gsl_matrix_set(omega,0,1, 1);
     // Second row
-    gsl_matrix_set(omega,1,0, -1.5);
-    gsl_matrix_set(omega,1,1,  1.5);
+    gsl_matrix_set(omega,1,0,  1.5);
+    gsl_matrix_set(omega,1,1, -1.5);
     */
 }
 
@@ -251,9 +255,6 @@ int evolve_kernels(double eta, const double y[], double f[], void *ode_input) {
     gsl_matrix* omega = params->omega;
 
     set_omega_matrix(omega, eta, params);
-
-    // Scale omega by -1 (i.e. move it to RHS of ODE)
-    gsl_matrix_scale(omega,-1);
 
     gsl_vector_const_view y_vec = gsl_vector_const_view_array(y,COMPONENTS);
     gsl_vector_view f_vec = gsl_vector_view_array(f,COMPONENTS);
