@@ -321,7 +321,7 @@ short int kernel_evolution(
 
     // Initialize time steps in eta
     double eta[TIME_STEPS];
-    initialize_timesteps(eta, params->eta_i, params->eta_f);
+    initialize_timesteps(eta, ETA_I, ETA_F);
 
     // Copy ICs from SPT kernels
     for (int i = 0; i < COMPONENTS; ++i) {
@@ -343,7 +343,7 @@ short int kernel_evolution(
     gsl_odeiv2_driver* driver = gsl_odeiv2_driver_alloc_y_new(&sys,
             gsl_odeiv2_step_rkf45, ODE_HSTART, ODE_RTOL, ODE_ATOL);
 
-    double eta_current = params->eta_i;
+    double eta_current = ETA_I;
 
     // Evolve system
     for (int i = 1; i < TIME_STEPS; i++) {

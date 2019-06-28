@@ -87,8 +87,6 @@ int main (int argc, char* argv[]) {
     read_and_interpolate(input_zeta_file,&zeta_acc,&zeta_spline);
 
     const evolution_params_t params = {
-        .eta_i = -3.18,
-        .eta_f = 0,
         .zeta_acc = zeta_acc,
         .zeta_spline = zeta_spline,
         .omega = gsl_matrix_alloc(COMPONENTS, COMPONENTS)

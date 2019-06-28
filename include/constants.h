@@ -32,6 +32,10 @@
 #define Q_MIN 1e-4
 #define Q_MAX 1e2
 
+// Initial/final times (eta is defined as the log of the growth rate D+)
+#define ETA_I -3.18
+#define ETA_F 0
+
 // CUBA settings
 #define CUBA_NVEC 1
 #define CUBA_EPSREL 1e-3
@@ -80,8 +84,6 @@ typedef long double vfloat;
 
 // Parameters type
 typedef struct {
-    vfloat eta_i;
-    vfloat eta_f;
     gsl_interp_accel* zeta_acc;
     gsl_spline* zeta_spline;
     gsl_matrix* omega;
