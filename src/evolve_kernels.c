@@ -20,15 +20,6 @@
 #include "../include/evolve_kernels.h"
 
 
-inline static void initialize_timesteps(double eta[], double eta_i, double eta_f) {
-    // Linear time step:
-    double d_eta = fabs(eta_f - eta_i)/(TIME_STEPS + 1);
-    for (int i = 0; i < TIME_STEPS; ++i) {
-        eta[i] = eta_i + i*d_eta;
-    }
-}
-
-
 static void vertex(
         short int m_l,
         short int m_r,
@@ -36,6 +27,7 @@ static void vertex(
         const short int args_r[],
         short int sum_l,
         short int sum_r,
+        const double eta[],
         vfloat** partial_rhs_sum,
         const evolution_params_t* params,
         const table_pointers_t* data_tables
@@ -45,8 +37,8 @@ static void vertex(
     vfloat alpha_rl = matrix_get(data_tables->alpha,sum_r,sum_l);
     vfloat beta     = matrix_get(data_tables->beta ,sum_l,sum_r);
 
-    short int index_l = kernel_evolution(args_l, -1, m_l, params, data_tables);
-    short int index_r = kernel_evolution(args_r, -1, m_r, params, data_tables);
+    short int index_l = kernel_evolution(args_l, -1, m_l, eta, params, data_tables);
+    short int index_r = kernel_evolution(args_r, -1, m_r, eta, params, data_tables);
 
     short int a,b,c;
 
@@ -167,15 +159,15 @@ void compute_RHS_sum(
             short int sum_l = sum_vectors(args_l,N_KERNEL_ARGS,data_tables->sum_table);
             short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS,data_tables->sum_table);
 
-            vertex(m, n-m, args_l, args_r, sum_l, sum_r, partial_rhs_sum, params,
-                    data_tables);
+            vertex(m, n-m, args_l, args_r, sum_l, sum_r, eta, partial_rhs_sum,
+                    params, data_tables);
 
             // When m != (n - m), we may additionally compute the (n-m)-term by
             // swapping args_l, sum_l, m with args_r, sum_r and (n-m). Then
             // compute_RHS_sum() only needs to sum up to (including) floor(n/2).
             if (m != n - m) {
-                vertex(n-m, m, args_r, args_l, sum_r, sum_l, partial_rhs_sum, params,
-                        data_tables);
+                vertex(n-m, m, args_r, args_l, sum_r, sum_l, eta,
+                        partial_rhs_sum, params, data_tables);
             }
         } while (gsl_combination_next(comb_l) == GSL_SUCCESS &&
                 gsl_combination_prev(comb_r) == GSL_SUCCESS
@@ -279,6 +271,7 @@ short int kernel_evolution(
         const short int arguments[],
         short int kernel_index,             /* -1 indicates not known */
         short int n,
+        const double eta[],
         const evolution_params_t* params,
         const table_pointers_t* data_tables
         )
@@ -318,10 +311,6 @@ short int kernel_evolution(
     // GSL interpolation variables for interpolated RHS
     gsl_spline*       rhs_splines[COMPONENTS];
     gsl_interp_accel* rhs_accs   [COMPONENTS];
-
-    // Initialize time steps in eta
-    double eta[TIME_STEPS];
-    initialize_timesteps(eta, ETA_I, ETA_F);
 
     // Copy ICs from SPT kernels
     for (int i = 0; i < COMPONENTS; ++i) {

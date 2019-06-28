@@ -26,6 +26,7 @@ typedef struct {
     short int component_b;
     gsl_interp_accel* ps_acc;
     gsl_spline* ps_spline;
+    const double* eta;
     const evolution_params_t* params;
 } integration_input_t;
 

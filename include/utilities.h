@@ -54,6 +54,8 @@ inline short int config2label(
     return label;
 }
 
+void initialize_timesteps(double eta[], double eta_i, double eta_f);
+
 void print_label(short int label);
 void print_labels(const short int labels[]);
 void print_gsl_matrix(const gsl_matrix* m, size_t height, size_t width);

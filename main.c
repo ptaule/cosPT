@@ -15,6 +15,7 @@
 #include <cuba.h>
 
 #include "include/constants.h"
+#include "include/utilities.h"
 #include "include/tables.h"
 #include "include/integrand.h"
 #include "include/io.h"
@@ -92,10 +93,15 @@ int main (int argc, char* argv[]) {
         .omega = gsl_matrix_alloc(COMPONENTS, COMPONENTS)
     };
 
+    // Initialize time steps in eta
+    double eta[TIME_STEPS];
+    initialize_timesteps(eta, ETA_I, ETA_F);
+
     integration_input_t input = {
         .k = 0.0,
         .component_a = 0,
         .component_b = 0,
+        .eta = eta,
         .ps_acc = ps_acc,
         .ps_spline = ps_spline,
         .params = &params,
