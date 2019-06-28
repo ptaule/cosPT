@@ -20,11 +20,6 @@
 #include "include/integrand.h"
 #include "include/power_spectrum_io.h"
 
-// Input power spectrum file
-#define INPUT_FILE "input/PS_linear_z000_pk.dat"
-// Output power spectrum to file
-#define OUTPUT_FILE "output_" TOSTRING(LOOPS) "loop.dat"
-
 
 int cuba_integrand(
         __attribute__((unused)) const int *ndim,
@@ -65,17 +60,18 @@ int cuba_integrand(
 
 
 int main () {
+    char* input_ps_file = "/home/t30/all/ge52sir/non_linear_PS/input/PS_linear_z000_pk.dat";
+    char* output_ps_file = "/space/ge52sir/non_linear_PS/output/spt_" TOSTRING(LOOPS) "loop.dat";
+
     printf("LOOPS         = %d\n", LOOPS);
-    printf("N_CONFIGS     = %d\n", N_CONFIGS);
-    printf("N_KERNELS     = %d\n", N_KERNELS);
-    printf("N_KERNEL_ARGS = %d\n", N_KERNEL_ARGS);
-    printf("ZERO_LABEL    = %d\n", ZERO_LABEL);
     printf("COMPONENTS    = %d\n", COMPONENTS);
+    printf("Reading input power spectrum from %s.\n",input_ps_file);
+    printf("Results will be written to %s.\n",output_ps_file);
 
     gsl_interp_accel* acc;
     gsl_spline* spline;
 
-    read_PS(INPUT_FILE,&acc,&spline);
+    read_PS(input_ps_file,&acc,&spline);
 
     integration_input_t input = {
         .k = 0.0,
@@ -124,7 +120,7 @@ int main () {
                 k, (double)*result, (double)error[0], (double)prob[0]);
     }
 
-    write_PS(OUTPUT_FILE,N_POINTS,wavenumbers,power_spectrum, errors);
+    write_PS(output_ps_file,N_POINTS,wavenumbers,power_spectrum, errors);
 
     free(wavenumbers);
     free(power_spectrum);
