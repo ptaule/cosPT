@@ -33,7 +33,7 @@ int cuba_integrand(
     integration_input_t* input = (integration_input_t*)userdata;
     integration_variables_t vars;
 
-    vfloat ratio = Q_MAX/Q_MIN;
+    vfloat ratio = (vfloat)Q_MAX/Q_MIN;
 
     vfloat jacobian = 0.0;
 #if LOOPS == 1
@@ -121,7 +121,7 @@ int main (int argc, char* argv[]) {
     int nregions, neval, fail;
     cubareal result[1], error[1], prob[1];
 
-    double delta_factor = pow(K_MAX/K_MIN, 1.0/N_POINTS);
+    double delta_factor = pow((double)K_MAX/K_MIN, 1.0/N_POINTS);
     double k = K_MIN;
 
     // Timing
@@ -158,6 +158,7 @@ int main (int argc, char* argv[]) {
 
     free(wavenumbers);
     free(power_spectrum);
+    free(errors);
     gsl_matrix_free(params.omega);
 
     gsl_spline_free(ps_spline);
