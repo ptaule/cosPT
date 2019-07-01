@@ -34,8 +34,8 @@ void draw_momenta(double* k, integration_variables_t* vars) {
         vars->magnitudes[i] = Q_MIN * pow(ratio,rand_f);
         vars->cos_theta[i] = 2 * (double)(rand())/RAND_MAX - 1;
 
-        printf("Q%d         = %Le \n", i + 1, vars->magnitudes[0]);
-        printf("mu_%d       = %Lf \n", i + 1, vars->cos_theta[0]);
+        printf("Q%d         = %Le \n", i + 1, vars->magnitudes[i]);
+        printf("mu_%d       = %Lf \n", i + 1, vars->cos_theta[i]);
     }
 
 #if LOOPS >= 2
