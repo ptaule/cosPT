@@ -11,54 +11,56 @@
 #include <time.h>
 
 #include <gsl/gsl_sf.h>
-
 #include <cuba.h>
 
 #include "include/constants.h"
 #include "include/utilities.h"
 #include "include/tables.h"
 #include "include/io.h"
-#include "include/diagrams.h"
 #include "include/integrand.h"
-
-void init_worker(tables_t* worker_mem, const int* core);
-void exit_worker(tables_t* worker_mem, const int* core);
-
-int cuba_integrand(const int *ndim, const cubareal xx[], const int *ncomp,
-        cubareal ff[], void *userdata, const int *nvec, const int *core);
+#include "include/spt_kernels.h"
+#include "include/evolve_kernels.h"
 
 
+void draw_momenta(double* k, integration_variables_t* vars) {
+    double ratio = Q_MAX/(double)Q_MIN;
+    double rand_f = (double)(rand()) / RAND_MAX;
 
-int main (int argc, char* argv[]) {
-    char* input_ps_file   = "input/PS_linear_z000_pk.dat";
-    char* input_zeta_file = "input/zeta.dat";
-    char* output_ps_file  = "output/PS_" TOSTRING(LOOPS) "loop.dat";
+    *k = Q_MIN * pow(ratio, rand_f);
+    printf("k          = %e \n", *k);
 
-    if (argc == 2) {
-        input_ps_file = argv[1];
-    }
-    else if (argc == 3) {
-        input_ps_file = argv[1];
-        output_ps_file = argv[2];
+    for (int i = 0; i < LOOPS; ++i) {
+        rand_f = (double)(rand()) / RAND_MAX;
+        vars->magnitudes[i] = Q_MIN * pow(ratio,rand_f);
+        vars->cos_theta[i] = 2 * (double)(rand())/RAND_MAX - 1;
+
+        printf("Q%d         = %Le \n", i + 1, vars->magnitudes[0]);
+        printf("mu_%d       = %Lf \n", i + 1, vars->cos_theta[0]);
     }
 
-    printf("LOOPS                 = %d\n", LOOPS);
-    printf("COMPONENTS            = %d\n", COMPONENTS);
-    printf("TIME STEPS            = %d\n", TIME_STEPS);
-    printf("MONTE CARLO MAX EVALS = %.2e\n", CUBA_MAXEVAL);
-    printf("Reading input power spectrum from %s.\n",input_ps_file);
-    printf("Reading input zeta function from %s.\n",input_zeta_file);
-    printf("Results will be written to %s.\n",output_ps_file);
+#if LOOPS >= 2
+    for (int i = 0; i < LOOPS - 1; ++i) {
+        vars->phi[i] = 2 * PI * (rand() / (double) RAND_MAX);
 
-#if N_CORES >= 0
-    cubacores(N_CORES, 10000);
-    printf("Using %d cores.\n",N_CORES);
+        printf("phi_%d      = %Lf \n", i + 1, vars->phi[0]);
+    }
 #endif
+}
 
-    gsl_interp_accel *ps_acc, *zeta_acc;
-    gsl_spline *ps_spline, *zeta_spline;
 
-    read_and_interpolate(input_ps_file,&ps_acc,&ps_spline);
+
+int main () {
+    srand(time(0));
+
+    char* input_zeta_file = "input/zeta.dat";
+
+    printf("LOOPS      = %d\n", LOOPS);
+    printf("COMPONENTS = %d\n", COMPONENTS);
+    printf("TIME STEPS = %d\n", TIME_STEPS);
+
+    gsl_interp_accel *zeta_acc;
+    gsl_spline *zeta_spline;
+
     read_and_interpolate(input_zeta_file,&zeta_acc,&zeta_spline);
 
     const evolution_params_t params = {
@@ -67,187 +69,100 @@ int main (int argc, char* argv[]) {
         .omega = gsl_matrix_alloc(COMPONENTS, COMPONENTS)
     };
 
-    // Array of table_ptrs, one for each worker (thread)
-    tables_t* worker_mem = (tables_t*)malloc(CUBA_MAXCORES * sizeof(tables_t));
+    integration_variables_t vars;
+    double k;
+
+    draw_momenta(&k, &vars);
+
+    // Store pointers to the computed tables in struct for convenience
+    tables_t tables;
+    tables.Q_magnitudes = vars.magnitudes;
 
     // Initialize time steps in eta
     double eta[TIME_STEPS];
     initialize_timesteps(eta, ETA_I, ETA_F);
+    tables.eta = eta;
 
-    // Sum table can be computed right away
     short int sum_table[N_CONFIGS][N_CONFIGS];
     compute_sum_table(sum_table);
-    for (int i = 0; i < CUBA_MAXCORES; ++i) {
-        worker_mem[i].sum_table = (const short int (*)[])sum_table;
-        worker_mem[i].eta = eta;
-    }
+    tables.sum_table = (const short int (*)[])sum_table;
 
-    // Set routines to be run before process forking (new worker)
-    cubainit(init_worker, worker_mem);
-    cubaexit(exit_worker, worker_mem);
+    tables_allocate(&tables);
 
-    // Initialize diagrams to compute at this order in PT
+    // Initialize bare_scalar_products-, alpha- and beta-tables
+    compute_bare_scalar_products(k, &vars, tables.bare_scalar_products);
+    // Cast bare_scalar_products to const vfloat 2D-array
+    compute_alpha_beta_tables((const vfloat (*)[])tables.bare_scalar_products,
+            tables.alpha, tables.beta);
+
+    tables_zero_initialize(&tables);
+
+    tables.Q_magnitudes = vars.magnitudes;
+
+    // Initialize sum-, bare_scalar_products-, alpha- and beta-tables
+    compute_bare_scalar_products(k, &vars,
+            tables.bare_scalar_products);
+    // Cast bare_scalar_products to const vfloat 2D-array
+    compute_alpha_beta_tables(
+            (const vfloat (*)[])tables.bare_scalar_products,
+            tables.alpha, tables.beta);
+
     diagram_t diagrams[N_DIAGRAMS];
     initialize_diagrams(diagrams);
 
-    integration_input_t input = {
-        .k = 0.0,
-        .component_a = 0,
-        .component_b = 0,
-        .ps_acc = ps_acc,
-        .ps_spline = ps_spline,
-        .diagrams = diagrams,
-        .params = &params,
-        .worker_mem = worker_mem
-    };
 
-    double* const wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));
-    double* const power_spectrum = (double*)calloc(N_POINTS, sizeof(double));
-    double* const errors         = (double*)calloc(N_POINTS, sizeof(double));
+    short int component_a = 0;
+    short int component_b = 0;
 
-    // Overall factors:
-    // - Only integrating over cos_theta_i between 0 and 1, multiply by 2 to
-    //   obtain [-1,1] (for each loop momenta)
-    // - Assuming Q1 > Q2 > ..., hence multiply result by LOOPS factorial
-    // - Phi integration of first loop momenta gives a factor 2pi
-    // - Conventionally divide by ((2pi)^3)^(LOOPS)
-    vfloat overall_factor =
-        pow(2,LOOPS) * gsl_sf_fact(LOOPS) * pow(TWOPI, 1 - 3*LOOPS);
+    for (int i = 0; i < N_DIAGRAMS; ++i) {
+        // Pointer alias for convenience
+        const diagram_t* const dg = &(diagrams[i]);
 
-    int nregions, neval, fail;
-    cubareal result[1], error[1], prob[1];
+        short int m = dg->m;
+        short int l = dg->l;
+        short int r = dg->r;
 
-    double delta_factor = pow((double)K_MAX/K_MIN, 1.0/N_POINTS);
-    double k = K_MIN;
+        for (int a = 0; a < dg->n_rearrangements; ++a) {
+            for (int b = 0; b < dg->n_sign_configs; ++b) {
+                const short int* const arguments_l =
+                    dg->argument_configs_l[a][b];
+                const short int* const arguments_r =
+                    dg->argument_configs_r[a][b];
+                short int kernel_index_l = dg->kernel_indices_l[a][b];
+                short int kernel_index_r = dg->kernel_indices_r[a][b];
 
-    // Timing
-    time_t beginning, end;
+                compute_SPT_kernels(arguments_l, kernel_index_l, 2*l + m, &tables);
+                compute_SPT_kernels(arguments_r, kernel_index_r, 2*r + m, &tables);
+                // Then, evolve kernels
+                kernel_evolution(arguments_l, kernel_index_l, 2*l + m, &params,
+                        &tables);
+                kernel_evolution(arguments_r, kernel_index_r, 2*r + m, &params,
+                        &tables);
 
-    for (int i = 0; i < N_POINTS; ++i) {
-        k *= delta_factor;
-        wavenumbers[i] = k;
-        input.k = k;
+                printf(ANSI_COLOR_MAGENTA "(m,l,r) = (%d,%d,%d)\n" ANSI_COLOR_RESET,m,l,r);
+                printf("%c%d", component_a + 'F', m + 2*l);
+                print_labels(arguments_l, N_KERNEL_ARGS);
+                printf(" = %Le (SPT) \t|\t %e (LCDM)\n",
+                        tables.kernels[kernel_index_l].spt_values[component_a],
+                        tables.kernels[kernel_index_l].values[TIME_STEPS - 1][component_a]);
 
-        time(&beginning);
-
-        Suave(N_DIMS, 1, (integrand_t)cuba_integrand, &input, CUBA_NVEC,
-                CUBA_EPSREL, CUBA_EPSABS, CUBA_VERBOSE | CUBA_LAST, CUBA_SEED,
-                CUBA_MINEVAL, CUBA_MAXEVAL, CUBA_NNEW, CUBA_NMIN,
-                CUBA_FLATNESS, CUBA_STATEFILE, CUBA_SPIN, &nregions, &neval,
-                &fail, result, error, prob);
-
-        time(&end);
-
-        result[0] *= overall_factor;
-        error[0] *= overall_factor;
-
-        power_spectrum[i] = (double)result[0];
-        errors[i]         = (double)error[0];
-
-        printf("k = %f, result = %e, error = %e, prob = %f, elapsed time = "
-                "%.0fs\n", k, (double)*result, (double)error[0],
-                (double)prob[0], difftime(end,beginning));
+                printf("%c%d", component_b + 'F', m + 2*r);
+                print_labels(arguments_r, N_KERNEL_ARGS);
+                printf(" = %Le (SPT) \t|\t %e (LCDM)\n",
+                        tables.kernels[kernel_index_r].spt_values[component_b],
+                        tables.kernels[kernel_index_r].values[TIME_STEPS - 1][component_b]);
+            }
+        }
     }
-
-    write_PS(output_ps_file, N_POINTS, wavenumbers, power_spectrum, errors);
 
     diagrams_gc(diagrams);
 
-    free(worker_mem);
-
-    free(wavenumbers);
-    free(power_spectrum);
-    free(errors);
+    tables_gc(&tables);
 
     gsl_matrix_free(params.omega);
 
-    gsl_spline_free(ps_spline);
-    gsl_interp_accel_free(ps_acc);
     gsl_spline_free(zeta_spline);
     gsl_interp_accel_free(zeta_acc);
 
-    return 0;
-}
-
-
-
-void init_worker(tables_t* worker_mem, const int* core) {
-    // Master core has number 2^15 = 32768
-    if (*core == 32768) {
-        tables_allocate(&worker_mem[0]);
-        return;
-    }
-    if (*core + 1 >= CUBA_MAXCORES) {
-        error_verbose("Tried to start worker %d (in addition to the master "
-                "fork), which exceeds MAXCORES = %d.", *core + 1, CUBA_MAXCORES);
-    }
-    tables_allocate(&worker_mem[*core + 1]);
-}
-
-
-
-void exit_worker(tables_t* worker_mem, const int* core) {
-    // Master core has number 2^15 = 32768
-    if (*core == 32768) {
-        tables_gc(&worker_mem[0]);
-    }
-    else {
-        tables_gc(&worker_mem[*core + 1]);
-    }
-}
-
-
-
-int cuba_integrand(
-        __attribute__((unused)) const int *ndim,
-        const cubareal xx[],
-        __attribute__((unused)) const int *ncomp,
-        cubareal ff[],
-        void *userdata,
-        __attribute__((unused)) const int *nvec,
-        const int *core
-        )
-{
-    integration_input_t* input = (integration_input_t*)userdata;
-    integration_variables_t vars;
-
-    vfloat ratio = (vfloat)Q_MAX/Q_MIN;
-
-    vfloat jacobian = 0.0;
-#if LOOPS == 1
-    vars.magnitudes[0] = Q_MIN * pow(ratio,xx[0]);
-    vars.cos_theta[0] = xx[1];
-    jacobian = log(ratio) * pow(vars.magnitudes[0],3);
-#elif LOOPS == 2
-    vars.magnitudes[0] = Q_MIN * pow(ratio,xx[0]);
-    vars.magnitudes[1] = Q_MIN * pow(ratio,xx[0] * xx[1]);
-    vars.cos_theta[0] = xx[2];
-    vars.cos_theta[1] = xx[3];
-    vars.phi[0] = xx[4] * TWOPI;
-    jacobian = TWOPI * xx[0]
-        * pow(log(ratio),2)
-        * pow(vars.magnitudes[0],3)
-        * pow(vars.magnitudes[1],3);
-#else
-    warning_verbose("Monte-carlo integration not implemented for LOOPS = %d.",LOOPS);
-#endif
-
-    // tables points to memory allocated for worker number <*core + 1>
-    // (index 0 is reserved for master(
-    tables_t* tables = &input->worker_mem[*core + 1];
-    // Set tables to zero
-    tables_zero_initialize(tables);
-
-    tables->Q_magnitudes = vars.magnitudes;
-
-    // Initialize sum-, bare_scalar_products-, alpha- and beta-tables
-    compute_bare_scalar_products(input->k, &vars,
-            tables->bare_scalar_products);
-    // Cast bare_scalar_products to const vfloat 2D-array
-    compute_alpha_beta_tables(
-            (const vfloat (*)[])tables->bare_scalar_products,
-            tables->alpha, tables->beta);
-
-    ff[0] = jacobian * integrand(input,tables);
     return 0;
 }
