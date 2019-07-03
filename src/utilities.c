@@ -6,6 +6,8 @@
 */
 
 #include <math.h>
+#include <sys/stat.h>
+
 #include <gsl/gsl_matrix.h>
 
 #include "../include/constants.h"
@@ -56,6 +58,20 @@ bool unique_elements(const short int array[], short int length, short int skip) 
         }
     }
     return true;
+}
+
+
+
+bool does_directory_exist(const char dir_path[]) {
+    struct stat s;
+    stat(dir_path, &s);
+
+    if (S_ISDIR(s.st_mode)) {
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 

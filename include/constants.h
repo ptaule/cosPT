@@ -54,9 +54,7 @@
 // the program unsuccessfully)
 #define CUBA_MAXCORES 10
 
-#define CUBA_STATEFILE NULL
 #define CUBA_SPIN NULL
-
 #define CUBA_NNEW 1000
 #define CUBA_NMIN 2
 #define CUBA_FLATNESS 25.

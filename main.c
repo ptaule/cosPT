@@ -27,13 +27,19 @@ void exit_worker(table_ptrs_t* worker_mem, const int* core);
 
 int cuba_integrand(const int *ndim, const cubareal xx[], const int *ncomp,
         cubareal ff[], void *userdata, const int *nvec, const int *core);
+void set_output_filepaths(char output_ps_file[], char cuba_statefile[], double k);
 
+
+// System specific paths
+#define INPUT_PATH  "/home/t30/all/ge52sir/non_linear_PS/input/"
+#define OUTPUT_PATH "/space/ge52sir/non_linear_PS/output/"
+#define CUBA_STATEPATH "/space/ge52sir/non_linear_PS/output/CUBA_statefiles/"
 
 
 int main (int argc, char* argv[]) {
-    char* input_ps_file     = "/home/t30/all/ge52sir/non_linear_PS/input/PS_linear_z000_pk.dat";
-    char* input_zeta_file   = "/home/t30/all/ge52sir/non_linear_PS/input/zeta.dat";
-    char* input_wavenumbers = "/home/t30/all/ge52sir/non_linear_PS/input/wavenumbers.dat";
+    char* input_ps_file     = INPUT_PATH "PS_linear_z000_pk.dat";
+    char* input_zeta_file   = INPUT_PATH "zeta.dat";
+    char* input_wavenumbers = INPUT_PATH "wavenumbers.dat";
 
     // Wavenumber index
     int a = 0;
@@ -48,25 +54,19 @@ int main (int argc, char* argv[]) {
     double k = get_wavenumber(input_wavenumbers, a);
 
     char output_ps_file[100];
-    char num[20];
-
-    sprintf(num,"%e",k);
-
-    strcpy(output_ps_file, "/space/ge52sir/non_linear_PS/output/lcdm_L"
-            TOSTRING(LOOPS) "_nT" TOSTRING(TIME_STEPS) "_N"
-            TOSTRING(CUBA_MAXEVAL));
-    strcat(output_ps_file, "/k_");
-    strcat(output_ps_file, num);
-    strcat(output_ps_file, ".dat");
+    char cuba_statefile[100];
+    set_output_filepaths(output_ps_file, cuba_statefile, k);
 
     printf("k                     = %e\n", k);
     printf("LOOPS                 = %d\n", LOOPS);
     printf("COMPONENTS            = %d\n", COMPONENTS);
     printf("TIME STEPS            = %d\n", TIME_STEPS);
     printf("MONTE CARLO MAX EVALS = %.2e\n", CUBA_MAXEVAL);
-    printf("Reading input power spectrum from %s.\n",input_ps_file);
-    printf("Reading input zeta function from %s.\n",input_zeta_file);
-    printf("Results will be written to %s.\n",output_ps_file);
+
+    printf("Reading input power spectrum from %s.\n", input_ps_file);
+    printf("Reading input zeta function from %s.\n", input_zeta_file);
+    printf("Results will be written to %s.\n", output_ps_file);
+    printf("Cuba statefile: %s.\n", cuba_statefile);
 
 #if N_CORES >= 0
     cubacores(N_CORES, 10000);
@@ -76,8 +76,8 @@ int main (int argc, char* argv[]) {
     gsl_interp_accel *ps_acc, *zeta_acc;
     gsl_spline *ps_spline, *zeta_spline;
 
-    read_and_interpolate(input_ps_file,&ps_acc,&ps_spline);
-    read_and_interpolate(input_zeta_file,&zeta_acc,&zeta_spline);
+    read_and_interpolate(input_ps_file, &ps_acc, &ps_spline);
+    read_and_interpolate(input_zeta_file, &zeta_acc, &zeta_spline);
 
     const evolution_params_t params = {
         .zeta_acc = zeta_acc,
@@ -141,9 +141,9 @@ int main (int argc, char* argv[]) {
 
     Suave(N_DIMS, 1, (integrand_t)cuba_integrand, &input, CUBA_NVEC,
             CUBA_EPSREL, CUBA_EPSABS, CUBA_VERBOSE | CUBA_LAST, CUBA_SEED,
-            CUBA_MINEVAL, CUBA_MAXEVAL, CUBA_NNEW, CUBA_NMIN,
-            CUBA_FLATNESS, CUBA_STATEFILE, CUBA_SPIN, &nregions, &neval,
-            &fail, result, error, prob);
+            CUBA_MINEVAL, CUBA_MAXEVAL, CUBA_NNEW, CUBA_NMIN, CUBA_FLATNESS,
+            cuba_statefile, CUBA_SPIN, &nregions, &neval, &fail, result,
+            error, prob);
 
     time(&end);
 
@@ -258,4 +258,30 @@ int cuba_integrand(
 
     ff[0] = jacobian * integrand(input,tables);
     return 0;
+}
+
+
+
+void set_output_filepaths(char output_ps_file[], char cuba_statefile[], double k) {
+    char num[20];
+    sprintf(num,"%e",k);
+
+    // The name of the output directory is defined through parameter values
+    strcpy(output_ps_file, OUTPUT_PATH "lcdm_L" TOSTRING(LOOPS) "_nT"
+            TOSTRING(TIME_STEPS) "_N" TOSTRING(CUBA_MAXEVAL));
+
+    // Check that directory exists
+    if (!does_directory_exist(output_ps_file)) {
+        error_verbose("Directory %s does not exist.", output_ps_file);
+    }
+
+    // Name of output file is defined by k-value
+    strcat(output_ps_file, "/k_");
+    strcat(output_ps_file, num);
+    strcat(output_ps_file, ".dat");
+
+    // CUBA statefile
+    strcpy(cuba_statefile, CUBA_STATEPATH "lcdm_L" TOSTRING(LOOPS) "_nT"
+            TOSTRING(TIME_STEPS) "_N" TOSTRING(CUBA_MAXEVAL) "_k_");
+    strcat(cuba_statefile, num);
 }
