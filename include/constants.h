@@ -96,6 +96,8 @@ typedef long double vfloat;
 typedef struct {
     gsl_interp_accel* zeta_acc;
     gsl_spline* zeta_spline;
+    gsl_interp_accel* backreaction_acc;
+    gsl_spline* backreaction_spline;
     gsl_matrix* omega;
 } evolution_params_t;
 

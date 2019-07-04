@@ -27,24 +27,28 @@ void draw_momenta(double* k, integration_variables_t* vars) {
     double rand_f = (double)(rand()) / RAND_MAX;
 
     *k = Q_MIN * pow(ratio, rand_f);
-    printf("k          = %e \n", *k);
+    printf("values = {k -> %f", *k);
 
     for (int i = 0; i < LOOPS; ++i) {
         rand_f = (double)(rand()) / RAND_MAX;
         vars->magnitudes[i] = Q_MIN * pow(ratio,rand_f);
         vars->cos_theta[i] = 2 * (double)(rand())/RAND_MAX - 1;
 
-        printf("Q%d         = %Le \n", i + 1, vars->magnitudes[i]);
-        printf("mu_%d       = %Lf \n", i + 1, vars->cos_theta[i]);
+        printf(", Q%d -> %Lf", i + 1, vars->magnitudes[i]);
+        printf(", cosk%d -> %Lf", i + 1, vars->cos_theta[i]);
     }
 
-#if LOOPS >= 2
-    for (int i = 0; i < LOOPS - 1; ++i) {
-        vars->phi[i] = 2 * PI * (rand() / (double) RAND_MAX);
+#if LOOPS == 2
+    vars->phi[0] = 2 * PI * (rand() / (double) RAND_MAX);
 
-        printf("phi_%d      = %Lf \n", i + 1, vars->phi[0]);
-    }
+    double cos12 = cos(vars->phi[i]) *
+        sin(acos(vars->cos_theta[0])) *
+        sin(acos(vars->cos_theta[1]))
+        + vars->cos_theta[0] * vars->cos_theta[1];
+
+    printf(", cos12 -> %f", cos12);
 #endif
+    printf(" }\n");
 }
 
 
@@ -52,20 +56,21 @@ void draw_momenta(double* k, integration_variables_t* vars) {
 int main () {
     srand(time(0));
 
-    char* input_zeta_file = "input/zeta.dat";
+    char* input_backreaction_file = "input/neutrino_backreaction.dat";
 
     printf("LOOPS      = %d\n", LOOPS);
     printf("COMPONENTS = %d\n", COMPONENTS);
     printf("TIME STEPS = %d\n", TIME_STEPS);
 
-    gsl_interp_accel *zeta_acc;
-    gsl_spline *zeta_spline;
+    gsl_interp_accel *backreaction_acc;
+    gsl_spline *backreaction_spline;
 
-    read_and_interpolate(input_zeta_file,&zeta_acc,&zeta_spline);
+    read_and_interpolate(input_backreaction_file, &backreaction_acc,
+            &backreaction_spline);
 
     const evolution_params_t params = {
-        .zeta_acc = zeta_acc,
-        .zeta_spline = zeta_spline,
+        .backreaction_acc = backreaction_acc,
+        .backreaction_spline = backreaction_spline,
         .omega = gsl_matrix_alloc(COMPONENTS, COMPONENTS)
     };
 
@@ -102,9 +107,9 @@ int main () {
     // Initialize sum-, bare_scalar_products-, alpha- and beta-tables
     compute_bare_scalar_products(k, &vars,
             tables.bare_scalar_products);
-    // Cast bare_scalar_products to const vfloat 2D-array
-    compute_alpha_beta_tables(
-            (const vfloat (*)[])tables.bare_scalar_products,
+    compute_scalar_products((const vfloat (*)[])tables.bare_scalar_products,
+            tables.scalar_products);
+    compute_alpha_beta_tables((const vfloat (*)[])tables.scalar_products,
             tables.alpha, tables.beta);
 
     diagram_t diagrams[N_DIAGRAMS];
@@ -161,8 +166,8 @@ int main () {
 
     gsl_matrix_free(params.omega);
 
-    gsl_spline_free(zeta_spline);
-    gsl_interp_accel_free(zeta_acc);
+    gsl_spline_free(backreaction_spline);
+    gsl_interp_accel_free(backreaction_acc);
 
     return 0;
 }

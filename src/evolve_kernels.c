@@ -6,6 +6,7 @@
 */
 
 #include <string.h>
+#include <math.h>
 
 #include <gsl/gsl_combination.h>
 #include <gsl/gsl_sf.h>
@@ -191,6 +192,7 @@ void compute_RHS_sum(
 
 typedef struct {
     short int n;
+    const double k_dep_factor;
     gsl_spline** rhs_splines;
     gsl_interp_accel** rhs_accs;
     const evolution_params_t* parameters;
@@ -198,8 +200,9 @@ typedef struct {
 
 
 
-inline static void set_omega_matrix(gsl_matrix* omega, double eta, const evolution_params_t* params) {
-    double zeta = gsl_spline_eval(params->zeta_spline, eta, params->zeta_acc);
+inline static void set_omega_matrix(gsl_matrix* omega, double eta, double
+        k_dep_factor, const evolution_params_t* params) {
+    /* double zeta = gsl_spline_eval(params->zeta_spline, eta, params->zeta_acc); */
 
 #if COMPONENTS != 2
     warning_verbose("No implementation for COMPONENTS = %d (yet).",COMPONENTS);
@@ -213,8 +216,8 @@ inline static void set_omega_matrix(gsl_matrix* omega, double eta, const evoluti
     gsl_matrix_set(omega,0,0, 0);
     gsl_matrix_set(omega,0,1, 1);
     // Second row
-    gsl_matrix_set(omega,1,0,  1.5*zeta );
-    gsl_matrix_set(omega,1,1, -1.5*zeta + 1);
+    gsl_matrix_set(omega,1,0,  1.5 * k_dep_factor );
+    gsl_matrix_set(omega,1,1, -1.5 + 1);
 
     /* SPT limit
     // First row
@@ -234,7 +237,7 @@ int evolve_kernels(double eta, const double y[], double f[], void *ode_input) {
     const evolution_params_t* params = input.parameters;
     gsl_matrix* omega = params->omega;
 
-    set_omega_matrix(omega, eta, params);
+    set_omega_matrix(omega, eta, input.k_dep_factor, params);
 
     gsl_vector_const_view y_vec = gsl_vector_const_view_array(y,COMPONENTS);
     gsl_vector_view f_vec = gsl_vector_view_array(f,COMPONENTS);
@@ -307,9 +310,21 @@ short int kernel_evolution(
     // Compute RHS sum in evolution equation
     compute_RHS_sum(arguments, n, params, tables, rhs_splines, rhs_accs);
 
+    // Compute k (sum of kernel arguments)
+    short int sum = sum_vectors(arguments, N_KERNEL_ARGS, tables->sum_table);
+
+    double k_dep_factor = 1;
+    // When the sum of kernel arguments is not the zero vector, we set
+    // k_dep_factor from the interpolated neutrino backreaction data
+    if (sum != ZERO_LABEL) {
+        k_dep_factor = gsl_spline_eval(params->backreaction_spline,
+            sqrt(tables->scalar_products[sum][sum]), params->backreaction_acc);
+    }
+
     // Set up ODE input and system
     ode_input_t input = {
         .n = n,
+        .k_dep_factor = k_dep_factor,
         .parameters = params,
         .rhs_splines = rhs_splines,
         .rhs_accs = rhs_accs,
