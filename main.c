@@ -97,14 +97,17 @@ int main (int argc, char* argv[]) {
     double eta[TIME_STEPS];
     initialize_timesteps(eta, ETA_I, ETA_F);
 
+    table_pointers_t data_tables = {.eta = eta};
+    allocate_tables(&data_tables);
+
     integration_input_t input = {
         .k = 0.0,
         .component_a = 0,
         .component_b = 0,
-        .eta = eta,
         .ps_acc = ps_acc,
         .ps_spline = ps_spline,
         .params = &params,
+        .data_tables = &data_tables
     };
 
     double* const wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));
@@ -155,6 +158,8 @@ int main (int argc, char* argv[]) {
     }
 
     write_PS(output_ps_file, N_POINTS, wavenumbers, power_spectrum, errors);
+
+    gc_tables(&data_tables);
 
     free(wavenumbers);
     free(power_spectrum);

@@ -26,8 +26,8 @@ typedef struct {
     short int component_b;
     gsl_interp_accel* ps_acc;
     gsl_spline* ps_spline;
-    const double* eta;
     const evolution_params_t* params;
+    table_pointers_t* data_tables;
 } integration_input_t;
 
 int diagram_factor(const diagram_t* diagram);
@@ -46,14 +46,12 @@ void find_kernel_arguments(
 vfloat sign_flip_symmetrization(
         const short int rearrangement[],
         const diagram_t* diagram,
-        const integration_input_t* input,
-        const table_pointers_t* data_tables
+        const integration_input_t* input
         );
 
 vfloat loop_momenta_symmetrization(
         const diagram_t* diagram,
-        const integration_input_t* input,
-        const table_pointers_t* data_tables
+        const integration_input_t* input
         );
 
 vfloat integrand(const integration_input_t* data,
