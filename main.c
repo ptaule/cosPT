@@ -89,10 +89,6 @@ int main () {
         .diagrams = diagrams
     };
 
-    double* const wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));
-    double* const power_spectrum = (double*)calloc(N_POINTS, sizeof(double));
-    double* const errors         = (double*)calloc(N_POINTS, sizeof(double));
-
     // Overall factors:
     // - Only integrating over cos_theta_i between 0 and 1, multiply by 2 to
     //   obtain [-1,1]
@@ -101,37 +97,28 @@ int main () {
     // - Conventionally divide by (2pi)^3
     vfloat overall_factor = pow(2,LOOPS) * gsl_sf_fact(LOOPS) * TWOPI;
 
-    int nregions, neval, fail;
-    cubareal result[1], error[1], prob[1];
+    /* int nregions, neval, fail; */
+    cubareal result[1];
 
     double delta_logk = log(K_MAX/K_MIN) / N_POINTS;
     double k = K_MIN;
 
+    integration_variables_t vars = {
+        .magnitudes = {0.3},
+        .cos_theta  = {1},
+        /* .phi        = {0} */
+    };
+
+
     for (int i = 0; i < N_POINTS; ++i) {
         k *= exp(delta_logk);
-        wavenumbers[i] = k;
         input.k = k;
 
-        Suave(N_DIMS, 1, cuba_integrand, &input, CUBA_NVEC, CUBA_EPSREL,
-                CUBA_EPSABS, CUBA_VERBOSE | CUBA_LAST, CUBA_SEED, CUBA_MINEVAL,
-                CUBA_MAXEVAL, CUBA_NNEW, CUBA_NMIN, CUBA_FLATNESS,
-                CUBA_STATEFILE, CUBA_SPIN, &nregions, &neval, &fail, result,
-                error, prob);
-
+        result[0]= integrand(&input,&vars);
         result[0] *= overall_factor;
-        error[0] *= overall_factor;
 
-        power_spectrum[i] = (double)result[0];
-        errors[i]         = (double)error[0];
-
-        printf("k  = %f, result = %e, error = %f, prob = %f\n",
-                k, (double)*result, (double)error[0], (double)prob[0]);
+        printf("k = %f, result = %e \n", k, (double)*result);
     }
-
-    write_PS(output_ps_file,N_POINTS,wavenumbers,power_spectrum, errors);
-
-    free(wavenumbers);
-    free(power_spectrum);
 
     gsl_spline_free(spline);
     gsl_interp_accel_free(acc);
