@@ -14,7 +14,7 @@
 typedef struct {
     vfloat value;
     bool computed;
-} kernel_value_t;
+} kernel_t;
 
 // Struct storing integration variables
 typedef struct {
@@ -35,7 +35,7 @@ typedef struct {
     short int sum_table[N_CONFIGS][N_CONFIGS];
     matrix_t* alpha;
     matrix_t* beta;
-    kernel_value_t* kernels;
+    kernel_t* kernels;
 } table_pointers_t;
 
 short int sum_vectors(

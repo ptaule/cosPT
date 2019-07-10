@@ -418,8 +418,8 @@ vfloat integrand(
     data_tables.beta  = matrix_alloc(N_CONFIGS,N_CONFIGS);
 
     // Allocate space for kernels (calloc also initializes values to 0)
-    data_tables.kernels = (kernel_value_t*)
-        calloc(COMPONENTS * N_KERNELS, sizeof(kernel_value_t));
+    data_tables.kernels = (kernel_t*)
+        calloc(COMPONENTS * N_KERNELS, sizeof(kernel_t));
 
 
     // Initialize sum-, bare_scalar_products-, alpha- and beta-tables

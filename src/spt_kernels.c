@@ -123,7 +123,7 @@ vfloat compute_SPT_kernel(
     short int index          = combined_kernel_index(argument_index,component);
 
     // const pointer alias to data_tables->kernels
-    kernel_value_t* const kernels = data_tables->kernels;
+    kernel_t* const kernels = data_tables->kernels;
 
     // Check if the kernel is already computed
     if (kernels[index].computed) return kernels[index].value;
