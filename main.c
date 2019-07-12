@@ -71,12 +71,22 @@ int main () {
 
     read_PS(input_ps_file,&acc,&spline);
 
+    // Compute table of sums of two and two vector labels
+    short int sum_table[N_CONFIGS][N_CONFIGS];
+    compute_sum_table(sum_table);
+
+    // Possible diagrams (m,l,r) at this loop order
+    diagram_t diagrams[N_DIAGRAMS];
+    possible_diagrams(diagrams);
+
     integration_input_t input = {
         .k = 0.0,
         .component_a = 0,
         .component_b = 0,
         .acc = acc,
-        .spline = spline
+        .spline = spline,
+        .sum_table = sum_table,
+        .diagrams = diagrams
     };
 
     double* const wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));

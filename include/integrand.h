@@ -26,6 +26,8 @@ typedef struct {
     short int component_b;
     gsl_interp_accel* acc;
     gsl_spline* spline;
+    const short int (*sum_table)[N_CONFIGS]; /* Pointer to 2D table of label sums */
+    diagram_t* diagrams;
 } integration_input_t;
 
 int diagram_factor(const diagram_t* diagram);
@@ -45,13 +47,13 @@ vfloat sign_flip_symmetrization(
         const short int rearrangement[],
         const diagram_t* diagram,
         const integration_input_t* input,
-        const table_pointers_t* data_tables
+        table_pointers_t* data_tables
         );
 
 vfloat loop_momenta_symmetrization(
         const diagram_t* diagram,
         const integration_input_t* input,
-        const table_pointers_t* data_tables
+        table_pointers_t* data_tables
         );
 
 vfloat integrand(const integration_input_t* data,

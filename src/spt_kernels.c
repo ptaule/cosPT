@@ -23,7 +23,7 @@ vfloat partial_SPT_sum(
         short int m,                 /* sum index in kernel recursion relation            */
         short int a,                 /* coefficient: (2n+1) for F, 2 for G                */
         short int b,                 /* coefficient: 3 for F, 2n for G                    */
-        const table_pointers_t* data_tables
+        table_pointers_t* data_tables
         )
 {
     vfloat value = 0;
@@ -62,9 +62,9 @@ vfloat partial_SPT_sum(
 
         // F_n <-> component 0; G_n <-> component 1
         value += compute_SPT_kernel(args_l,m,1,data_tables) *
-            (  a * matrix_get(data_tables->alpha,sum_l,sum_r)
+            ( a * data_tables->alpha[sum_l][sum_r]
                * compute_SPT_kernel(args_r,n-m,0,data_tables)
-             + b * matrix_get(data_tables->beta ,sum_l,sum_r)
+             + b * data_tables->beta[sum_l][sum_r]
                * compute_SPT_kernel(args_r,n-m,1,data_tables)
             );
 
@@ -73,9 +73,9 @@ vfloat partial_SPT_sum(
         // compute_SPT_kernel() only needs to sum up to (including) floor(n/2).
         if (m != n - m) {
             value += compute_SPT_kernel(args_r,n-m,1,data_tables) *
-                (  a * matrix_get(data_tables->alpha,sum_r,sum_l)
+                ( a * data_tables->alpha[sum_r][sum_l]
                    * compute_SPT_kernel(args_l,m,0,data_tables)
-                   + b * matrix_get(data_tables->beta ,sum_r,sum_l)
+                + b * data_tables->beta[sum_r][sum_l]
                    * compute_SPT_kernel(args_l,m,1,data_tables)
                 );
         }
@@ -99,7 +99,7 @@ vfloat compute_SPT_kernel(
         const short int arguments[], /* kernel arguments                                  */
         short int n,                 /* order in perturbation theory expansion            */
         short int component,         /* component to compute, NB: assumed to be 0-indexed */
-        const table_pointers_t* data_tables
+        table_pointers_t* data_tables
         )
 {
     // DEBUG: check that the number of non-zero arguments is in fact n
@@ -122,11 +122,9 @@ vfloat compute_SPT_kernel(
     short int argument_index = kernel_index_from_arguments(arguments);
     short int index          = combined_kernel_index(argument_index,component);
 
-    // const pointer alias to data_tables->kernels
-    kernel_t* const kernels = data_tables->kernels;
-
     // Check if the kernel is already computed
-    if (kernels[index].computed) return kernels[index].value;
+    if (data_tables->kernels[index].computed)
+        return data_tables->kernels[index].value;
 
     // Define some factors dependent on component to compute
     short int a,b;
@@ -151,8 +149,8 @@ vfloat compute_SPT_kernel(
     value /= (2*n + 3) * (n - 1);
 
     // Update kernel table
-    kernels[index].value = value;
-    kernels[index].computed = true;
+    data_tables->kernels[index].value = value;
+    data_tables->kernels[index].computed = true;
 
     return value;
 }

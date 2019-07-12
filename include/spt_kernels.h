@@ -17,14 +17,14 @@ vfloat partial_SPT_sum(
         const short int m,
         const short int a,
         const short int b,
-        const table_pointers_t* data_tables
+        table_pointers_t* data_tables
         );
 
 vfloat compute_SPT_kernel(
         const short int arguments[],
         short int n,
         short int component,
-        const table_pointers_t* data_tables
+        table_pointers_t* data_tables
         );
 
 

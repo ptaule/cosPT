@@ -32,10 +32,10 @@ typedef struct {
 typedef struct {
     const vfloat* Q_magnitudes;
     vfloat bare_scalar_products[N_COEFFS][N_COEFFS];
-    short int sum_table[N_CONFIGS][N_CONFIGS];
-    matrix_t* alpha;
-    matrix_t* beta;
-    kernel_t* kernels;
+    const short int (*sum_table)[N_CONFIGS]; /* Pointer to 2D table of label sums */
+    vfloat alpha[N_CONFIGS][N_CONFIGS];
+    vfloat beta[N_CONFIGS][N_CONFIGS];
+    kernel_t kernels[N_KERNELS];
 } table_pointers_t;
 
 short int sum_vectors(
@@ -54,13 +54,13 @@ void compute_bare_scalar_products(
 
 void compute_scalar_products(
         const vfloat bare_scalar_products[][N_COEFFS],
-        matrix_t* scalar_products
+        vfloat scalar_products[][N_CONFIGS]
         );
 
 void compute_alpha_beta_tables(
         const vfloat bare_scalar_products[][N_COEFFS],
-        matrix_t* alpha,
-        matrix_t* beta
+        vfloat alpha[][N_CONFIGS],
+        vfloat beta[][N_CONFIGS]
         );
 
 short int kernel_index_from_arguments(const short int arguments[]);

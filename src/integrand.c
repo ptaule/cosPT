@@ -226,7 +226,7 @@ static vfloat integrand_term(
         const short int arguments_r[N_KERNEL_ARGS],
         const diagram_t* diagram,
         const integration_input_t* input,
-        const table_pointers_t* data_tables
+        table_pointers_t* data_tables
         )
 {
     short int m = diagram->m;
@@ -264,7 +264,7 @@ vfloat sign_flip_symmetrization(
         const short int rearrangement[],
         const diagram_t* diagram,
         const integration_input_t* input,
-        const table_pointers_t* data_tables
+        table_pointers_t* data_tables
         )
 {
     short int m = diagram->m;
@@ -295,7 +295,7 @@ vfloat sign_flip_symmetrization(
         print_integrand_info(diagram, arguments_l, arguments_r);
 #endif
         vfloat k1 = compute_k1(diagram->m, rearrangement, signs,
-                data_tables->bare_scalar_products);
+                (const vfloat (*)[])data_tables->bare_scalar_products);
         int h_theta = heaviside_theta(diagram->m, k1, rearrangement,
                 data_tables->Q_magnitudes);
         if (h_theta == 0) {
@@ -321,7 +321,7 @@ vfloat sign_flip_symmetrization(
 vfloat loop_momenta_symmetrization(
         const diagram_t* diagram,
         const integration_input_t* input,
-        const table_pointers_t* data_tables
+        table_pointers_t* data_tables
         )
 {
     short int l = diagram->l;
@@ -412,38 +412,39 @@ vfloat integrand(
         )
 {
     // Store pointers to the computed tables in struct for convenience
-    table_pointers_t data_tables;
-    data_tables.Q_magnitudes = vars->magnitudes,
-    data_tables.alpha = matrix_alloc(N_CONFIGS,N_CONFIGS);
-    data_tables.beta  = matrix_alloc(N_CONFIGS,N_CONFIGS);
+    table_pointers_t data_tables = {
+        .Q_magnitudes = vars->magnitudes,
+        .bare_scalar_products = {{0}},
+        .sum_table = input->sum_table,
+        .alpha = {{0}},
+        .beta = {{0}}
+    };
 
-    // Allocate space for kernels (calloc also initializes values to 0)
-    data_tables.kernels = (kernel_t*)
-        calloc(COMPONENTS * N_KERNELS, sizeof(kernel_t));
+    data_tables.Q_magnitudes = vars->magnitudes;
+    data_tables.sum_table = input->sum_table;
 
 
-    // Initialize sum-, bare_scalar_products-, alpha- and beta-tables
-    compute_sum_table(data_tables.sum_table);
+    // Initialize bare_scalar_products-, alpha- and beta-tables
     compute_bare_scalar_products(input->k, vars,
             data_tables.bare_scalar_products);
     // Cast bare_scalar_products to const vfloat 2D-array
-    compute_alpha_beta_tables((const vfloat (*)[])data_tables.bare_scalar_products,
+    compute_alpha_beta_tables(
+            (const vfloat (*)[])data_tables.bare_scalar_products,
             data_tables.alpha, data_tables.beta);
-
-    diagram_t diagrams[N_DIAGRAMS];
-    possible_diagrams(diagrams);
 
     // Loop over possible diagrams at this loop order
     vfloat result = 0;
     for (int i = 0; i < N_DIAGRAMS; ++i) {
+        const diagram_t* const diagram = &(input->diagrams[i]);
+
         vfloat diagram_result =
-            loop_momenta_symmetrization(&(diagrams[i]),input,&data_tables);
+            loop_momenta_symmetrization(diagram,input,&data_tables);
         // Multiply and divide by symmetrization & diagram factors
-        diagram_result /= symmetrization_factor(&(diagrams[i]));
-        diagram_result *= diagram_factor(&(diagrams[i]));
+        diagram_result /= symmetrization_factor(diagram);
+        diagram_result *= diagram_factor(diagram);
         // If diagram is antisymmetric in l <-> r, multiply by 2 (the algorithm
         // assumes l >= r)
-        if (diagrams[i].l != diagrams[i].r) {
+        if (diagram->l != diagram->r) {
             diagram_result *= 2;
         }
         result += diagram_result;
@@ -453,11 +454,6 @@ vfloat integrand(
         result *= gsl_spline_eval(input->spline, data_tables.Q_magnitudes[i],
                 input->acc);
     }
-
-    // Free allocated memory
-    free(data_tables.kernels);
-    matrix_free(data_tables.alpha);
-    matrix_free(data_tables.beta);
 
     return result;
 }
