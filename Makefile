@@ -12,20 +12,25 @@ HEADERS = $(wildcard $(INC_DIR)/*.h)
 TEST_INTERFACE = $(TEST_DIR)/test_interface
 
 CFLAGS += -Wall -Wextra -Wpedantic
-CPPFLAGS += -I/scratch/Cuba-4.2/ -I/scratch/gsl-2.5/
+CPPFLAGS += -I/scratch/Cuba-4.2/ -I/scratch/gsl-2.5/ $(OPTIONS)
 
 LDFLAGS_GSL  = -L/scratch/gsl-2.5/.libs/ -L/scratch/gsl-2.5/cblas/.libs
 LDLIBS_GSL   = -lgsl -lgslcblas
 LDFLAGS_CUBA = -L/scratch/Cuba-4.2/
 LDLIBS_CUBA  = -lcuba
 
-LDLIBS += -lm
+LDFLAGS += $(LDFLAGS_GSL) $(LDFLAGS_CUBA)
+LDLIBS += $(LDLIBS_GSL) $(LDLIBS_CUBA) -lm
 
-all:            CFLAGS += -O3
-1loop:          CFLAGS += -O3 -DDEBUG=0 -DLOOPS=1
-2loop:          CFLAGS += -O3 -DDEBUG=0 -DLOOPS=2
+all: CFLAGS += -O3
+
+1loop: CPPFLAGS += -DDEBUG=0 -DLOOPS=1
+1loop: CFLAGS += -O3
+
+2loop: -DDEBUG=0 -DLOOPS=2
+2loop: CFLAGS += -O3
+
 debug:          CFLAGS += -O0 -DDEBUG=2 -g
-test_interface: CFLAGS += -fPIC
 
 .PHONY: all clean run 1loop 2loop test_interface
 
@@ -38,7 +43,7 @@ run: all
 	./$(EXE)
 
 $(EXE): main.o $(OBJ)
-	$(CC) $(LDFLAGS) $(LDFLAGS_GSL) $(LDFLAGS_CUBA) $^ $(LDLIBS_GSL) $(LDLIBS_CUBA) $(LDLIBS) -o $@
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 main.o: main.c $(HEADERS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
