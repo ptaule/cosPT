@@ -96,7 +96,7 @@ vfloat compute_SPT_kernel(
     // that kernel_index is in fact equivalent to arguments
 #if DEBUG >= 1
     short int argument_index = kernel_index_from_arguments(arguments);
-    if (argument_index != kernel_index) {
+    if (kernel_index != -1 && argument_index != kernel_index) {
         warning_verbose("Index computed from kernel arguments (%d) does not "
                 "equal kernel_index (%d).", argument_index, kernel_index);
     }
