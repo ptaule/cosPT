@@ -36,6 +36,8 @@
 #define CUBA_MINEVAL 0
 #define CUBA_MAXEVAL 1e6
 
+#define CUBA_NCORES 4
+
 #define CUBA_STATEFILE NULL
 #define CUBA_SPIN NULL
 

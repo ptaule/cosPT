@@ -49,7 +49,7 @@ void compute_sum_table(short int sum_table[][N_CONFIGS]) {
 short int sum_vectors(
         const short int labels[],
         size_t n_vecs,
-        const short int sum_table[][N_CONFIGS]
+        const short int (*sum_table)[N_CONFIGS]
         )
 {
     if (n_vecs == 1) return labels[0];
@@ -80,6 +80,38 @@ short int sum_vectors(
 #endif
 
     return result;
+}
+
+
+
+void allocate_tables(table_pointers_t* tables) {
+    // Alpha/beta matrices
+    tables->alpha = matrix_alloc(N_CONFIGS,N_CONFIGS);
+    tables->beta  = matrix_alloc(N_CONFIGS,N_CONFIGS);
+
+    // Kernels (calloc also initializes values to 0)
+    tables->kernels = (kernel_t*)calloc(COMPONENTS * N_KERNELS, sizeof(kernel_t));
+}
+
+
+
+void zero_initialize_tables(table_pointers_t* tables) {
+    // Reset kernel table elements to default value
+    for (int i = 0; i < COMPONENTS * N_KERNELS; ++i) {
+        tables->kernels[i].computed = false;
+        tables->kernels[i].value    = 0.0;
+    }
+}
+
+
+
+void gc_tables(table_pointers_t* tables) {
+    // Free allocated memory for kernels
+    free(tables->kernels);
+
+    // Free allocated memory for RHS tables
+    matrix_free(tables->alpha);
+    matrix_free(tables->beta);
 }
 
 
