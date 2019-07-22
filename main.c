@@ -17,6 +17,8 @@
 #include "include/tables.h"
 #include "include/integrand.h"
 #include "include/power_spectrum_io.h"
+#include "include/diagrams.h"
+#include "include/integrand.h"
 
 
 void init_worker(table_ptrs_t* worker_mem, const int* core) {
@@ -113,10 +115,15 @@ int main () {
     cubainit(init_worker, worker_mem);
     cubaexit(exit_worker, worker_mem);
 
+    // Initialize diagrams to compute at this order in PT
+    diagram_t diagrams[N_DIAGRAMS];
+    initialize_diagrams(diagrams);
+
     integration_input_t input = {
         .k = 0.0,
         .component_a = 0,
         .component_b = 0,
+        .diagrams = diagrams,
         .acc = acc,
         .spline = spline,
         .worker_mem = (table_ptrs_t*)worker_mem
@@ -163,9 +170,14 @@ int main () {
 
     write_PS(output_ps_file, N_POINTS, wavenumbers, power_spectrum, errors);
 
+    diagrams_gc(diagrams);
+
     free(wavenumbers);
     free(power_spectrum);
     free(errors);
+
+    gsl_spline_free(spline);
+    gsl_interp_accel_free(acc);
 
     gsl_spline_free(spline);
     gsl_interp_accel_free(acc);

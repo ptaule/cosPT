@@ -11,13 +11,7 @@
 #include <gsl/gsl_spline.h>
 #include "constants.h"
 #include "tables.h"
-
-// Struct for labeling different diagrams
-typedef struct {
-    short int l;
-    short int r;
-    short int m;
-} diagram_t;
+#include "diagrams.h"
 
 // Struct for storing overall data to be used in integration
 typedef struct {
@@ -26,6 +20,7 @@ typedef struct {
     short int component_b;
     gsl_interp_accel* acc;
     gsl_spline* spline;
+    const diagram_t* const diagrams;
     table_ptrs_t* worker_mem;
 } integration_input_t;
 
