@@ -19,13 +19,16 @@ LDLIBS_GSL   = -lgsl -lgslcblas
 LDFLAGS_CUBA = -L/scratch/Cuba-4.2/
 LDLIBS_CUBA  = -lcuba
 
-LDLIBS += -lm
+LDFLAGS += $(LDFLAGS_GSL) $(LDFLAGS_CUBA)
+LDLIBS += $(LDLIBS_GSL) $(LDLIBS_CUBA) -lm
 
-all:            CFLAGS += -O3
-1loop:          CFLAGS += -O3 -DDEBUG=0 -DLOOPS=1
-2loop:          CFLAGS += -O3 -DDEBUG=0 -DLOOPS=2
-debug:          CFLAGS += -O0 -DDEBUG=2 -g
-test_interface: CFLAGS += -fPIC
+all:   CFLAGS   += -O3
+1loop: CPPFLAGS += -DDEBUG=0 -DLOOPS=1
+1loop: CFLAGS   += -O3
+2loop: CPPFLAGS += -DDEBUG=0 -DLOOPS=2
+2loop: CFLAGS   += -O3
+debug: CPPFLAGS += -DDEBUG=2 -DN_CORES=0
+debug: CFLAGS   += -O0 -g
 
 .PHONY: all clean run 1loop 2loop test_interface
 
@@ -38,7 +41,7 @@ run: all
 	./$(EXE)
 
 $(EXE): main.o $(OBJ)
-	$(CC) $(LDFLAGS) $(LDFLAGS_GSL) $(LDFLAGS_CUBA) $^ $(LDLIBS_GSL) $(LDLIBS_CUBA) $(LDLIBS) -o $@
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 main.o: main.c $(HEADERS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
@@ -46,13 +49,5 @@ main.o: main.c $(HEADERS)
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-test_interface: $(TEST_INTERFACE).so
-
-$(TEST_INTERFACE).so: $(TEST_INTERFACE).o $(OBJ)
-	$(CC) $(LDFLAGS) $(LDFLAGS_GSL) $^ $(LDLIBS) $(LDLIBS_GSL) -shared -o $@
-
-$(TEST_INTERFACE).o: $(TEST_INTERFACE).c $(HEADERS)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
-
 clean:
-	$(RM) $(OBJ) main.o $(TEST_INTERFACE).o
+	$(RM) $(OBJ) main.o
