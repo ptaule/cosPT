@@ -7,138 +7,33 @@
 
 #include <stdlib.h>
 #include <math.h>
-#include <string.h>
 
-#include <gsl/gsl_sf.h>
 #include <gsl/gsl_spline.h>
-#include <gsl/gsl_combination.h>
 
 #include "../include/constants.h"
 #include "../include/utilities.h"
 #include "../include/tables.h"
 #include "../include/spt_kernels.h"
+#include "../include/diagrams.h"
 #include "../include/integrand.h"
 
 
 
-inline int diagram_factor(const diagram_t* diagram) {
-    short int l = diagram->l;
-    short int r = diagram->r;
-    short int m = diagram->m;
-
-    int numerator = gsl_sf_fact(2*l + m) * gsl_sf_fact(2*r + m);
-    int denominator = pow(2,l+r) * gsl_sf_fact(l) * gsl_sf_fact(r) * gsl_sf_fact(m);
-
-    return numerator/denominator;
-}
-
-
-
-inline int symmetrization_factor(const diagram_t* diagram) {
-    short int l = diagram->l;
-    short int r = diagram->r;
-    short int m = diagram->m;
-
-    int numerator = gsl_sf_fact(LOOPS) * pow(2,m-1);
-    int denominator = gsl_sf_fact(m-1) * gsl_sf_fact(l) * gsl_sf_fact(r);
-
-    return numerator/denominator;
-}
-
-
-
-// Find (distinct) diagrams for L-loop
-// They satisfy: m >= 1; l,r > 0; l + r + m = L + 1
-void possible_diagrams(diagram_t diagrams[]) {
-    short int m = 0;
-
-    size_t index = 0;
-
-    for (m = 1; m <= LOOPS + 1; ++m) {
-        short int l = LOOPS + 1 - m;
-        short int r = 0;
-        while (l >= r) {
-            if (index >= N_DIAGRAMS)
-                warning_verbose("Index out of bounds, index = %ld is larger "
-                        "than N_DIAGRAMS = %d.", index, N_DIAGRAMS);
-
-            diagrams[index].l = l;
-            diagrams[index].r = r;
-            diagrams[index].m = m;
-
-            l = LOOPS + 1 - m - (++r);
-            index++;
-        };
-    }
-}
-
-
-
-void find_kernel_arguments(
-        const diagram_t* diagram,        /* in, diagram to compute          */
-        const short int rearrangement[], /* in, loop momenta arrangement    */
-        const short int signs[],         /* in, signs of "connection" loops */
-        short int arguments_l[],         /* out, left kernel arguments      */
-        short int arguments_r[]          /* out, right kernel arguments     */
+__attribute__((unused))
+static void print_integrand_info(
+        short int m,
+        short int l,
+        short int r,
+        const short int arguments_l[],
+        const short int arguments_r[]
         )
 {
-    short int l = diagram->l;
-    short int r = diagram->r;
-    short int m = diagram->m;
-
-    // First argument is on the form k1 = k - k2 - k3 - ... - km
-    short int config[N_COEFFS] = {0};
-    config[N_COEFFS - 1] = 1; // k-coefficient is 1
-    for (int i = 2; i <= m; ++i) {
-        config[rearrangement[i-2]] = - signs[i-2];
-    }
-    arguments_l[0] = config2label(config,N_COEFFS);
-    arguments_r[0] = config2label(config,N_COEFFS);
-
-    // Reset config
-    memset(config,0,sizeof(config));
-
-    // Argument indices
-    size_t index_l = 1;
-    size_t index_r = 1;
-
-    // k2,k3,...,km arguments, the ordering of which is stored by the first
-    // (m-1) entries of rearrangement[]
-    for (int i = 2; i <= m; ++i) {
-        config[rearrangement[i-2]] = signs[i-2];
-        arguments_l[index_l++] = config2label(config,N_COEFFS);
-        arguments_r[index_r++] = config2label(config,N_COEFFS);
-        memset(config,0,sizeof(config));
-    }
-
-    // l-loop arguments
-    for (int i = 0; i < l; ++i) {
-        short int loop_momentum_index = rearrangement[i + m - 1];
-        config[loop_momentum_index] = 1;
-        arguments_l[index_l++] = config2label(config,N_COEFFS);
-        config[loop_momentum_index] = -1;
-        arguments_l[index_l++] = config2label(config,N_COEFFS);
-
-        memset(config,0,sizeof(config));
-    }
-    // r-loop arguments
-    for (int i = 0; i < r; ++i) {
-        short int loop_momentum_index = rearrangement[i + m - 1 + l];
-        config[loop_momentum_index] = 1;
-        arguments_r[index_r++] = config2label(config,N_COEFFS);
-        config[loop_momentum_index] = -1;
-        arguments_r[index_r++] = config2label(config,N_COEFFS);
-
-        memset(config,0,sizeof(config));
-    }
-
-    // Fill remaining spots with zero-label
-    while (index_l < N_KERNEL_ARGS) {
-        arguments_l[index_l++] = ZERO_LABEL;
-    }
-    while (index_r < N_KERNEL_ARGS) {
-        arguments_r[index_r++] = ZERO_LABEL;
-    }
+    printf(ANSI_COLOR_MAGENTA "(m,l,r) = (%d,%d,%d)\t" ANSI_COLOR_BLUE,m,l,r);
+    printf("F%d",m + 2*l);
+    print_labels(arguments_l);
+    printf(" * F%d",m + 2*r);
+    print_labels(arguments_r);
+    printf(ANSI_COLOR_RESET);
 }
 
 
@@ -146,7 +41,7 @@ void find_kernel_arguments(
 static vfloat compute_k1(
         short int m,
         const short int rearrangement[],
-        const short int signs[],
+        const bool signs[],
         const vfloat bare_scalar_products[][N_COEFFS]
         )
 {
@@ -155,13 +50,13 @@ static vfloat compute_k1(
         int index = rearrangement[i-2];
         k1 += bare_scalar_products[index][index];
         // Note that elements in the signs-array correspond to rearranged loop
-        // momenta, thus we use <i-2>, not <index> as index here
-        k1 -= 2 * signs[i-2] * bare_scalar_products[N_COEFFS - 1][index];
+        // momenta, thus we use 'i-2', not 'index' as index here
+        k1 -= 2 * (signs[i-2] ? 1 : -1) * bare_scalar_products[N_COEFFS - 1][index];
     }
 
     for (int i = 3; i <= m; ++i) {
         for (int j = 2; j < i; ++j) {
-            k1 += 2 * signs[i-2] * signs[j-2] *
+            k1 += 2 * (signs[i-2] ? 1 : -1) * (signs[j-2] ? 1 : -1) *
                 bare_scalar_products[rearrangement[i-2]][rearrangement[j-2]];
         }
     }
@@ -199,53 +94,67 @@ inline static int heaviside_theta(
 
 
 
-// For debuggin purposes
-__attribute__((unused))
-static void print_integrand_info(
-        const diagram_t* diagram,
-        const short int arguments_l[],
-        const short int arguments_r[]
-        )
-{
-    short int m = diagram->m;
-    short int l = diagram->l;
-    short int r = diagram->r;
-
-    printf(ANSI_COLOR_MAGENTA "(m,l,r) = (%d,%d,%d)\t" ANSI_COLOR_BLUE,m,l,r);
-    printf("F%d",m + 2*l);
-    print_labels(arguments_l);
-    printf(" * F%d",m + 2*r);
-    print_labels(arguments_r);
-    printf(ANSI_COLOR_RESET);
-}
-
-
-
 static vfloat integrand_term(
-        const short int arguments_l[N_KERNEL_ARGS],
-        const short int arguments_r[N_KERNEL_ARGS],
-        const diagram_t* diagram,
+        short int diagram_index,
+        short int rearrangement_index,
+        short int sign_config_index,
         const integration_input_t* input,
         const table_ptrs_t* tables
         )
 {
-    short int m = diagram->m;
-    short int l = diagram->l;
-    short int r = diagram->r;
+    // Shorthand variables/aliases for convenience
+    short int m = input->diagrams[diagram_index].m;
+    short int l = input->diagrams[diagram_index].l;
+    short int r = input->diagrams[diagram_index].r;
 
-    vfloat result = 1;
-    // If right kernel has only one argument, its value is 1
+    const short int* const rearrangement =
+        input->diagrams[diagram_index].rearrangements[rearrangement_index];
+    const bool* const signs =
+        input->diagrams[diagram_index].sign_configs[sign_config_index];
+    const short int* const arguments_l =
+        input->diagrams[diagram_index].argument_configs_l[rearrangement_index][sign_config_index];
+    const short int* const arguments_r =
+        input->diagrams[diagram_index].argument_configs_r[rearrangement_index][sign_config_index];
+    short int kernel_index_l =
+        input->diagrams[diagram_index].kernel_indices_l[rearrangement_index][sign_config_index];
+    short int kernel_index_r =
+        input->diagrams[diagram_index].kernel_indices_r[rearrangement_index][sign_config_index];
+
+#if DEBUG >= 2
+    print_integrand_info(m,l,r,arguments_l, arguments_r);
+#endif
+
+    vfloat k1 = compute_k1(m, rearrangement, signs,
+            tables->bare_scalar_products);
+    int h_theta = heaviside_theta(m, k1, rearrangement,
+            tables->Q_magnitudes);
+
+    if (h_theta == 0) {
+#if DEBUG >= 2
+        printf("\t\t=> partial result = 0\n");
+#endif
+        return 0;
+    }
+
+    vfloat result = h_theta * gsl_spline_eval(input->spline,k1,input->acc);
+
+    // If right kernel only has one argument, its value is 1
     if (m == 1 && r == 0) {
-        result *= compute_SPT_kernel(arguments_l, 2*l + m, input->component_a,
-                tables);
+        result *= compute_SPT_kernel(arguments_l, kernel_index_l, 2*l + m,
+                input->component_a, tables);
     }
     // If there are no "self" loops, and the components to compute are
     // equal, the kernels are equal
     else if (l == 0 && r == 0 && input->component_a == input->component_b) {
-        result *= pow(compute_SPT_kernel(arguments_l, m, input->component_a, tables) ,2);
+        result *= pow(compute_SPT_kernel(arguments_l, kernel_index_l, m,
+                    input->component_a, tables) ,2);
+
     // In DEBUG-mode, check that kernel arguments in fact are equal in this
     // case
 #if DEBUG >= 1
+        if (kernel_index_l != kernel_index_r) {
+            warning("Arguments l & r were wrongly assumed equal.");
+        }
         for (int i = 0; i < N_KERNEL_ARGS; ++i) {
             if (arguments_l[i] != arguments_r[i])
                 warning("Arguments l & r were wrongly assumed equal.");
@@ -253,155 +162,15 @@ static vfloat integrand_term(
 #endif
     }
     else {
-        result *= compute_SPT_kernel(arguments_l, 2*l + m, input->component_a, tables)
-                * compute_SPT_kernel(arguments_r, 2*r + m, input->component_b, tables);
+        result *= compute_SPT_kernel(arguments_l, kernel_index_l, 2*l + m,
+                input->component_a, tables)
+                * compute_SPT_kernel(arguments_r, kernel_index_r, 2*r + m,
+                    input->component_b, tables);
     }
-    return result;
-}
 
-
-
-vfloat sign_flip_symmetrization(
-        const short int rearrangement[],
-        const diagram_t* diagram,
-        const integration_input_t* input,
-        const table_ptrs_t* tables
-        )
-{
-    short int m = diagram->m;
-
-    // Signs of k1...km momenta (only (m-1) first elements relevant)
-    // Start with +1,+1,... signs
-    short int signs[LOOPS];
-    for (int i = 0; i < LOOPS; ++i) signs[i] = 1;
-
-    // Arguments for "left" and "right" kernels (changed in every
-    // symmetrization operation)
-    short int arguments_l[N_KERNEL_ARGS];
-    short int arguments_r[N_KERNEL_ARGS];
-
-    vfloat result = 0;
-    // Loop over possible sign flips, and evaluate integrand
-    for (int i = 0; i < pow(2,m-1); ++i) {
-        for (int j = 0; j < (m-1); ++j) {
-            if ((i/(j+1) % 2) == 1) {
-                signs[j] *= -1;
-                break;
-            }
-        }
-
-        find_kernel_arguments(diagram, rearrangement, signs, arguments_l,
-                arguments_r);
 #if DEBUG >= 2
-        print_integrand_info(diagram, arguments_l, arguments_r);
+        printf("\t\t=> Partial result = " vfloat_fmt "\n",result);
 #endif
-        vfloat k1 = compute_k1(diagram->m, rearrangement, signs,
-                tables->bare_scalar_products);
-        int h_theta = heaviside_theta(diagram->m, k1, rearrangement,
-                tables->Q_magnitudes);
-        if (h_theta == 0) {
-#if DEBUG >= 2
-            printf("\t\t=> partial result = 0\n");
-#endif
-            continue;
-        }
-
-        vfloat partial_result = h_theta * gsl_spline_eval(input->spline,k1,input->acc);
-        partial_result *= integrand_term(arguments_l, arguments_r, diagram,
-                input, tables);
-#if DEBUG >= 2
-        printf("\t\t=> partial result = " vfloat_fmt "\n",partial_result);
-#endif
-        result += partial_result;
-    }
-    return result;
-}
-
-
-
-vfloat loop_momenta_symmetrization(
-        const diagram_t* diagram,
-        const integration_input_t* input,
-        const table_ptrs_t* tables
-        )
-{
-    short int l = diagram->l;
-    short int r = diagram->r;
-    short int m = diagram->m;
-
-#if DEBUG >= 1
-    if ((m + l + r) != (LOOPS + 1)) warning("m + r + l != LOOPS + 1.");
-#endif
-
-    vfloat result = 0;
-
-    // Tag loop momenta by number for symmetrization
-    short int loop_momenta[LOOPS];
-    for (int i = 0; i < LOOPS; ++i) loop_momenta[i] = i;
-    short int rearrangement[LOOPS] = {0};
-
-    // Loop momenta combinations:
-    // m-1         "connection" loops
-    // s = L-(m-1) "self" loops, divided into:
-    //      l left "self" loops
-    //      r right "self" loops
-    gsl_combination *comb_m, *comb_s, *comb_l, *comb_r;
-
-    comb_m = gsl_combination_alloc(LOOPS, (m-1));
-    comb_s = gsl_combination_alloc(LOOPS, LOOPS - (m-1));
-    gsl_combination_init_first(comb_m);
-    gsl_combination_init_last(comb_s);
-
-    // We only need l and r groupings when "self"-loops are present
-    if (m < LOOPS + 1) {
-        comb_l = gsl_combination_alloc(LOOPS - (m-1), l);
-        comb_r = gsl_combination_alloc(LOOPS - (m-1), r);
-    }
-
-    // Go through possible (m-1)-groupings
-    do {
-        for (int i = 0; i < m-1; ++i) {
-            rearrangement[i] = loop_momenta[gsl_combination_get(comb_m,i)];
-        }
-        if (m < LOOPS + 1) {
-            gsl_combination_init_first(comb_l);
-            gsl_combination_init_last(comb_r);
-
-            // Go through possible l and r groupings
-            do {
-                for (int i = 0; i < l; ++i) {
-                    int j = m - 1 + i;
-                    rearrangement[j] = loop_momenta[
-                        gsl_combination_get(comb_s,gsl_combination_get(comb_l,i))];
-                }
-                for (int i = 0; i < r; ++i) {
-                    int j = m - 1 + l + i;
-                    rearrangement[j] = loop_momenta[
-                        gsl_combination_get(comb_s,gsl_combination_get(comb_r,i))];
-                }
-                result += sign_flip_symmetrization(rearrangement, diagram,
-                        input, tables);
-            } while (
-                    gsl_combination_next(comb_l) == GSL_SUCCESS &&
-                    gsl_combination_prev(comb_r) == GSL_SUCCESS
-                    );
-        }
-        else {
-            result += sign_flip_symmetrization(rearrangement, diagram, input,
-                    tables);
-        }
-    } while (
-            gsl_combination_next(comb_m) == GSL_SUCCESS &&
-            gsl_combination_prev(comb_s) == GSL_SUCCESS
-            );
-
-    if (m < LOOPS + 1) {
-        gsl_combination_free(comb_l);
-        gsl_combination_free(comb_r);
-    }
-    gsl_combination_free(comb_m);
-    gsl_combination_free(comb_s);
-
     return result;
 }
 
@@ -412,22 +181,22 @@ vfloat integrand(
         table_ptrs_t* tables
         )
 {
-    diagram_t diagrams[N_DIAGRAMS];
-    possible_diagrams(diagrams);
-
     // Loop over possible diagrams at this loop order
     vfloat result = 0;
     for (int i = 0; i < N_DIAGRAMS; ++i) {
-        vfloat diagram_result =
-            loop_momenta_symmetrization(&(diagrams[i]), input, tables);
-        // Multiply and divide by symmetrization & diagram factors
-        diagram_result /= symmetrization_factor(&(diagrams[i]));
-        diagram_result *= diagram_factor(&(diagrams[i]));
-        // If diagram is antisymmetric in l <-> r, multiply by 2 (the algorithm
-        // assumes l >= r)
-        if (diagrams[i].l != diagrams[i].r) {
-            diagram_result *= 2;
+        // Pointer alias for convenience
+        const diagram_t* const dg = &(input->diagrams[i]);
+        vfloat diagram_result = 0;
+
+        for (int a = 0; a < dg->n_rearrangements; ++a) {
+            for (int b = 0; b < dg->n_sign_configs; ++b) {
+                diagram_result += integrand_term(i,a,b,input,tables);
+            }
         }
+
+        // Multiply and divide by symmetrization & diagram factors
+        diagram_result *= dg->diagram_factor;
+        diagram_result /= dg->n_rearrangements * dg->n_sign_configs;
         result += diagram_result;
     }
 

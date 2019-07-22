@@ -60,23 +60,23 @@ vfloat partial_SPT_sum(
         short int sum_l = sum_vectors(args_l,N_KERNEL_ARGS,tables->sum_table);
         short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS,tables->sum_table);
 
-        // F_n <-> component 0; G_n <-> component 1
-        value += compute_SPT_kernel(args_l, m, 1, tables) *
+        // Send -1 as (unknown) kernel_index argument
+        value += compute_SPT_kernel(args_l, -1, m, 1, tables) *
             (  a * matrix_get(tables->alpha, sum_l, sum_r)
-               * compute_SPT_kernel(args_r, n-m, 0, tables)
+               * compute_SPT_kernel(args_r, -1, n-m, 0, tables)
              + b * matrix_get(tables->beta, sum_l, sum_r)
-               * compute_SPT_kernel(args_r, n-m, 1, tables)
+               * compute_SPT_kernel(args_r, -1, n-m, 1, tables)
             );
 
         // When m != (n - m), we may additionally compute the (n-m)-term by
         // swapping args_l, sum_l, m with args_r, sum_r and (n-m). Then
         // compute_SPT_kernel() only needs to sum up to (including) floor(n/2).
         if (m != n - m) {
-            value += compute_SPT_kernel(args_r, n-m, 1, tables) *
+            value += compute_SPT_kernel(args_r, -1, n-m, 1, tables) *
                 (  a * matrix_get(tables->alpha, sum_r, sum_l)
-                   * compute_SPT_kernel(args_l, m,0, tables)
+                   * compute_SPT_kernel(args_l, -1, m, 0, tables)
                    + b * matrix_get(tables->beta, sum_r, sum_l)
-                   * compute_SPT_kernel(args_l, m, 1, tables)
+                   * compute_SPT_kernel(args_l, -1, m, 1, tables)
                 );
         }
 
@@ -96,14 +96,22 @@ vfloat partial_SPT_sum(
 
 
 vfloat compute_SPT_kernel(
-        const short int arguments[], /* kernel arguments                                  */
+        const short int arguments[], /* kernel arguments                                   */
+        short int kernel_index,      /* index for kernel table (to be combined with comp.) */
         short int n,                 /* order in perturbation theory expansion            */
         short int component,         /* component to compute, NB: assumed to be 0-indexed */
         const table_ptrs_t* tables
         )
 {
-    // DEBUG: check that the number of non-zero arguments is in fact n
+    // DEBUG: check that the number of non-zero arguments is in fact n, and
+    // that kernel_index is in fact equivalent to arguments
 #if DEBUG >= 1
+    short int argument_index = kernel_index_from_arguments(arguments);
+    if (kernel_index != -1 && argument_index != kernel_index) {
+        warning_verbose("Index computed from kernel arguments (%d) does not "
+                "equal kernel_index (%d).", argument_index, kernel_index);
+    }
+
     int n_args = 0;
     for (int i = 0; i < N_KERNEL_ARGS; ++i) {
         if (arguments[i] != ZERO_LABEL) n_args++;
@@ -117,14 +125,17 @@ vfloat compute_SPT_kernel(
         return 1.0;
     }
 
-    // Compute kernel index, this depends on arguments (argument_index) and
-    // which component is to be computed
-    short int argument_index = kernel_index_from_arguments(arguments);
-    short int index          = combined_kernel_index(argument_index,component);
+    // If kernel_index is not known, -1 is sent as argument
+    if (kernel_index == -1) {
+        kernel_index = kernel_index_from_arguments(arguments);
+    }
+    // Combine kernel_index with component
+    short int index = combined_kernel_index(kernel_index,component);
 
     // Check if the kernel is already computed
-    if (tables->kernels[index].computed)
+    if (tables->kernels[index].computed) {
         return tables->kernels[index].value;
+    }
 
     // Define some factors dependent on component to compute
     short int a,b;

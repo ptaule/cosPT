@@ -68,7 +68,7 @@ void compute_alpha_beta_tables(
         );
 
 short int kernel_index_from_arguments(const short int arguments[]);
-
+void kernel_index_to_arguments(short int index, short int arguments[]);
 
 inline short int combined_kernel_index(short int argument_index, short int component)
 {

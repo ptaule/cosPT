@@ -22,6 +22,7 @@ vfloat partial_SPT_sum(
 
 vfloat compute_SPT_kernel(
         const short int arguments[],
+        short int kernel_index,
         short int n,
         short int component,
         const table_ptrs_t* tables

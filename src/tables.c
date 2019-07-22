@@ -322,4 +322,46 @@ short int kernel_index_from_arguments(const short int arguments[]) {
 
 
 
+// For debugging purposes
+void kernel_index_to_arguments(short int index, short int arguments[]) {
+
+    // Initialize arguments to zero
+    for (int i = 0; i < N_KERNEL_ARGS; ++i) {
+        arguments[i] = 0;
+    }
+
+    // Define block size. A block consists of all fundamental vector argument
+    // combinations.
+    short int block_size = pow(4,LOOPS);
+    // Argument number we are working with
+    short int j = 0;
+
+    // If kernel index is >= block_size, a k-vector is present. We choose the
+    // k-vector be the first argument without loss of generality, since the
+    // arguments-array is symmetric w.r.t exchanges of arguments.
+    if (index >= block_size) {
+        arguments[0] += N_CONFIGS/2;
+        index -= block_size;
+        arguments[0] += index/block_size;
+
+        j++;
+        index %= block_size;
+    }
+
+
+    // Check which fundamentals are present
+    for (int i = 0; i < 2 * LOOPS; ++i) {
+        if (index % 2 == 1) {
+            short int fundamental[N_COEFFS] = {0};
+            fundamental[i/2] = pow(-1,i);
+
+            arguments[j] = config2label(fundamental,N_COEFFS);
+            j++;
+        }
+        index /= 2;
+    }
+}
+
+
+
 extern short int combined_kernel_index(short int argument_index, short int component);
