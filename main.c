@@ -19,13 +19,13 @@
 #include "include/power_spectrum_io.h"
 
 
-void init_worker(table_pointers_t* worker_mem, const int* core) {
+void init_worker(table_ptrs_t* worker_mem, const int* core) {
     allocate_tables(&worker_mem[*core]);
 }
 
 
 
-void exit_worker(table_pointers_t* worker_mem, const int* core) {
+void exit_worker(table_ptrs_t* worker_mem, const int* core) {
     gc_tables(&worker_mem[*core]);
 }
 
@@ -66,7 +66,7 @@ int cuba_integrand(
 #endif
 
     // tables points to memory allocated for worker number <*core>
-    table_pointers_t* tables = &input->worker_mem[*core];
+    table_ptrs_t* tables = &input->worker_mem[*core];
     // Set tables to zero
     zero_initialize_tables(tables);
 
@@ -101,7 +101,7 @@ int main () {
 
     cubacores(CUBA_NCORES,10000);
 
-    table_pointers_t worker_mem[CUBA_NCORES];
+    table_ptrs_t worker_mem[CUBA_NCORES];
 
     short int sum_table[N_CONFIGS][N_CONFIGS];
     compute_sum_table(sum_table);
@@ -119,7 +119,7 @@ int main () {
         .component_b = 0,
         .acc = acc,
         .spline = spline,
-        .worker_mem = (table_pointers_t*)worker_mem
+        .worker_mem = (table_ptrs_t*)worker_mem
     };
 
     double* const wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));

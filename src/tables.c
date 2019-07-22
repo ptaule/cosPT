@@ -84,7 +84,7 @@ short int sum_vectors(
 
 
 
-void allocate_tables(table_pointers_t* tables) {
+void allocate_tables(table_ptrs_t* tables) {
     // Alpha/beta matrices
     tables->alpha = matrix_alloc(N_CONFIGS,N_CONFIGS);
     tables->beta  = matrix_alloc(N_CONFIGS,N_CONFIGS);
@@ -95,7 +95,7 @@ void allocate_tables(table_pointers_t* tables) {
 
 
 
-void zero_initialize_tables(table_pointers_t* tables) {
+void zero_initialize_tables(table_ptrs_t* tables) {
     // Reset kernel table elements to default value
     for (int i = 0; i < COMPONENTS * N_KERNELS; ++i) {
         tables->kernels[i].computed = false;
@@ -105,7 +105,7 @@ void zero_initialize_tables(table_pointers_t* tables) {
 
 
 
-void gc_tables(table_pointers_t* tables) {
+void gc_tables(table_ptrs_t* tables) {
     // Free allocated memory for kernels
     free(tables->kernels);
 

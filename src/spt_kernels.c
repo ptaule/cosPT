@@ -23,7 +23,7 @@ vfloat partial_SPT_sum(
         short int m,                 /* sum index in kernel recursion relation            */
         short int a,                 /* coefficient: (2n+1) for F, 2 for G                */
         short int b,                 /* coefficient: 3 for F, 2n for G                    */
-        const table_pointers_t* data_tables
+        const table_ptrs_t* tables
         )
 {
     vfloat value = 0;
@@ -57,26 +57,26 @@ vfloat partial_SPT_sum(
             args_r[i] = arguments[gsl_combination_get(comb_r,i)];
         }
 
-        short int sum_l = sum_vectors(args_l,N_KERNEL_ARGS,data_tables->sum_table);
-        short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS,data_tables->sum_table);
+        short int sum_l = sum_vectors(args_l,N_KERNEL_ARGS,tables->sum_table);
+        short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS,tables->sum_table);
 
         // F_n <-> component 0; G_n <-> component 1
-        value += compute_SPT_kernel(args_l,m,1,data_tables) *
-            (  a * matrix_get(data_tables->alpha,sum_l,sum_r)
-               * compute_SPT_kernel(args_r,n-m,0,data_tables)
-             + b * matrix_get(data_tables->beta ,sum_l,sum_r)
-               * compute_SPT_kernel(args_r,n-m,1,data_tables)
+        value += compute_SPT_kernel(args_l, m, 1, tables) *
+            (  a * matrix_get(tables->alpha, sum_l, sum_r)
+               * compute_SPT_kernel(args_r, n-m, 0, tables)
+             + b * matrix_get(tables->beta, sum_l, sum_r)
+               * compute_SPT_kernel(args_r, n-m, 1, tables)
             );
 
         // When m != (n - m), we may additionally compute the (n-m)-term by
         // swapping args_l, sum_l, m with args_r, sum_r and (n-m). Then
         // compute_SPT_kernel() only needs to sum up to (including) floor(n/2).
         if (m != n - m) {
-            value += compute_SPT_kernel(args_r,n-m,1,data_tables) *
-                (  a * matrix_get(data_tables->alpha,sum_r,sum_l)
-                   * compute_SPT_kernel(args_l,m,0,data_tables)
-                   + b * matrix_get(data_tables->beta ,sum_r,sum_l)
-                   * compute_SPT_kernel(args_l,m,1,data_tables)
+            value += compute_SPT_kernel(args_r, n-m, 1, tables) *
+                (  a * matrix_get(tables->alpha, sum_r, sum_l)
+                   * compute_SPT_kernel(args_l, m,0, tables)
+                   + b * matrix_get(tables->beta, sum_r, sum_l)
+                   * compute_SPT_kernel(args_l, m, 1, tables)
                 );
         }
 
@@ -99,7 +99,7 @@ vfloat compute_SPT_kernel(
         const short int arguments[], /* kernel arguments                                  */
         short int n,                 /* order in perturbation theory expansion            */
         short int component,         /* component to compute, NB: assumed to be 0-indexed */
-        const table_pointers_t* data_tables
+        const table_ptrs_t* tables
         )
 {
     // DEBUG: check that the number of non-zero arguments is in fact n
@@ -122,11 +122,9 @@ vfloat compute_SPT_kernel(
     short int argument_index = kernel_index_from_arguments(arguments);
     short int index          = combined_kernel_index(argument_index,component);
 
-    // const pointer alias to data_tables->kernels
-    kernel_t* const kernels = data_tables->kernels;
-
     // Check if the kernel is already computed
-    if (kernels[index].computed) return kernels[index].value;
+    if (tables->kernels[index].computed)
+        return tables->kernels[index].value;
 
     // Define some factors dependent on component to compute
     short int a,b;
@@ -144,15 +142,15 @@ vfloat compute_SPT_kernel(
     // Only sum up to (including) floor(n/2), since partial_SPT_sum()
     // simultaneously computes terms m and (n-m)
     for (int m = 1; m <= n/2; ++m) {
-        value += partial_SPT_sum(arguments,n,m,a,b,data_tables);
+        value += partial_SPT_sum(arguments,n,m,a,b,tables);
     }
 
     // Divide by overall factor in SPT recursion relation
     value /= (2*n + 3) * (n - 1);
 
     // Update kernel table
-    kernels[index].value = value;
-    kernels[index].computed = true;
+    tables->kernels[index].value = value;
+    tables->kernels[index].computed = true;
 
     return value;
 }

@@ -36,7 +36,7 @@ typedef struct {
     matrix_t* alpha;
     matrix_t* beta;
     kernel_t* kernels;
-} table_pointers_t;
+} table_ptrs_t;
 
 short int sum_vectors(
         const short int labels[],
@@ -52,9 +52,9 @@ void compute_bare_scalar_products(
         vfloat bare_scalar_products[][N_COEFFS]
         );
 
-void allocate_tables(table_pointers_t* tables);
-void zero_initialize_tables(table_pointers_t* tables);
-void gc_tables(table_pointers_t* tables);
+void allocate_tables(table_ptrs_t* tables);
+void zero_initialize_tables(table_ptrs_t* tables);
+void gc_tables(table_ptrs_t* tables);
 
 void compute_scalar_products(
         const vfloat bare_scalar_products[][N_COEFFS],

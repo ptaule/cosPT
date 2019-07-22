@@ -226,7 +226,7 @@ static vfloat integrand_term(
         const short int arguments_r[N_KERNEL_ARGS],
         const diagram_t* diagram,
         const integration_input_t* input,
-        const table_pointers_t* data_tables
+        const table_ptrs_t* tables
         )
 {
     short int m = diagram->m;
@@ -236,12 +236,13 @@ static vfloat integrand_term(
     vfloat result = 1;
     // If right kernel has only one argument, its value is 1
     if (m == 1 && r == 0) {
-        result *= compute_SPT_kernel(arguments_l, 2*l + m, input->component_a, data_tables);
+        result *= compute_SPT_kernel(arguments_l, 2*l + m, input->component_a,
+                tables);
     }
     // If there are no "self" loops, and the components to compute are
     // equal, the kernels are equal
     else if (l == 0 && r == 0 && input->component_a == input->component_b) {
-        result *= pow(compute_SPT_kernel(arguments_l, m, input->component_a, data_tables) ,2);
+        result *= pow(compute_SPT_kernel(arguments_l, m, input->component_a, tables) ,2);
     // In DEBUG-mode, check that kernel arguments in fact are equal in this
     // case
 #if DEBUG >= 1
@@ -252,8 +253,8 @@ static vfloat integrand_term(
 #endif
     }
     else {
-        result *= compute_SPT_kernel(arguments_l, 2*l + m, input->component_a, data_tables)
-                * compute_SPT_kernel(arguments_r, 2*r + m, input->component_b, data_tables);
+        result *= compute_SPT_kernel(arguments_l, 2*l + m, input->component_a, tables)
+                * compute_SPT_kernel(arguments_r, 2*r + m, input->component_b, tables);
     }
     return result;
 }
@@ -264,7 +265,7 @@ vfloat sign_flip_symmetrization(
         const short int rearrangement[],
         const diagram_t* diagram,
         const integration_input_t* input,
-        const table_pointers_t* data_tables
+        const table_ptrs_t* tables
         )
 {
     short int m = diagram->m;
@@ -295,9 +296,9 @@ vfloat sign_flip_symmetrization(
         print_integrand_info(diagram, arguments_l, arguments_r);
 #endif
         vfloat k1 = compute_k1(diagram->m, rearrangement, signs,
-                data_tables->bare_scalar_products);
+                tables->bare_scalar_products);
         int h_theta = heaviside_theta(diagram->m, k1, rearrangement,
-                data_tables->Q_magnitudes);
+                tables->Q_magnitudes);
         if (h_theta == 0) {
 #if DEBUG >= 2
             printf("\t\t=> partial result = 0\n");
@@ -307,7 +308,7 @@ vfloat sign_flip_symmetrization(
 
         vfloat partial_result = h_theta * gsl_spline_eval(input->spline,k1,input->acc);
         partial_result *= integrand_term(arguments_l, arguments_r, diagram,
-                input, data_tables);
+                input, tables);
 #if DEBUG >= 2
         printf("\t\t=> partial result = " vfloat_fmt "\n",partial_result);
 #endif
@@ -321,7 +322,7 @@ vfloat sign_flip_symmetrization(
 vfloat loop_momenta_symmetrization(
         const diagram_t* diagram,
         const integration_input_t* input,
-        const table_pointers_t* data_tables
+        const table_ptrs_t* tables
         )
 {
     short int l = diagram->l;
@@ -379,7 +380,7 @@ vfloat loop_momenta_symmetrization(
                         gsl_combination_get(comb_s,gsl_combination_get(comb_r,i))];
                 }
                 result += sign_flip_symmetrization(rearrangement, diagram,
-                        input, data_tables);
+                        input, tables);
             } while (
                     gsl_combination_next(comb_l) == GSL_SUCCESS &&
                     gsl_combination_prev(comb_r) == GSL_SUCCESS
@@ -387,7 +388,7 @@ vfloat loop_momenta_symmetrization(
         }
         else {
             result += sign_flip_symmetrization(rearrangement, diagram, input,
-                    data_tables);
+                    tables);
         }
     } while (
             gsl_combination_next(comb_m) == GSL_SUCCESS &&
@@ -408,7 +409,7 @@ vfloat loop_momenta_symmetrization(
 
 vfloat integrand(
         const integration_input_t* input,
-        table_pointers_t* tables
+        table_ptrs_t* tables
         )
 {
     diagram_t diagrams[N_DIAGRAMS];
