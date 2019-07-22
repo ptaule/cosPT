@@ -122,6 +122,7 @@ int main () {
 
     free(wavenumbers);
     free(power_spectrum);
+    free(errors);
 
     gsl_spline_free(spline);
     gsl_interp_accel_free(acc);
