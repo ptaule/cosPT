@@ -408,28 +408,9 @@ vfloat loop_momenta_symmetrization(
 
 vfloat integrand(
         const integration_input_t* input,
-        const integration_variables_t* vars
+        table_pointers_t* tables
         )
 {
-    // Store pointers to the computed tables in struct for convenience
-    table_pointers_t data_tables;
-    data_tables.Q_magnitudes = vars->magnitudes,
-    data_tables.alpha = matrix_alloc(N_CONFIGS,N_CONFIGS);
-    data_tables.beta  = matrix_alloc(N_CONFIGS,N_CONFIGS);
-
-    // Allocate space for kernels (calloc also initializes values to 0)
-    data_tables.kernels = (kernel_t*)
-        calloc(COMPONENTS * N_KERNELS, sizeof(kernel_t));
-
-
-    // Initialize sum-, bare_scalar_products-, alpha- and beta-tables
-    compute_sum_table(data_tables.sum_table);
-    compute_bare_scalar_products(input->k, vars,
-            data_tables.bare_scalar_products);
-    // Cast bare_scalar_products to const vfloat 2D-array
-    compute_alpha_beta_tables((const vfloat (*)[])data_tables.bare_scalar_products,
-            data_tables.alpha, data_tables.beta);
-
     diagram_t diagrams[N_DIAGRAMS];
     possible_diagrams(diagrams);
 
@@ -437,7 +418,7 @@ vfloat integrand(
     vfloat result = 0;
     for (int i = 0; i < N_DIAGRAMS; ++i) {
         vfloat diagram_result =
-            loop_momenta_symmetrization(&(diagrams[i]),input,&data_tables);
+            loop_momenta_symmetrization(&(diagrams[i]), input, tables);
         // Multiply and divide by symmetrization & diagram factors
         diagram_result /= symmetrization_factor(&(diagrams[i]));
         diagram_result *= diagram_factor(&(diagrams[i]));
@@ -450,14 +431,9 @@ vfloat integrand(
     }
 
     for (int i = 0; i < LOOPS; ++i) {
-        result *= gsl_spline_eval(input->spline, data_tables.Q_magnitudes[i],
+        result *= gsl_spline_eval(input->spline, tables->Q_magnitudes[i],
                 input->acc);
     }
-
-    // Free allocated memory
-    free(data_tables.kernels);
-    matrix_free(data_tables.alpha);
-    matrix_free(data_tables.beta);
 
     return result;
 }

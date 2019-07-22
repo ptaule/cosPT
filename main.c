@@ -19,12 +19,26 @@
 #include "include/power_spectrum_io.h"
 
 
+void init_worker(table_pointers_t* worker_mem, const int* core) {
+    allocate_tables(&worker_mem[*core]);
+}
+
+
+
+void exit_worker(table_pointers_t* worker_mem, const int* core) {
+    gc_tables(&worker_mem[*core]);
+}
+
+
+
 int cuba_integrand(
         __attribute__((unused)) const int *ndim,
         const cubareal xx[],
         __attribute__((unused)) const int *ncomp,
         cubareal ff[],
-        void *userdata
+        void *userdata,
+        __attribute__((unused)) const int *nvec,
+        const int *core
         )
 {
     integration_input_t* input = (integration_input_t*)userdata;
@@ -51,7 +65,21 @@ int cuba_integrand(
     warning_verbose("Monte-carlo integration not implemented for LOOPS = %d.",LOOPS);
 #endif
 
-    ff[0] = jacobian * integrand(input,&vars);
+    // tables points to memory allocated for worker number <*core>
+    table_pointers_t* tables = &input->worker_mem[*core];
+    // Set tables to zero
+    zero_initialize_tables(tables);
+
+    tables->Q_magnitudes = vars.magnitudes,
+
+    // Initialize sum-, bare_scalar_products-, alpha- and beta-tables
+    compute_bare_scalar_products(input->k, &vars,
+            tables->bare_scalar_products);
+    // Cast bare_scalar_products to const vfloat 2D-array
+    compute_alpha_beta_tables((const vfloat (*)[])tables->bare_scalar_products,
+            tables->alpha, tables->beta);
+
+    ff[0] = jacobian * integrand(input,tables);
     return 0;
 }
 
@@ -71,12 +99,27 @@ int main () {
 
     read_PS(input_ps_file,&acc,&spline);
 
+    cubacores(CUBA_NCORES,10000);
+
+    table_pointers_t worker_mem[CUBA_NCORES];
+
+    short int sum_table[N_CONFIGS][N_CONFIGS];
+    compute_sum_table(sum_table);
+
+    for (int i = 0; i < CUBA_NCORES; ++i) {
+        worker_mem[i].sum_table = (const short int (*)[])sum_table;
+    }
+
+    cubainit(init_worker, worker_mem);
+    cubaexit(exit_worker, worker_mem);
+
     integration_input_t input = {
         .k = 0.0,
         .component_a = 0,
         .component_b = 0,
         .acc = acc,
-        .spline = spline
+        .spline = spline,
+        .worker_mem = (table_pointers_t*)worker_mem
     };
 
     double* const wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));
@@ -102,11 +145,11 @@ int main () {
         wavenumbers[i] = k;
         input.k = k;
 
-        Suave(N_DIMS, 1, cuba_integrand, &input, CUBA_NVEC, CUBA_EPSREL,
-                CUBA_EPSABS, CUBA_VERBOSE | CUBA_LAST, CUBA_SEED, CUBA_MINEVAL,
-                CUBA_MAXEVAL, CUBA_NNEW, CUBA_NMIN, CUBA_FLATNESS,
-                CUBA_STATEFILE, CUBA_SPIN, &nregions, &neval, &fail, result,
-                error, prob);
+        Suave(N_DIMS, 1, (integrand_t)cuba_integrand, &input, CUBA_NVEC,
+                CUBA_EPSREL, CUBA_EPSABS, CUBA_VERBOSE | CUBA_LAST, CUBA_SEED,
+                CUBA_MINEVAL, CUBA_MAXEVAL, CUBA_NNEW, CUBA_NMIN,
+                CUBA_FLATNESS, CUBA_STATEFILE, CUBA_SPIN, &nregions, &neval,
+                &fail, result, error, prob);
 
         result[0] *= overall_factor;
         error[0] *= overall_factor;
@@ -118,7 +161,7 @@ int main () {
                 k, (double)*result, (double)error[0], (double)prob[0]);
     }
 
-    write_PS(output_ps_file,N_POINTS,wavenumbers,power_spectrum, errors);
+    write_PS(output_ps_file, N_POINTS, wavenumbers, power_spectrum, errors);
 
     free(wavenumbers);
     free(power_spectrum);
