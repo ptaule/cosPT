@@ -84,6 +84,103 @@ short int sum_vectors(
 
 
 
+void initialize_timesteps(double eta[], double eta_i, double eta_f) {
+    // Linear time step:
+    double d_eta = fabs(eta_f - eta_i)/(TIME_STEPS + 1);
+    for (int i = 0; i < TIME_STEPS; ++i) {
+        eta[i] = eta_i + i*d_eta;
+    }
+}
+
+
+
+void allocate_tables(table_pointers_t* data_tables) {
+    // Alpha/beta matrices
+    data_tables->alpha = matrix_alloc(N_CONFIGS,N_CONFIGS);
+    data_tables->beta  = matrix_alloc(N_CONFIGS,N_CONFIGS);
+
+    // Kernels (calloc also initializes values to 0)
+    data_tables->kernels = (kernel_t*)calloc(N_KERNELS, sizeof(kernel_t));
+
+    // Allocate time/component dimensions of kernels
+    for (int i = 0; i < N_KERNELS; ++i) {
+        data_tables->kernels[i].values = (double**)calloc(TIME_STEPS, sizeof(double*));
+        data_tables->kernels[i].spt_values = (vfloat*)calloc(COMPONENTS, sizeof(vfloat));
+        for (int j = 0; j < TIME_STEPS; ++j) {
+            data_tables->kernels[i].values[j] = (double*)calloc(COMPONENTS, sizeof(double));
+        }
+    }
+
+    // Allocate memory for RHS tables
+    for (int n = 0; n < N_KERNEL_ARGS; ++n) {
+        data_tables->rhs_sum[n] = (double**)calloc(COMPONENTS, sizeof(double*));
+        data_tables->partial_rhs_sum[n] = (double**)calloc(COMPONENTS, sizeof(double*));
+
+        for (int i = 0; i < COMPONENTS; ++i) {
+            data_tables->rhs_sum[n][i] = (double*)calloc(TIME_STEPS, sizeof(double));
+            data_tables->partial_rhs_sum[n][i] = (double*)calloc(TIME_STEPS, sizeof(double));
+        }
+    }
+}
+
+
+
+void zero_initialize_tables(table_pointers_t* data_tables) {
+    // Reset kernel table elements to default value
+    for (int i = 0; i < N_KERNELS; ++i) {
+        data_tables->kernels[i].ic_computed = false;
+        data_tables->kernels[i].evolved     = false;
+
+        for (int j = 0; j < COMPONENTS; ++j) {
+            data_tables->kernels[i].spt_values[j] = 0.0;
+        }
+
+        for (int j = 0; j < TIME_STEPS; ++j) {
+            for (int k = 0; k < COMPONENTS; ++k) {
+                data_tables->kernels[i].values[j][k] = 0.0;
+            }
+        }
+    }
+
+    // Reset RHS tables to zero
+    for (int n = 0; n < N_KERNEL_ARGS; ++n) {
+        for (int i = 0; i < COMPONENTS; ++i) {
+            for (int j = 0; j < TIME_STEPS; ++j) {
+                data_tables->rhs_sum[n][i][j] = 0.0;
+            }
+        }
+    }
+}
+
+
+
+void gc_tables(table_pointers_t* data_tables) {
+    // Free allocated memory for kernels
+    for (int i = 0; i < N_KERNELS; ++i) {
+        for (int j = 0; j < TIME_STEPS; ++j) {
+            free(data_tables->kernels[i].values[j]);
+        }
+        free(data_tables->kernels[i].values);
+    }
+    free(data_tables->kernels);
+
+    // Free RHS tables
+    for (int n = 0; n < N_KERNEL_ARGS; ++n) {
+        for (int i = 0; i < COMPONENTS; ++i) {
+            free(data_tables->rhs_sum[n][i]);
+            free(data_tables->partial_rhs_sum[n][i]);
+        }
+        free(data_tables->rhs_sum[n]);
+        free(data_tables->partial_rhs_sum[n]);
+    }
+
+    // Free allocated memory for alpha/beta matrices
+    matrix_free(data_tables->alpha);
+    matrix_free(data_tables->beta);
+}
+
+
+
 void compute_bare_scalar_products(
         vfloat k,                               /* in, magnitude of k vector         */
         const integration_variables_t* vars,    /* in, loop momenta components       */

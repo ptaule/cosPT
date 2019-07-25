@@ -49,6 +49,8 @@
 #define CUBA_MAXEVAL 1e6
 #endif
 
+#define CUBA_MAXCORES 10
+
 #define CUBA_STATEFILE NULL
 #define CUBA_SPIN NULL
 
