@@ -39,8 +39,6 @@ typedef struct {
     matrix_t* beta;
     kernel_t* kernels;
     const double* eta;
-    double** rhs_sum[N_KERNEL_ARGS];
-    double** partial_rhs_sum[N_KERNEL_ARGS];
 } table_pointers_t;
 
 short int sum_vectors(

@@ -27,6 +27,7 @@ static void vertex(
         const short int args_r[],
         short int sum_l,
         short int sum_r,
+        double (*partial_rhs_sum)[TIME_STEPS],
         const evolution_params_t* params,
         const table_pointers_t* data_tables
         )
@@ -38,7 +39,6 @@ static void vertex(
     short int index_l = kernel_evolution(args_l, -1, m_l, params, data_tables);
     short int index_r = kernel_evolution(args_r, -1, m_r, params, data_tables);
 
-    short int n = m_l + m_r;
     short int a,b,c;
 
     // Note: all components are zero-indexed
@@ -49,20 +49,20 @@ static void vertex(
                 // Component a = 2, two contributing terms
                 a = 2, b = 3, c = 2;
                 // gamma_223 = alpha_lr
-                data_tables->partial_rhs_sum[n-1][a][i] += 0.5 * alpha_lr
+                partial_rhs_sum[a][i] += 0.5 * alpha_lr
                     * data_tables->kernels[index_l].values[i][b]
                     * data_tables->kernels[index_r].values[i][c];
 
                 b = 2, c = 3;
                 // gamma_232 = alpha_rl
-                data_tables->partial_rhs_sum[n-1][a][i] += 0.5 * alpha_rl
+                partial_rhs_sum[a][i] += 0.5 * alpha_rl
                     * data_tables->kernels[index_l].values[i][b]
                     * data_tables->kernels[index_r].values[i][c];
 
                 // Component a = 3, one contributing term
                 a = 3, b = 3, c = 3;
                 // gamma_444 = beta
-                data_tables->partial_rhs_sum[n-1][a][i] += beta
+                partial_rhs_sum[a][i] += beta
                     * data_tables->kernels[index_l].values[i][b]
                     * data_tables->kernels[index_r].values[i][c];
 
@@ -73,20 +73,20 @@ static void vertex(
                 // Component a = 0, two contributing terms:
                 a = 0, b = 1, c = 0;
                 // gamma_001 = alpha_lr
-                data_tables->partial_rhs_sum[n-1][a][i] += 0.5 * alpha_lr
+                partial_rhs_sum[a][i] += 0.5 * alpha_lr
                     * data_tables->kernels[index_l].values[i][b]
                     * data_tables->kernels[index_r].values[i][c];
 
                 b = 0, c = 1;
                 // gamma_010 = alpha_rl
-                data_tables->partial_rhs_sum[n-1][a][i] += 0.5 * alpha_rl
+                partial_rhs_sum[a][i] += 0.5 * alpha_rl
                     * data_tables->kernels[index_l].values[i][b]
                     * data_tables->kernels[index_r].values[i][c];
 
                 // Component a = 1, one contributing term
                 a = 1, b = 1, c = 1;
                 // gamma_111 = beta
-                data_tables->partial_rhs_sum[n-1][a][i] += beta
+                partial_rhs_sum[a][i] += beta
                     * data_tables->kernels[index_l].values[i][b]
                     * data_tables->kernels[index_r].values[i][c];
 
@@ -108,6 +108,9 @@ void compute_RHS_sum(
         gsl_interp_accel* rhs_accs[] /* out, gsl_interpolation accelerated lookup objects */
         )
 {
+    double rhs_sum[COMPONENTS][TIME_STEPS] = {0};
+    double partial_rhs_sum[COMPONENTS][TIME_STEPS] = {0};
+
     short int args_l[N_KERNEL_ARGS] = {0};
     short int args_r[N_KERNEL_ARGS] = {0};
 
@@ -115,7 +118,7 @@ void compute_RHS_sum(
         // Initialize partial_rhs_sum to 0
         for (int i = 0; i < COMPONENTS; ++i) {
             for (int j = 0; j < TIME_STEPS; ++j) {
-                data_tables->partial_rhs_sum[n-1][i][j] = 0;
+                partial_rhs_sum[i][j] = 0;
             }
         }
 
@@ -149,15 +152,15 @@ void compute_RHS_sum(
             short int sum_l = sum_vectors(args_l,N_KERNEL_ARGS,data_tables->sum_table);
             short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS,data_tables->sum_table);
 
-            vertex(m, n-m, args_l, args_r, sum_l, sum_r, params,
-                    data_tables);
+            vertex(m, n-m, args_l, args_r, sum_l, sum_r, partial_rhs_sum,
+                    params, data_tables);
 
             // When m != (n - m), we may additionally compute the (n-m)-term by
             // swapping args_l, sum_l, m with args_r, sum_r and (n-m). Then
             // compute_RHS_sum() only needs to sum up to (including) floor(n/2).
             if (m != n - m) {
-                vertex(n-m, m, args_r, args_l, sum_r, sum_l, params,
-                        data_tables);
+                vertex(n-m, m, args_r, args_l, sum_r, sum_l, partial_rhs_sum,
+                        params, data_tables);
             }
         } while (gsl_combination_next(comb_l) == GSL_SUCCESS &&
                 gsl_combination_prev(comb_r) == GSL_SUCCESS
@@ -167,8 +170,7 @@ void compute_RHS_sum(
         int n_choose_m = gsl_sf_choose(n,m);
         for (int i = 0; i < COMPONENTS; ++i) {
             for (int j = 0; j < TIME_STEPS; ++j) {
-                data_tables->rhs_sum[n-1][i][j] +=
-                    data_tables->partial_rhs_sum[n-1][i][j] / n_choose_m;
+                rhs_sum[i][j] += partial_rhs_sum[i][j] / n_choose_m;
             }
         }
 
@@ -180,8 +182,8 @@ void compute_RHS_sum(
     for (int i = 0; i < COMPONENTS; ++i) {
         rhs_accs[i] = gsl_interp_accel_alloc();
         rhs_splines[i] = gsl_spline_alloc(INTERPOL_TYPE, TIME_STEPS);
-        gsl_spline_init(rhs_splines[i], data_tables->eta,
-                data_tables->rhs_sum[n-1][i], TIME_STEPS);
+        gsl_spline_init(rhs_splines[i], data_tables->eta, rhs_sum[i],
+                TIME_STEPS);
     }
 }
 

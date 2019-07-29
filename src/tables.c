@@ -110,17 +110,6 @@ void allocate_tables(table_pointers_t* data_tables) {
             data_tables->kernels[i].values[j] = (double*)calloc(COMPONENTS, sizeof(double));
         }
     }
-
-    // Allocate memory for RHS tables
-    for (int n = 0; n < N_KERNEL_ARGS; ++n) {
-        data_tables->rhs_sum[n] = (double**)calloc(COMPONENTS, sizeof(double*));
-        data_tables->partial_rhs_sum[n] = (double**)calloc(COMPONENTS, sizeof(double*));
-
-        for (int i = 0; i < COMPONENTS; ++i) {
-            data_tables->rhs_sum[n][i] = (double*)calloc(TIME_STEPS, sizeof(double));
-            data_tables->partial_rhs_sum[n][i] = (double*)calloc(TIME_STEPS, sizeof(double));
-        }
-    }
 }
 
 
@@ -141,15 +130,6 @@ void zero_initialize_tables(table_pointers_t* data_tables) {
             }
         }
     }
-
-    // Reset RHS tables to zero
-    for (int n = 0; n < N_KERNEL_ARGS; ++n) {
-        for (int i = 0; i < COMPONENTS; ++i) {
-            for (int j = 0; j < TIME_STEPS; ++j) {
-                data_tables->rhs_sum[n][i][j] = 0.0;
-            }
-        }
-    }
 }
 
 
@@ -163,16 +143,6 @@ void gc_tables(table_pointers_t* data_tables) {
         free(data_tables->kernels[i].values);
     }
     free(data_tables->kernels);
-
-    // Free RHS tables
-    for (int n = 0; n < N_KERNEL_ARGS; ++n) {
-        for (int i = 0; i < COMPONENTS; ++i) {
-            free(data_tables->rhs_sum[n][i]);
-            free(data_tables->partial_rhs_sum[n][i]);
-        }
-        free(data_tables->rhs_sum[n]);
-        free(data_tables->partial_rhs_sum[n]);
-    }
 
     // Free allocated memory for alpha/beta matrices
     matrix_free(data_tables->alpha);
