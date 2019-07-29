@@ -214,9 +214,9 @@ static void print_integrand_info(
 
     printf(ANSI_COLOR_MAGENTA "(m,l,r) = (%d,%d,%d)\t" ANSI_COLOR_BLUE,m,l,r);
     printf("F%d",m + 2*l);
-    print_labels(arguments_l);
+    print_labels(arguments_l, N_KERNEL_ARGS);
     printf(" * F%d",m + 2*r);
-    print_labels(arguments_r);
+    print_labels(arguments_r, N_KERNEL_ARGS);
     printf(ANSI_COLOR_RESET);
 }
 
@@ -230,7 +230,7 @@ void print_evolved_kernel(
         )
 {
     printf("F%d",n);
-    print_labels(arguments);
+    print_labels(arguments, N_KERNEL_ARGS);
     printf("\n");
     for (int i = 0; i < TIME_STEPS; ++i) {
         for (int j = 0; j < COMPONENTS; ++j) {
