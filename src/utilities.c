@@ -89,10 +89,10 @@ void print_labels(const short int labels[])
 
 
 
-void print_gsl_matrix(const gsl_matrix* m, size_t height, size_t width) {
+void print_gsl_matrix(const matrix_t* m, size_t height, size_t width) {
     for (size_t i = 0; i < height; ++i) {
         for (size_t j = 0; j < width; ++j) {
-            printf("%g\t",gsl_matrix_get(m,i,j));
+            printf(vfloat_fmt "\t",matrix_get(m,i,j));
         }
         printf("\n");
     }
