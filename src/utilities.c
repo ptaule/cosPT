@@ -76,10 +76,10 @@ void print_label(short int label) {
 
 
 
-void print_labels(const short int labels[])
+void print_labels(const short int labels[], size_t size)
 {
     printf("(");
-    for (int i = 0; i < N_KERNEL_ARGS; ++i) {
+    for (size_t i = 0; i < size; ++i) {
         if (labels[i] == ZERO_LABEL) continue;
         print_label(labels[i]);
         printf(", ");
