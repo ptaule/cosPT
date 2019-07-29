@@ -46,7 +46,7 @@ int cuba_integrand(
     integration_input_t* input = (integration_input_t*)userdata;
     integration_variables_t vars;
 
-    vfloat ratio = Q_MAX/Q_MIN;
+    vfloat ratio = (vfloat)Q_MAX/Q_MIN;
 
     vfloat jacobian = 0.0;
 #if LOOPS == 1
@@ -144,11 +144,11 @@ int main () {
     int nregions, neval, fail;
     cubareal result[1], error[1], prob[1];
 
-    double delta_logk = log(K_MAX/K_MIN) / N_POINTS;
+    double delta_factor = pow((vfloat)K_MAX/K_MIN, 1.0/N_POINTS);
     double k = K_MIN;
 
     for (int i = 0; i < N_POINTS; ++i) {
-        k *= exp(delta_logk);
+        k *= delta_factor;
         wavenumbers[i] = k;
         input.k = k;
 

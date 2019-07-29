@@ -15,7 +15,7 @@
 
 // Struct for storing overall data to be used in integration
 typedef struct {
-    vfloat k;
+    double k;
     short int component_a;
     short int component_b;
     gsl_interp_accel* acc;
