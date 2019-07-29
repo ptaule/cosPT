@@ -234,7 +234,7 @@ inline static void set_omega_matrix(gsl_matrix* omega, double eta, const evoluti
     gsl_matrix_set(omega,0,1, 1);
     // Second row
     gsl_matrix_set(omega,1,0,  1.5);
-    gsl_matrix_set(omega,1,1, -1.5);
+    gsl_matrix_set(omega,1,1, -0.5);
     */
 }
 
