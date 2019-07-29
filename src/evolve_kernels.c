@@ -27,8 +27,7 @@ static void vertex(
         const short int args_r[],
         short int sum_l,
         short int sum_r,
-        const double eta[],
-        vfloat** partial_rhs_sum,
+        double (*partial_rhs_sum)[TIME_STEPS],
         const evolution_params_t* params,
         const table_pointers_t* data_tables
         )
@@ -37,8 +36,8 @@ static void vertex(
     vfloat alpha_rl = matrix_get(data_tables->alpha,sum_r,sum_l);
     vfloat beta     = matrix_get(data_tables->beta ,sum_l,sum_r);
 
-    short int index_l = kernel_evolution(args_l, -1, m_l, eta, params, data_tables);
-    short int index_r = kernel_evolution(args_r, -1, m_r, eta, params, data_tables);
+    short int index_l = kernel_evolution(args_l, -1, m_l, params, data_tables);
+    short int index_r = kernel_evolution(args_r, -1, m_r, params, data_tables);
 
     short int a,b,c;
 
@@ -105,18 +104,12 @@ void compute_RHS_sum(
         short int n,
         const evolution_params_t* params,
         const table_pointers_t* data_tables,
-        const double eta[],
         gsl_spline* rhs_splines[],   /* out, interpolated RHS sum for each component      */
         gsl_interp_accel* rhs_accs[] /* out, gsl_interpolation accelerated lookup objects */
         )
 {
-    // Allocate memory for rhs_sum and partial_rhs_sum (the last is used within the m-loop)
-    double** const rhs_sum = (double**)calloc(COMPONENTS, sizeof(double*));
-    vfloat** const partial_rhs_sum = (vfloat**)calloc(COMPONENTS, sizeof(vfloat*));
-    for (int i = 0; i < COMPONENTS; ++i) {
-        rhs_sum[i] = (double*)calloc(TIME_STEPS, sizeof(double));
-        partial_rhs_sum[i] = (vfloat*)calloc(TIME_STEPS, sizeof(vfloat));
-    }
+    double rhs_sum[COMPONENTS][TIME_STEPS] = {0};
+    double partial_rhs_sum[COMPONENTS][TIME_STEPS] = {0};
 
     short int args_l[N_KERNEL_ARGS] = {0};
     short int args_r[N_KERNEL_ARGS] = {0};
@@ -159,15 +152,15 @@ void compute_RHS_sum(
             short int sum_l = sum_vectors(args_l,N_KERNEL_ARGS,data_tables->sum_table);
             short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS,data_tables->sum_table);
 
-            vertex(m, n-m, args_l, args_r, sum_l, sum_r, eta, partial_rhs_sum,
+            vertex(m, n-m, args_l, args_r, sum_l, sum_r, partial_rhs_sum,
                     params, data_tables);
 
             // When m != (n - m), we may additionally compute the (n-m)-term by
             // swapping args_l, sum_l, m with args_r, sum_r and (n-m). Then
             // compute_RHS_sum() only needs to sum up to (including) floor(n/2).
             if (m != n - m) {
-                vertex(n-m, m, args_r, args_l, sum_r, sum_l, eta,
-                        partial_rhs_sum, params, data_tables);
+                vertex(n-m, m, args_r, args_l, sum_r, sum_l, partial_rhs_sum,
+                        params, data_tables);
             }
         } while (gsl_combination_next(comb_l) == GSL_SUCCESS &&
                 gsl_combination_prev(comb_r) == GSL_SUCCESS
@@ -189,14 +182,9 @@ void compute_RHS_sum(
     for (int i = 0; i < COMPONENTS; ++i) {
         rhs_accs[i] = gsl_interp_accel_alloc();
         rhs_splines[i] = gsl_spline_alloc(INTERPOL_TYPE, TIME_STEPS);
-        gsl_spline_init(rhs_splines[i], eta, rhs_sum[i], TIME_STEPS);
-
-        // Free allocated memory
-        free(partial_rhs_sum[i]);
-        free(rhs_sum[i]);
+        gsl_spline_init(rhs_splines[i], data_tables->eta, rhs_sum[i],
+                TIME_STEPS);
     }
-    free(partial_rhs_sum);
-    free(rhs_sum);
 }
 
 
@@ -271,7 +259,6 @@ short int kernel_evolution(
         const short int arguments[],
         short int kernel_index,             /* -1 indicates not known */
         short int n,
-        const double eta[],
         const evolution_params_t* params,
         const table_pointers_t* data_tables
         )
@@ -318,7 +305,7 @@ short int kernel_evolution(
     }
 
     // Compute RHS sum in evolution equation
-    compute_RHS_sum(arguments, n, params, data_tables, eta, rhs_splines, rhs_accs);
+    compute_RHS_sum(arguments, n, params, data_tables, rhs_splines, rhs_accs);
 
     // Set up ODE input and system
     ode_input_t input = {
@@ -341,7 +328,7 @@ short int kernel_evolution(
         // First copy previous values (i-1) to y
         memcpy(y, kernel->values[i-1], COMPONENTS * sizeof(double));
         // Then evolve y to time i
-        int status = gsl_odeiv2_driver_apply(driver, &eta_current, eta[i], y);
+        int status = gsl_odeiv2_driver_apply(driver, &eta_current, data_tables->eta[i], y);
 
         if (status != GSL_SUCCESS) {
             warning_verbose("GLS ODE driver gave error value = %d.", status);

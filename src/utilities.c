@@ -60,16 +60,6 @@ bool unique_elements(const short int array[], short int length, short int skip) 
 
 
 
-void initialize_timesteps(double eta[], double eta_i, double eta_f) {
-    // Linear time step:
-    double d_eta = fabs(eta_f - eta_i)/(TIME_STEPS + 1);
-    for (int i = 0; i < TIME_STEPS; ++i) {
-        eta[i] = eta_i + i*d_eta;
-    }
-}
-
-
-
 void print_label(short int label) {
     if (label == ZERO_LABEL) return;
 

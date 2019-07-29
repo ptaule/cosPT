@@ -263,7 +263,8 @@ static vfloat integrand_term(
         // First, compute SPT initial condition
         short int index = compute_SPT_kernels(arguments_l, m, data_tables);
         // Then, evolve kernels
-        kernel_evolution(arguments_l, index, m, input->eta, input->params, data_tables);
+        kernel_evolution(arguments_l, index, m, input->params,
+                data_tables);
 
         result *= pow(data_tables->kernels[index].values[TIME_STEPS - 1][input->component_a] ,2);
     // In DEBUG-mode, check that kernel arguments in fact are equal in this
@@ -280,9 +281,9 @@ static vfloat integrand_term(
         short int index_l = compute_SPT_kernels(arguments_l, 2*l + m, data_tables);
         short int index_r = compute_SPT_kernels(arguments_r, 2*r + m, data_tables);
         // Then, evolve kernels
-        kernel_evolution(arguments_l, index_l, 2*l + m, input->eta, input->params,
+        kernel_evolution(arguments_l, index_l, 2*l + m, input->params,
                 data_tables);
-        kernel_evolution(arguments_r, index_r, 2*r + m, input->eta, input->params,
+        kernel_evolution(arguments_r, index_r, 2*r + m, input->params,
                 data_tables);
 
         result *= data_tables->
@@ -330,7 +331,7 @@ vfloat sign_flip_symmetrization(
         print_integrand_info(diagram, arguments_l, arguments_r);
 #endif
         vfloat k1 = compute_k1(diagram->m, rearrangement, signs,
-                data_tables->bare_scalar_products);
+                (const vfloat (*)[])data_tables->bare_scalar_products);
         int h_theta = heaviside_theta(diagram->m, k1, rearrangement,
                 data_tables->Q_magnitudes);
         if (h_theta == 0) {
@@ -444,35 +445,9 @@ vfloat loop_momenta_symmetrization(
 
 vfloat integrand(
         const integration_input_t* input,
-        const integration_variables_t* vars
+        table_pointers_t* data_tables
         )
 {
-    // Store pointers to the computed tables in struct for convenience
-    table_pointers_t data_tables;
-    data_tables.Q_magnitudes = vars->magnitudes,
-    data_tables.alpha = matrix_alloc(N_CONFIGS,N_CONFIGS);
-    data_tables.beta  = matrix_alloc(N_CONFIGS,N_CONFIGS);
-
-    // Allocate space for kernels (calloc also initializes values to 0)
-    data_tables.kernels = (kernel_t*)calloc(N_KERNELS, sizeof(kernel_t));
-
-    // Allocate time/component dimensions of kernels
-    for (int i = 0; i < N_KERNELS; ++i) {
-        data_tables.kernels[i].values = (double**)calloc(TIME_STEPS, sizeof(double*));
-        data_tables.kernels[i].spt_values = (vfloat*)calloc(COMPONENTS, sizeof(vfloat));
-        for (int j = 0; j < TIME_STEPS; ++j) {
-            data_tables.kernels[i].values[j] = (double*)calloc(COMPONENTS, sizeof(double));
-        }
-    }
-
-    // Initialize sum-, bare_scalar_products-, alpha- and beta-tables
-    compute_sum_table(data_tables.sum_table);
-    compute_bare_scalar_products(input->k, vars,
-            data_tables.bare_scalar_products);
-    // Cast bare_scalar_products to const vfloat 2D-array
-    compute_alpha_beta_tables((const vfloat (*)[])data_tables.bare_scalar_products,
-            data_tables.alpha, data_tables.beta);
-
     diagram_t diagrams[N_DIAGRAMS];
     possible_diagrams(diagrams);
 
@@ -480,7 +455,7 @@ vfloat integrand(
     vfloat result = 0;
     for (int i = 0; i < N_DIAGRAMS; ++i) {
         vfloat diagram_result =
-            loop_momenta_symmetrization(&(diagrams[i]),input,&data_tables);
+            loop_momenta_symmetrization(&(diagrams[i]), input, data_tables);
         // Multiply and divide by symmetrization & diagram factors
         diagram_result /= symmetrization_factor(&(diagrams[i]));
         diagram_result *= diagram_factor(&(diagrams[i]));
@@ -493,21 +468,9 @@ vfloat integrand(
     }
 
     for (int i = 0; i < LOOPS; ++i) {
-        result *= gsl_spline_eval(input->ps_spline, data_tables.Q_magnitudes[i],
+        result *= gsl_spline_eval(input->ps_spline, data_tables->Q_magnitudes[i],
                 input->ps_acc);
     }
-
-    // Free allocated memory
-    for (int i = 0; i < N_KERNELS; ++i) {
-        for (int j = 0; j < TIME_STEPS; ++j) {
-            free(data_tables.kernels[i].values[j]);
-        }
-        free(data_tables.kernels[i].values);
-    }
-
-    free(data_tables.kernels);
-    matrix_free(data_tables.alpha);
-    matrix_free(data_tables.beta);
 
     return result;
 }

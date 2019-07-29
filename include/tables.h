@@ -34,10 +34,11 @@ typedef struct {
 typedef struct {
     const vfloat* Q_magnitudes;
     vfloat bare_scalar_products[N_COEFFS][N_COEFFS];
-    short int sum_table[N_CONFIGS][N_CONFIGS];
+    const short int (*sum_table)[N_CONFIGS];
     matrix_t* alpha;
     matrix_t* beta;
     kernel_t* kernels;
+    const double* eta;
 } table_pointers_t;
 
 short int sum_vectors(
@@ -47,6 +48,12 @@ short int sum_vectors(
         );
 
 void compute_sum_table(short int sum_table[][N_CONFIGS]);
+
+void initialize_timesteps(double eta[], double eta_i, double eta_f);
+
+void allocate_tables(table_pointers_t* data_tables);
+void zero_initialize_tables(table_pointers_t* data_tables);
+void gc_tables(table_pointers_t* data_tables);
 
 void compute_bare_scalar_products(
         vfloat k,

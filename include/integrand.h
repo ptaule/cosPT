@@ -26,8 +26,8 @@ typedef struct {
     short int component_b;
     gsl_interp_accel* ps_acc;
     gsl_spline* ps_spline;
-    const double* eta;
     const evolution_params_t* params;
+    table_pointers_t* worker_mem;
 } integration_input_t;
 
 int diagram_factor(const diagram_t* diagram);
@@ -57,6 +57,6 @@ vfloat loop_momenta_symmetrization(
         );
 
 vfloat integrand(const integration_input_t* data,
-        const integration_variables_t* vars);
+        table_pointers_t* tables);
 
 #endif /* ifndef INTEGRAND_H */
