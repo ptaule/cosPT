@@ -141,8 +141,12 @@ int main (int argc, char* argv[]) {
     free(power_spectrum);
     free(errors);
 
+    gsl_matrix_free(params.omega);
+
     gsl_spline_free(ps_spline);
     gsl_interp_accel_free(ps_acc);
+    gsl_spline_free(zeta_spline);
+    gsl_interp_accel_free(zeta_acc);
 
     return 0;
 }

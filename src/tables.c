@@ -141,6 +141,7 @@ void gc_tables(table_pointers_t* data_tables) {
             free(data_tables->kernels[i].values[j]);
         }
         free(data_tables->kernels[i].values);
+        free(data_tables->kernels[i].spt_values);
     }
     free(data_tables->kernels);
 
