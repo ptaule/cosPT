@@ -26,13 +26,13 @@ static inline vfloat SPT_term(
         short int args_r[],
         short int sum_l,
         short int sum_r,
-        const table_pointers_t* data_tables
+        const table_ptrs_t* tables
         )
 {
     short int n = m_l + m_r;
 
-    short int index_l = compute_SPT_kernels(args_l,m_l,data_tables);
-    short int index_r = compute_SPT_kernels(args_r,m_r,data_tables);
+    short int index_l = compute_SPT_kernels(args_l,m_l,tables);
+    short int index_r = compute_SPT_kernels(args_r,m_r,tables);
 
     short int a,b;
     switch (component) {
@@ -49,11 +49,11 @@ static inline vfloat SPT_term(
                     "not equal 0 or 1.");
     }
 
-    return data_tables->kernels[index_l].spt_values[1] *
-        (    a * matrix_get(data_tables->alpha,sum_l,sum_r)
-           * data_tables->kernels[index_r].spt_values[0]
-           + b * matrix_get(data_tables->beta, sum_l,sum_r)
-           * data_tables->kernels[index_r].spt_values[1]
+    return tables->kernels[index_l].spt_values[1] *
+        (    a * matrix_get(tables->alpha,sum_l,sum_r)
+           * tables->kernels[index_r].spt_values[0]
+           + b * matrix_get(tables->beta, sum_l,sum_r)
+           * tables->kernels[index_r].spt_values[1]
         );
 }
 
@@ -64,7 +64,7 @@ static void partial_SPT_sum(
         short int n,                 /* kernel number                                     */
         short int m,                 /* sum index in kernel recursion relation            */
         short int kernel_index,
-        const table_pointers_t* data_tables
+        const table_ptrs_t* tables
         )
 {
     vfloat kernel_values[COMPONENTS] = {0};
@@ -99,11 +99,11 @@ static void partial_SPT_sum(
             args_r[i] = arguments[gsl_combination_get(comb_r,i)];
         }
 
-        short int sum_l = sum_vectors(args_l,N_KERNEL_ARGS,data_tables->sum_table);
-        short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS,data_tables->sum_table);
+        short int sum_l = sum_vectors(args_l,N_KERNEL_ARGS,tables->sum_table);
+        short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS,tables->sum_table);
 
         for (int i = 0; i < COMPONENTS; ++i) {
-            kernel_values[i] += SPT_term(m,n-m,i,args_l,args_r,sum_l,sum_r,data_tables);
+            kernel_values[i] += SPT_term(m,n-m,i,args_l,args_r,sum_l,sum_r,tables);
         }
 
         // When m != (n - m), we may additionally compute the (n-m)-term by
@@ -112,7 +112,7 @@ static void partial_SPT_sum(
         if (m != n - m) {
             for (int i = 0; i < COMPONENTS; ++i) {
                 kernel_values[i] +=
-                    SPT_term(n-m,m,i,args_r,args_l,sum_r,sum_l,data_tables);
+                    SPT_term(n-m,m,i,args_r,args_l,sum_r,sum_l,tables);
             }
         }
     } while (gsl_combination_next(comb_l) == GSL_SUCCESS &&
@@ -127,7 +127,7 @@ static void partial_SPT_sum(
 
     // Add calculated term for each component to kernel table
     for (int i = 0; i < COMPONENTS; ++i) {
-        data_tables->kernels[kernel_index].spt_values[i]
+        tables->kernels[kernel_index].spt_values[i]
             += kernel_values[i];
     }
 
@@ -140,7 +140,7 @@ static void partial_SPT_sum(
 short int compute_SPT_kernels(
         const short int arguments[], /* kernel arguments                                    */
         short int n,                 /* order in perturbation theory expansion              */
-        const table_pointers_t* data_tables
+        const table_ptrs_t* tables
         )
 {
     // DEBUG: check that the number of non-zero arguments is in fact n
@@ -156,7 +156,7 @@ short int compute_SPT_kernels(
     short int kernel_index = kernel_index_from_arguments(arguments);
 
     // Alias pointer to kernel we are working with for convenience/readability
-    kernel_t* const kernel = &data_tables->kernels[kernel_index];
+    kernel_t* const kernel = &tables->kernels[kernel_index];
 
     // Check if the SPT kernels are already computed
     if (kernel->ic_computed) return kernel_index;
@@ -172,7 +172,7 @@ short int compute_SPT_kernels(
     // Only sum up to (including) floor(n/2), since partial_SPT_sum()
     // simultaneously computes terms m and (n-m)
     for (int m = 1; m <= n/2; ++m) {
-        partial_SPT_sum(arguments,n,m,kernel_index,data_tables);
+        partial_SPT_sum(arguments,n,m,kernel_index,tables);
     }
 
     // Divide by overall factor in SPT recursion relation

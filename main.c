@@ -19,8 +19,8 @@
 #include "include/integrand.h"
 #include "include/io.h"
 
-void init_worker(table_pointers_t* worker_mem, const int* core);
-void exit_worker(table_pointers_t* worker_mem, const int* core);
+void init_worker(table_ptrs_t* worker_mem, const int* core);
+void exit_worker(table_ptrs_t* worker_mem, const int* core);
 
 int cuba_integrand(const int *ndim, const cubareal xx[], const int *ncomp,
         cubareal ff[], void *userdata, const int *nvec, const int *core);
@@ -61,7 +61,7 @@ int main (int argc, char* argv[]) {
     };
 
     // Array of table_ptrs, one for each worker (thread)
-    table_pointers_t worker_mem[CUBA_MAXCORES];
+    table_ptrs_t worker_mem[CUBA_MAXCORES];
 
     // Initialize time steps in eta
     double eta[TIME_STEPS];
@@ -153,7 +153,7 @@ int main (int argc, char* argv[]) {
 
 
 
-void init_worker(table_pointers_t* worker_mem, const int* core) {
+void init_worker(table_ptrs_t* worker_mem, const int* core) {
     if (*core >= CUBA_MAXCORES) {
         error_verbose("Tried to start worker %d, which exceeds MAXCORES = %d.",
                 *core, CUBA_MAXCORES);
@@ -163,7 +163,7 @@ void init_worker(table_pointers_t* worker_mem, const int* core) {
 
 
 
-void exit_worker(table_pointers_t* worker_mem, const int* core) {
+void exit_worker(table_ptrs_t* worker_mem, const int* core) {
     gc_tables(&worker_mem[*core]);
 }
 
@@ -204,20 +204,20 @@ int cuba_integrand(
 #endif
 
     // tables points to memory allocated for worker number <*core>
-    table_pointers_t* data_tables = &input->worker_mem[*core];
+    table_ptrs_t* tables = &input->worker_mem[*core];
     // Set tables to zero
-    zero_initialize_tables(data_tables);
+    zero_initialize_tables(tables);
 
-    data_tables->Q_magnitudes = vars.magnitudes,
+    tables->Q_magnitudes = vars.magnitudes,
 
     // Initialize sum-, bare_scalar_products-, alpha- and beta-tables
     compute_bare_scalar_products(input->k, &vars,
-            data_tables->bare_scalar_products);
+            tables->bare_scalar_products);
     // Cast bare_scalar_products to const vfloat 2D-array
     compute_alpha_beta_tables(
-            (const vfloat (*)[])data_tables->bare_scalar_products,
-            data_tables->alpha, data_tables->beta);
+            (const vfloat (*)[])tables->bare_scalar_products,
+            tables->alpha, tables->beta);
 
-    ff[0] = jacobian * integrand(input,data_tables);
+    ff[0] = jacobian * integrand(input,tables);
     return 0;
 }

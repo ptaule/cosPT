@@ -94,39 +94,39 @@ void initialize_timesteps(double eta[], double eta_i, double eta_f) {
 
 
 
-void allocate_tables(table_pointers_t* data_tables) {
+void allocate_tables(table_ptrs_t* tables) {
     // Alpha/beta matrices
-    data_tables->alpha = matrix_alloc(N_CONFIGS,N_CONFIGS);
-    data_tables->beta  = matrix_alloc(N_CONFIGS,N_CONFIGS);
+    tables->alpha = matrix_alloc(N_CONFIGS,N_CONFIGS);
+    tables->beta  = matrix_alloc(N_CONFIGS,N_CONFIGS);
 
     // Kernels (calloc also initializes values to 0)
-    data_tables->kernels = (kernel_t*)calloc(N_KERNELS, sizeof(kernel_t));
+    tables->kernels = (kernel_t*)calloc(N_KERNELS, sizeof(kernel_t));
 
     // Allocate time/component dimensions of kernels
     for (int i = 0; i < N_KERNELS; ++i) {
-        data_tables->kernels[i].values = (double**)calloc(TIME_STEPS, sizeof(double*));
-        data_tables->kernels[i].spt_values = (vfloat*)calloc(COMPONENTS, sizeof(vfloat));
+        tables->kernels[i].values = (double**)calloc(TIME_STEPS, sizeof(double*));
+        tables->kernels[i].spt_values = (vfloat*)calloc(COMPONENTS, sizeof(vfloat));
         for (int j = 0; j < TIME_STEPS; ++j) {
-            data_tables->kernels[i].values[j] = (double*)calloc(COMPONENTS, sizeof(double));
+            tables->kernels[i].values[j] = (double*)calloc(COMPONENTS, sizeof(double));
         }
     }
 }
 
 
 
-void zero_initialize_tables(table_pointers_t* data_tables) {
+void zero_initialize_tables(table_ptrs_t* tables) {
     // Reset kernel table elements to default value
     for (int i = 0; i < N_KERNELS; ++i) {
-        data_tables->kernels[i].ic_computed = false;
-        data_tables->kernels[i].evolved     = false;
+        tables->kernels[i].ic_computed = false;
+        tables->kernels[i].evolved     = false;
 
         for (int j = 0; j < COMPONENTS; ++j) {
-            data_tables->kernels[i].spt_values[j] = 0.0;
+            tables->kernels[i].spt_values[j] = 0.0;
         }
 
         for (int j = 0; j < TIME_STEPS; ++j) {
             for (int k = 0; k < COMPONENTS; ++k) {
-                data_tables->kernels[i].values[j][k] = 0.0;
+                tables->kernels[i].values[j][k] = 0.0;
             }
         }
     }
@@ -134,20 +134,20 @@ void zero_initialize_tables(table_pointers_t* data_tables) {
 
 
 
-void gc_tables(table_pointers_t* data_tables) {
+void gc_tables(table_ptrs_t* tables) {
     // Free allocated memory for kernels
     for (int i = 0; i < N_KERNELS; ++i) {
         for (int j = 0; j < TIME_STEPS; ++j) {
-            free(data_tables->kernels[i].values[j]);
+            free(tables->kernels[i].values[j]);
         }
-        free(data_tables->kernels[i].values);
-        free(data_tables->kernels[i].spt_values);
+        free(tables->kernels[i].values);
+        free(tables->kernels[i].spt_values);
     }
-    free(data_tables->kernels);
+    free(tables->kernels);
 
     // Free allocated memory for alpha/beta matrices
-    matrix_free(data_tables->alpha);
-    matrix_free(data_tables->beta);
+    matrix_free(tables->alpha);
+    matrix_free(tables->beta);
 }
 
 

@@ -29,15 +29,15 @@ static void vertex(
         short int sum_r,
         double (*partial_rhs_sum)[TIME_STEPS],
         const evolution_params_t* params,
-        const table_pointers_t* data_tables
+        const table_ptrs_t* tables
         )
 {
-    vfloat alpha_lr = matrix_get(data_tables->alpha,sum_l,sum_r);
-    vfloat alpha_rl = matrix_get(data_tables->alpha,sum_r,sum_l);
-    vfloat beta     = matrix_get(data_tables->beta ,sum_l,sum_r);
+    vfloat alpha_lr = matrix_get(tables->alpha,sum_l,sum_r);
+    vfloat alpha_rl = matrix_get(tables->alpha,sum_r,sum_l);
+    vfloat beta     = matrix_get(tables->beta ,sum_l,sum_r);
 
-    short int index_l = kernel_evolution(args_l, -1, m_l, params, data_tables);
-    short int index_r = kernel_evolution(args_r, -1, m_r, params, data_tables);
+    short int index_l = kernel_evolution(args_l, -1, m_l, params, tables);
+    short int index_r = kernel_evolution(args_r, -1, m_r, params, tables);
 
     short int a,b,c;
 
@@ -50,21 +50,21 @@ static void vertex(
                 a = 2, b = 3, c = 2;
                 // gamma_223 = alpha_lr
                 partial_rhs_sum[a][i] += 0.5 * alpha_lr
-                    * data_tables->kernels[index_l].values[i][b]
-                    * data_tables->kernels[index_r].values[i][c];
+                    * tables->kernels[index_l].values[i][b]
+                    * tables->kernels[index_r].values[i][c];
 
                 b = 2, c = 3;
                 // gamma_232 = alpha_rl
                 partial_rhs_sum[a][i] += 0.5 * alpha_rl
-                    * data_tables->kernels[index_l].values[i][b]
-                    * data_tables->kernels[index_r].values[i][c];
+                    * tables->kernels[index_l].values[i][b]
+                    * tables->kernels[index_r].values[i][c];
 
                 // Component a = 3, one contributing term
                 a = 3, b = 3, c = 3;
                 // gamma_444 = beta
                 partial_rhs_sum[a][i] += beta
-                    * data_tables->kernels[index_l].values[i][b]
-                    * data_tables->kernels[index_r].values[i][c];
+                    * tables->kernels[index_l].values[i][b]
+                    * tables->kernels[index_r].values[i][c];
 
             // Use switch fallthrough; for case 4 also code in case 2 should be
             // executed
@@ -74,21 +74,21 @@ static void vertex(
                 a = 0, b = 1, c = 0;
                 // gamma_001 = alpha_lr
                 partial_rhs_sum[a][i] += 0.5 * alpha_lr
-                    * data_tables->kernels[index_l].values[i][b]
-                    * data_tables->kernels[index_r].values[i][c];
+                    * tables->kernels[index_l].values[i][b]
+                    * tables->kernels[index_r].values[i][c];
 
                 b = 0, c = 1;
                 // gamma_010 = alpha_rl
                 partial_rhs_sum[a][i] += 0.5 * alpha_rl
-                    * data_tables->kernels[index_l].values[i][b]
-                    * data_tables->kernels[index_r].values[i][c];
+                    * tables->kernels[index_l].values[i][b]
+                    * tables->kernels[index_r].values[i][c];
 
                 // Component a = 1, one contributing term
                 a = 1, b = 1, c = 1;
                 // gamma_111 = beta
                 partial_rhs_sum[a][i] += beta
-                    * data_tables->kernels[index_l].values[i][b]
-                    * data_tables->kernels[index_r].values[i][c];
+                    * tables->kernels[index_l].values[i][b]
+                    * tables->kernels[index_r].values[i][c];
 
                 break;
             default:
@@ -103,7 +103,7 @@ void compute_RHS_sum(
         const short int arguments[],
         short int n,
         const evolution_params_t* params,
-        const table_pointers_t* data_tables,
+        const table_ptrs_t* tables,
         gsl_spline* rhs_splines[],   /* out, interpolated RHS sum for each component      */
         gsl_interp_accel* rhs_accs[] /* out, gsl_interpolation accelerated lookup objects */
         )
@@ -149,18 +149,18 @@ void compute_RHS_sum(
                 args_r[i] = arguments[gsl_combination_get(comb_r,i)];
             }
 
-            short int sum_l = sum_vectors(args_l,N_KERNEL_ARGS,data_tables->sum_table);
-            short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS,data_tables->sum_table);
+            short int sum_l = sum_vectors(args_l,N_KERNEL_ARGS,tables->sum_table);
+            short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS,tables->sum_table);
 
             vertex(m, n-m, args_l, args_r, sum_l, sum_r, partial_rhs_sum,
-                    params, data_tables);
+                    params, tables);
 
             // When m != (n - m), we may additionally compute the (n-m)-term by
             // swapping args_l, sum_l, m with args_r, sum_r and (n-m). Then
             // compute_RHS_sum() only needs to sum up to (including) floor(n/2).
             if (m != n - m) {
                 vertex(n-m, m, args_r, args_l, sum_r, sum_l, partial_rhs_sum,
-                        params, data_tables);
+                        params, tables);
             }
         } while (gsl_combination_next(comb_l) == GSL_SUCCESS &&
                 gsl_combination_prev(comb_r) == GSL_SUCCESS
@@ -182,7 +182,7 @@ void compute_RHS_sum(
     for (int i = 0; i < COMPONENTS; ++i) {
         rhs_accs[i] = gsl_interp_accel_alloc();
         rhs_splines[i] = gsl_spline_alloc(INTERPOL_TYPE, TIME_STEPS);
-        gsl_spline_init(rhs_splines[i], data_tables->eta, rhs_sum[i],
+        gsl_spline_init(rhs_splines[i], tables->eta, rhs_sum[i],
                 TIME_STEPS);
     }
 }
@@ -260,7 +260,7 @@ short int kernel_evolution(
         short int kernel_index,             /* -1 indicates not known */
         short int n,
         const evolution_params_t* params,
-        const table_pointers_t* data_tables
+        const table_ptrs_t* tables
         )
 {
 #if DEBUG >= 1
@@ -290,7 +290,7 @@ short int kernel_evolution(
 
     // Alias pointer to kernel (TIME_STEPS x COMPONENTS table) we are working
     // with for convenience/readability
-    kernel_t* const kernel = &data_tables->kernels[kernel_index];
+    kernel_t* const kernel = &tables->kernels[kernel_index];
 
     // If the kernel is already computed, return kernel_index
     if (kernel->evolved) return kernel_index;
@@ -305,7 +305,7 @@ short int kernel_evolution(
     }
 
     // Compute RHS sum in evolution equation
-    compute_RHS_sum(arguments, n, params, data_tables, rhs_splines, rhs_accs);
+    compute_RHS_sum(arguments, n, params, tables, rhs_splines, rhs_accs);
 
     // Set up ODE input and system
     ode_input_t input = {
@@ -328,7 +328,7 @@ short int kernel_evolution(
         // First copy previous values (i-1) to y
         memcpy(y, kernel->values[i-1], COMPONENTS * sizeof(double));
         // Then evolve y to time i
-        int status = gsl_odeiv2_driver_apply(driver, &eta_current, data_tables->eta[i], y);
+        int status = gsl_odeiv2_driver_apply(driver, &eta_current, tables->eta[i], y);
 
         if (status != GSL_SUCCESS) {
             warning_verbose("GLS ODE driver gave error value = %d.", status);

@@ -226,7 +226,7 @@ void print_evolved_kernel(
         const short int arguments[],
         short int index,
         short int n,
-        const table_pointers_t* data_tables
+        const table_ptrs_t* tables
         )
 {
     printf("F%d",n);
@@ -234,7 +234,7 @@ void print_evolved_kernel(
     printf("\n");
     for (int i = 0; i < TIME_STEPS; ++i) {
         for (int j = 0; j < COMPONENTS; ++j) {
-            printf("%.5e\t",data_tables->kernels[index].values[i][j]);
+            printf("%.5e\t",tables->kernels[index].values[i][j]);
         }
         printf("\n");
     }
@@ -247,7 +247,7 @@ static vfloat integrand_term(
         const short int arguments_r[],
         const diagram_t* diagram,
         const integration_input_t* input,
-        const table_pointers_t* data_tables
+        const table_ptrs_t* tables
         )
 {
     short int m = diagram->m;
@@ -261,12 +261,12 @@ static vfloat integrand_term(
     if (l == 0 && r == 0 && input->component_a == input->component_b) {
 
         // First, compute SPT initial condition
-        short int index = compute_SPT_kernels(arguments_l, m, data_tables);
+        short int index = compute_SPT_kernels(arguments_l, m, tables);
         // Then, evolve kernels
         kernel_evolution(arguments_l, index, m, input->params,
-                data_tables);
+                tables);
 
-        result *= pow(data_tables->kernels[index].values[TIME_STEPS - 1][input->component_a] ,2);
+        result *= pow(tables->kernels[index].values[TIME_STEPS - 1][input->component_a] ,2);
     // In DEBUG-mode, check that kernel arguments in fact are equal in this
     // case
 #if DEBUG >= 1
@@ -278,17 +278,17 @@ static vfloat integrand_term(
     }
     else {
         // First, compute SPT initial condition
-        short int index_l = compute_SPT_kernels(arguments_l, 2*l + m, data_tables);
-        short int index_r = compute_SPT_kernels(arguments_r, 2*r + m, data_tables);
+        short int index_l = compute_SPT_kernels(arguments_l, 2*l + m, tables);
+        short int index_r = compute_SPT_kernels(arguments_r, 2*r + m, tables);
         // Then, evolve kernels
         kernel_evolution(arguments_l, index_l, 2*l + m, input->params,
-                data_tables);
+                tables);
         kernel_evolution(arguments_r, index_r, 2*r + m, input->params,
-                data_tables);
+                tables);
 
-        result *= data_tables->
+        result *= tables->
                 kernels[index_l].values[TIME_STEPS - 1][input->component_a]
-            * data_tables->
+            * tables->
                 kernels[index_r].values[TIME_STEPS - 1][input->component_b];
     }
     return result;
@@ -300,7 +300,7 @@ vfloat sign_flip_symmetrization(
         const short int rearrangement[],
         const diagram_t* diagram,
         const integration_input_t* input,
-        const table_pointers_t* data_tables
+        const table_ptrs_t* tables
         )
 {
     short int m = diagram->m;
@@ -331,9 +331,9 @@ vfloat sign_flip_symmetrization(
         print_integrand_info(diagram, arguments_l, arguments_r);
 #endif
         vfloat k1 = compute_k1(diagram->m, rearrangement, signs,
-                (const vfloat (*)[])data_tables->bare_scalar_products);
+                (const vfloat (*)[])tables->bare_scalar_products);
         int h_theta = heaviside_theta(diagram->m, k1, rearrangement,
-                data_tables->Q_magnitudes);
+                tables->Q_magnitudes);
         if (h_theta == 0) {
 #if DEBUG >= 2
             printf("\t\t=> partial result = 0\n");
@@ -344,7 +344,7 @@ vfloat sign_flip_symmetrization(
         vfloat partial_result = h_theta
             * gsl_spline_eval(input->ps_spline, k1, input->ps_acc);
         partial_result *= integrand_term(arguments_l, arguments_r, diagram,
-                input, data_tables);
+                input, tables);
 #if DEBUG >= 2
         printf("\t\t=> partial result = " vfloat_fmt "\n",partial_result);
 #endif
@@ -358,7 +358,7 @@ vfloat sign_flip_symmetrization(
 vfloat loop_momenta_symmetrization(
         const diagram_t* diagram,
         const integration_input_t* input,
-        const table_pointers_t* data_tables
+        const table_ptrs_t* tables
         )
 {
     short int l = diagram->l;
@@ -416,7 +416,7 @@ vfloat loop_momenta_symmetrization(
                         gsl_combination_get(comb_s,gsl_combination_get(comb_r,i))];
                 }
                 result += sign_flip_symmetrization(rearrangement, diagram,
-                        input, data_tables);
+                        input, tables);
             } while (
                     gsl_combination_next(comb_l) == GSL_SUCCESS &&
                     gsl_combination_prev(comb_r) == GSL_SUCCESS
@@ -424,7 +424,7 @@ vfloat loop_momenta_symmetrization(
         }
         else {
             result += sign_flip_symmetrization(rearrangement, diagram, input,
-                    data_tables);
+                    tables);
         }
     } while (
             gsl_combination_next(comb_m) == GSL_SUCCESS &&
@@ -445,7 +445,7 @@ vfloat loop_momenta_symmetrization(
 
 vfloat integrand(
         const integration_input_t* input,
-        table_pointers_t* data_tables
+        table_ptrs_t* tables
         )
 {
     diagram_t diagrams[N_DIAGRAMS];
@@ -455,7 +455,7 @@ vfloat integrand(
     vfloat result = 0;
     for (int i = 0; i < N_DIAGRAMS; ++i) {
         vfloat diagram_result =
-            loop_momenta_symmetrization(&(diagrams[i]), input, data_tables);
+            loop_momenta_symmetrization(&(diagrams[i]), input, tables);
         // Multiply and divide by symmetrization & diagram factors
         diagram_result /= symmetrization_factor(&(diagrams[i]));
         diagram_result *= diagram_factor(&(diagrams[i]));
@@ -468,7 +468,7 @@ vfloat integrand(
     }
 
     for (int i = 0; i < LOOPS; ++i) {
-        result *= gsl_spline_eval(input->ps_spline, data_tables->Q_magnitudes[i],
+        result *= gsl_spline_eval(input->ps_spline, tables->Q_magnitudes[i],
                 input->ps_acc);
     }
 

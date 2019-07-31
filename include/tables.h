@@ -39,7 +39,7 @@ typedef struct {
     matrix_t* beta;
     kernel_t* kernels;
     const double* eta;
-} table_pointers_t;
+} table_ptrs_t;
 
 short int sum_vectors(
         const short int labels[],
@@ -51,9 +51,9 @@ void compute_sum_table(short int sum_table[][N_CONFIGS]);
 
 void initialize_timesteps(double eta[], double eta_i, double eta_f);
 
-void allocate_tables(table_pointers_t* data_tables);
-void zero_initialize_tables(table_pointers_t* data_tables);
-void gc_tables(table_pointers_t* data_tables);
+void allocate_tables(table_ptrs_t* tables);
+void zero_initialize_tables(table_ptrs_t* tables);
+void gc_tables(table_ptrs_t* tables);
 
 void compute_bare_scalar_products(
         vfloat k,

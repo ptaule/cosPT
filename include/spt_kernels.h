@@ -14,7 +14,7 @@
 short int compute_SPT_kernels(
         const short int arguments[],
         short int n,
-        const table_pointers_t* data_tables
+        const table_ptrs_t* tables
         );
 
 
