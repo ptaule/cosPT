@@ -5,8 +5,8 @@
    Copyright (c) 2019 Petter Taule. All rights reserved.
 */
 
-#ifndef KERNELS_H
-#define KERNELS_H
+#ifndef TABLES_H
+#define TABLES_H
 
 #include <stdbool.h>
 #include "constants.h"
@@ -75,4 +75,4 @@ inline short int combined_kernel_index(short int argument_index, short int compo
     return argument_index * COMPONENTS + component;
 }
 
-#endif /* ifndef KERNELS_H */
+#endif /* ifndef TABLES_H */
