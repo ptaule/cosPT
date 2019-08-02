@@ -108,7 +108,7 @@ int main () {
         power_spectrum[i] = (double)result[0];
         errors[i]         = (double)error[0];
 
-        printf("k  = %f, result = %e, error = %f, prob = %f\n",
+        printf("k  = %f, result = %e, error = %e, prob = %f\n",
                 k, (double)*result, (double)error[0], (double)prob[0]);
     }
 
