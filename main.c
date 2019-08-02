@@ -76,8 +76,9 @@ int main () {
     //   obtain [-1,1]
     // - Assuming Q1 > Q2 > ..., hence multiply result by LOOPS factorial
     // - Phi integration of first loop momenta gives a factor 2pi
-    // - Conventionally divide by (2pi)^3
-    vfloat overall_factor = pow(2,LOOPS) * gsl_sf_fact(LOOPS) * TWOPI;
+    // - Conventionally divide by ((2pi)^3)^(LOOPS)
+    vfloat overall_factor =
+        pow(2,LOOPS) * gsl_sf_fact(LOOPS) * pow(TWOPI, 1 - 3*LOOPS);
 
     int nregions, neval, fail;
     cubareal result[1], error[1], prob[1];
