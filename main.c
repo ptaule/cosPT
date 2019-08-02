@@ -50,6 +50,11 @@ int main (int argc, char* argv[]) {
     printf("Reading input zeta function from %s.\n",input_zeta_file);
     printf("Results will be written to %s.\n",output_ps_file);
 
+#if N_CORES >= 0
+    cubacores(N_CORES, 10000);
+    printf("Using %d cores.\n",N_CORES);
+#endif
+
     gsl_interp_accel *ps_acc, *zeta_acc;
     gsl_spline *ps_spline, *zeta_spline;
 

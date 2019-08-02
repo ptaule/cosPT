@@ -49,6 +49,14 @@
 #define CUBA_MAXEVAL 1e6
 #endif
 
+// User may set number of cores to use through N_CORES (if not set,
+// CUBA spawns workers depending on available cores)
+#ifndef N_CORES
+#define N_CORES -1
+#endif
+
+// Maximum number of cores (a value smaller than N_CORES will exit
+// the program unsuccessfully)
 #define CUBA_MAXCORES 10
 
 #define CUBA_STATEFILE NULL
