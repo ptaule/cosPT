@@ -20,70 +20,10 @@
 #include "include/diagrams.h"
 #include "include/integrand.h"
 
-
-void init_worker(table_ptrs_t* worker_mem, const int* core) {
-    allocate_tables(&worker_mem[*core]);
-}
-
-
-
-void exit_worker(table_ptrs_t* worker_mem, const int* core) {
-    gc_tables(&worker_mem[*core]);
-}
-
-
-
-int cuba_integrand(
-        __attribute__((unused)) const int *ndim,
-        const cubareal xx[],
-        __attribute__((unused)) const int *ncomp,
-        cubareal ff[],
-        void *userdata,
-        __attribute__((unused)) const int *nvec,
-        const int *core
-        )
-{
-    integration_input_t* input = (integration_input_t*)userdata;
-    integration_variables_t vars;
-
-    vfloat ratio = (vfloat)Q_MAX/Q_MIN;
-
-    vfloat jacobian = 0.0;
-#if LOOPS == 1
-    vars.magnitudes[0] = Q_MIN * pow(ratio,xx[0]);
-    vars.cos_theta[0] = xx[1];
-    jacobian = log(ratio) * pow(vars.magnitudes[0],3);
-#elif LOOPS == 2
-    vars.magnitudes[0] = Q_MIN * pow(ratio,xx[0]);
-    vars.magnitudes[1] = Q_MIN * pow(ratio,xx[0] * xx[1]);
-    vars.cos_theta[0] = xx[2];
-    vars.cos_theta[1] = xx[3];
-    vars.phi[0] = xx[4] * TWOPI;
-    jacobian = TWOPI * xx[0]
-        * pow(log(ratio),2)
-        * pow(vars.magnitudes[0],3)
-        * pow(vars.magnitudes[1],3);
-#else
-    warning_verbose("Monte-carlo integration not implemented for LOOPS = %d.",LOOPS);
-#endif
-
-    // tables points to memory allocated for worker number <*core>
-    table_ptrs_t* tables = &input->worker_mem[*core];
-    // Set tables to zero
-    zero_initialize_tables(tables);
-
-    tables->Q_magnitudes = vars.magnitudes,
-
-    // Initialize sum-, bare_scalar_products-, alpha- and beta-tables
-    compute_bare_scalar_products(input->k, &vars,
-            tables->bare_scalar_products);
-    // Cast bare_scalar_products to const vfloat 2D-array
-    compute_alpha_beta_tables((const vfloat (*)[])tables->bare_scalar_products,
-            tables->alpha, tables->beta);
-
-    ff[0] = jacobian * integrand(input,tables);
-    return 0;
-}
+int cuba_integrand(const int *ndim, const cubareal xx[], const int *ncomp,
+        cubareal ff[], void *userdata, const int *nvec, const int *core);
+void init_worker(table_ptrs_t* worker_mem, const int* core);
+void exit_worker(table_ptrs_t* worker_mem, const int* core);
 
 
 
@@ -101,14 +41,12 @@ int main () {
 
     read_PS(input_ps_file,&acc,&spline);
 
-    cubacores(CUBA_NCORES,10000);
-
-    table_ptrs_t worker_mem[CUBA_NCORES];
+    table_ptrs_t worker_mem[CUBA_MAXCORES];
 
     short int sum_table[N_CONFIGS][N_CONFIGS];
     compute_sum_table(sum_table);
 
-    for (int i = 0; i < CUBA_NCORES; ++i) {
+    for (int i = 0; i < CUBA_MAXCORES; ++i) {
         worker_mem[i].sum_table = (const short int (*)[])sum_table;
     }
 
@@ -179,5 +117,87 @@ int main () {
     gsl_spline_free(spline);
     gsl_interp_accel_free(acc);
 
+    return 0;
+}
+
+
+
+void init_worker(table_ptrs_t* worker_mem, const int* core) {
+    // Master core has number 2^15 = 32768
+    if (*core == 32768) {
+        allocate_tables(&worker_mem[0]);
+        return;
+    }
+    if (*core + 1 >= CUBA_MAXCORES) {
+        error_verbose("Tried to start worker %d (in addition to the master "
+                "fork), which exceeds MAXCORES = %d.", *core + 1, CUBA_MAXCORES);
+    }
+    allocate_tables(&worker_mem[*core + 1]);
+}
+
+
+
+void exit_worker(table_ptrs_t* worker_mem, const int* core) {
+    // Master core has number 2^15 = 32768
+    if (*core == 32768) {
+        gc_tables(&worker_mem[0]);
+    }
+    else {
+        gc_tables(&worker_mem[*core + 1]);
+    }
+}
+
+
+
+int cuba_integrand(
+        __attribute__((unused)) const int *ndim,
+        const cubareal xx[],
+        __attribute__((unused)) const int *ncomp,
+        cubareal ff[],
+        void *userdata,
+        __attribute__((unused)) const int *nvec,
+        const int *core
+        )
+{
+    integration_input_t* input = (integration_input_t*)userdata;
+    integration_variables_t vars;
+
+    vfloat ratio = (vfloat)Q_MAX/Q_MIN;
+
+    vfloat jacobian = 0.0;
+#if LOOPS == 1
+    vars.magnitudes[0] = Q_MIN * pow(ratio,xx[0]);
+    vars.cos_theta[0] = xx[1];
+    jacobian = log(ratio) * pow(vars.magnitudes[0],3);
+#elif LOOPS == 2
+    vars.magnitudes[0] = Q_MIN * pow(ratio,xx[0]);
+    vars.magnitudes[1] = Q_MIN * pow(ratio,xx[0] * xx[1]);
+    vars.cos_theta[0] = xx[2];
+    vars.cos_theta[1] = xx[3];
+    vars.phi[0] = xx[4] * TWOPI;
+    jacobian = TWOPI * xx[0]
+        * pow(log(ratio),2)
+        * pow(vars.magnitudes[0],3)
+        * pow(vars.magnitudes[1],3);
+#else
+    warning_verbose("Monte-carlo integration not implemented for LOOPS = %d.",LOOPS);
+#endif
+
+    // tables points to memory allocated for worker number <*core + 1>
+    // (index 0 is reserved for master(
+    table_ptrs_t* tables = &input->worker_mem[*core + 1];
+    // Set tables to zero
+    zero_initialize_tables(tables);
+
+    tables->Q_magnitudes = vars.magnitudes,
+
+    // Initialize sum-, bare_scalar_products-, alpha- and beta-tables
+    compute_bare_scalar_products(input->k, &vars,
+            tables->bare_scalar_products);
+    // Cast bare_scalar_products to const vfloat 2D-array
+    compute_alpha_beta_tables((const vfloat (*)[])tables->bare_scalar_products,
+            tables->alpha, tables->beta);
+
+    ff[0] = jacobian * integrand(input,tables);
     return 0;
 }
