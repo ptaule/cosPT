@@ -163,17 +163,28 @@ int main (int argc, char* argv[]) {
 
 
 void init_worker(table_ptrs_t* worker_mem, const int* core) {
-    if (*core >= CUBA_MAXCORES) {
-        error_verbose("Tried to start worker %d, which exceeds MAXCORES = %d.",
-                *core, CUBA_MAXCORES);
+    // Master core has number 2^15 = 32768
+    if (*core == 32768) {
+        allocate_tables(&worker_mem[0]);
+        return;
     }
-    allocate_tables(&worker_mem[*core]);
+    if (*core + 1 >= CUBA_MAXCORES) {
+        error_verbose("Tried to start worker %d (in addition to the master "
+                "fork), which exceeds MAXCORES = %d.", *core + 1, CUBA_MAXCORES);
+    }
+    allocate_tables(&worker_mem[*core + 1]);
 }
 
 
 
 void exit_worker(table_ptrs_t* worker_mem, const int* core) {
-    gc_tables(&worker_mem[*core]);
+    // Master core has number 2^15 = 32768
+    if (*core == 32768) {
+        gc_tables(&worker_mem[0]);
+    }
+    else {
+        gc_tables(&worker_mem[*core + 1]);
+    }
 }
 
 
@@ -212,8 +223,9 @@ int cuba_integrand(
     warning_verbose("Monte-carlo integration not implemented for LOOPS = %d.",LOOPS);
 #endif
 
-    // tables points to memory allocated for worker number <*core>
-    table_ptrs_t* tables = &input->worker_mem[*core];
+    // tables points to memory allocated for worker number <*core + 1>
+    // (index 0 is reserved for master(
+    table_ptrs_t* tables = &input->worker_mem[*core + 1];
     // Set tables to zero
     zero_initialize_tables(tables);
 
