@@ -34,7 +34,10 @@
 #define CUBA_LAST 4
 #define CUBA_SEED 0
 #define CUBA_MINEVAL 0
+
+#ifndef CUBA_MAXEVAL
 #define CUBA_MAXEVAL 1e6
+#endif
 
 // User may set number of cores to use through N_CORES (if not set,
 // CUBA spawns workers depending on available cores)
