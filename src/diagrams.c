@@ -370,9 +370,9 @@ void print_diagram(const diagram_t* diagram) {
     for (int a = 0; a < diagram->n_rearrangements; ++a) {
         for (int b = 0; b < diagram->n_sign_configs; ++b) {
             printf("\t");
-            print_labels(diagram->argument_configs_l[a][b], N_CONFIGS);
+            print_labels(diagram->argument_configs_l[a][b], N_KERNEL_ARGS);
             printf("\t");
-            print_labels(diagram->argument_configs_r[a][b], N_CONFIGS);
+            print_labels(diagram->argument_configs_r[a][b], N_KERNEL_ARGS);
             printf("\n");
         }
     }

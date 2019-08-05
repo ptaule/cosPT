@@ -19,6 +19,50 @@
 #include "../include/integrand.h"
 
 
+// For debuggin purposes
+__attribute__((unused))
+void print_integrand(
+        short int m,
+        short int l,
+        short int r,
+        const short int args_l[],
+        const short int args_r[]
+        )
+{
+    printf(ANSI_COLOR_MAGENTA "(m,l,r) = (%d,%d,%d)\n" ANSI_COLOR_BLUE
+            ,m, l, r);
+    printf("\t");
+    printf("F%d",2*l + m);
+    print_labels(args_l, N_KERNEL_ARGS);
+    printf("\t");
+    printf("F%d",2*r + m);
+    print_labels(args_r, N_KERNEL_ARGS);
+    printf(ANSI_COLOR_RESET "\n");
+}
+
+
+
+// For debuggin purposes
+__attribute__((unused))
+void print_evolved_kernel(
+        const short int arguments[],
+        short int index,
+        short int n,
+        const table_ptrs_t* tables
+        )
+{
+    printf("F%d",n);
+    print_labels(arguments, N_KERNEL_ARGS);
+    printf("\n");
+    for (int i = 0; i < TIME_STEPS; ++i) {
+        for (int j = 0; j < COMPONENTS; ++j) {
+            printf("%.5e\t",tables->kernels[index].values[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+
 
 static vfloat compute_k1(
         short int m,
@@ -76,28 +120,6 @@ inline static int heaviside_theta(
 
 
 
-// For debuggin purposes
-__attribute__((unused))
-void print_evolved_kernel(
-        const short int arguments[],
-        short int index,
-        short int n,
-        const table_ptrs_t* tables
-        )
-{
-    printf("F%d",n);
-    print_labels(arguments, N_KERNEL_ARGS);
-    printf("\n");
-    for (int i = 0; i < TIME_STEPS; ++i) {
-        for (int j = 0; j < COMPONENTS; ++j) {
-            printf("%.5e\t",tables->kernels[index].values[i][j]);
-        }
-        printf("\n");
-    }
-}
-
-
-
 static vfloat integrand_term(
         short int diagram_index,
         short int rearrangement_index,
@@ -125,7 +147,7 @@ static vfloat integrand_term(
         input->diagrams[diagram_index].kernel_indices_r[rearrangement_index][sign_config_index];
 
 #if DEBUG >= 2
-    print_integrand_info(m,l,r,arguments_l, arguments_r);
+    print_integrand(m,l,r,arguments_l, arguments_r);
 #endif
 
     vfloat k1 = compute_k1(m, rearrangement, signs,
