@@ -50,10 +50,6 @@
 #define N_CORES -1
 #endif
 
-// Maximum number of cores (a value smaller than N_CORES will exit
-// the program unsuccessfully)
-#define CUBA_MAXCORES 10
-
 #define CUBA_SPIN NULL
 #define CUBA_NNEW 1000
 #define CUBA_NMIN 2

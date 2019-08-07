@@ -21,9 +21,10 @@
 #include "include/io.h"
 #include "include/diagrams.h"
 #include "include/integrand.h"
+#include "include/worker_mem.h"
 
-void init_worker(table_ptrs_t* worker_mem, const int* core);
-void exit_worker(table_ptrs_t* worker_mem, const int* core);
+void init_worker(worker_mem_t* worker_mem, const int* core);
+void exit_worker(worker_mem_t* worker_mem, const int* core);
 
 int cuba_integrand(const int *ndim, const cubareal xx[], const int *ncomp,
         cubareal ff[], void *userdata, const int *nvec, const int *core);
@@ -85,9 +86,6 @@ int main (int argc, char* argv[]) {
         .omega = gsl_matrix_alloc(COMPONENTS, COMPONENTS)
     };
 
-    // Array of table_ptrs, one for each worker (thread)
-    table_ptrs_t worker_mem[CUBA_MAXCORES];
-
     // Initialize time steps in eta
     double eta[TIME_STEPS];
     initialize_timesteps(eta, ETA_I, ETA_F);
@@ -95,14 +93,15 @@ int main (int argc, char* argv[]) {
     // Sum table can be computed right away
     short int sum_table[N_CONFIGS][N_CONFIGS];
     compute_sum_table(sum_table);
-    for (int i = 0; i < CUBA_MAXCORES; ++i) {
-        worker_mem[i].sum_table = (const short int (*)[])sum_table;
-        worker_mem[i].eta = eta;
-    }
+
+    // Array of table_ptrs, one for each worker (thread) Allocate initially for
+    // 10 workers, if more processes are forked, this array is reallocated
+    worker_mem_t worker_mem;
+    init_worker_mem(&worker_mem, 1, (const short int (*)[])sum_table, eta);
 
     // Set routines to be run before process forking (new worker)
-    cubainit(init_worker, worker_mem);
-    cubaexit(exit_worker, worker_mem);
+    cubainit(init_worker, &worker_mem);
+    cubaexit(exit_worker, &worker_mem);
 
     // Initialize diagrams to compute at this order in PT
     diagram_t diagrams[N_DIAGRAMS];
@@ -116,7 +115,7 @@ int main (int argc, char* argv[]) {
         .ps_spline = ps_spline,
         .diagrams = diagrams,
         .params = &params,
-        .worker_mem = worker_mem
+        .worker_mem = &worker_mem
     };
 
     double* const wavenumbers    = (double*)calloc(1, sizeof(double));
@@ -159,9 +158,11 @@ int main (int argc, char* argv[]) {
             k, (double)*result, (double)error[0], (double)prob[0],
             difftime(end,beginning));
 
-    write_PS(output_ps_file, 1, wavenumbers, power_spectrum, errors);
+    /* write_PS(output_ps_file, 1, wavenumbers, power_spectrum, errors); */
 
     diagrams_gc(diagrams);
+
+    worker_mem_gc(&worker_mem);
 
     free(wavenumbers);
     free(power_spectrum);
@@ -179,29 +180,38 @@ int main (int argc, char* argv[]) {
 
 
 
-void init_worker(table_ptrs_t* worker_mem, const int* core) {
+void init_worker(worker_mem_t* worker_mem, const int* core) {
+    size_t core_num;
     // Master core has number 2^15 = 32768
     if (*core == 32768) {
-        allocate_tables(&worker_mem[0]);
-        return;
+        core_num = 0;
     }
-    if (*core + 1 >= CUBA_MAXCORES) {
-        error_verbose("Tried to start worker %d (in addition to the master "
-                "fork), which exceeds MAXCORES = %d.", *core + 1, CUBA_MAXCORES);
+    else {
+        core_num = (size_t)*core + 1;
     }
-    allocate_tables(&worker_mem[*core + 1]);
+
+    printf("core_num  = %li\n", core_num );
+
+    if (core_num >= worker_mem->size) {
+        resize_worker_mem(worker_mem, (core_num * 3)/2);
+    }
+
+    allocate_tables(&worker_mem->data[core_num]);
 }
 
 
 
-void exit_worker(table_ptrs_t* worker_mem, const int* core) {
+void exit_worker(worker_mem_t* worker_mem, const int* core) {
+    size_t core_num;
     // Master core has number 2^15 = 32768
     if (*core == 32768) {
-        gc_tables(&worker_mem[0]);
+        core_num = 0;
     }
     else {
-        gc_tables(&worker_mem[*core + 1]);
+        core_num = (size_t)*core + 1;
     }
+
+    gc_tables(&worker_mem->data[core_num]);
 }
 
 
@@ -241,10 +251,14 @@ int cuba_integrand(
 #endif
 
     // tables points to memory allocated for worker number <*core + 1>
-    // (index 0 is reserved for master(
-    table_ptrs_t* tables = &input->worker_mem[*core + 1];
+    // (index 0 is reserved for master)
+    table_ptrs_t* tables = &input->worker_mem->data[*core + 1];
     // Set tables to zero
     zero_initialize_tables(tables);
+
+    // Set sum_table and eta pointers from worker_mem
+    tables->sum_table = input->worker_mem->sum_table;
+    tables->eta = input->worker_mem->eta;
 
     tables->Q_magnitudes = vars.magnitudes,
 

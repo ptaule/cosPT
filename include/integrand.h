@@ -12,6 +12,7 @@
 #include "constants.h"
 #include "tables.h"
 #include "diagrams.h"
+#include "worker_mem.h"
 
 // Struct for storing overall data to be used in integration
 typedef struct {
@@ -22,7 +23,7 @@ typedef struct {
     gsl_spline* ps_spline;
     const diagram_t* const diagrams;
     const evolution_params_t* params;
-    table_ptrs_t* worker_mem;
+    worker_mem_t* worker_mem;
 } integration_input_t;
 
 int diagram_factor(const diagram_t* diagram);
