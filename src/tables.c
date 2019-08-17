@@ -97,7 +97,6 @@ void tables_allocate(tables_t* tables) {
     // Allocate time/component dimensions of kernels
     for (int i = 0; i < N_KERNELS; ++i) {
         tables->kernels[i].values = (double**)calloc(TIME_STEPS, sizeof(double*));
-        tables->kernels[i].spt_values = (vfloat*)calloc(COMPONENTS, sizeof(vfloat));
         for (int j = 0; j < TIME_STEPS; ++j) {
             tables->kernels[i].values[j] = (double*)calloc(COMPONENTS, sizeof(double));
         }
@@ -114,10 +113,6 @@ void tables_zero_initialize(tables_t* tables) {
     for (int i = 0; i < N_KERNELS; ++i) {
         tables->kernels[i].ic_computed = false;
         tables->kernels[i].evolved     = false;
-
-        for (int j = 0; j < COMPONENTS; ++j) {
-            tables->kernels[i].spt_values[j] = 0.0;
-        }
 
         for (int j = 0; j < TIME_STEPS; ++j) {
             for (int k = 0; k < COMPONENTS; ++k) {
@@ -136,7 +131,6 @@ void tables_gc(tables_t* tables) {
             free(tables->kernels[i].values[j]);
         }
         free(tables->kernels[i].values);
-        free(tables->kernels[i].spt_values);
     }
 }
 

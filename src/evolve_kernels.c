@@ -299,11 +299,6 @@ short int kernel_evolution(
     gsl_spline*       rhs_splines[COMPONENTS];
     gsl_interp_accel* rhs_accs   [COMPONENTS];
 
-    // Copy ICs from SPT kernels
-    for (int i = 0; i < COMPONENTS; ++i) {
-        kernel->values[0][i] = (double)kernel->spt_values[i];
-    }
-
     // Compute RHS sum in evolution equation
     compute_RHS_sum(arguments, n, params, tables, rhs_splines, rhs_accs);
 

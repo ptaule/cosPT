@@ -50,9 +50,9 @@ static inline vfloat SPT_term(
 
     return tables->kernels[index_l].spt_values[1] *
         (    a * tables->alpha[sum_l][sum_r]
-           * tables->kernels[index_r].spt_values[0]
+           * tables->kernels[index_r].values[0][0]
            + b * tables->beta[sum_l][sum_r]
-           * tables->kernels[index_r].spt_values[1]
+           * tables->kernels[index_r].values[0][1]
         );
 }
 
@@ -126,7 +126,7 @@ static void partial_SPT_sum(
 
     // Add calculated term for each component to kernel table
     for (int i = 0; i < COMPONENTS; ++i) {
-        tables->kernels[kernel_index].spt_values[i]
+        tables->kernels[kernel_index].values[0][i]
             += kernel_values[i];
     }
 
@@ -174,7 +174,7 @@ short int compute_SPT_kernels(
     // For SPT kernels, F_1 = G_1 = ... = 1
     if (n == 1) {
         for (int i = 0; i < COMPONENTS; ++i) {
-            kernel->spt_values[i] = 1.0;
+            kernel->values[0][i] = 1.0;
         }
         return kernel_index;
     }
@@ -187,7 +187,7 @@ short int compute_SPT_kernels(
 
     // Divide by overall factor in SPT recursion relation
     for (int i = 0; i < COMPONENTS; ++i) {
-        kernel->spt_values[i] /= (2*n + 3) * (n - 1);
+        kernel->values[0][i] /= (2*n + 3) * (n - 1);
     }
 
     // Update kernel table
