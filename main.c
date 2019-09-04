@@ -195,7 +195,7 @@ int cuba_integrand(
     // Set tables to zero
     zero_initialize_tables(tables);
 
-    tables->Q_magnitudes = vars.magnitudes,
+    tables->Q_magnitudes = vars.magnitudes;
 
     // Initialize sum-, bare_scalar_products-, alpha- and beta-tables
     compute_bare_scalar_products(input->k, &vars,
