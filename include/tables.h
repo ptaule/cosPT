@@ -33,13 +33,13 @@ typedef struct {
 // tables.
 typedef struct {
     const vfloat* Q_magnitudes;
-    vfloat bare_scalar_products[N_COEFFS][N_COEFFS];
     const short int (*sum_table)[N_CONFIGS];
-    matrix_t* alpha;
-    matrix_t* beta;
-    kernel_t* kernels;
     const double* eta;
-} table_ptrs_t;
+    vfloat bare_scalar_products[N_COEFFS][N_COEFFS];
+    vfloat alpha[N_CONFIGS][N_CONFIGS];
+    vfloat beta[N_CONFIGS][N_CONFIGS];
+    kernel_t kernels[N_KERNELS];
+} tables_t;
 
 short int sum_vectors(
         const short int labels[],
@@ -51,9 +51,9 @@ void compute_sum_table(short int sum_table[][N_CONFIGS]);
 
 void initialize_timesteps(double eta[], double eta_i, double eta_f);
 
-void allocate_tables(table_ptrs_t* tables);
-void zero_initialize_tables(table_ptrs_t* tables);
-void gc_tables(table_ptrs_t* tables);
+void tables_allocate(tables_t* tables);
+void tables_zero_initialize(tables_t* tables);
+void tables_gc(tables_t* tables);
 
 void compute_bare_scalar_products(
         vfloat k,
@@ -63,13 +63,13 @@ void compute_bare_scalar_products(
 
 void compute_scalar_products(
         const vfloat bare_scalar_products[][N_COEFFS],
-        matrix_t* scalar_products
+        vfloat scalar_products[][N_CONFIGS]
         );
 
 void compute_alpha_beta_tables(
         const vfloat bare_scalar_products[][N_COEFFS],
-        matrix_t* alpha,
-        matrix_t* beta
+        vfloat alpha[N_CONFIGS][N_CONFIGS],
+        vfloat beta[N_CONFIGS][N_CONFIGS]
         );
 
 short int kernel_index_from_arguments(const short int arguments[]);

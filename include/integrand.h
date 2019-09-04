@@ -22,7 +22,7 @@ typedef struct {
     gsl_spline* ps_spline;
     const diagram_t* const diagrams;
     const evolution_params_t* params;
-    table_ptrs_t* worker_mem;
+    tables_t* worker_mem;
 } integration_input_t;
 
 int diagram_factor(const diagram_t* diagram);
@@ -42,16 +42,16 @@ vfloat sign_flip_symmetrization(
         const short int rearrangement[],
         const diagram_t* diagram,
         const integration_input_t* input,
-        const table_ptrs_t* tables
+        const tables_t* tables
         );
 
 vfloat loop_momenta_symmetrization(
         const diagram_t* diagram,
         const integration_input_t* input,
-        const table_ptrs_t* tables
+        const tables_t* tables
         );
 
 vfloat integrand(const integration_input_t* data,
-        table_ptrs_t* tables);
+        tables_t* tables);
 
 #endif /* ifndef INTEGRAND_H */

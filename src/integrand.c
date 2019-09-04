@@ -48,7 +48,7 @@ void print_evolved_kernel(
         const short int arguments[],
         short int index,
         short int n,
-        const table_ptrs_t* tables
+        const tables_t* tables
         )
 {
     printf("F%d",n);
@@ -125,7 +125,7 @@ static vfloat integrand_term(
         short int rearrangement_index,
         short int sign_config_index,
         const integration_input_t* input,
-        const table_ptrs_t* tables
+        tables_t* tables
         )
 {
     // Shorthand variables/aliases for convenience
@@ -151,7 +151,7 @@ static vfloat integrand_term(
 #endif
 
     vfloat k1 = compute_k1(m, rearrangement, signs,
-            tables->bare_scalar_products);
+            (const vfloat (*)[])tables->bare_scalar_products);
     int h_theta = heaviside_theta(m, k1, rearrangement,
             tables->Q_magnitudes);
 
@@ -214,7 +214,7 @@ static vfloat integrand_term(
 
 vfloat integrand(
         const integration_input_t* input,
-        table_ptrs_t* tables
+        tables_t* tables
         )
 {
     // Loop over possible diagrams at this loop order

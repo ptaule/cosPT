@@ -29,12 +29,12 @@ static void vertex(
         short int sum_r,
         double (*partial_rhs_sum)[TIME_STEPS],
         const evolution_params_t* params,
-        const table_ptrs_t* tables
+        tables_t* tables
         )
 {
-    vfloat alpha_lr = matrix_get(tables->alpha,sum_l,sum_r);
-    vfloat alpha_rl = matrix_get(tables->alpha,sum_r,sum_l);
-    vfloat beta     = matrix_get(tables->beta ,sum_l,sum_r);
+    vfloat alpha_lr = tables->alpha[sum_l][sum_r];
+    vfloat alpha_rl = tables->alpha[sum_r][sum_l];
+    vfloat beta = tables->beta[sum_l][sum_r];
 
     short int index_l = kernel_evolution(args_l, -1, m_l, params, tables);
     short int index_r = kernel_evolution(args_r, -1, m_r, params, tables);
@@ -103,7 +103,7 @@ void compute_RHS_sum(
         const short int arguments[],
         short int n,
         const evolution_params_t* params,
-        const table_ptrs_t* tables,
+        tables_t* tables,
         gsl_spline* rhs_splines[],   /* out, interpolated RHS sum for each component      */
         gsl_interp_accel* rhs_accs[] /* out, gsl_interpolation accelerated lookup objects */
         )
@@ -260,7 +260,7 @@ short int kernel_evolution(
         short int kernel_index,             /* -1 indicates not known */
         short int n,
         const evolution_params_t* params,
-        const table_ptrs_t* tables
+        tables_t* tables
         )
 {
 #if DEBUG >= 1

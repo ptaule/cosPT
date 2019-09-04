@@ -19,7 +19,7 @@ short int kernel_evolution(
         short int index,
         short int n,
         const evolution_params_t* params,
-        const table_ptrs_t* tables
+        tables_t* tables
         );
 
 
