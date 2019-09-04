@@ -7,7 +7,6 @@
 
 
 #include <stdio.h>
-#include <gsl/gsl_matrix.h>
 #include <gsl/gsl_combination.h>
 #include <gsl/gsl_sf.h>
 
@@ -23,7 +22,7 @@ vfloat partial_SPT_sum(
         short int m,                 /* sum index in kernel recursion relation            */
         short int a,                 /* coefficient: (2n+1) for F, 2 for G                */
         short int b,                 /* coefficient: 3 for F, 2n for G                    */
-        const table_ptrs_t* tables
+        tables_t* tables
         )
 {
     vfloat value = 0;
@@ -62,9 +61,9 @@ vfloat partial_SPT_sum(
 
         // Send -1 as (unknown) kernel_index argument
         value += compute_SPT_kernel(args_l, -1, m, 1, tables) *
-            (  a * matrix_get(tables->alpha, sum_l, sum_r)
+            (  a * tables->alpha[sum_l][sum_r]
                * compute_SPT_kernel(args_r, -1, n-m, 0, tables)
-             + b * matrix_get(tables->beta, sum_l, sum_r)
+             + b * tables->beta[sum_l][sum_r]
                * compute_SPT_kernel(args_r, -1, n-m, 1, tables)
             );
 
@@ -73,9 +72,9 @@ vfloat partial_SPT_sum(
         // compute_SPT_kernel() only needs to sum up to (including) floor(n/2).
         if (m != n - m) {
             value += compute_SPT_kernel(args_r, -1, n-m, 1, tables) *
-                (  a * matrix_get(tables->alpha, sum_r, sum_l)
+                (  a * tables->alpha[sum_r][sum_l]
                    * compute_SPT_kernel(args_l, -1, m, 0, tables)
-                   + b * matrix_get(tables->beta, sum_r, sum_l)
+                   + b * tables->beta[sum_r][sum_l]
                    * compute_SPT_kernel(args_l, -1, m, 1, tables)
                 );
         }
@@ -100,7 +99,7 @@ vfloat compute_SPT_kernel(
         short int kernel_index,      /* index for kernel table (to be combined with comp.) */
         short int n,                 /* order in perturbation theory expansion            */
         short int component,         /* component to compute, NB: assumed to be 0-indexed */
-        const table_ptrs_t* tables
+        tables_t* tables
         )
 {
     // DEBUG: check that the number of non-zero arguments is in fact n, and

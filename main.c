@@ -20,10 +20,11 @@
 #include "include/diagrams.h"
 #include "include/integrand.h"
 
+void init_worker(tables_t* worker_mem, const int* core);
+void exit_worker(tables_t* worker_mem, const int* core);
+
 int cuba_integrand(const int *ndim, const cubareal xx[], const int *ncomp,
         cubareal ff[], void *userdata, const int *nvec, const int *core);
-void init_worker(table_ptrs_t* worker_mem, const int* core);
-void exit_worker(table_ptrs_t* worker_mem, const int* core);
 
 
 
@@ -46,7 +47,8 @@ int main () {
 
     read_PS(input_ps_file,&acc,&spline);
 
-    table_ptrs_t worker_mem[CUBA_MAXCORES];
+    // Array of table_ptrs, one for each worker (thread)
+    tables_t* worker_mem = (tables_t*)malloc(CUBA_MAXCORES * sizeof(tables_t));
 
     short int sum_table[N_CONFIGS][N_CONFIGS];
     compute_sum_table(sum_table);
@@ -69,7 +71,7 @@ int main () {
         .diagrams = diagrams,
         .acc = acc,
         .spline = spline,
-        .worker_mem = (table_ptrs_t*)worker_mem
+        .worker_mem = worker_mem
     };
 
     double* const wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));
@@ -116,6 +118,8 @@ int main () {
 
     diagrams_gc(diagrams);
 
+    free(worker_mem);
+
     free(wavenumbers);
     free(power_spectrum);
     free(errors);
@@ -128,30 +132,24 @@ int main () {
 
 
 
-void init_worker(table_ptrs_t* worker_mem, const int* core) {
+void init_worker(tables_t* worker_mem, const int* core) {
     // Master core has number 2^15 = 32768
     if (*core == 32768) {
-        allocate_tables(&worker_mem[0]);
         return;
     }
     if (*core + 1 >= CUBA_MAXCORES) {
         error_verbose("Tried to start worker %d (in addition to the master "
                 "fork), which exceeds MAXCORES = %d.", *core + 1, CUBA_MAXCORES);
     }
-    allocate_tables(&worker_mem[*core + 1]);
 }
 
 
 
-void exit_worker(table_ptrs_t* worker_mem, const int* core) {
-    // Master core has number 2^15 = 32768
-    if (*core == 32768) {
-        gc_tables(&worker_mem[0]);
-    }
-    else {
-        gc_tables(&worker_mem[*core + 1]);
-    }
-}
+void exit_worker(
+        __attribute__((unused)) tables_t* worker_mem,
+        __attribute__((unused)) const int* core
+        )
+{}
 
 
 
@@ -191,9 +189,9 @@ int cuba_integrand(
 
     // tables points to memory allocated for worker number <*core + 1>
     // (index 0 is reserved for master(
-    table_ptrs_t* tables = &input->worker_mem[*core + 1];
+    tables_t* tables = &input->worker_mem[*core + 1];
     // Set tables to zero
-    zero_initialize_tables(tables);
+    tables_zero_initialize(tables);
 
     tables->Q_magnitudes = vars.magnitudes;
 

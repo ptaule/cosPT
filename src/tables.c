@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include <gsl/gsl_matrix.h>
 
 #include "../include/constants.h"
 #include "../include/utilities.h"
@@ -84,34 +83,15 @@ short int sum_vectors(
 
 
 
-void allocate_tables(table_ptrs_t* tables) {
-    // Alpha/beta matrices
-    tables->alpha = matrix_alloc(N_CONFIGS,N_CONFIGS);
-    tables->beta  = matrix_alloc(N_CONFIGS,N_CONFIGS);
+void tables_zero_initialize(tables_t* tables) {
+    // bare_scalar_products, alpha, beta tables etc. are completely rewritten
+    // by their respective compute-functions, hence no need to zero initialize
 
-    // Kernels (calloc also initializes values to 0)
-    tables->kernels = (kernel_t*)calloc(COMPONENTS * N_KERNELS, sizeof(kernel_t));
-}
-
-
-
-void zero_initialize_tables(table_ptrs_t* tables) {
     // Reset kernel table elements to default value
     for (int i = 0; i < COMPONENTS * N_KERNELS; ++i) {
         tables->kernels[i].computed = false;
         tables->kernels[i].value    = 0.0;
     }
-}
-
-
-
-void gc_tables(table_ptrs_t* tables) {
-    // Free allocated memory for kernels
-    free(tables->kernels);
-
-    // Free allocated memory for RHS tables
-    matrix_free(tables->alpha);
-    matrix_free(tables->beta);
 }
 
 
@@ -175,7 +155,7 @@ void compute_bare_scalar_products(
 
 void compute_scalar_products(
         const vfloat bare_scalar_products[][N_COEFFS], /* in, bare scalar products         */
-        matrix_t* scalar_products                      /* out, scalar product combinations */
+        vfloat scalar_products[][N_CONFIGS]            /* out, scalar product combinations */
         )
 {
     short int a_coeffs[N_COEFFS];
@@ -196,11 +176,11 @@ void compute_scalar_products(
                 }
             }
             if (a == b) {
-                matrix_set(scalar_products,a,a,product_value);
+                scalar_products[a][a] = product_value;
             }
             else {
-                matrix_set(scalar_products,a,b,product_value);
-                matrix_set(scalar_products,b,a,product_value);
+                scalar_products[a][b] = product_value;
+                scalar_products[b][a] = product_value;
             }
         }
     }
@@ -210,19 +190,20 @@ void compute_scalar_products(
 
 void compute_alpha_beta_tables(
         const vfloat bare_scalar_products[][N_COEFFS], /* in, bare scalar products   */
-        matrix_t* alpha,                               /* out, matrix of alpha-func. */
-        matrix_t* beta                                 /* out, matrix of beta-func.  */
+        vfloat alpha[N_CONFIGS][N_CONFIGS],            /* out, matrix of alpha-func. */
+        vfloat beta[N_CONFIGS][N_CONFIGS]              /* out, matrix of beta-func.  */
         )
 {
-    matrix_t* scalar_products = matrix_alloc(N_CONFIGS,N_CONFIGS);
+    vfloat scalar_products[N_CONFIGS][N_CONFIGS];
+
     compute_scalar_products(bare_scalar_products,scalar_products);
 
     for (int a = 0; a < N_CONFIGS; ++a) {
         for (int b = 0; b < N_CONFIGS; ++b) {
             // Special case when a == b
             if (a == b) {
-                matrix_set(alpha,a,b,2.0);
-                matrix_set(beta,a,b,2.0);
+                alpha[a][b] = 2.0;
+                beta[a][b] = 2.0;
                 continue;
             }
 
@@ -232,13 +213,13 @@ void compute_alpha_beta_tables(
             // If the first argument is the zero-vector, alpha and beta remains 0
             // If the second argument is the zero-vector, beta remains 0
             if (a != ZERO_LABEL) {
-                vfloat product_ab = matrix_get(scalar_products,a,b);
-                vfloat product_aa = matrix_get(scalar_products,a,a);
+                vfloat product_ab = scalar_products[a][b];
+                vfloat product_aa = scalar_products[a][a];
 
                 alpha_val = 1 + product_ab/product_aa;
 
                 if (b != ZERO_LABEL) {
-                    vfloat product_bb = matrix_get(scalar_products,b,b);
+                    vfloat product_bb = scalar_products[b][b];
 
                     beta_val = product_ab / 2.0
                         * ( 1.0 / product_aa + 1.0 / product_bb
@@ -246,11 +227,10 @@ void compute_alpha_beta_tables(
                           );
                 }
             }
-            matrix_set(alpha,a,b,alpha_val);
-            matrix_set(beta,a,b,beta_val);
+            alpha[a][b] = alpha_val;
+            beta[a][b] = beta_val;
         }
     }
-    matrix_free(scalar_products);
 }
 
 
