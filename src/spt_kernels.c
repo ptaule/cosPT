@@ -7,7 +7,6 @@
 
 
 #include <stdio.h>
-#include <gsl/gsl_matrix.h>
 #include <gsl/gsl_combination.h>
 #include <gsl/gsl_sf.h>
 
@@ -26,7 +25,7 @@ static inline vfloat SPT_term(
         short int args_r[],
         short int sum_l,
         short int sum_r,
-        const table_ptrs_t* tables
+        tables_t* tables
         )
 {
     short int n = m_l + m_r;
@@ -50,9 +49,9 @@ static inline vfloat SPT_term(
     }
 
     return tables->kernels[index_l].spt_values[1] *
-        (    a * matrix_get(tables->alpha,sum_l,sum_r)
+        (    a * tables->alpha[sum_l][sum_r]
            * tables->kernels[index_r].spt_values[0]
-           + b * matrix_get(tables->beta, sum_l,sum_r)
+           + b * tables->beta[sum_l][sum_r]
            * tables->kernels[index_r].spt_values[1]
         );
 }
@@ -64,7 +63,7 @@ static void partial_SPT_sum(
         short int n,                 /* kernel number                                     */
         short int m,                 /* sum index in kernel recursion relation            */
         short int kernel_index,
-        const table_ptrs_t* tables
+        tables_t* tables
         )
 {
     vfloat kernel_values[COMPONENTS] = {0};
@@ -141,7 +140,7 @@ short int compute_SPT_kernels(
         const short int arguments[], /* kernel arguments                       */
         short int kernel_index,      /* index for kernel table                 */
         short int n,                 /* order in perturbation theory expansion */
-        const table_ptrs_t* tables
+        tables_t* tables
         )
 {
     // DEBUG: check that the number of non-zero arguments is in fact n, and
