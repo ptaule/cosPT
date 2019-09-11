@@ -84,8 +84,8 @@ short int sum_vectors(
 
 
 void initialize_timesteps(double eta[], double eta_i, double eta_f) {
-    // Linear time step:
-    double d_eta = fabs(eta_f - eta_i)/(TIME_STEPS + 1);
+    // Linear time step (including endpoints):
+    double d_eta = fabs(eta_f - eta_i)/(TIME_STEPS - 1);
     for (int i = 0; i < TIME_STEPS; ++i) {
         eta[i] = eta_i + i*d_eta;
     }
