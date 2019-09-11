@@ -32,7 +32,8 @@
 #define Q_MIN 1e-4
 #define Q_MAX 1e2
 
-// Initial/final times (eta is defined as the log of the growth rate D+)
+// Initial/final times (eta is typically defined as the log of a or the growth
+// rate D+)
 #define ETA_I -3.18
 #define ETA_F 0
 
