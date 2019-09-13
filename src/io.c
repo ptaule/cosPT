@@ -35,8 +35,8 @@ void read_and_interpolate(
         error_verbose("Could not open %s. Exiting.",filename);
     }
 
-    double* x = (double*)malloc(sizeof(double) * MAX_RESOLUTION);
-    double* y = (double*)malloc(sizeof(double) * MAX_RESOLUTION);
+    double* x = (double*)calloc(MAX_RESOLUTION, sizeof(double));
+    double* y = (double*)calloc(MAX_RESOLUTION, sizeof(double));
 
     int i = 0;
     while ((read = getline(&line,&n,fp) != -1)) {
