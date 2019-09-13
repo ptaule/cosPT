@@ -34,8 +34,8 @@ void read_PS(
         error_verbose("Could not open %s. Exiting.",filename);
     }
 
-    double* wavenumbers    = (double*)malloc(sizeof(double) * MAX_RESOLUTION);
-    double* power_spectrum = (double*)malloc(sizeof(double) * MAX_RESOLUTION);
+    double* wavenumbers    = (double*)calloc(MAX_RESOLUTION, sizeof(double));
+    double* power_spectrum = (double*)calloc(MAX_RESOLUTION, sizeof(double));
 
     int i = 0;
     while ((read = getline(&line,&n,fp) != -1)) {
