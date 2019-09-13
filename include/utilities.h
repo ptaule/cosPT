@@ -8,8 +8,8 @@
 #ifndef UTILITIES_H
 #define UTILITIES_H
 
-#include <stdbool.h>
 #include <math.h>
+#include <stdbool.h>
 
 #include <gsl/gsl_matrix.h>
 
