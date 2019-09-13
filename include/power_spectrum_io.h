@@ -8,7 +8,6 @@
 #ifndef POWER_SPECTRUM_IO_H
 #define POWER_SPECTRUM_IO_H
 
-#include <gsl/gsl_interp.h>
 #include <gsl/gsl_spline.h>
 
 void read_PS(const char* filename, gsl_interp_accel** acc, gsl_spline** spline);
