@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -18,6 +19,29 @@
 
 // Maximum input resolution
 #define MAX_RESOLUTION 500
+
+
+// Returns false if line is empty or starts with a '#'
+static bool strip_line(char line[]) {
+    char * p = line;
+    size_t len = strlen(line);
+
+    // Strip newline or carriage return
+    while (len > 0 && (line[len-1] == '\n' || line[len-1] == '\r'))
+        line[--len] = 0;
+
+    if (len == 0) return false;
+
+    // Advance to first non-whitespace
+    while (isspace(*p)) p++;
+
+    // Skip lines beginning with #
+    if (*p == '#') return false;
+
+    return true;
+}
+
+
 
 void read_and_interpolate(
         const char* filename,   /* in, name of file to be read                      */
@@ -40,20 +64,7 @@ void read_and_interpolate(
 
     int i = 0;
     while ((read = getline(&line,&n,fp) != -1)) {
-        char * p = line;
-        size_t len = strlen(line);
-
-        // Strip newline or carriage return
-        while (len > 0 && (line[len-1] == '\n' || line[len-1] == '\r'))
-            line[--len] = 0;
-
-        if (len == 0) continue;
-
-        // Advance to first whitespace
-        while (isspace(*p)) p++;
-
-        // Skip lines beginning with #
-        if (*p == '#') continue;
+        if (!strip_line(line)) continue;
 
         if (i == MAX_RESOLUTION) {
             fclose(fp);
@@ -68,7 +79,6 @@ void read_and_interpolate(
             error_verbose("Reading %s: Found row where the number of items "
                     "is not equal to two. Exiting.", filename);
         }
-
         i++;
     }
 
