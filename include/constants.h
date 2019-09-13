@@ -9,7 +9,6 @@
 #define CONSTANTS_H
 
 #include <gsl/gsl_matrix.h>
-#include <gsl/gsl_interp.h>
 #include <gsl/gsl_spline.h>
 
 // Number of loops (if not set by compile options)

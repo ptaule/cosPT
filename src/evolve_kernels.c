@@ -9,7 +9,6 @@
 
 #include <gsl/gsl_combination.h>
 #include <gsl/gsl_sf.h>
-#include <gsl/gsl_interp.h>
 #include <gsl/gsl_spline.h>
 #include <gsl/gsl_odeiv2.h>
 #include <gsl/gsl_blas.h>

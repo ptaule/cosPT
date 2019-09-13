@@ -8,9 +8,6 @@
 #ifndef EVOLVE_KERNELS_H
 #define EVOLVE_KERNELS_H
 
-#include <gsl/gsl_interp.h>
-#include <gsl/gsl_spline.h>
-
 #include "constants.h"
 #include "tables.h"
 

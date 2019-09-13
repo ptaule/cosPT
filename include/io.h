@@ -8,7 +8,6 @@
 #ifndef IO_H
 #define IO_H
 
-#include <gsl/gsl_interp.h>
 #include <gsl/gsl_spline.h>
 
 void read_and_interpolate(const char* filename, gsl_interp_accel** acc, gsl_spline** spline);
