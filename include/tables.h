@@ -36,6 +36,7 @@ typedef struct {
     const short int (*sum_table)[N_CONFIGS];
     const double* eta;
     vfloat bare_scalar_products[N_COEFFS][N_COEFFS];
+    vfloat scalar_products[N_CONFIGS][N_CONFIGS];
     vfloat alpha[N_CONFIGS][N_CONFIGS];
     vfloat beta[N_CONFIGS][N_CONFIGS];
     kernel_t kernels[N_KERNELS];
@@ -67,7 +68,7 @@ void compute_scalar_products(
         );
 
 void compute_alpha_beta_tables(
-        const vfloat bare_scalar_products[][N_COEFFS],
+        const vfloat scalar_products[][N_CONFIGS],
         vfloat alpha[N_CONFIGS][N_CONFIGS],
         vfloat beta[N_CONFIGS][N_CONFIGS]
         );

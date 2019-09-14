@@ -254,9 +254,9 @@ int cuba_integrand(
     // Initialize sum-, bare_scalar_products-, alpha- and beta-tables
     compute_bare_scalar_products(input->k, &vars,
             tables->bare_scalar_products);
-    // Cast bare_scalar_products to const vfloat 2D-array
-    compute_alpha_beta_tables(
-            (const vfloat (*)[])tables->bare_scalar_products,
+    compute_scalar_products((const vfloat (*)[])tables->bare_scalar_products,
+            tables->scalar_products);
+    compute_alpha_beta_tables((const vfloat (*)[])tables->scalar_products,
             tables->alpha, tables->beta);
 
     ff[0] = jacobian * integrand(input,tables);

@@ -6,6 +6,7 @@
 */
 
 #include <string.h>
+#include <math.h>
 
 #include <gsl/gsl_combination.h>
 #include <gsl/gsl_sf.h>
@@ -190,6 +191,7 @@ void compute_RHS_sum(
 
 typedef struct {
     short int n;
+    const double k;
     gsl_spline** rhs_splines;
     gsl_interp_accel** rhs_accs;
     const evolution_params_t* parameters;
@@ -197,8 +199,8 @@ typedef struct {
 
 
 
-inline static void set_omega_matrix(gsl_matrix* omega, double eta, const evolution_params_t* params) {
-    double zeta = gsl_spline_eval(params->zeta_spline, eta, params->zeta_acc);
+inline static void set_omega_matrix(gsl_matrix* omega, double eta, double
+        k, const evolution_params_t* params) {
 
 #if COMPONENTS != 2
     warning_verbose("No implementation for COMPONENTS = %d (yet).",COMPONENTS);
@@ -212,8 +214,8 @@ inline static void set_omega_matrix(gsl_matrix* omega, double eta, const evoluti
     gsl_matrix_set(omega,0,0, 0);
     gsl_matrix_set(omega,0,1, 1);
     // Second row
-    gsl_matrix_set(omega,1,0,  1.5*zeta );
-    gsl_matrix_set(omega,1,1, -1.5*zeta + 1);
+    gsl_matrix_set(omega,1,0,  1.5);
+    gsl_matrix_set(omega,1,1, -1.5 + 1);
 
     /* SPT limit
     // First row
@@ -233,7 +235,7 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
     const evolution_params_t* params = input.parameters;
     gsl_matrix* omega = params->omega;
 
-    set_omega_matrix(omega, eta, params);
+    set_omega_matrix(omega, eta, input.k, params);
 
     gsl_vector_const_view y_vec = gsl_vector_const_view_array(y,COMPONENTS);
     gsl_vector_view f_vec = gsl_vector_view_array(f,COMPONENTS);
@@ -350,9 +352,13 @@ short int kernel_evolution(
         compute_RHS_sum(arguments, n, params, tables, rhs_splines, rhs_accs);
     }
 
+    // Compute k (sum of kernel arguments)
+    short int sum = sum_vectors(arguments, N_KERNEL_ARGS, tables->sum_table);
+
     // Set up ODE input and system
     ode_input_t input = {
         .n = n,
+        .k = tables->scalar_products[sum][sum],
         .parameters = params,
         .rhs_splines = rhs_splines,
         .rhs_accs = rhs_accs,
@@ -374,7 +380,7 @@ short int kernel_evolution(
 
 /* Compute (F1(z_0)/F1(z_ini))^2 using kernel_evolution(). */
 void compute_F1_ratio(
-        __attribute__((unused)) double k,
+        double k,
         const evolution_params_t* params,
         const double* eta,
         double* F1_ratio /* out */
@@ -391,6 +397,7 @@ void compute_F1_ratio(
     // Set up ODE input and system
     ode_input_t input = {
         .n = 1,
+        .k = k,
         .parameters = params,
         .rhs_splines = NULL,
         .rhs_accs = NULL,

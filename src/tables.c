@@ -235,14 +235,11 @@ void compute_scalar_products(
 
 
 void compute_alpha_beta_tables(
-        const vfloat bare_scalar_products[][N_COEFFS], /* in, bare scalar products   */
-        vfloat alpha[N_CONFIGS][N_CONFIGS],            /* out, matrix of alpha-func. */
-        vfloat beta[N_CONFIGS][N_CONFIGS]              /* out, matrix of beta-func.  */
+        const vfloat scalar_products[][N_CONFIGS], /* in, scalar products        */
+        vfloat alpha[N_CONFIGS][N_CONFIGS],        /* out, matrix of alpha-func. */
+        vfloat beta[N_CONFIGS][N_CONFIGS]          /* out, matrix of beta-func.  */
         )
 {
-    vfloat scalar_products[N_CONFIGS][N_CONFIGS];
-
-    compute_scalar_products(bare_scalar_products,scalar_products);
 
     for (int a = 0; a < N_CONFIGS; ++a) {
         for (int b = 0; b < N_CONFIGS; ++b) {
