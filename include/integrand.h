@@ -25,32 +25,6 @@ typedef struct {
     tables_t* worker_mem;
 } integration_input_t;
 
-int diagram_factor(const diagram_t* diagram);
-int symmetrization_factor(const diagram_t* diagram);
-
-void possible_diagrams(diagram_t diagrams[]);
-
-void find_kernel_arguments(
-        const diagram_t* diagram,
-        const short int rearrangement[],
-        const short int signs[],
-        short int arguments_l[],
-        short int arguments_r[]
-        );
-
-vfloat sign_flip_symmetrization(
-        const short int rearrangement[],
-        const diagram_t* diagram,
-        const integration_input_t* input,
-        const tables_t* tables
-        );
-
-vfloat loop_momenta_symmetrization(
-        const diagram_t* diagram,
-        const integration_input_t* input,
-        const tables_t* tables
-        );
-
 vfloat integrand(const integration_input_t* data,
         tables_t* tables);
 
