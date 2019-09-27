@@ -227,7 +227,7 @@ inline static void set_omega_matrix(gsl_matrix* omega, double eta, const evoluti
 
 
 
-int evolve_kernels(double eta, const double y[], double f[], void *ode_input) {
+int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
     ode_input_t input = *(ode_input_t*)ode_input;
     short int n = input.n;
     const evolution_params_t* params = input.parameters;
@@ -260,6 +260,41 @@ int evolve_kernels(double eta, const double y[], double f[], void *ode_input) {
     gsl_blas_dgemv(CblasNoTrans, 1, omega, &y_vec.vector, 1, &f_vec.vector);
     return GSL_SUCCESS;
 }
+
+
+
+void evolve_kernels(
+        ode_input_t* input,
+        const double* eta,
+        double** kernels  /* TIME_STEPS*COMPONENTS table of kernels */
+        )
+{
+
+    gsl_odeiv2_system sys = {kernel_gradient, NULL, COMPONENTS, input};
+    gsl_odeiv2_driver* driver = gsl_odeiv2_driver_alloc_y_new(&sys,
+            gsl_odeiv2_step_rkf45, ODE_HSTART, ODE_RTOL, ODE_ATOL);
+
+    double eta_current = eta[0];
+
+    // Evolve system
+    for (int i = 1; i < TIME_STEPS; i++) {
+        // y is a pointer to the kernel table at time i
+        double* y = kernels[i];
+        // First copy previous values (i-1) to y
+        memcpy(y, kernels[i-1], COMPONENTS * sizeof(double));
+        // Then evolve y to time index i
+        int status = gsl_odeiv2_driver_apply(driver, &eta_current, eta[i], y);
+
+        if (status != GSL_SUCCESS) {
+            warning_verbose("GLS ODE driver gave error value = %d.", status);
+            break;
+        }
+    }
+
+    // Free GSL ODE driver
+    gsl_odeiv2_driver_free(driver);
+}
+
 
 
 
@@ -296,12 +331,8 @@ short int kernel_evolution(
         kernel_index = kernel_index_from_arguments(arguments);
     }
 
-    // Alias pointer to kernel (TIME_STEPS x COMPONENTS table) we are working
-    // with for convenience/readability
-    kernel_t* const kernel = &tables->kernels[kernel_index];
-
     // If the kernel is already computed, return kernel_index
-    if (kernel->evolved) return kernel_index;
+    if (tables->kernels[kernel_index].evolved) return kernel_index;
 
     // GSL interpolation variables for interpolated RHS
     gsl_spline*       rhs_splines[COMPONENTS] = {NULL};
@@ -309,7 +340,8 @@ short int kernel_evolution(
 
     // Copy ICs from SPT kernels
     for (int i = 0; i < COMPONENTS; ++i) {
-        kernel->values[0][i] = (double)kernel->spt_values[i];
+        tables->kernels[kernel_index].values[0][i] =
+            (double)tables->kernels[kernel_index].spt_values[i];
     }
 
     // Compute RHS sum in evolution equation if n > 1. If n == 1, the RHS
@@ -326,37 +358,14 @@ short int kernel_evolution(
         .rhs_accs = rhs_accs,
     };
 
-    gsl_odeiv2_system sys = {evolve_kernels, NULL, COMPONENTS, &input};
-    gsl_odeiv2_driver* driver = gsl_odeiv2_driver_alloc_y_new(&sys,
-            gsl_odeiv2_step_rkf45, ODE_HSTART, ODE_RTOL, ODE_ATOL);
+    evolve_kernels(&input, tables->eta, tables->kernels[kernel_index].values);
 
-    double eta_current = ETA_I;
-
-    // Evolve system
-    for (int i = 1; i < TIME_STEPS; i++) {
-        // y is a pointer to the kernel table at time i
-        double* y = kernel->values[i];
-        // First copy previous values (i-1) to y
-        memcpy(y, kernel->values[i-1], COMPONENTS * sizeof(double));
-        // Then evolve y to time i
-        int status = gsl_odeiv2_driver_apply(driver, &eta_current, tables->eta[i], y);
-
-        if (status != GSL_SUCCESS) {
-            warning_verbose("GLS ODE driver gave error value = %d.", status);
-            break;
-        }
-    }
-
-    // Free GSL ODE driver
-    gsl_odeiv2_driver_free(driver);
     // Free GSL interpolation objects
-    if (n > 1) {
-        for (int i = 0; i < COMPONENTS; ++i) {
-            gsl_spline_free(rhs_splines[i]);
-            gsl_interp_accel_free(rhs_accs[i]);
-        }
+    for (int i = 0; i < COMPONENTS; ++i) {
+        gsl_spline_free(rhs_splines[i]);
+        gsl_interp_accel_free(rhs_accs[i]);
     }
 
-    kernel->evolved = true;
+    tables->kernels[kernel_index].evolved = true;
     return kernel_index;
 }
