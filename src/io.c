@@ -97,9 +97,7 @@ void read_and_interpolate(
 void write_PS(
         const char* filename,
         int n_points,
-        const double wavenumbers[],
-        const double power_spectrum[],
-        const double errors[]
+        const output_t* output
         )
 {
     FILE* fp;
@@ -112,7 +110,7 @@ void write_PS(
     fprintf(fp,"# Matter power spectrum P(k) at %d-loop (%d "
         "components)\n",LOOPS, COMPONENTS);
     fprintf(fp,"# for k=%e to %e (h/Mpc)\n",
-            wavenumbers[0], wavenumbers[n_points-1]);
+            output->wavenumbers[0], output->wavenumbers[n_points-1]);
     fprintf(fp,"# Number of wavenumbers: %d\n", n_points);
 
     fprintf(fp,"#\n# Settings/constants used:\n");
@@ -123,10 +121,25 @@ void write_PS(
     fprintf(fp,"# ODE initial step size, abstol, reltol = %.2e, %.2e, %.2e\n",
             ODE_HSTART, ODE_ATOL, ODE_RTOL);
     fprintf(fp,"# ODE routine                           = %s\n", TOSTRING(ODE_ROUTINE));
-    fprintf(fp,"#\n# \tk\t\t\t\tP(k)\t\t\terror\n");
+
+    /* A column consists of 12 characters, 4 whitespaces in between each column */
+    fprintf(fp,"#\n# %3s%20s%7s","k", "P_lin","");
+
+    for (int i = 1; i <= LOOPS; ++i) {
+        fprintf(fp,"%4sP_%dloop%5s","",i,"");
+    }
+    for (int i = 1; i <= LOOPS; ++i) {
+        fprintf(fp,"%4serror_%dloop","",i);
+        if (i != LOOPS) {
+            fprintf(fp," ");
+        }
+    }
+    fprintf(fp,"\n");
 
     for (int i = 0; i < n_points; ++i) {
-        fprintf(fp,"\t%e\t%e\t%e\n", wavenumbers[i], power_spectrum[i], errors[i]);
+        fprintf(fp,"%4s%e%4s%e%4s%e%4s%e\n", "",
+                output->wavenumbers[i], "", output->lin_ps[i], "",
+                output->non_lin_ps[i], "", output->errors[i]);
     }
 
     fclose(fp);
