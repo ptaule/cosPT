@@ -242,9 +242,18 @@ int evolve_kernels(double eta, const double y[], double f[], void *ode_input) {
         // Subtract n*I from omega
         double value = gsl_matrix_get(omega,i,i);
         gsl_matrix_set(omega,i,i,value - n);
+    }
 
-        double rhs = gsl_spline_eval(input.rhs_splines[i], eta, input.rhs_accs[i]);
-        gsl_vector_set(&f_vec.vector, i, rhs);
+    if (n > 1) {
+        for (int i = 0; i < COMPONENTS; ++i) {
+            double rhs = gsl_spline_eval(input.rhs_splines[i], eta, input.rhs_accs[i]);
+            gsl_vector_set(&f_vec.vector, i, rhs);
+        }
+    }
+    else {
+        for (int i = 0; i < COMPONENTS; ++i) {
+            gsl_vector_set(&f_vec.vector, i, 0.0);
+        }
     }
 
     // Compute omega*y + f and store in f
@@ -295,16 +304,19 @@ short int kernel_evolution(
     if (kernel->evolved) return kernel_index;
 
     // GSL interpolation variables for interpolated RHS
-    gsl_spline*       rhs_splines[COMPONENTS];
-    gsl_interp_accel* rhs_accs   [COMPONENTS];
+    gsl_spline*       rhs_splines[COMPONENTS] = {NULL};
+    gsl_interp_accel* rhs_accs   [COMPONENTS] = {NULL};
 
     // Copy ICs from SPT kernels
     for (int i = 0; i < COMPONENTS; ++i) {
         kernel->values[0][i] = (double)kernel->spt_values[i];
     }
 
-    // Compute RHS sum in evolution equation
-    compute_RHS_sum(arguments, n, params, tables, rhs_splines, rhs_accs);
+    // Compute RHS sum in evolution equation if n > 1. If n == 1, the RHS
+    // equals 0, which is implemented in evolve_kernels().
+    if (n > 1) {
+        compute_RHS_sum(arguments, n, params, tables, rhs_splines, rhs_accs);
+    }
 
     // Set up ODE input and system
     ode_input_t input = {
@@ -338,9 +350,11 @@ short int kernel_evolution(
     // Free GSL ODE driver
     gsl_odeiv2_driver_free(driver);
     // Free GSL interpolation objects
-    for (int i = 0; i < COMPONENTS; ++i) {
-        gsl_spline_free(rhs_splines[i]);
-        gsl_interp_accel_free(rhs_accs[i]);
+    if (n > 1) {
+        for (int i = 0; i < COMPONENTS; ++i) {
+            gsl_spline_free(rhs_splines[i]);
+            gsl_interp_accel_free(rhs_accs[i]);
+        }
     }
 
     kernel->evolved = true;
