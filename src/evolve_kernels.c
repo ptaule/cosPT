@@ -369,3 +369,36 @@ short int kernel_evolution(
     tables->kernels[kernel_index].evolved = true;
     return kernel_index;
 }
+
+
+
+/* Compute (F1(z_0)/F1(z_ini))^2 using kernel_evolution(). */
+void compute_F1_ratio(
+        __attribute__((unused)) double k,
+        const evolution_params_t* params,
+        const double* eta,
+        double* F1_ratio /* out */
+        )
+{
+    double** values = (double**)calloc(TIME_STEPS, sizeof(double*));
+    for (int i = 0; i < TIME_STEPS; ++i) {
+        values[i] = (double*)calloc(COMPONENTS, sizeof(double));
+    }
+
+    /* Use SPT initial conditions, i.e. F1 = G1 = 1 */
+    values[0][0] = values[0][1] = 1;
+
+    // Set up ODE input and system
+    ode_input_t input = {
+        .n = 1,
+        .parameters = params,
+        .rhs_splines = NULL,
+        .rhs_accs = NULL,
+    };
+
+    evolve_kernels(&input, eta, values);
+
+    for (int i = 0; i < COMPONENTS; ++i) {
+        F1_ratio[i] = values[TIME_STEPS - 1][i]/values[0][i];
+    }
+}

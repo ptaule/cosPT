@@ -20,6 +20,7 @@
 #include "include/io.h"
 #include "include/diagrams.h"
 #include "include/integrand.h"
+#include "include/evolve_kernels.h"
 
 void init_worker(tables_t* worker_mem, const int* core);
 void exit_worker(tables_t* worker_mem, const int* core);
@@ -145,8 +146,15 @@ int main (int argc, char* argv[]) {
         output.non_lin_ps[i] = (double)result[0] * overall_factor;
         output.errors[i]     = (double)error[0]  * overall_factor;
 
-        printf("k = %f, %d-loop = %e, error = %e, prob = %f, "
-                "elapsed time = %.0fs\n", k, LOOPS,
+        /* (F1(z_0)/F1(z_ini))^2 */
+        double F1_ratio[COMPONENTS];
+        compute_F1_ratio(k, input.params, eta, F1_ratio);
+
+        output.lin_ps[i] = gsl_spline_eval(input.ps_spline, k, input.ps_acc)
+            * F1_ratio[input.component_a] * F1_ratio[input.component_b];
+
+        printf("k = %f, lin_ps = %e, %d-loop = %e, error = %e, prob = %f, "
+                "elapsed time = %.0fs\n", k, output.lin_ps[i], LOOPS,
                 output.non_lin_ps[i], output.errors[i], (double)prob[0],
                 difftime(end,beginning));
     }
