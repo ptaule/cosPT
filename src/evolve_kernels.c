@@ -408,4 +408,9 @@ void compute_F1_ratio(
     for (int i = 0; i < COMPONENTS; ++i) {
         F1_ratio[i] = values[TIME_STEPS - 1][i]/values[0][i];
     }
+
+    for (int i = 0; i < TIME_STEPS; ++i) {
+        free(values[i]);
+    }
+    free(values);
 }
