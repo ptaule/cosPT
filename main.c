@@ -20,6 +20,7 @@
 #include "include/io.h"
 #include "include/diagrams.h"
 #include "include/integrand.h"
+#include "include/evolve_kernels.h"
 
 void init_worker(tables_t* worker_mem, const int* core);
 void exit_worker(tables_t* worker_mem, const int* core);
@@ -101,9 +102,12 @@ int main (int argc, char* argv[]) {
         .worker_mem = worker_mem
     };
 
-    double* const wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));
-    double* const power_spectrum = (double*)calloc(N_POINTS, sizeof(double));
-    double* const errors         = (double*)calloc(N_POINTS, sizeof(double));
+    output_t output = {
+        .wavenumbers = (double*)calloc(N_POINTS, sizeof(double)),
+        .lin_ps      = (double*)calloc(N_POINTS, sizeof(double)),
+        .non_lin_ps  = (double*)calloc(N_POINTS, sizeof(double)),
+        .errors      = (double*)calloc(N_POINTS, sizeof(double))
+    };
 
     // Overall factors:
     // - Only integrating over cos_theta_i between 0 and 1, multiply by 2 to
@@ -125,8 +129,9 @@ int main (int argc, char* argv[]) {
 
     for (int i = 0; i < N_POINTS; ++i) {
         k *= delta_factor;
-        wavenumbers[i] = k;
+        output.wavenumbers[i] = k;
         input.k = k;
+
 
         time(&beginning);
 
@@ -138,26 +143,32 @@ int main (int argc, char* argv[]) {
 
         time(&end);
 
-        result[0] *= overall_factor;
-        error[0] *= overall_factor;
+        output.non_lin_ps[i] = (double)result[0] * overall_factor;
+        output.errors[i]     = (double)error[0]  * overall_factor;
 
-        power_spectrum[i] = (double)result[0];
-        errors[i]         = (double)error[0];
+        /* (F1(z_0)/F1(z_ini))^2 */
+        double F1_ratio[COMPONENTS];
+        compute_F1_ratio(k, input.params, eta, F1_ratio);
 
-        printf("k = %f, result = %e, error = %e, prob = %f, elapsed time = "
-                "%.0fs\n", k, (double)*result, (double)error[0],
-                (double)prob[0], difftime(end,beginning));
+        output.lin_ps[i] = gsl_spline_eval(input.ps_spline, k, input.ps_acc)
+            * F1_ratio[input.component_a] * F1_ratio[input.component_b];
+
+        printf("k = %f, lin_ps = %e, %d-loop = %e, error = %e, prob = %f, "
+                "elapsed time = %.0fs\n", k, output.lin_ps[i], LOOPS,
+                output.non_lin_ps[i], output.errors[i], (double)prob[0],
+                difftime(end,beginning));
     }
 
-    write_PS(output_ps_file, N_POINTS, wavenumbers, power_spectrum, errors);
+    write_PS(output_ps_file, N_POINTS, &output);
 
     diagrams_gc(diagrams);
 
     free(worker_mem);
 
-    free(wavenumbers);
-    free(power_spectrum);
-    free(errors);
+    free(output.wavenumbers);
+    free(output.lin_ps);
+    free(output.non_lin_ps);
+    free(output.errors);
 
     gsl_matrix_free(params.omega);
 

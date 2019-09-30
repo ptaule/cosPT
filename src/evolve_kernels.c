@@ -227,7 +227,7 @@ inline static void set_omega_matrix(gsl_matrix* omega, double eta, const evoluti
 
 
 
-int evolve_kernels(double eta, const double y[], double f[], void *ode_input) {
+int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
     ode_input_t input = *(ode_input_t*)ode_input;
     short int n = input.n;
     const evolution_params_t* params = input.parameters;
@@ -242,15 +242,59 @@ int evolve_kernels(double eta, const double y[], double f[], void *ode_input) {
         // Subtract n*I from omega
         double value = gsl_matrix_get(omega,i,i);
         gsl_matrix_set(omega,i,i,value - n);
+    }
 
-        double rhs = gsl_spline_eval(input.rhs_splines[i], eta, input.rhs_accs[i]);
-        gsl_vector_set(&f_vec.vector, i, rhs);
+    if (n > 1) {
+        for (int i = 0; i < COMPONENTS; ++i) {
+            double rhs = gsl_spline_eval(input.rhs_splines[i], eta, input.rhs_accs[i]);
+            gsl_vector_set(&f_vec.vector, i, rhs);
+        }
+    }
+    else {
+        for (int i = 0; i < COMPONENTS; ++i) {
+            gsl_vector_set(&f_vec.vector, i, 0.0);
+        }
     }
 
     // Compute omega*y + f and store in f
     gsl_blas_dgemv(CblasNoTrans, 1, omega, &y_vec.vector, 1, &f_vec.vector);
     return GSL_SUCCESS;
 }
+
+
+
+void evolve_kernels(
+        ode_input_t* input,
+        const double* eta,
+        double** kernels  /* TIME_STEPS*COMPONENTS table of kernels */
+        )
+{
+
+    gsl_odeiv2_system sys = {kernel_gradient, NULL, COMPONENTS, input};
+    gsl_odeiv2_driver* driver = gsl_odeiv2_driver_alloc_y_new(&sys,
+            gsl_odeiv2_step_rkf45, ODE_HSTART, ODE_RTOL, ODE_ATOL);
+
+    double eta_current = eta[0];
+
+    // Evolve system
+    for (int i = 1; i < TIME_STEPS; i++) {
+        // y is a pointer to the kernel table at time i
+        double* y = kernels[i];
+        // First copy previous values (i-1) to y
+        memcpy(y, kernels[i-1], COMPONENTS * sizeof(double));
+        // Then evolve y to time index i
+        int status = gsl_odeiv2_driver_apply(driver, &eta_current, eta[i], y);
+
+        if (status != GSL_SUCCESS) {
+            warning_verbose("GLS ODE driver gave error value = %d.", status);
+            break;
+        }
+    }
+
+    // Free GSL ODE driver
+    gsl_odeiv2_driver_free(driver);
+}
+
 
 
 
@@ -287,24 +331,24 @@ short int kernel_evolution(
         kernel_index = kernel_index_from_arguments(arguments);
     }
 
-    // Alias pointer to kernel (TIME_STEPS x COMPONENTS table) we are working
-    // with for convenience/readability
-    kernel_t* const kernel = &tables->kernels[kernel_index];
-
     // If the kernel is already computed, return kernel_index
-    if (kernel->evolved) return kernel_index;
+    if (tables->kernels[kernel_index].evolved) return kernel_index;
 
     // GSL interpolation variables for interpolated RHS
-    gsl_spline*       rhs_splines[COMPONENTS];
-    gsl_interp_accel* rhs_accs   [COMPONENTS];
+    gsl_spline*       rhs_splines[COMPONENTS] = {NULL};
+    gsl_interp_accel* rhs_accs   [COMPONENTS] = {NULL};
 
     // Copy ICs from SPT kernels
     for (int i = 0; i < COMPONENTS; ++i) {
-        kernel->values[0][i] = (double)kernel->spt_values[i];
+        tables->kernels[kernel_index].values[0][i] =
+            (double)tables->kernels[kernel_index].spt_values[i];
     }
 
-    // Compute RHS sum in evolution equation
-    compute_RHS_sum(arguments, n, params, tables, rhs_splines, rhs_accs);
+    // Compute RHS sum in evolution equation if n > 1. If n == 1, the RHS
+    // equals 0, which is implemented in evolve_kernels().
+    if (n > 1) {
+        compute_RHS_sum(arguments, n, params, tables, rhs_splines, rhs_accs);
+    }
 
     // Set up ODE input and system
     ode_input_t input = {
@@ -314,35 +358,47 @@ short int kernel_evolution(
         .rhs_accs = rhs_accs,
     };
 
-    gsl_odeiv2_system sys = {evolve_kernels, NULL, COMPONENTS, &input};
-    gsl_odeiv2_driver* driver = gsl_odeiv2_driver_alloc_y_new(&sys,
-            gsl_odeiv2_step_rkf45, ODE_HSTART, ODE_RTOL, ODE_ATOL);
+    evolve_kernels(&input, tables->eta, tables->kernels[kernel_index].values);
 
-    double eta_current = ETA_I;
-
-    // Evolve system
-    for (int i = 1; i < TIME_STEPS; i++) {
-        // y is a pointer to the kernel table at time i
-        double* y = kernel->values[i];
-        // First copy previous values (i-1) to y
-        memcpy(y, kernel->values[i-1], COMPONENTS * sizeof(double));
-        // Then evolve y to time i
-        int status = gsl_odeiv2_driver_apply(driver, &eta_current, tables->eta[i], y);
-
-        if (status != GSL_SUCCESS) {
-            warning_verbose("GLS ODE driver gave error value = %d.", status);
-            break;
-        }
-    }
-
-    // Free GSL ODE driver
-    gsl_odeiv2_driver_free(driver);
     // Free GSL interpolation objects
     for (int i = 0; i < COMPONENTS; ++i) {
         gsl_spline_free(rhs_splines[i]);
         gsl_interp_accel_free(rhs_accs[i]);
     }
 
-    kernel->evolved = true;
+    tables->kernels[kernel_index].evolved = true;
     return kernel_index;
+}
+
+
+
+/* Compute (F1(z_0)/F1(z_ini))^2 using kernel_evolution(). */
+void compute_F1_ratio(
+        __attribute__((unused)) double k,
+        const evolution_params_t* params,
+        const double* eta,
+        double* F1_ratio /* out */
+        )
+{
+    double** values = (double**)calloc(TIME_STEPS, sizeof(double*));
+    for (int i = 0; i < TIME_STEPS; ++i) {
+        values[i] = (double*)calloc(COMPONENTS, sizeof(double));
+    }
+
+    /* Use SPT initial conditions, i.e. F1 = G1 = 1 */
+    values[0][0] = values[0][1] = 1;
+
+    // Set up ODE input and system
+    ode_input_t input = {
+        .n = 1,
+        .parameters = params,
+        .rhs_splines = NULL,
+        .rhs_accs = NULL,
+    };
+
+    evolve_kernels(&input, eta, values);
+
+    for (int i = 0; i < COMPONENTS; ++i) {
+        F1_ratio[i] = values[TIME_STEPS - 1][i]/values[0][i];
+    }
 }
