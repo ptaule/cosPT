@@ -16,7 +16,8 @@
 #define LOOPS 1
 #endif
 
-#define COMPONENTS 2
+#define COMPONENTS 4
+#define SPT_COMPONENTS 2
 
 #ifndef TIME_STEPS
 #define TIME_STEPS 100
@@ -33,7 +34,7 @@
 
 // Initial/final times (eta is typically defined as the log of a or the growth
 // rate D+)
-#define ETA_I -3.18
+#define ETA_I -3.0178
 #define ETA_F 0
 
 // CUBA settings
@@ -95,8 +96,12 @@ typedef long double vfloat;
 
 // Parameters type
 typedef struct {
-    gsl_interp_accel* zeta_acc;
-    gsl_spline* zeta_spline;
+    /* gsl_interp_accel* zeta_acc; */
+    /* gsl_spline* zeta_spline; */
+    gsl_interp_accel* redshift_acc;
+    gsl_spline* redshift_spline;
+    gsl_interp_accel* ic_perturb_accs[2];
+    gsl_spline* ic_perturb_splines[2];
     gsl_matrix* omega;
 } evolution_params_t;
 

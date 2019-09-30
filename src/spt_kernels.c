@@ -66,7 +66,7 @@ static void partial_SPT_sum(
         tables_t* tables
         )
 {
-    vfloat kernel_values[COMPONENTS] = {0};
+    vfloat kernel_values[SPT_COMPONENTS] = {0};
 
     short int args_l[N_KERNEL_ARGS] = {0};
     short int args_r[N_KERNEL_ARGS] = {0};
@@ -101,7 +101,7 @@ static void partial_SPT_sum(
         short int sum_l = sum_vectors(args_l,N_KERNEL_ARGS,tables->sum_table);
         short int sum_r = sum_vectors(args_r,N_KERNEL_ARGS,tables->sum_table);
 
-        for (int i = 0; i < COMPONENTS; ++i) {
+        for (int i = 0; i < SPT_COMPONENTS; ++i) {
             kernel_values[i] += SPT_term(m,n-m,i,args_l,args_r,sum_l,sum_r,tables);
         }
 
@@ -109,7 +109,7 @@ static void partial_SPT_sum(
         // swapping args_l, sum_l, m with args_r, sum_r and (n-m). Then
         // compute_SPT_kernels() only needs to sum up to (including) floor(n/2).
         if (m != n - m) {
-            for (int i = 0; i < COMPONENTS; ++i) {
+            for (int i = 0; i < SPT_COMPONENTS; ++i) {
                 kernel_values[i] +=
                     SPT_term(n-m,m,i,args_r,args_l,sum_r,sum_l,tables);
             }
@@ -120,12 +120,12 @@ static void partial_SPT_sum(
 
     // Devide through by symmetrization factor (n choose m)
     int n_choose_m = gsl_sf_choose(n,m);
-    for (int i = 0; i < COMPONENTS; ++i) {
+    for (int i = 0; i < SPT_COMPONENTS; ++i) {
         kernel_values[i] /= n_choose_m;
     }
 
     // Add calculated term for each component to kernel table
-    for (int i = 0; i < COMPONENTS; ++i) {
+    for (int i = 0; i < SPT_COMPONENTS; ++i) {
         tables->kernels[kernel_index].spt_values[i]
             += kernel_values[i];
     }
@@ -173,7 +173,7 @@ short int compute_SPT_kernels(
 
     // For SPT kernels, F_1 = G_1 = ... = 1
     if (n == 1) {
-        for (int i = 0; i < COMPONENTS; ++i) {
+        for (int i = 0; i < SPT_COMPONENTS; ++i) {
             kernel->spt_values[i] = 1.0;
         }
         return kernel_index;
@@ -186,7 +186,7 @@ short int compute_SPT_kernels(
     }
 
     // Divide by overall factor in SPT recursion relation
-    for (int i = 0; i < COMPONENTS; ++i) {
+    for (int i = 0; i < SPT_COMPONENTS; ++i) {
         kernel->spt_values[i] /= (2*n + 3) * (n - 1);
     }
 

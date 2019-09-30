@@ -206,6 +206,15 @@ inline static void set_omega_matrix(
         const evolution_params_t* params
         )
 {
+    // f_nu ratio computed from CLASS
+    double f_nu = 0.0221165829;
+    // Using Garny et.al sound speed, neutrino mass 3*0.1eV and
+    // OmegaM(0) = 0.319104 (CLASS with m_nu = 0.1)
+    double k_FS_factor = 0.907778 * 0.1 * 0.564893;
+
+    double k_FS2 = k_FS_factor * k_FS_factor
+        * pow(1 + gsl_spline_eval(params->redshift_spline, eta, params->redshift_acc), -1);
+
     // Note that 'omega -> - omega' here, compared to analytic def., since then
     // the program does not need to perform this scaling (corresponding to
     // moving omega to RHS of evolution equation) for each computation.
@@ -213,9 +222,23 @@ inline static void set_omega_matrix(
     // First row
     gsl_matrix_set(omega,0,0, 0);
     gsl_matrix_set(omega,0,1, 1);
+    gsl_matrix_set(omega,0,2, 0);
+    gsl_matrix_set(omega,0,3, 0);
     // Second row
-    gsl_matrix_set(omega,1,0,  1.5);
+    gsl_matrix_set(omega,1,0,  1.5 * (1 - f_nu));
     gsl_matrix_set(omega,1,1, -1.5 + 1);
+    gsl_matrix_set(omega,1,2,  1.5 * f_nu);
+    gsl_matrix_set(omega,1,3, 0);
+    // Third row
+    gsl_matrix_set(omega,2,0, 0);
+    gsl_matrix_set(omega,2,1, 0);
+    gsl_matrix_set(omega,2,2, 0);
+    gsl_matrix_set(omega,2,3, 1);
+    // Fourth row
+    gsl_matrix_set(omega,3,0,  1.5 * (1 - f_nu));
+    gsl_matrix_set(omega,3,1,  0);
+    gsl_matrix_set(omega,3,2,  1.5 * (f_nu - k*k/k_FS2));
+    gsl_matrix_set(omega,3,3, -1.5 + 1);
 
     /* SPT limit
     // First row
@@ -271,7 +294,6 @@ void evolve_kernels(
         double** kernels  /* TIME_STEPS*COMPONENTS table of kernels */
         )
 {
-
     gsl_odeiv2_system sys = {kernel_gradient, NULL, COMPONENTS, input};
     gsl_odeiv2_driver* driver = gsl_odeiv2_driver_alloc_y_new(&sys,
             gsl_odeiv2_step_rkf45, ODE_HSTART, ODE_RTOL, ODE_ATOL);
@@ -336,15 +358,37 @@ short int kernel_evolution(
     // If the kernel is already computed, return kernel_index
     if (tables->kernels[kernel_index].evolved) return kernel_index;
 
-    // GSL interpolation variables for interpolated RHS
-    gsl_spline*       rhs_splines[COMPONENTS] = {NULL};
-    gsl_interp_accel* rhs_accs   [COMPONENTS] = {NULL};
+    // Compute k (sum of kernel arguments)
+    short int sum = sum_vectors(arguments, N_KERNEL_ARGS, tables->sum_table);
+    double k = sqrt(tables->scalar_products[sum][sum]);
 
-    // Copy ICs from SPT kernels
-    for (int i = 0; i < COMPONENTS; ++i) {
+    // Use SPT-EdS ICs for cdm+b (components 0-1)
+    for (int i = 0; i < 2; ++i) {
         tables->kernels[kernel_index].values[0][i] =
             (double)tables->kernels[kernel_index].spt_values[i];
     }
+    // At linear order, the ICs for nu (components 2-3) are given by input
+    // perturbation ratios.
+    // Various IC options for nu at non-linear order:
+    // - 0
+    // - SPT-EdS
+    // - SPT-EdS multiplied by perturbation ratio
+    if (n == 1) {
+        for (int i = 2; i < SPT_COMPONENTS; ++i) {
+            tables->kernels[kernel_index].values[0][i] = 0;
+        }
+    }
+    else {
+        for (int i = 2; i < COMPONENTS; ++i) {
+            tables->kernels[kernel_index].values[0][i] =
+                gsl_spline_eval(params->ic_perturb_splines[i-2], k,
+                        params->ic_perturb_accs[i-2]);
+        }
+    }
+
+    // GSL interpolation variables for interpolated RHS
+    gsl_spline*       rhs_splines[COMPONENTS] = {NULL};
+    gsl_interp_accel* rhs_accs   [COMPONENTS] = {NULL};
 
     // Compute RHS sum in evolution equation if n > 1. If n == 1, the RHS
     // equals 0, which is implemented in evolve_kernels().
@@ -352,13 +396,10 @@ short int kernel_evolution(
         compute_RHS_sum(arguments, n, params, tables, rhs_splines, rhs_accs);
     }
 
-    // Compute k (sum of kernel arguments)
-    short int sum = sum_vectors(arguments, N_KERNEL_ARGS, tables->sum_table);
-
     // Set up ODE input and system
     ode_input_t input = {
         .n = n,
-        .k = sqrt(tables->scalar_products[sum][sum]),
+        .k = k,
         .parameters = params,
         .rhs_splines = rhs_splines,
         .rhs_accs = rhs_accs,
@@ -391,8 +432,13 @@ void compute_F1(
         values[i] = (double*)calloc(COMPONENTS, sizeof(double));
     }
 
-    /* Use SPT initial conditions, i.e. F1 = G1 = 1 */
+    // Use SPT-EdS ICs for cdm+b (components 0-1) at linear order
     values[0][0] = values[0][1] = 1;
+    // Use interpolated perturbation ratios for nu (components 2-3) at linear order
+    for (int i = 2; i < COMPONENTS; ++i) {
+        values[0][i] = gsl_spline_eval(params->ic_perturb_splines[i-2], k,
+                params->ic_perturb_accs[i-2]);
+    }
 
     // Set up ODE input and system
     ode_input_t input = {
