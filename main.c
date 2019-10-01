@@ -56,20 +56,12 @@ int main (int argc, char* argv[]) {
     printf("Using %d cores.\n",N_CORES);
 #endif
 
-    gsl_interp_accel *ps_acc, *zeta_acc;
-    gsl_spline *ps_spline, *zeta_spline;
-
-    read_and_interpolate(input_ps_file,&ps_acc,&ps_spline);
-    read_and_interpolate(input_zeta_file,&zeta_acc,&zeta_spline);
-
-    const evolution_params_t params = {
-        .zeta_acc = zeta_acc,
-        .zeta_spline = zeta_spline,
-        .omega = gsl_matrix_alloc(COMPONENTS, COMPONENTS)
-    };
-
     // Array of table_ptrs, one for each worker (thread)
     tables_t* worker_mem = (tables_t*)malloc(CUBA_MAXCORES * sizeof(tables_t));
+
+    // Set routines to be run before process forking (new worker)
+    cubainit(init_worker, worker_mem);
+    cubaexit(exit_worker, worker_mem);
 
     // Initialize time steps in eta
     double eta[TIME_STEPS];
@@ -83,24 +75,29 @@ int main (int argc, char* argv[]) {
         worker_mem[i].eta = eta;
     }
 
-    // Set routines to be run before process forking (new worker)
-    cubainit(init_worker, worker_mem);
-    cubaexit(exit_worker, worker_mem);
-
     // Initialize diagrams to compute at this order in PT
     diagram_t diagrams[N_DIAGRAMS];
     initialize_diagrams(diagrams);
+
+    evolution_params_t params = {
+        .zeta_acc = NULL,
+        .zeta_spline = NULL,
+        .omega = gsl_matrix_alloc(COMPONENTS, COMPONENTS)
+    };
 
     integration_input_t input = {
         .k = 0.0,
         .component_a = 0,
         .component_b = 0,
-        .ps_acc = ps_acc,
-        .ps_spline = ps_spline,
+        .ps_acc = NULL,
+        .ps_spline = NULL,
         .diagrams = diagrams,
         .params = &params,
         .worker_mem = worker_mem
     };
+
+    read_and_interpolate(input_ps_file,&input.ps_acc,&input.ps_spline);
+    read_and_interpolate(input_zeta_file,&params.zeta_acc,&params.zeta_spline);
 
     output_t output = {
         .wavenumbers = (double*)calloc(N_POINTS, sizeof(double)),
@@ -172,10 +169,10 @@ int main (int argc, char* argv[]) {
 
     gsl_matrix_free(params.omega);
 
-    gsl_spline_free(ps_spline);
-    gsl_interp_accel_free(ps_acc);
-    gsl_spline_free(zeta_spline);
-    gsl_interp_accel_free(zeta_acc);
+    gsl_spline_free(input.ps_spline);
+    gsl_interp_accel_free(input.ps_acc);
+    gsl_spline_free(params.zeta_spline);
+    gsl_interp_accel_free(params.zeta_acc);
 
     return 0;
 }

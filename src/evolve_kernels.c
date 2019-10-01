@@ -199,13 +199,13 @@ typedef struct {
 
 
 
-inline static void set_omega_matrix(gsl_matrix* omega, double eta, double
-        k, const evolution_params_t* params) {
-
-#if COMPONENTS != 2
-    warning_verbose("No implementation for COMPONENTS = %d (yet).",COMPONENTS);
-#endif
-
+inline static void set_omega_matrix(
+        gsl_matrix* omega,
+        double eta,
+        double k,
+        const evolution_params_t* params
+        )
+{
     // Note that 'omega -> - omega' here, compared to analytic def., since then
     // the program does not need to perform this scaling (corresponding to
     // moving omega to RHS of evolution equation) for each computation.
