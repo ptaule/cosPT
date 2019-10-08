@@ -358,7 +358,7 @@ short int kernel_evolution(
     // Set up ODE input and system
     ode_input_t input = {
         .n = n,
-        .k = tables->scalar_products[sum][sum],
+        .k = sqrt(tables->scalar_products[sum][sum]),
         .parameters = params,
         .rhs_splines = rhs_splines,
         .rhs_accs = rhs_accs,
