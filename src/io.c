@@ -241,16 +241,8 @@ void write_PS(
     /* A column consists of 12 characters, 4 whitespaces in between each column */
     fprintf(fp,"#\n# %3s%20s%7s","k", "P_lin","");
 
-    for (int i = 1; i <= LOOPS; ++i) {
-        fprintf(fp,"%4sP_%dloop%5s","",i,"");
-    }
-    for (int i = 1; i <= LOOPS; ++i) {
-        fprintf(fp,"%4serror_%dloop","",i);
-        if (i != LOOPS) {
-            fprintf(fp," ");
-        }
-    }
-    fprintf(fp,"\n");
+    fprintf(fp,"%4sP_%dloop%5s","",LOOPS,"");
+    fprintf(fp,"%4serror_%dloop\n","",LOOPS);
 
     for (int i = 0; i < n_points; ++i) {
         fprintf(fp,"%4s%e%4s%e%4s%e%4s%e\n", "",
