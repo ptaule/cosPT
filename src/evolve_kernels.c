@@ -378,12 +378,12 @@ short int kernel_evolution(
 
 
 
-/* Compute (F1(z_0)/F1(z_ini))^2 using kernel_evolution(). */
-void compute_F1_ratio(
+/* Compute (F1(z_0))^2 using kernel_evolution(). */
+void compute_F1(
         double k,
         const evolution_params_t* params,
         const double* eta,
-        double* F1_ratio /* out */
+        double* F1 /* out */
         )
 {
     double** values = (double**)calloc(TIME_STEPS, sizeof(double*));
@@ -406,7 +406,7 @@ void compute_F1_ratio(
     evolve_kernels(&input, eta, values);
 
     for (int i = 0; i < COMPONENTS; ++i) {
-        F1_ratio[i] = values[TIME_STEPS - 1][i]/values[0][i];
+        F1[i] = values[TIME_STEPS - 1][i];
     }
 
     for (int i = 0; i < TIME_STEPS; ++i) {

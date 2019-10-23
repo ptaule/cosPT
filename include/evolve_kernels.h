@@ -20,11 +20,11 @@ short int kernel_evolution(
         );
 
 /* Compute (F1(z_0)/F1(z_ini))^2 using kernel_evolution(). */
-void compute_F1_ratio(
+void compute_F1(
         double k,
         const evolution_params_t* params,
         const double* eta,
-        double* F1_ratio /* out */
+        double* F1 /* out */
         );
 
 #endif /* ifndef EVOLVE_KERNELS_H */
