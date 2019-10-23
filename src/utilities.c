@@ -91,10 +91,24 @@ void print_labels(const short int labels[], size_t size)
 
 
 
-void print_gsl_matrix(const matrix_t* m, size_t height, size_t width) {
+void print_gsl_matrix(void* matrix, int type, size_t height, size_t width) {
+    /* type should be 0 (int), 1 (double), 2 (double) */
     for (size_t i = 0; i < height; ++i) {
         for (size_t j = 0; j < width; ++j) {
-            printf(vfloat_fmt "\t",matrix_get(m,i,j));
+            switch (type) {
+                case 0:
+                    printf("%d\t",gsl_matrix_int_get(matrix,i,j));
+                    break;
+                case 1:
+                    printf("%f\t",gsl_matrix_get(matrix,i,j));
+                    break;
+                case 2:
+                    printf("%Lf\t",gsl_matrix_long_double_get(matrix,i,j));
+                    break;
+                default:
+                    warning_verbose("gsl_print_matrix() is not implemented for type = %d.", type);
+                    return;
+            }
         }
         printf("\n");
     }

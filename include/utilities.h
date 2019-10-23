@@ -56,7 +56,7 @@ inline short int config2label(
 
 void print_label(short int label);
 void print_labels(const short int labels[], size_t size);
-void print_gsl_matrix(const matrix_t* m, size_t height, size_t width);
+void print_gsl_matrix(void* matrix, int type, size_t height, size_t width);
 
 short int zero_label();
 bool is_fundamental(short int label);
