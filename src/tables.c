@@ -97,7 +97,7 @@ void tables_allocate(tables_t* tables) {
     // Allocate time/component dimensions of kernels
     for (int i = 0; i < N_KERNELS; ++i) {
         tables->kernels[i].values = (double**)calloc(TIME_STEPS, sizeof(double*));
-        tables->kernels[i].spt_values = (vfloat*)calloc(COMPONENTS, sizeof(vfloat));
+        tables->kernels[i].spt_values = (vfloat*)calloc(SPT_COMPONENTS, sizeof(vfloat));
         for (int j = 0; j < TIME_STEPS; ++j) {
             tables->kernels[i].values[j] = (double*)calloc(COMPONENTS, sizeof(double));
         }

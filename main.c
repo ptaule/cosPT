@@ -28,12 +28,18 @@ void exit_worker(tables_t* worker_mem, const int* core);
 int cuba_integrand(const int *ndim, const cubareal xx[], const int *ncomp,
         cubareal ff[], void *userdata, const int *nvec, const int *core);
 
+#define INPUT "/home/t30/ben/ge52sir/non_linear_PS/input/"
 
 
 int main (int argc, char* argv[]) {
-    char* input_ps_file   = "input/PS_linear_z000_pk.dat";
-    char* input_zeta_file = "input/zeta.dat";
-    char* output_ps_file  = "output/PS_" TOSTRING(LOOPS) "loop.dat";
+    const char* input_ps_file       = INPUT "massive_nu_0.1eV_z2_pk_cb.dat";
+    /* const char* input_zeta_file     = INPUT "zeta.dat"; */
+    const char* input_redshift_file = INPUT "redshift.dat";
+    const char* output_ps_file      = "cb_cb_L" TOSTRING(LOOPS) ".dat";
+
+    char* ic_perturbations_files[2];
+    ic_perturbations_files[0] = INPUT "delta_nu_over_delta_cb_lin_z25.dat";
+    ic_perturbations_files[1] = INPUT "theta_nu_over_aHf_delta_cb_lin_z25.dat";
 
     if (argc == 2) {
         input_ps_file = argv[1];
@@ -48,7 +54,7 @@ int main (int argc, char* argv[]) {
     printf("TIME STEPS            = %d\n", TIME_STEPS);
     printf("MONTE CARLO MAX EVALS = %.2e\n", CUBA_MAXEVAL);
     printf("Reading input power spectrum from %s.\n",input_ps_file);
-    printf("Reading input zeta function from %s.\n",input_zeta_file);
+    /* printf("Reading input zeta function from %s.\n",input_zeta_file); */
     printf("Results will be written to %s.\n",output_ps_file);
 
 #if N_CORES >= 0
@@ -80,8 +86,10 @@ int main (int argc, char* argv[]) {
     initialize_diagrams(diagrams);
 
     evolution_params_t params = {
-        .zeta_acc = NULL,
-        .zeta_spline = NULL,
+        /* .zeta_acc = NULL, */
+        /* .zeta_spline = NULL, */
+        .redshift_acc = NULL,
+        .redshift_spline = NULL,
         .omega = gsl_matrix_alloc(COMPONENTS, COMPONENTS)
     };
 
@@ -96,8 +104,15 @@ int main (int argc, char* argv[]) {
         .worker_mem = worker_mem
     };
 
+    // Read input files and interpolate
     read_and_interpolate(input_ps_file,&input.ps_acc,&input.ps_spline);
-    read_and_interpolate(input_zeta_file,&params.zeta_acc,&params.zeta_spline);
+    read_and_interpolate(input_redshift_file,&params.redshift_acc,&params.redshift_spline);
+    /* read_and_interpolate(input_zeta_file,&params.zeta_acc,&params.zeta_spline); */
+
+    for (int i = 0; i < 2; ++i) {
+        read_and_interpolate(ic_perturbations_files[i],
+                &params.ic_perturb_accs[i], &params.ic_perturb_splines[i]);
+    }
 
     output_t output = {
         .wavenumbers = (double*)calloc(N_POINTS, sizeof(double)),
@@ -128,7 +143,6 @@ int main (int argc, char* argv[]) {
         k *= delta_factor;
         output.wavenumbers[i] = k;
         input.k = k;
-
 
         time(&beginning);
 
@@ -171,8 +185,15 @@ int main (int argc, char* argv[]) {
 
     gsl_spline_free(input.ps_spline);
     gsl_interp_accel_free(input.ps_acc);
-    gsl_spline_free(params.zeta_spline);
-    gsl_interp_accel_free(params.zeta_acc);
+    gsl_spline_free(params.redshift_spline);
+    gsl_interp_accel_free(params.redshift_acc);
+    /* gsl_spline_free(params.zeta_spline); */
+    /* gsl_interp_accel_free(params.zeta_acc); */
+
+    for (int i = 0; i < 2; ++i) {
+        gsl_interp_accel_free(params.ic_perturb_accs[i]);
+        gsl_spline_free(params.ic_perturb_splines[i]);
+    }
 
     return 0;
 }
