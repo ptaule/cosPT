@@ -115,7 +115,7 @@ void tables_zero_initialize(tables_t* tables) {
         tables->kernels[i].ic_computed = false;
         tables->kernels[i].evolved     = false;
 
-        for (int j = 0; j < COMPONENTS; ++j) {
+        for (int j = 0; j < SPT_COMPONENTS; ++j) {
             tables->kernels[i].spt_values[j] = 0.0;
         }
 
