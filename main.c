@@ -63,7 +63,7 @@ int main (int argc, char* argv[]) {
 #endif
 
     // Array of table_ptrs, one for each worker (thread)
-    tables_t* worker_mem = (tables_t*)malloc(CUBA_MAXCORES * sizeof(tables_t));
+    tables_t* worker_mem = (tables_t*)malloc(MAXCORES * sizeof(tables_t));
 
     // Set routines to be run before process forking (new worker)
     cubainit(init_worker, worker_mem);
@@ -76,7 +76,7 @@ int main (int argc, char* argv[]) {
     // Sum table can be computed right away
     short int sum_table[N_CONFIGS][N_CONFIGS];
     compute_sum_table(sum_table);
-    for (int i = 0; i < CUBA_MAXCORES; ++i) {
+    for (int i = 0; i < MAXCORES; ++i) {
         worker_mem[i].sum_table = (const short int (*)[])sum_table;
         worker_mem[i].eta = eta;
     }
@@ -204,9 +204,9 @@ void init_worker(tables_t* worker_mem, const int* core) {
         tables_allocate(&worker_mem[0]);
         return;
     }
-    if (*core + 1 >= CUBA_MAXCORES) {
+    if (*core + 1 >= MAXCORES) {
         error_verbose("Tried to start worker %d (in addition to the master "
-                "fork), which exceeds MAXCORES = %d.", *core + 1, CUBA_MAXCORES);
+                "fork), which exceeds MAXCORES = %d.", *core + 1, MAXCORES);
     }
     tables_allocate(&worker_mem[*core + 1]);
 }

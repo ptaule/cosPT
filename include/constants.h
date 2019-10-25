@@ -67,7 +67,9 @@
 
 // Maximum number of cores (a value smaller than N_CORES will exit
 // the program unsuccessfully)
-#define CUBA_MAXCORES 10
+#ifndef MAXCORES
+#define MAXCORES 10
+#endif
 
 #define CUBA_STATEFILE NULL
 #define CUBA_SPIN NULL
