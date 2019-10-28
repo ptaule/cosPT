@@ -373,22 +373,23 @@ short int kernel_evolution(
         tables->kernels[kernel_index].values[0][i] =
             (double)tables->kernels[kernel_index].spt_values[i];
     }
+
     // At linear order, the ICs for nu (components 2-3) are given by input
     // perturbation ratios.
-    // Various IC options for nu at non-linear order:
-    // - 0
-    // - SPT-EdS
-    // - SPT-EdS multiplied by perturbation ratio
     if (n == 1) {
-        for (int i = 2; i < SPT_COMPONENTS; ++i) {
-            tables->kernels[kernel_index].values[0][i] = 0;
-        }
-    }
-    else {
         for (int i = 2; i < COMPONENTS; ++i) {
             tables->kernels[kernel_index].values[0][i] =
                 gsl_spline_eval(params->ic_perturb_splines[i-2], k,
                         params->ic_perturb_accs[i-2]);
+        }
+    }
+    else {
+        /* Various IC options for nu at non-linear order:
+         * - 0
+         * - SPT-EdS
+         * - SPT-EdS multiplied by (perturbation ratio)^n */
+        for (int i = 2; i < COMPONENTS; ++i) {
+            tables->kernels[kernel_index].values[0][i] = 0;
         }
     }
 
