@@ -33,7 +33,7 @@ static void vertex(
         )
 {
     vfloat alpha_lr = tables->alpha[sum_l][sum_r];
-    vfloat alpha_rl = tables->alpha[sum_r][sum_l];
+    /* vfloat alpha_rl = tables->alpha[sum_r][sum_l]; */
     vfloat beta = tables->beta[sum_l][sum_r];
 
     short int index_l = kernel_evolution(args_l, -1, m_l, params, tables);
@@ -46,20 +46,23 @@ static void vertex(
 
         switch (COMPONENTS) {
             case 4:
-                // Component a = 2, two contributing terms
+                // Component a = 2
                 a = 2, b = 3, c = 2;
                 // gamma_223 = alpha_lr
-                partial_rhs_sum[a][i] += 0.5 * alpha_lr
+                partial_rhs_sum[a][i] += alpha_lr
                     * tables->kernels[index_l].values[i][b]
                     * tables->kernels[index_r].values[i][c];
 
-                b = 2, c = 3;
-                // gamma_232 = alpha_rl
-                partial_rhs_sum[a][i] += 0.5 * alpha_rl
-                    * tables->kernels[index_l].values[i][b]
-                    * tables->kernels[index_r].values[i][c];
+                /* The term below is redundant; due to momentum symmetrization
+                 * of the evolution eq. RHS, it will be covered by the term
+                 * above. */
+                /* b = 2, c = 3; */
+                /* // gamma_232 = alpha_rl */
+                /* partial_rhs_sum[a][i] += 0.5 * alpha_rl */
+                /*     * tables->kernels[index_l].values[i][b] */
+                /*     * tables->kernels[index_r].values[i][c]; */
 
-                // Component a = 3, one contributing term
+                // Component a = 3
                 a = 3, b = 3, c = 3;
                 // gamma_444 = beta
                 partial_rhs_sum[a][i] += beta
@@ -70,20 +73,23 @@ static void vertex(
             // executed
             __attribute__((fallthrough));
             case 2:
-                // Component a = 0, two contributing terms:
+                // Component a = 0
                 a = 0, b = 1, c = 0;
                 // gamma_001 = alpha_lr
-                partial_rhs_sum[a][i] += 0.5 * alpha_lr
+                partial_rhs_sum[a][i] += alpha_lr
                     * tables->kernels[index_l].values[i][b]
                     * tables->kernels[index_r].values[i][c];
 
-                b = 0, c = 1;
-                // gamma_010 = alpha_rl
-                partial_rhs_sum[a][i] += 0.5 * alpha_rl
-                    * tables->kernels[index_l].values[i][b]
-                    * tables->kernels[index_r].values[i][c];
+                /* The term below is redundant; due to momentum symmetrization
+                 * of the evolution eq. RHS, it will be covered by the term
+                 * above. */
+                /* b = 0, c = 1; */
+                /* // gamma_010 = alpha_rl */
+                /* partial_rhs_sum[a][i] += 0.5 * alpha_rl */
+                /*     * tables->kernels[index_l].values[i][b] */
+                /*     * tables->kernels[index_r].values[i][c]; */
 
-                // Component a = 1, one contributing term
+                // Component a = 1
                 a = 1, b = 1, c = 1;
                 // gamma_111 = beta
                 partial_rhs_sum[a][i] += beta
