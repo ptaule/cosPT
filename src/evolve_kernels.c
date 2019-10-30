@@ -390,6 +390,14 @@ short int kernel_evolution(
          * - SPT-EdS multiplied by (perturbation ratio)^n */
         for (int i = 2; i < COMPONENTS; ++i) {
             tables->kernels[kernel_index].values[0][i] = 0;
+
+            /* tables->kernels[kernel_index].values[0][i] = */
+            /*     (double)tables->kernels[kernel_index].spt_values[i-2]; */
+
+            /* tables->kernels[kernel_index].values[0][i] = */
+            /*     (double)tables->kernels[kernel_index].spt_values[i-2] */
+            /*     * pow(gsl_spline_eval(params->ic_perturb_splines[i-2], k, */
+            /*                 params->ic_perturb_accs[i-2]) ,n); */
         }
     }
 
