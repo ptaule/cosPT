@@ -21,7 +21,7 @@
 #include "include/evolve_kernels.h"
 
 
-#define INPUT "/home/t30/ben/ge52sir/non_linear_PS/input/"
+#define INPUT "/home/pettertaule/Documents/non-linear_PS/input/"
 
 
 int main (int argc, char* argv[]) {
@@ -64,8 +64,9 @@ int main (int argc, char* argv[]) {
     // Sum table can be computed right away
     short int sum_table[N_CONFIGS][N_CONFIGS];
     compute_sum_table(sum_table);
-        table.sum_table = (const short int (*)[])sum_table;
-        table.eta = eta;
+    table.sum_table = (const short int (*)[])sum_table;
+    table.eta = eta;
+    tables_allocate(&table);
 
     // Initialize diagrams to compute at this order in PT
     diagram_t diagrams[N_DIAGRAMS];
@@ -90,7 +91,10 @@ int main (int argc, char* argv[]) {
         .worker_mem = &table
     };
 
-    integration_variables_t vars;
+    integration_variables_t vars = {
+        .magnitudes = {0.1, 0.2},
+        .cos_theta = {0,0}
+    };
 
     // Read input files and interpolate
     read_and_interpolate(input_ps_file,&input.ps_acc,&input.ps_spline);
@@ -106,9 +110,13 @@ int main (int argc, char* argv[]) {
     double k = K_MIN;
 
     for (int i = 0; i < N_POINTS; ++i) {
+        /* printf("i = %d \n", i); */
         k *= delta_factor;
+        input.k = k;
 
         table.Q_magnitudes = vars.magnitudes;
+
+        tables_zero_initialize(&table);
 
         // Initialize sum-, bare_scalar_products-, alpha- and beta-table
         compute_bare_scalar_products(input.k, &vars,
@@ -118,7 +126,7 @@ int main (int argc, char* argv[]) {
         compute_alpha_beta_tables((const vfloat (*)[])table.scalar_products,
                 table.alpha, table.beta);
 
-        integrand(&input, &table);
+        printf("%f \n",integrand(&input, &table));
     }
 
     diagrams_gc(diagrams);
