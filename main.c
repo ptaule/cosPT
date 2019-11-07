@@ -90,7 +90,6 @@ int main (int argc, char* argv[]) {
         /* .zeta_spline = NULL, */
         .redshift_acc = NULL,
         .redshift_spline = NULL,
-        .omega = gsl_matrix_alloc(COMPONENTS, COMPONENTS)
     };
 
     integration_input_t input = {
@@ -180,8 +179,6 @@ int main (int argc, char* argv[]) {
     free(output.lin_ps);
     free(output.non_lin_ps);
     free(output.errors);
-
-    gsl_matrix_free(params.omega);
 
     gsl_spline_free(input.ps_spline);
     gsl_interp_accel_free(input.ps_acc);

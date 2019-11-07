@@ -12,7 +12,6 @@
 #include <gsl/gsl_sf.h>
 #include <gsl/gsl_spline.h>
 #include <gsl/gsl_odeiv2.h>
-#include <gsl/gsl_blas.h>
 
 #include "../include/constants.h"
 #include "../include/utilities.h"
@@ -205,90 +204,41 @@ typedef struct {
 
 
 
-inline static void set_omega_matrix(
-        gsl_matrix* omega,
-        double eta,
-        double k,
-        const evolution_params_t* params
-        )
-{
-    // f_nu ratio computed from CLASS
-    double f_nu = 0.0221165829;
-    // Using Garny et.al sound speed, neutrino mass 3*0.1eV and
-    // OmegaM(0) = 0.319104 (CLASS with m_nu = 0.1)
-    double k_FS_factor = 0.907778 * 0.1 * 0.564893;
-
-    double k_FS2 = k_FS_factor * k_FS_factor
-        * pow(1 + gsl_spline_eval(params->redshift_spline, eta, params->redshift_acc), -1);
-
-    // Note that 'omega -> - omega' here, compared to analytic def., since then
-    // the program does not need to perform this scaling (corresponding to
-    // moving omega to RHS of evolution equation) for each computation.
-
-    // First row
-    gsl_matrix_set(omega,0,0, 0);
-    gsl_matrix_set(omega,0,1, 1);
-    gsl_matrix_set(omega,0,2, 0);
-    gsl_matrix_set(omega,0,3, 0);
-    // Second row
-    gsl_matrix_set(omega,1,0,  1.5 * (1 - f_nu));
-    gsl_matrix_set(omega,1,1, -1.5 + 1);
-    gsl_matrix_set(omega,1,2,  1.5 * f_nu);
-    gsl_matrix_set(omega,1,3, 0);
-    // Third row
-    gsl_matrix_set(omega,2,0, 0);
-    gsl_matrix_set(omega,2,1, 0);
-    gsl_matrix_set(omega,2,2, 0);
-    gsl_matrix_set(omega,2,3, 1);
-    // Fourth row
-    gsl_matrix_set(omega,3,0,  1.5 * (1 - f_nu));
-    gsl_matrix_set(omega,3,1,  0);
-    gsl_matrix_set(omega,3,2,  1.5 * (f_nu - k*k/k_FS2));
-    gsl_matrix_set(omega,3,3, -1.5 + 1);
-
-    /* SPT limit
-    // First row
-    gsl_matrix_set(omega,0,0, 0);
-    gsl_matrix_set(omega,0,1, 1);
-    // Second row
-    gsl_matrix_set(omega,1,0,  1.5);
-    gsl_matrix_set(omega,1,1, -0.5);
-    */
-}
-
-
-
 int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
     ode_input_t input = *(ode_input_t*)ode_input;
     short int n = input.n;
+    double k = input.k;
     const evolution_params_t* params = input.parameters;
-    gsl_matrix* omega = params->omega;
 
-    set_omega_matrix(omega, eta, input.k, params);
+    // Using Garny et.al sound speed, neutrino mass 3*0.1eV and
+    // OmegaM(0) = 0.319104 (CLASS with m_nu = 0.1)
+    // f_nu ratio computed from CLASS
+#define m_nu 0.1
+#define f_nu 0.0221165829
+#define sqrt_omega_m 0.564893
+#define FS_factor 0.907778 * m_nu * sqrt_omega_m
 
-    gsl_vector_const_view y_vec = gsl_vector_const_view_array(y,COMPONENTS);
-    gsl_vector_view f_vec = gsl_vector_view_array(f,COMPONENTS);
+    double k_FS2 = FS_factor * FS_factor
+        * pow(1 + gsl_spline_eval(params->redshift_spline, eta, params->redshift_acc), -1);
 
-    for (int i = 0; i < COMPONENTS; ++i) {
-        // Subtract n*I from omega
-        double value = gsl_matrix_get(omega,i,i);
-        gsl_matrix_set(omega,i,i,value - n);
-    }
-
+    double rhs[COMPONENTS] = {0};
+    // If n == 1, rhs = 0
     if (n > 1) {
         for (int i = 0; i < COMPONENTS; ++i) {
-            double rhs = gsl_spline_eval(input.rhs_splines[i], eta, input.rhs_accs[i]);
-            gsl_vector_set(&f_vec.vector, i, rhs);
-        }
-    }
-    else {
-        for (int i = 0; i < COMPONENTS; ++i) {
-            gsl_vector_set(&f_vec.vector, i, 0.0);
+            rhs[i] = gsl_spline_eval(input.rhs_splines[i], eta, input.rhs_accs[i]);
         }
     }
 
-    // Compute omega*y + f and store in f
-    gsl_blas_dgemv(CblasNoTrans, 1, omega, &y_vec.vector, 1, &f_vec.vector);
+    f[0] = rhs[0] - n * y[0] + y[1];
+    f[1] = rhs[1] + 1.5 * (1 - f_nu) * y[0] + (-0.5 - n) * y[1] + 1.5 * f_nu * y[2];
+    f[2] = rhs[2] - n * y[2] + y[3];
+    f[3] = rhs[3] + 1.5 * (1 - f_nu) * y[0] + 1.5 * (f_nu - k*k/k_FS2) * y[2] + (-0.5 - n) * y[3];
+
+#undef m_nu
+#undef f_nu
+#undef sqrt_omega_m
+#undef FS_factor
+
     return GSL_SUCCESS;
 }
 
