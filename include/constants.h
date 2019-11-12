@@ -8,7 +8,6 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#include <gsl/gsl_matrix.h>
 #include <gsl/gsl_spline.h>
 
 // Number of loops (if not set by compile options)
@@ -87,17 +86,11 @@
 // Variable precision
 typedef long double vfloat;
 #define vfloat_fmt   "%Le"
-#define matrix_t     gsl_matrix_long_double
-#define matrix_alloc gsl_matrix_long_double_alloc
-#define matrix_set   gsl_matrix_long_double_set
-#define matrix_get   gsl_matrix_long_double_get
-#define matrix_free  gsl_matrix_long_double_free
 
 // Parameters type
 typedef struct {
     gsl_interp_accel* zeta_acc;
     gsl_spline* zeta_spline;
-    gsl_matrix* omega;
 } evolution_params_t;
 
 // Constants:
