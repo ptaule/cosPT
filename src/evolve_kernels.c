@@ -334,20 +334,25 @@ short int kernel_evolution(
         }
     }
     else {
-        /* Various IC options for nu at non-linear order:
-         * - 0
-         * - SPT-EdS
-         * - SPT-EdS multiplied by (perturbation ratio)^n */
         for (int i = 2; i < COMPONENTS; ++i) {
+            /* Various IC options for nu at non-linear order:
+             * (1) 0
+             * (2) SPT-EdS
+             * (3) SPT-EdS multiplied by (perturbation ratio)^n */
+#if NEUTRINO_KERNEL_IC==1
             tables->kernels[kernel_index].values[0][i] = 0;
-
-            /* tables->kernels[kernel_index].values[0][i] = */
-            /*     (double)tables->kernels[kernel_index].spt_values[i-2]; */
-
-            /* tables->kernels[kernel_index].values[0][i] = */
-            /*     (double)tables->kernels[kernel_index].spt_values[i-2] */
-            /*     * pow(gsl_spline_eval(params->ic_perturb_splines[i-2], k, */
-            /*                 params->ic_perturb_accs[i-2]) ,n); */
+#elif NEUTRINO_KERNEL_IC==2
+            tables->kernels[kernel_index].values[0][i] =
+                (double)tables->kernels[kernel_index].spt_values[i-2];
+#elif NEUTRINO_KERNEL_IC==3
+            tables->kernels[kernel_index].values[0][i] =
+                (double)tables->kernels[kernel_index].spt_values[i-2]
+                * pow(gsl_spline_eval(params->ic_perturb_splines[i-2], k,
+                            params->ic_perturb_accs[i-2]) ,n);
+#else
+            warning_verbose("Invalid value for NEUTRINO_KERNEL_IC = %d.",
+                    NEUTRINO_KERNEL_IC);
+#endif
         }
     }
 

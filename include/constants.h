@@ -36,6 +36,14 @@
 #define ETA_I -3.0178
 #define ETA_F 0
 
+/* Initial conditions for n>1 neutrino kernels. Possible values:
+ * (1) 0
+ * (2) SPT-EdS
+ * (3) SPT-EdS multiplied by (perturbation ratio)^n */
+#ifndef NEUTRINO_KERNEL_IC
+#define NEUTRINO_KERNEL_IC 1
+#endif
+
 // CUBA settings
 #define CUBA_NVEC 1
 #define CUBA_EPSREL 1e-3

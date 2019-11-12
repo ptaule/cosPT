@@ -231,6 +231,7 @@ void write_PS(
 
     fprintf(fp,"#\n# Settings/constants used:\n#\n");
     fprintf(fp,"# Input PS read from %s\n", output->input_ps_file);
+    fprintf(fp,"# Neutrino kernels (n>1) IC             = %d\n", NEUTRINO_KERNEL_IC);
     fprintf(fp,"# Number of time steps                  = %d\n", TIME_STEPS);
 
     fprintf(fp,"# Monte Carlo abstol, reltol            = %.2e, %.2e\n", CUBA_EPSABS, CUBA_EPSREL);
