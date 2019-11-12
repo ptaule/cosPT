@@ -229,8 +229,9 @@ void write_PS(
             output->wavenumbers[0], output->wavenumbers[n_points-1]);
     fprintf(fp,"# Number of wavenumbers: %d\n", n_points);
 
-    fprintf(fp,"#\n# Settings/constants used:\n");
-    fprintf(fp,"# Number of time steps                  = %d\n",TIME_STEPS);
+    fprintf(fp,"#\n# Settings/constants used:\n#\n");
+    fprintf(fp,"# Input PS read from %s\n", output->input_ps_file);
+    fprintf(fp,"# Number of time steps                  = %d\n", TIME_STEPS);
 
     fprintf(fp,"# Monte Carlo abstol, reltol            = %.2e, %.2e\n", CUBA_EPSABS, CUBA_EPSREL);
     fprintf(fp,"# Monte Carlo max num. of evals         = %.2e\n", CUBA_MAXEVAL);

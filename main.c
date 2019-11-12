@@ -114,6 +114,7 @@ int main (int argc, char* argv[]) {
     }
 
     output_t output = {
+        .input_ps_file = input_ps_file,
         .wavenumbers = (double*)calloc(N_POINTS, sizeof(double)),
         .lin_ps      = (double*)calloc(N_POINTS, sizeof(double)),
         .non_lin_ps  = (double*)calloc(N_POINTS, sizeof(double)),
