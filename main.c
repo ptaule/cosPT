@@ -99,6 +99,7 @@ int main (int argc, char* argv[]) {
     read_and_interpolate(input_zeta_file,&params.zeta_acc,&params.zeta_spline);
 
     output_t output = {
+        .input_ps_file = input_ps_file,
         .wavenumbers = (double*)calloc(N_POINTS, sizeof(double)),
         .lin_ps      = (double*)calloc(N_POINTS, sizeof(double)),
         .non_lin_ps  = (double*)calloc(N_POINTS, sizeof(double)),

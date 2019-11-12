@@ -14,6 +14,7 @@
 #include "constants.h"
 
 typedef struct {
+    const char* input_ps_file;
     double* wavenumbers;
     double* lin_ps;
     double* non_lin_ps;
