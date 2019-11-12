@@ -210,9 +210,6 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
     double k = input.k;
     const evolution_params_t* params = input.parameters;
 
-    // Using Garny et.al sound speed, neutrino mass 3*0.1eV and
-    // OmegaM(0) = 0.319104 (CLASS with m_nu = 0.1)
-    // f_nu ratio computed from CLASS
 #define m_nu 0.1
 #define f_nu 0.0221165829
 #define sqrt_omega_m 0.564893
