@@ -210,10 +210,7 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
     double k = input.k;
     const evolution_params_t* params = input.parameters;
 
-#define m_nu 0.1
-#define f_nu 0.0221165829
-#define sqrt_omega_m 0.564893
-#define FS_factor 0.907778 * m_nu * sqrt_omega_m
+#define FS_factor 0.907778 * M_NU * SQRT_OMEGA_M
 
     double k_FS2 = FS_factor * FS_factor
         * pow(1 + gsl_spline_eval(params->redshift_spline, eta, params->redshift_acc), -1);
@@ -227,13 +224,10 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
     }
 
     f[0] = rhs[0] - n * y[0] + y[1];
-    f[1] = rhs[1] + 1.5 * (1 - f_nu) * y[0] + (-0.5 - n) * y[1] + 1.5 * f_nu * y[2];
+    f[1] = rhs[1] + 1.5 * (1 - F_NU) * y[0] + (-0.5 - n) * y[1] + 1.5 * F_NU * y[2];
     f[2] = rhs[2] - n * y[2] + y[3];
-    f[3] = rhs[3] + 1.5 * (1 - f_nu) * y[0] + 1.5 * (f_nu - k*k/k_FS2) * y[2] + (-0.5 - n) * y[3];
+    f[3] = rhs[3] + 1.5 * (1 - F_NU) * y[0] + 1.5 * (F_NU - k*k/k_FS2) * y[2] + (-0.5 - n) * y[3];
 
-#undef m_nu
-#undef f_nu
-#undef sqrt_omega_m
 #undef FS_factor
 
     return GSL_SUCCESS;
