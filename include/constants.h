@@ -32,7 +32,7 @@
 #define Q_MAX 1e2
 
 // Cosmology dependent parameters
-#define ETA_I -3.0178             /* eta is defined as log(a) or log(D) */
+#define ETA_I -3.026233453        /* eta is defined as log(a) or log(D) */
 #define ETA_F 0
 #define M_NU 0.07                 /* Mass of _one_ neutrino             */
 #define F_NU 0.0155853064         /* Neutrino fraction                  */
@@ -102,8 +102,8 @@ typedef long double vfloat;
 
 // Parameters type
 typedef struct {
-    /* gsl_interp_accel* zeta_acc; */
-    /* gsl_spline* zeta_spline; */
+    gsl_interp_accel* zeta_acc;
+    gsl_spline* zeta_spline;
     gsl_interp_accel* redshift_acc;
     gsl_spline* redshift_spline;
     gsl_interp_accel* ic_perturb_accs[2];
