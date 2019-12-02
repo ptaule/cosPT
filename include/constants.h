@@ -33,7 +33,7 @@
 // Initial/final times (eta is typically defined as the log of a or the growth
 // rate D+)
 #define ETA_I -3.18
-#define ETA_F 0
+#define ETA_F 0.0
 
 // CUBA settings
 #define CUBA_NVEC 1
