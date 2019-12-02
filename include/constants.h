@@ -106,8 +106,8 @@ typedef struct {
     gsl_spline* zeta_spline;
     gsl_interp_accel* redshift_acc;
     gsl_spline* redshift_spline;
-    gsl_interp_accel* ic_perturb_accs[2];
-    gsl_spline* ic_perturb_splines[2];
+    gsl_interp_accel* ic_perturb_accs[3];
+    gsl_spline* ic_perturb_splines[3];
 } evolution_params_t;
 
 // Constants:

@@ -37,9 +37,10 @@ int main (int argc, char* argv[]) {
     const char* input_redshift_file = INPUT "redshift.dat";
     const char* output_ps_file      = "cb_cb_L" TOSTRING(LOOPS) ".dat";
 
-    char* ic_perturbations_files[2];
-    ic_perturbations_files[0] = INPUT "z10_delta_nu_over_delta_cb.dat";
-    ic_perturbations_files[1] = INPUT "z10_theta_nu_over_aHf_delta_cb.dat";
+    char* ic_perturbations_files[3];
+    ic_perturbations_files[0] = INPUT "z10_theta_cb_over_aHf_delta_cb.dat";
+    ic_perturbations_files[1] = INPUT "z10_delta_nu_over_delta_cb.dat";
+    ic_perturbations_files[2] = INPUT "z10_theta_nu_over_aHf_delta_cb.dat";
 
     if (argc == 2) {
         input_ps_file = argv[1];
@@ -107,7 +108,7 @@ int main (int argc, char* argv[]) {
     read_and_interpolate(input_redshift_file,&params.redshift_acc,&params.redshift_spline);
     read_and_interpolate(input_zeta_file,&params.zeta_acc,&params.zeta_spline);
 
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < 3; ++i) {
         read_and_interpolate(ic_perturbations_files[i],
                 &params.ic_perturb_accs[i], &params.ic_perturb_splines[i]);
     }
@@ -187,7 +188,7 @@ int main (int argc, char* argv[]) {
     gsl_spline_free(params.zeta_spline);
     gsl_interp_accel_free(params.zeta_acc);
 
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < 3; ++i) {
         gsl_interp_accel_free(params.ic_perturb_accs[i]);
         gsl_spline_free(params.ic_perturb_splines[i]);
     }

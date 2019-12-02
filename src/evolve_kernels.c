@@ -292,6 +292,62 @@ void evolve_kernels(
 
 
 
+static void kernel_initial_conditions(
+        short int kernel_index,
+        short int n,
+        double k,
+        const evolution_params_t* params,
+        tables_t* tables
+        )
+{
+    // Use interpolated perturbations ratios from CLASS at linear order
+    if (n == 1) {
+        tables->kernels[kernel_index].values[0][0] = 1;
+        for (int i = 1; i < COMPONENTS; ++i) {
+            tables->kernels[kernel_index].values[0][i] =
+                gsl_spline_eval(params->ic_perturb_splines[i-1], k,
+                        params->ic_perturb_accs[i-1]);
+        }
+    }
+    else {
+        // Use SPT-EdS ICs for delta_cb (component 0)
+        for (int i = 0; i < 2; ++i) {
+            tables->kernels[kernel_index].values[0][i] =
+                (double)tables->kernels[kernel_index].spt_values[i];
+        }
+
+        /*
+        // Use SPT-EdS multiplied by (perturbation ratio)^n for theta_cb
+        tables->kernels[kernel_index].values[0][1] =
+            (double)tables->kernels[kernel_index].spt_values[1]
+            * pow(gsl_spline_eval(params->ic_perturb_splines[0], k,
+                        params->ic_perturb_accs[0]) ,n);
+        */
+
+        for (int i = 2; i < COMPONENTS; ++i) {
+            /* Various IC options for nu at non-linear order:
+             * (1) 0
+             * (2) SPT-EdS
+             * (3) SPT-EdS multiplied by (perturbation ratio)^n */
+#if NEUTRINO_KERNEL_IC==1
+            tables->kernels[kernel_index].values[0][i] = 0;
+#elif NEUTRINO_KERNEL_IC==2
+            tables->kernels[kernel_index].values[0][i] =
+                (double)tables->kernels[kernel_index].spt_values[i-2];
+#elif NEUTRINO_KERNEL_IC==3
+            tables->kernels[kernel_index].values[0][i] =
+                (double)tables->kernels[kernel_index].spt_values[i-2]
+                * pow(gsl_spline_eval(params->ic_perturb_splines[i-1], k,
+                            params->ic_perturb_accs[i-1]) ,n);
+#else
+            warning_verbose("Invalid value for NEUTRINO_KERNEL_IC = %d.",
+                    NEUTRINO_KERNEL_IC);
+#endif
+        }
+    }
+}
+
+
 
 short int kernel_evolution(
         const short int arguments[],
@@ -333,43 +389,8 @@ short int kernel_evolution(
     short int sum = sum_vectors(arguments, N_KERNEL_ARGS, tables->sum_table);
     double k = sqrt(tables->scalar_products[sum][sum]);
 
-    // Use SPT-EdS ICs for cdm+b (components 0-1)
-    for (int i = 0; i < 2; ++i) {
-        tables->kernels[kernel_index].values[0][i] =
-            (double)tables->kernels[kernel_index].spt_values[i];
-    }
-
-    // At linear order, the ICs for nu (components 2-3) are given by input
-    // perturbation ratios.
-    if (n == 1) {
-        for (int i = 2; i < COMPONENTS; ++i) {
-            tables->kernels[kernel_index].values[0][i] =
-                gsl_spline_eval(params->ic_perturb_splines[i-2], k,
-                        params->ic_perturb_accs[i-2]);
-        }
-    }
-    else {
-        for (int i = 2; i < COMPONENTS; ++i) {
-            /* Various IC options for nu at non-linear order:
-             * (1) 0
-             * (2) SPT-EdS
-             * (3) SPT-EdS multiplied by (perturbation ratio)^n */
-#if NEUTRINO_KERNEL_IC==1
-            tables->kernels[kernel_index].values[0][i] = 0;
-#elif NEUTRINO_KERNEL_IC==2
-            tables->kernels[kernel_index].values[0][i] =
-                (double)tables->kernels[kernel_index].spt_values[i-2];
-#elif NEUTRINO_KERNEL_IC==3
-            tables->kernels[kernel_index].values[0][i] =
-                (double)tables->kernels[kernel_index].spt_values[i-2]
-                * pow(gsl_spline_eval(params->ic_perturb_splines[i-2], k,
-                            params->ic_perturb_accs[i-2]) ,n);
-#else
-            warning_verbose("Invalid value for NEUTRINO_KERNEL_IC = %d.",
-                    NEUTRINO_KERNEL_IC);
-#endif
-        }
-    }
+    // Set initial conditions
+    kernel_initial_conditions(kernel_index, n, k, params, tables);
 
     // GSL interpolation variables for interpolated RHS
     gsl_spline*       rhs_splines[COMPONENTS] = {NULL};
@@ -417,12 +438,11 @@ void compute_F1(
         values[i] = (double*)calloc(COMPONENTS, sizeof(double));
     }
 
-    // Use SPT-EdS ICs for cdm+b (components 0-1) at linear order
-    values[0][0] = values[0][1] = 1;
-    // Use interpolated perturbation ratios for nu (components 2-3) at linear order
-    for (int i = 2; i < COMPONENTS; ++i) {
-        values[0][i] = gsl_spline_eval(params->ic_perturb_splines[i-2], k,
-                params->ic_perturb_accs[i-2]);
+    // Use interpolated perturbations ratios from CLASS at linear order
+    values[0][0] = 1;
+    for (int i = 1; i < COMPONENTS; ++i) {
+        values[0][i] = gsl_spline_eval(params->ic_perturb_splines[i-1], k,
+                params->ic_perturb_accs[i-1]);
     }
 
     // Set up ODE input and system
