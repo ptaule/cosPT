@@ -230,11 +230,15 @@ void write_PS(
     fprintf(fp,"# Number of wavenumbers: %d\n", n_points);
 
     fprintf(fp,"#\n# Settings/constants used:\n#\n");
-    fprintf(fp,"# git revision: %s\n", GIT_HASH);
-    fprintf(fp,"# Input PS read from %s\n", output->input_ps_file);
+    fprintf(fp,"# Git revision                          = %s\n", GIT_HASH);
+    fprintf(fp,"# Input PS read from                    = %s\n#\n", output->input_ps_file);
+
+    fprintf(fp,"# Integration limits                    = [%e,%e]\n", Q_MIN, Q_MAX);
+    fprintf(fp,"# Initial/final times                   = [%e,%e]\n", ETA_I, ETA_F);
+    fprintf(fp,"# Neutrino mass                         = %f\n#\n", M_NU);
+
     fprintf(fp,"# Neutrino kernels (n>1) IC             = %d\n", NEUTRINO_KERNEL_IC);
     fprintf(fp,"# Number of time steps                  = %d\n", TIME_STEPS);
-
     fprintf(fp,"# Monte Carlo abstol, reltol            = %.2e, %.2e\n", CUBA_EPSABS, CUBA_EPSREL);
     fprintf(fp,"# Monte Carlo max num. of evals         = %.2e\n", CUBA_MAXEVAL);
     fprintf(fp,"# ODE initial step size, abstol, reltol = %.2e, %.2e, %.2e\n",
