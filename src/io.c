@@ -230,6 +230,7 @@ void write_PS(
     fprintf(fp,"# Number of wavenumbers: %d\n", n_points);
 
     fprintf(fp,"#\n# Settings/constants used:\n#\n");
+    fprintf(fp,"# git revision: %s\n", GIT_HASH);
     fprintf(fp,"# Input PS read from %s\n", output->input_ps_file);
     fprintf(fp,"# Number of time steps                  = %d\n", TIME_STEPS);
 
