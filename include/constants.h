@@ -13,6 +13,9 @@
 // Include cosmology dependent parameters
 #include "../parameters/m_nu_0.07eV.h"
 
+// Path to input files
+#define INPUT_PATH  "/space/ge52sir/CLASS/massive_nu_0.07eV/"
+
 // Number of loops (if not set by compile options)
 #ifndef LOOPS
 #define LOOPS 1
@@ -41,38 +44,6 @@
 #ifndef NEUTRINO_KERNEL_IC
 #define NEUTRINO_KERNEL_IC 1
 #endif
-
-// CUBA settings
-#define CUBA_NVEC 1
-#define CUBA_EPSREL 1e-3
-#define CUBA_EPSABS 1e-12
-#define CUBA_VERBOSE 0
-#define CUBA_LAST 4
-#define CUBA_SEED 0
-#define CUBA_MINEVAL 0
-
-#ifndef CUBA_MAXEVAL
-#define CUBA_MAXEVAL 1e6
-#endif
-
-// User may set number of cores to use through N_CORES (if not set,
-// CUBA spawns workers depending on available cores)
-#ifndef N_CORES
-#define N_CORES -1
-#endif
-
-// Maximum number of cores (a value smaller than N_CORES will exit
-// the program unsuccessfully)
-#ifndef MAXCORES
-#define MAXCORES 10
-#endif
-
-#define CUBA_STATEFILE NULL
-#define CUBA_SPIN NULL
-
-#define CUBA_NNEW 1000
-#define CUBA_NMIN 2
-#define CUBA_FLATNESS 25.
 
 // Which GSL interpolation routine to use
 #define INTERPOL_TYPE gsl_interp_cspline
