@@ -1,7 +1,0 @@
-# Various constants for different neutrino masses (three species), computed by CLASS
-
-# m_nu,i    # f_nu          # Sqrt(Omega_m)  # Log(D) at z = 24.9957
-0.02        0.0045049569    0.5598733749     -3.023969353
-0.05        0.0111825516    0.5617606377     -3.025284743
-0.07        0.0155853064    0.5630154621     -3.026233453
-0.10        0.0221165829    0.5648925212     -3.027685101

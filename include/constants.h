@@ -10,6 +10,9 @@
 
 #include <gsl/gsl_spline.h>
 
+// Include cosmology dependent parameters
+#include "../parameters/m_nu_0.07eV.h"
+
 // Number of loops (if not set by compile options)
 #ifndef LOOPS
 #define LOOPS 1
@@ -30,13 +33,6 @@
 // Integration limits
 #define Q_MIN 1e-4
 #define Q_MAX 1e2
-
-// Cosmology dependent parameters
-#define ETA_I -3.026233453        /* eta is defined as log(a) or log(D) */
-#define ETA_F 0.0
-#define M_NU 0.07                 /* Mass of _one_ neutrino             */
-#define F_NU 0.0155853064         /* Neutrino fraction                  */
-#define SQRT_OMEGA_M 0.5630154621 /* Sqrt(OmegaM(z=0))                  */
 
 /* Initial conditions for n>1 neutrino kernels. Possible values:
  * (1) 0
