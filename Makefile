@@ -1,4 +1,4 @@
-EXE=main.prog
+EXE=cosPT
 
 SRC_DIR = src
 OBJ_DIR = obj
