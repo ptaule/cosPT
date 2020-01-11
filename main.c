@@ -61,7 +61,7 @@ int main (int argc, char* argv[]) {
     double cuba_maxevals = 1e6;
     int cuba_verbose     = 1;
 
-    char description[40];
+    char description[40] = "";
     char output_path[100] = "/space/ge52sir/non_linear_PS/output/";
     char cuba_statefile_path[100] =
         "/space/ge52sir/non_linear_PS/output/CUBA_statefiles/";
@@ -127,7 +127,7 @@ int main (int argc, char* argv[]) {
                 "see manual (-h) for more information.");
     }
     // Get wavenumber from wavenumber index
-    int wavenumber_index = atoi(argv[1]);
+    int wavenumber_index = atoi(argv[argOffset]);
     double k = get_wavenumber(input_wavenumbers, wavenumber_index);
 
     char output_ps_file[200];
@@ -135,15 +135,13 @@ int main (int argc, char* argv[]) {
     set_output_filepaths(output_ps_file, cuba_statefile, description,
             output_path, cuba_statefile_path, wavenumber_index);
 
-    printf("output_ps_file = %s\n", output_ps_file);
-    printf("cuba_statefile = %s\n", cuba_statefile);
-
     printf("LOOPS                 = %d\n", LOOPS);
     printf("COMPONENTS            = %d\n", COMPONENTS);
     printf("TIME STEPS            = %d\n", TIME_STEPS);
-    printf("MONTE CARLO MAX EVALS = %.2e\n", cuba_maxevals);
-    printf("Reading input power spectrum from %s.\n",input_ps_file);
-    printf("Results will be written to %s.\n",output_ps_file);
+    printf("Monte Carlo max evals = %.2e\n", cuba_maxevals);
+    printf("Input power spectrum  = %s.\n", input_ps_file);
+    printf("Output file           = %s.\n", output_ps_file);
+    printf("Cuba_statefile        = %s.\n", cuba_statefile);
 
     // Array of table_ptrs, one for each worker (thread)
     tables_t* worker_mem = (tables_t*)malloc(max_n_threads * sizeof(tables_t));
