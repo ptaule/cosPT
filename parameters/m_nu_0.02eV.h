@@ -9,10 +9,10 @@
 #define M_NU_0_02EV_H
 
 // Cosmology dependent parameters
-#define eta_i -3.023969353        /* eta is defined as log(a) or log(d) */
-#define eta_f 0.0
-#define m_nu 0.02                 /* mass of _one_ neutrino             */
-#define f_nu  0.0045049569        /* neutrino fraction                  */
-#define sqrt_omega_m 0.5598733749 /* sqrt(omegam(z=0))                  */
+#define ETA_I -3.023969353        /* eta is defined as log(a) or log(d) */
+#define ETA_F 0.0
+#define M_NU 0.02                 /* mass of _one_ neutrino             */
+#define F_NU  0.0045049569        /* neutrino fraction                  */
+#define SQRT_OMEGA_M 0.5598733749 /* sqrt(omegam(z=0))                  */
 
 #endif /* ifndef M_NU_0_02EV_H */
