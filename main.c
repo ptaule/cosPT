@@ -26,8 +26,6 @@
 
 int max_n_threads;
 
-void print_help();
-
 void init_worker(tables_t* worker_mem, const int* core);
 void exit_worker(tables_t* worker_mem, const int* core);
 
@@ -40,6 +38,10 @@ void set_output_filepaths(
         char output_path[],
         char cuba_statefile_path[],
         int a);
+
+void print_help();
+void print_compilation_settings();
+
 
 
 int main (int argc, char* argv[]) {
@@ -135,9 +137,9 @@ int main (int argc, char* argv[]) {
     set_output_filepaths(output_ps_file, cuba_statefile, description,
             output_path, cuba_statefile_path, wavenumber_index);
 
-    printf("LOOPS                 = %d\n", LOOPS);
-    printf("COMPONENTS            = %d\n", COMPONENTS);
-    printf("TIME STEPS            = %d\n", TIME_STEPS);
+    printf("Compilation settings:\n");
+    print_compilation_settings();
+    printf("\nRuntime settings:\n");
     printf("Monte Carlo max evals = %.2e\n", cuba_maxevals);
     printf("Input power spectrum  = %s.\n", input_ps_file);
     printf("Output file           = %s.\n", output_ps_file);
@@ -404,7 +406,7 @@ ANSI_COLOR_MAGENTA"cosPT " ANSI_COLOR_RESET "computes 1- and 2-loop \
 corrections to various correlation functions in cosmological perturbation \
 theory.\nThe program takes one argument: the wavenumber index corresponding to \
 the wavenumber at which to compute the power spectrum correction. See "
-ANSI_COLOR_RED "input/wavenumbers.dat" ANSI_COLOR_RESET ".\n In addition, the \
+ANSI_COLOR_RED "input/wavenumbers.dat" ANSI_COLOR_RESET ".\nIn addition, the \
 program takes these options (which must be given before the arguments):\n\n"
 ANSI_COLOR_BLUE "-a " ANSI_COLOR_RESET
 "Specify absolute tolerance for Monte Carlo integrator. Default: 1e-12.\n"
@@ -427,8 +429,22 @@ ANSI_COLOR_BLUE "-s " ANSI_COLOR_RESET
 "Specify path for CUBA statefile. Default: \
 /space/ge52sir/non_linear_PS/output/CUBA_statefiles/.\n"
 ANSI_COLOR_BLUE "-v " ANSI_COLOR_RESET
-"CUBA verbosity level (1, 2 or 3). Default: 1.\n\n\
-Example usage:\n\n\
-$ cosPT -C 100 -d 2fluid_m_nu_0.07_IC1 -N 1e5 4\n\n"\
-    );
+"CUBA verbosity level (1, 2 or 3). Default: 1.\n\n"
+"Example usage:\n\n\
+$ cosPT -C 100 -d 2fluid_m_nu_0.07_IC1 -N 1e5 4\n\n\
+Current compilation settings:\n\n");
+    print_compilation_settings();
+}
+
+
+
+void print_compilation_settings() {
+    printf("Loops                     = %d\n", LOOPS);
+    printf("Components                = %d\n", COMPONENTS);
+    printf("Time steps                = %d\n", TIME_STEPS);
+    printf("Integration limits        = [%e,%e]\n", Q_MIN, Q_MAX);
+    printf("Initial/final times       = [%e,%e]\n", ETA_I, ETA_F);
+    printf("Neutrino mass             = %f\n", M_NU);
+    printf("Neutrino kernels (n>1) IC = %d\n", NEUTRINO_KERNEL_IC);
+    printf("Git revision              = %s\n", GIT_HASH);
 }
