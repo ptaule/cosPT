@@ -16,8 +16,6 @@
 // Struct for storing overall data to be used in integration
 typedef struct {
     vfloat k;
-    short int component_a;
-    short int component_b;
     gsl_interp_accel* ps_acc;
     gsl_spline* ps_spline;
     const diagram_t* const diagrams;
@@ -25,7 +23,6 @@ typedef struct {
     tables_t* worker_mem;
 } integration_input_t;
 
-vfloat integrand(const integration_input_t* data,
-        tables_t* tables);
+void integrand(const integration_input_t* data, tables_t* tables, double* results);
 
 #endif /* ifndef INTEGRAND_H */

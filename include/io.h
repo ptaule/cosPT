@@ -20,9 +20,9 @@ typedef struct {
     double cuba_epsabs;
     double cuba_maxevals;
     double k;
-    double lin_ps;
-    double non_lin_ps;
-    double error;
+    double lin_ps[INTEGRAND_COMPONENTS];
+    double non_lin_ps[INTEGRAND_COMPONENTS];
+    double error[INTEGRAND_COMPONENTS];
 } output_t;
 
 void read_and_interpolate(const char* filename, gsl_interp_accel** acc, gsl_spline** spline);

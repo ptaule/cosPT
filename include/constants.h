@@ -28,6 +28,11 @@
 #define TIME_STEPS 100
 #endif
 
+// Two-point functions to compute:
+#define INTEGRAND_COMPONENTS 3
+#define COMPONENT_A 0 // delta_cb
+#define COMPONENT_B 2 // delta_nu
+
 // Integration limits
 #define Q_MIN 1e-4
 #define Q_MAX 1e2

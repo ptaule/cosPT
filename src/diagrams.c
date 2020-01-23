@@ -317,9 +317,6 @@ void initialize_diagrams(diagram_t diagrams[]) {
 
         diagrams[i].diagram_factor = (gsl_sf_fact(2*l + m) * gsl_sf_fact(2*r + m)) /
             (pow(2,l+r) * gsl_sf_fact(l) * gsl_sf_fact(r) * gsl_sf_fact(m));
-        // If diagram is antisymmetric in l <-> r, multiply diagram_factor by 2
-        // (the possible_diagrams()-function only returns diagrams with l >= r)
-        if (l != r) diagrams[i].diagram_factor *= 2;
 
         diagrams[i].n_rearrangements = gsl_sf_fact(LOOPS) /
             (gsl_sf_fact(m-1) * gsl_sf_fact(l) * gsl_sf_fact(r));
