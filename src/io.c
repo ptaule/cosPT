@@ -309,6 +309,7 @@ void write_PS(
         fprintf(fp,"%3s% .6e%3s% .6e%3s% .6e", "", output->lin_ps[i], "",
                 output->non_lin_ps[i], "", output->error[i]);
     }
+    fprintf(fp, "\n");
 
     fclose(fp);
 }
