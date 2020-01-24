@@ -30,7 +30,7 @@ all:   CFLAGS   += -O3
 1loop: CFLAGS   += -O3
 2loop: CPPFLAGS += -DDEBUG=0 -DLOOPS=2
 2loop: CFLAGS   += -O3
-debug: CPPFLAGS += -DDEBUG=2 -DN_CORES=0
+debug: CPPFLAGS += -DDEBUG=2
 debug: CFLAGS   += -O0 -g
 
 .PHONY: all clean run 1loop 2loop
