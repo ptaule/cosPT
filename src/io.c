@@ -271,7 +271,7 @@ void write_PS(
     fprintf(fp,"# Description: %s\n", output->description);
 
     fprintf(fp,"#\n# Settings/constants used:\n#\n");
-    fprintf(fp,"# Compoent_A, component_B               = %d, %d\n\n",
+    fprintf(fp,"# Compoent_A, component_B               = %d, %d\n#\n",
             COMPONENT_A, COMPONENT_B);
     fprintf(fp,"# Git revision                          = %s\n", GIT_HASH);
     fprintf(fp,"# Input PS read from                    = %s\n#\n",
