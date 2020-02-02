@@ -10,6 +10,12 @@
 
 #include <gsl/gsl_spline.h>
 
+// Include cosmology dependent parameters
+#include "../parameters/m_nu_0.07eV.h"
+
+// Path to input files
+#define INPUT_PATH  "/space/ge52sir/CLASS/massive_nu_0.07eV/"
+
 // Number of loops (if not set by compile options)
 #ifndef LOOPS
 #define LOOPS 1
@@ -22,21 +28,9 @@
 #define TIME_STEPS 100
 #endif
 
-// Number of evaluation points,
-#define N_POINTS 50
-#define K_MIN 1e-2
-#define K_MAX 1e1
-
 // Integration limits
 #define Q_MIN 1e-4
 #define Q_MAX 1e2
-
-// Cosmology dependent parameters
-#define ETA_I -3.026233453        /* eta is defined as log(a) or log(D) */
-#define ETA_F 0.0
-#define M_NU 0.07                 /* Mass of _one_ neutrino             */
-#define F_NU 0.0155853064         /* Neutrino fraction                  */
-#define SQRT_OMEGA_M 0.5630154621 /* Sqrt(OmegaM(z=0))                  */
 
 /* Initial conditions for n>1 neutrino kernels. Possible values:
  * (1) 0
@@ -45,38 +39,6 @@
 #ifndef NEUTRINO_KERNEL_IC
 #define NEUTRINO_KERNEL_IC 1
 #endif
-
-// CUBA settings
-#define CUBA_NVEC 1
-#define CUBA_EPSREL 1e-3
-#define CUBA_EPSABS 1e-12
-#define CUBA_VERBOSE 0
-#define CUBA_LAST 4
-#define CUBA_SEED 0
-#define CUBA_MINEVAL 0
-
-#ifndef CUBA_MAXEVAL
-#define CUBA_MAXEVAL 1e6
-#endif
-
-// User may set number of cores to use through N_CORES (if not set,
-// CUBA spawns workers depending on available cores)
-#ifndef N_CORES
-#define N_CORES -1
-#endif
-
-// Maximum number of cores (a value smaller than N_CORES will exit
-// the program unsuccessfully)
-#ifndef MAXCORES
-#define MAXCORES 10
-#endif
-
-#define CUBA_STATEFILE NULL
-#define CUBA_SPIN NULL
-
-#define CUBA_NNEW 1000
-#define CUBA_NMIN 2
-#define CUBA_FLATNESS 25.
 
 // Which GSL interpolation routine to use
 #define INTERPOL_TYPE gsl_interp_cspline
