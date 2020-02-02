@@ -236,6 +236,7 @@ int main (int argc, char* argv[]) {
     // CUBA settings
 #define CUBA_NVEC 1
 #define CUBA_LAST 4
+#define CUBA_RETAIN_STATEFILE 16
 #define CUBA_SEED 0
 #define CUBA_MINEVAL 0
 #define CUBA_SPIN NULL
@@ -243,10 +244,11 @@ int main (int argc, char* argv[]) {
 #define CUBA_NMIN 2
 #define CUBA_FLATNESS 25.
     Suave(N_DIMS, INTEGRAND_COMPONENTS, (integrand_t)cuba_integrand, &input,
-            CUBA_NVEC, cuba_epsrel, cuba_epsabs, cuba_verbose | CUBA_LAST,
-            CUBA_SEED, CUBA_MINEVAL, cuba_maxevals, CUBA_NNEW, CUBA_NMIN,
-            CUBA_FLATNESS, cuba_statefile, CUBA_SPIN, &nregions, &neval, &fail,
-            result, error, prob);
+            CUBA_NVEC, cuba_epsrel, cuba_epsabs,
+            (cuba_verbose | CUBA_LAST | CUBA_RETAIN_STATEFILE), CUBA_SEED,
+            CUBA_MINEVAL, cuba_maxevals, CUBA_NNEW, CUBA_NMIN, CUBA_FLATNESS,
+            cuba_statefile, CUBA_SPIN, &nregions, &neval, &fail, result, error,
+            prob);
 
     time(&end);
 
