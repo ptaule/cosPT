@@ -177,8 +177,6 @@ int main (int argc, char* argv[]) {
 
     integration_input_t input = {
         .k           = k,
-        .component_a = 0,
-        .component_b = 0,
         .ps_acc      = NULL,
         .ps_spline   = NULL,
         .diagrams    = diagrams,
@@ -203,11 +201,20 @@ int main (int argc, char* argv[]) {
         .cuba_epsabs   = cuba_epsabs,
         .cuba_maxevals = cuba_maxevals,
         .k             = k,
-        .lin_ps        = 0.0,
-        .non_lin_ps    = 0.0,
-        .error         = 0.0,
     };
 
+    /* Linear evolution */
+    double F1[COMPONENTS];
+    compute_F1(k, input.params, eta, F1);
+
+    output.lin_ps[0] = gsl_spline_eval(input.ps_spline, k, input.ps_acc)
+        * F1[COMPONENT_A] * F1[COMPONENT_A];
+    output.lin_ps[1] = gsl_spline_eval(input.ps_spline, k, input.ps_acc)
+        * F1[COMPONENT_A] * F1[COMPONENT_B];
+    output.lin_ps[2] = gsl_spline_eval(input.ps_spline, k, input.ps_acc)
+        * F1[COMPONENT_B] * F1[COMPONENT_B];
+
+    /* Non-linear evolution */
     // Overall factors:
     // - Only integrating over cos_theta_i between 0 and 1, multiply by 2 to
     //   obtain [-1,1] (for each loop momenta)
@@ -218,47 +225,51 @@ int main (int argc, char* argv[]) {
         pow(2,LOOPS) * gsl_sf_fact(LOOPS) * pow(TWOPI, 1 - 3*LOOPS);
 
     int nregions, neval, fail;
-    cubareal result[1], error[1], prob[1];
+    cubareal result[INTEGRAND_COMPONENTS];
+    cubareal error[INTEGRAND_COMPONENTS];
+    cubareal prob[INTEGRAND_COMPONENTS];
 
     // Timing
     time_t beginning, end;
-
     time(&beginning);
 
     // CUBA settings
 #define CUBA_NVEC 1
 #define CUBA_LAST 4
+#define CUBA_RETAIN_STATEFILE 16
 #define CUBA_SEED 0
 #define CUBA_MINEVAL 0
 #define CUBA_SPIN NULL
 #define CUBA_NNEW 1000
 #define CUBA_NMIN 2
 #define CUBA_FLATNESS 25.
-    Suave(N_DIMS, 1, (integrand_t)cuba_integrand, &input, CUBA_NVEC,
-            cuba_epsrel, cuba_epsabs, cuba_verbose | CUBA_LAST, CUBA_SEED,
-            CUBA_MINEVAL, cuba_maxevals, CUBA_NNEW, CUBA_NMIN,
-            CUBA_FLATNESS, cuba_statefile, CUBA_SPIN, &nregions, &neval,
-            &fail, result, error, prob);
+    Suave(N_DIMS, INTEGRAND_COMPONENTS, (integrand_t)cuba_integrand, &input,
+            CUBA_NVEC, cuba_epsrel, cuba_epsabs,
+            (cuba_verbose | CUBA_LAST | CUBA_RETAIN_STATEFILE), CUBA_SEED,
+            CUBA_MINEVAL, cuba_maxevals, CUBA_NNEW, CUBA_NMIN, CUBA_FLATNESS,
+            cuba_statefile, CUBA_SPIN, &nregions, &neval, &fail, result, error,
+            prob);
 
     time(&end);
 
-    output.non_lin_ps = (double)result[0] * overall_factor;
-    output.error      = (double)error[0]  * overall_factor;
+    for (int i = 0; i < INTEGRAND_COMPONENTS; ++i) {
+        output.non_lin_ps[i] = (double)result[i] * overall_factor;
+        output.error[i]      = (double)error[i]  * overall_factor;
+    }
 
-    /* (F1(z_0) */
-    double F1[COMPONENTS];
-    compute_F1(k, input.params, eta, F1);
+    printf("\nElapsed time: %.0fs\n", difftime(end, beginning));
+    printf("k = %e\n", k);
 
-    output.lin_ps = gsl_spline_eval(input.ps_spline, k, input.ps_acc)
-        * F1[input.component_a] * F1[input.component_b];
-
-    printf("k = %f, lin_ps = %e, %d-loop = %e, error = %e, prob = %f, "
-            "elapsed time = %.0fs\n", k, output.lin_ps, LOOPS,
-            output.non_lin_ps, output.error, (double)prob[0],
-            difftime(end,beginning));
+    char* corr_strings[INTEGRAND_COMPONENTS] = {"<AA>","<AB>","<BB>"};
+    for (int i = 0; i < INTEGRAND_COMPONENTS; ++i) {
+        printf("%s:\tP_lin = % .6e, P_%d-loop = % .6e, err_%d-loop = % .6e, "
+                "prob = %f\n", corr_strings[i], output.lin_ps[i], LOOPS,
+                output.non_lin_ps[i], LOOPS, output.error[i], (double)prob[i]);
+    }
 
     write_PS(output_ps_file, &output);
 
+    /* Free allocated memory */
     diagrams_gc(diagrams);
 
     free(worker_mem);
@@ -358,7 +369,13 @@ int cuba_integrand(
     compute_alpha_beta_tables((const vfloat (*)[])tables->scalar_products,
             tables->alpha, tables->beta);
 
-    ff[0] = jacobian * integrand(input,tables);
+    double* results = ff;
+    for (int i = 0; i < INTEGRAND_COMPONENTS; ++i) results[i] = 0;
+
+    integrand(input, tables, results);
+
+    for (int i = 0; i < INTEGRAND_COMPONENTS; ++i) results[i] *= jacobian;
+
     return 0;
 }
 

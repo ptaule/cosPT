@@ -121,12 +121,13 @@ inline static int heaviside_theta(
 
 
 
-static vfloat integrand_term(
+static void integrand_term(
         short int diagram_index,
         short int rearrangement_index,
         short int sign_config_index,
         const integration_input_t* input,
-        tables_t* tables
+        tables_t* tables,
+        double results[]
         )
 {
     // Shorthand variables/aliases for convenience
@@ -153,30 +154,32 @@ static vfloat integrand_term(
 
     vfloat k1 = compute_k1(m, rearrangement, signs,
             (const vfloat (*)[])tables->bare_scalar_products);
-    int h_theta = heaviside_theta(m, k1, rearrangement,
-            tables->Q_magnitudes);
+    int h_theta = heaviside_theta(m, k1, rearrangement, tables->Q_magnitudes);
 
-    if (h_theta == 0) {
-#if DEBUG >= 2
-        printf("\t\t=> partial result = 0\n");
-#endif
-        return 0;
+    if (h_theta == 0) return;
+
+    for (int i = 0; i < INTEGRAND_COMPONENTS; ++i) {
+        results[i] = h_theta *
+            gsl_spline_eval(input->ps_spline,k1,input->ps_acc);
     }
 
-    vfloat result = h_theta * gsl_spline_eval(input->ps_spline,k1,input->ps_acc);
-
-    // If there are no "self" loops, and the components to compute are
-    // equal, the kernels are equal
-    if (l == 0 && r == 0 && input->component_a == input->component_b) {
-
+    // If there are no "self" loops, kernels are equal for autocorrelators
+    if (l == 0 && r == 0) {
         // First, compute SPT initial condition
         compute_SPT_kernels(arguments_l, kernel_index_l, m, tables);
         // Then, evolve kernels
         kernel_evolution(arguments_l, kernel_index_l, m, input->params,
                 tables);
 
-        result *=
-            pow(tables->kernels[kernel_index_l].values[TIME_STEPS-1][input->component_a] ,2);
+        results[0] *= pow(
+                tables->kernels[kernel_index_l].values[TIME_STEPS-1][COMPONENT_A]
+                ,2);
+        results[1] *=
+            tables->kernels[kernel_index_l].values[TIME_STEPS-1][COMPONENT_A]
+            * tables->kernels[kernel_index_l].values[TIME_STEPS-1][COMPONENT_B];
+        results[2] *= pow(
+                tables->kernels[kernel_index_l].values[TIME_STEPS-1][COMPONENT_B]
+                ,2);
     // In DEBUG-mode, check that kernel arguments in fact are equal in this
     // case
 #if DEBUG >= 1
@@ -199,48 +202,70 @@ static vfloat integrand_term(
         kernel_evolution(arguments_r, kernel_index_r, 2*r + m, input->params,
                 tables);
 
-        result *= tables->
-                kernels[kernel_index_l].values[TIME_STEPS - 1][input->component_a]
-            * tables->
-                kernels[kernel_index_r].values[TIME_STEPS - 1][input->component_b];
-    }
-#if DEBUG >= 2
-        printf("\t\t=> Partial result = " vfloat_fmt "\n",result);
-#endif
+        // Get values for two-point correlators
+        // If l != r, there are two diagrams corresponding to l <-> r
+        if (l == r) {
+            results[0] *=
+                tables->kernels[kernel_index_l].values[TIME_STEPS - 1][COMPONENT_A]
+                * tables->kernels[kernel_index_r].values[TIME_STEPS - 1][COMPONENT_A];
+            results[1] *=
+                tables->kernels[kernel_index_l].values[TIME_STEPS - 1][COMPONENT_A]
+                * tables->kernels[kernel_index_r].values[TIME_STEPS - 1][COMPONENT_B];
+            results[2] *=
+                tables->kernels[kernel_index_l].values[TIME_STEPS - 1][COMPONENT_B]
+                * tables->kernels[kernel_index_r].values[TIME_STEPS - 1][COMPONENT_B];
+        } else {
+            results[0] *= 2 *
+                tables->kernels[kernel_index_l].values[TIME_STEPS - 1][COMPONENT_A]
+                * tables->kernels[kernel_index_r].values[TIME_STEPS - 1][COMPONENT_A];
+            // Sum over COMPONENT_A <-> COMPONENT_B
+            results[1] *=
+                tables->kernels[kernel_index_l].values[TIME_STEPS - 1][COMPONENT_A]
+                * tables->kernels[kernel_index_r].values[TIME_STEPS - 1][COMPONENT_B]
+                +
+                tables->kernels[kernel_index_l].values[TIME_STEPS - 1][COMPONENT_B]
+                * tables->kernels[kernel_index_r].values[TIME_STEPS - 1][COMPONENT_A];
+            results[2] *= 2*
+                tables->kernels[kernel_index_l].values[TIME_STEPS - 1][COMPONENT_B]
+                * tables->kernels[kernel_index_r].values[TIME_STEPS - 1][COMPONENT_B];
 
-    return result;
+        }
+    }
 }
 
 
 
-vfloat integrand(
-        const integration_input_t* input,
-        tables_t* tables
-        )
-{
+void integrand(const integration_input_t* input, tables_t* tables, double* results) {
     // Loop over possible diagrams at this loop order
-    vfloat result = 0;
     for (int i = 0; i < N_DIAGRAMS; ++i) {
         // Pointer alias for convenience
         const diagram_t* const dg = &(input->diagrams[i]);
-        vfloat diagram_result = 0;
+        double diagram_results[INTEGRAND_COMPONENTS] = {0};
 
         for (int a = 0; a < dg->n_rearrangements; ++a) {
             for (int b = 0; b < dg->n_sign_configs; ++b) {
-                diagram_result += integrand_term(i,a,b,input,tables);
+                double term_results[INTEGRAND_COMPONENTS] = {0};
+
+                integrand_term(i, a, b, input,tables, term_results);
+
+                for (int j = 0; j < INTEGRAND_COMPONENTS; ++j) {
+                    diagram_results[j] += term_results[j];
+                }
             }
         }
 
         // Multiply and divide by symmetrization & diagram factors
-        diagram_result *= dg->diagram_factor;
-        diagram_result /= dg->n_rearrangements * dg->n_sign_configs;
-        result += diagram_result;
+        for (int j = 0; j < INTEGRAND_COMPONENTS; ++j) {
+            diagram_results[j] *= dg->diagram_factor;
+            diagram_results[j] /= dg->n_rearrangements * dg->n_sign_configs;
+            results[j] += diagram_results[j];
+        }
     }
 
     for (int i = 0; i < LOOPS; ++i) {
-        result *= gsl_spline_eval(input->ps_spline, tables->Q_magnitudes[i],
-                input->ps_acc);
+        for (int j = 0; j < INTEGRAND_COMPONENTS; ++j) {
+            results[j] *= gsl_spline_eval(input->ps_spline, tables->Q_magnitudes[i],
+                    input->ps_acc);
+        }
     }
-
-    return result;
 }

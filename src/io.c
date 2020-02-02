@@ -268,9 +268,11 @@ void write_PS(
     fprintf(fp,"# Matter power spectrum P(k) at %d-loop (%d "
         "components)\n",LOOPS, COMPONENTS);
     fprintf(fp,"# for k=%e (h/Mpc)\n", output->k);
-    fprintf(fp,"# Description: %sn", output->description);
+    fprintf(fp,"# Description: %s\n", output->description);
 
     fprintf(fp,"#\n# Settings/constants used:\n#\n");
+    fprintf(fp,"# Compoent_A, component_B               = %d, %d\n#\n",
+            COMPONENT_A, COMPONENT_B);
     fprintf(fp,"# Git revision                          = %s\n", GIT_HASH);
     fprintf(fp,"# Input PS read from                    = %s\n#\n",
             output->input_ps_file);
@@ -290,14 +292,24 @@ void write_PS(
     fprintf(fp,"# ODE routine                           = %s\n",
             TOSTRING(ODE_ROUTINE));
 
-    /* A column consists of 12 characters, 4 whitespaces in between each column */
-    fprintf(fp,"#\n# %3s%20s%7s","k", "P_lin","");
+    /* A column consists of 12 characters; 4 whitespaces in between each column */
+    fprintf(fp,"#\n#%3s%-14s","","k (h/Mpc)");
 
-    fprintf(fp,"%4sP_%dloop%5s","",LOOPS,"");
-    fprintf(fp,"%4serror_%dloop\n","",LOOPS);
+    char* corr_strings[INTEGRAND_COMPONENTS] = {"<AA>","<AB>","<BB>"};
 
-    fprintf(fp,"%4s%e%4s%e%4s%e%4s%e\n", "", output->k, "", output->lin_ps, "",
-            output->non_lin_ps, "", output->error);
+    for (int i = 0; i < INTEGRAND_COMPONENTS; ++i) {
+        fprintf(fp,"%2sP_lin %-10s", "", corr_strings[i]);
+        fprintf(fp,"P_%dloop %-8s", LOOPS, corr_strings[i]);
+        fprintf(fp,"err_%dloop %s", LOOPS, corr_strings[i]);
+    }
+
+    fprintf(fp,"\n%3s% .6e", "", output->k);
+
+    for (int i = 0; i < INTEGRAND_COMPONENTS; ++i) {
+        fprintf(fp,"%3s% .6e%3s% .6e%3s% .6e", "", output->lin_ps[i], "",
+                output->non_lin_ps[i], "", output->error[i]);
+    }
+    fprintf(fp, "\n");
 
     fclose(fp);
 }
