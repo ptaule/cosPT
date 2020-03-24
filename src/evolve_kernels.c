@@ -12,7 +12,6 @@
 #include <gsl/gsl_sf.h>
 #include <gsl/gsl_spline.h>
 #include <gsl/gsl_odeiv2.h>
-#include <gsl/gsl_blas.h>
 
 #include "../include/constants.h"
 #include "../include/utilities.h"
@@ -33,7 +32,7 @@ static void vertex(
         )
 {
     vfloat alpha_lr = tables->alpha[sum_l][sum_r];
-    vfloat alpha_rl = tables->alpha[sum_r][sum_l];
+    /* vfloat alpha_rl = tables->alpha[sum_r][sum_l]; */
     vfloat beta = tables->beta[sum_l][sum_r];
 
     short int index_l = kernel_evolution(args_l, -1, m_l, params, tables);
@@ -46,20 +45,23 @@ static void vertex(
 
         switch (COMPONENTS) {
             case 4:
-                // Component a = 2, two contributing terms
+                // Component a = 2
                 a = 2, b = 3, c = 2;
                 // gamma_223 = alpha_lr
-                partial_rhs_sum[a][i] += 0.5 * alpha_lr
+                partial_rhs_sum[a][i] += alpha_lr
                     * tables->kernels[index_l].values[i][b]
                     * tables->kernels[index_r].values[i][c];
 
-                b = 2, c = 3;
-                // gamma_232 = alpha_rl
-                partial_rhs_sum[a][i] += 0.5 * alpha_rl
-                    * tables->kernels[index_l].values[i][b]
-                    * tables->kernels[index_r].values[i][c];
+                /* The term below is redundant; due to momentum symmetrization
+                 * of the evolution eq. RHS, it will be covered by the term
+                 * above. */
+                /* b = 2, c = 3; */
+                /* // gamma_232 = alpha_rl */
+                /* partial_rhs_sum[a][i] += 0.5 * alpha_rl */
+                /*     * tables->kernels[index_l].values[i][b] */
+                /*     * tables->kernels[index_r].values[i][c]; */
 
-                // Component a = 3, one contributing term
+                // Component a = 3
                 a = 3, b = 3, c = 3;
                 // gamma_444 = beta
                 partial_rhs_sum[a][i] += beta
@@ -70,20 +72,23 @@ static void vertex(
             // executed
             __attribute__((fallthrough));
             case 2:
-                // Component a = 0, two contributing terms:
+                // Component a = 0
                 a = 0, b = 1, c = 0;
                 // gamma_001 = alpha_lr
-                partial_rhs_sum[a][i] += 0.5 * alpha_lr
+                partial_rhs_sum[a][i] += alpha_lr
                     * tables->kernels[index_l].values[i][b]
                     * tables->kernels[index_r].values[i][c];
 
-                b = 0, c = 1;
-                // gamma_010 = alpha_rl
-                partial_rhs_sum[a][i] += 0.5 * alpha_rl
-                    * tables->kernels[index_l].values[i][b]
-                    * tables->kernels[index_r].values[i][c];
+                /* The term below is redundant; due to momentum symmetrization
+                 * of the evolution eq. RHS, it will be covered by the term
+                 * above. */
+                /* b = 0, c = 1; */
+                /* // gamma_010 = alpha_rl */
+                /* partial_rhs_sum[a][i] += 0.5 * alpha_rl */
+                /*     * tables->kernels[index_l].values[i][b] */
+                /*     * tables->kernels[index_r].values[i][c]; */
 
-                // Component a = 1, one contributing term
+                // Component a = 1
                 a = 1, b = 1, c = 1;
                 // gamma_111 = beta
                 partial_rhs_sum[a][i] += beta
@@ -202,8 +207,9 @@ typedef struct {
 int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
     ode_input_t input = *(ode_input_t*)ode_input;
     short int n = input.n;
-    /* const evolution_params_t* params = input.parameters; */
-    /* double zeta = gsl_spline_eval(params->zeta_spline, eta, params->zeta_acc); */
+    const evolution_params_t* params = input.parameters;
+
+    double zeta = gsl_spline_eval(params->zeta_spline, eta, params->zeta_acc);
 
     double rhs[COMPONENTS] = {0};
     // If n == 1, rhs = 0
@@ -213,8 +219,8 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
         }
     }
 
-    f[0] = rhs[0] - n   * y[0] +              y[1] ;
-    f[1] = rhs[1] + 1.5 * y[0] + (-0.5 - n) * y[1] ;
+    f[0] = rhs[0] - n * y[0] + y[1];
+    f[1] = rhs[1] + 1.5 * zeta * y[0] + (-1.5 * zeta + 1 - n) * y[1];
 
     return GSL_SUCCESS;
 }
@@ -227,7 +233,6 @@ void evolve_kernels(
         double** kernels  /* TIME_STEPS*COMPONENTS table of kernels */
         )
 {
-
     gsl_odeiv2_system sys = {kernel_gradient, NULL, COMPONENTS, input};
     gsl_odeiv2_driver* driver = gsl_odeiv2_driver_alloc_y_new(&sys,
             gsl_odeiv2_step_rkf45, ODE_HSTART, ODE_RTOL, ODE_ATOL);
@@ -253,6 +258,41 @@ void evolve_kernels(
     gsl_odeiv2_driver_free(driver);
 }
 
+
+
+static void kernel_initial_conditions(
+        short int kernel_index,
+        short int n,
+        double k,
+        const evolution_params_t* params,
+        tables_t* tables
+        )
+{
+    // Use interpolated perturbations ratios from CLASS at linear order
+    if (n == 1) {
+        tables->kernels[kernel_index].values[0][0] = 1;
+        for (int i = 1; i < COMPONENTS; ++i) {
+            tables->kernels[kernel_index].values[0][i] =
+                gsl_spline_eval(params->ic_perturb_splines[i-1], k,
+                        params->ic_perturb_accs[i-1]);
+        }
+    }
+    else {
+        // Use SPT-EdS ICs for delta_cb (component 0)
+        for (int i = 0; i < 2; ++i) {
+            tables->kernels[kernel_index].values[0][i] =
+                (double)tables->kernels[kernel_index].spt_values[i];
+        }
+
+        /*
+        // Use SPT-EdS multiplied by (perturbation ratio)^n for theta_cb
+        tables->kernels[kernel_index].values[0][1] =
+            (double)tables->kernels[kernel_index].spt_values[1]
+            * pow(gsl_spline_eval(params->ic_perturb_splines[0], k,
+                        params->ic_perturb_accs[0]) ,n);
+        */
+    }
+}
 
 
 
@@ -292,15 +332,16 @@ short int kernel_evolution(
     // If the kernel is already computed, return kernel_index
     if (tables->kernels[kernel_index].evolved) return kernel_index;
 
+    // Compute k (sum of kernel arguments)
+    short int sum = sum_vectors(arguments, N_KERNEL_ARGS, tables->sum_table);
+    double k = sqrt(tables->scalar_products[sum][sum]);
+
+    // Set initial conditions
+    kernel_initial_conditions(kernel_index, n, k, params, tables);
+
     // GSL interpolation variables for interpolated RHS
     gsl_spline*       rhs_splines[COMPONENTS] = {NULL};
     gsl_interp_accel* rhs_accs   [COMPONENTS] = {NULL};
-
-    // Copy ICs from SPT kernels
-    for (int i = 0; i < COMPONENTS; ++i) {
-        tables->kernels[kernel_index].values[0][i] =
-            (double)tables->kernels[kernel_index].spt_values[i];
-    }
 
     // Compute RHS sum in evolution equation if n > 1. If n == 1, the RHS
     // equals 0, which is implemented in evolve_kernels().
@@ -308,13 +349,10 @@ short int kernel_evolution(
         compute_RHS_sum(arguments, n, params, tables, rhs_splines, rhs_accs);
     }
 
-    // Compute k (sum of kernel arguments)
-    short int sum = sum_vectors(arguments, N_KERNEL_ARGS, tables->sum_table);
-
     // Set up ODE input and system
     ode_input_t input = {
         .n = n,
-        .k = sqrt(tables->scalar_products[sum][sum]),
+        .k = k,
         .parameters = params,
         .rhs_splines = rhs_splines,
         .rhs_accs = rhs_accs,
@@ -347,8 +385,12 @@ void compute_F1(
         values[i] = (double*)calloc(COMPONENTS, sizeof(double));
     }
 
-    /* Use SPT initial conditions, i.e. F1 = G1 = 1 */
-    values[0][0] = values[0][1] = 1;
+    // Use interpolated perturbations ratios from CLASS at linear order
+    values[0][0] = 1;
+    for (int i = 1; i < COMPONENTS; ++i) {
+        values[0][i] = gsl_spline_eval(params->ic_perturb_splines[i-1], k,
+                params->ic_perturb_accs[i-1]);
+    }
 
     // Set up ODE input and system
     ode_input_t input = {

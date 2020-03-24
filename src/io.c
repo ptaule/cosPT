@@ -210,9 +210,51 @@ void read_and_interpolate_2d(
 
 
 
+double get_wavenumber(
+        const char* filename, /* in, name of file to be read                 */
+        int a                 /* wavenumber (zero-based) index;              */
+                              /* which index (linenumber) in list to be read */
+        )
+{
+    FILE* fp;
+    char* line = NULL;
+    size_t n = 0; // Buffer size, changed by getline()
+    ssize_t read; // getline() success/error flag
+
+    fp = fopen(filename,"r");
+    if (fp == NULL) {
+        error_verbose("Could not open %s. Exiting.",filename);
+    }
+
+    int i = 0;
+
+    while ((read = getline(&line,&n,fp) != -1)) {
+        if (!strip_line(line)) continue;
+
+        if (i == a) {
+            double wavenumber = 0;
+            sscanf(line,"%lg",&wavenumber);
+            fclose(fp);
+            free(line);
+
+            return wavenumber;
+        }
+
+        i++;
+    }
+
+    fclose(fp);
+    free(line);
+
+    warning_verbose("Wavenumber index given (%d) is outside range of list in "
+            "%s. Using k=1.0", a, filename);
+    return 1.0;
+}
+
+
+
 void write_PS(
         const char* filename,
-        int n_points,
         const output_t* output
         )
 {
@@ -225,23 +267,26 @@ void write_PS(
 
     fprintf(fp,"# Matter power spectrum P(k) at %d-loop (%d "
         "components)\n",LOOPS, COMPONENTS);
-    fprintf(fp,"# for k=%e to %e (h/Mpc)\n",
-            output->wavenumbers[0], output->wavenumbers[n_points-1]);
-    fprintf(fp,"# Number of wavenumbers: %d\n", n_points);
+    fprintf(fp,"# for k=%e (h/Mpc)\n", output->k);
+    fprintf(fp,"# Description: %sn", output->description);
 
     fprintf(fp,"#\n# Settings/constants used:\n#\n");
     fprintf(fp,"# Git revision                          = %s\n", GIT_HASH);
-    fprintf(fp,"# Input PS read from                    = %s\n#\n", output->input_ps_file);
+    fprintf(fp,"# Input PS read from                    = %s\n#\n",
+            output->input_ps_file);
 
     fprintf(fp,"# Integration limits                    = [%e,%e]\n", Q_MIN, Q_MAX);
     fprintf(fp,"# Initial/final times                   = [%e,%e]\n", ETA_I, ETA_F);
 
     fprintf(fp,"# Number of time steps                  = %d\n", TIME_STEPS);
-    fprintf(fp,"# Monte Carlo abstol, reltol            = %.2e, %.2e\n", CUBA_EPSABS, CUBA_EPSREL);
-    fprintf(fp,"# Monte Carlo max num. of evals         = %.2e\n", CUBA_MAXEVAL);
+    fprintf(fp,"# Monte Carlo abstol, reltol            = %.2e, %.2e\n",
+            output->cuba_epsabs, output->cuba_epsrel);
+    fprintf(fp,"# Monte Carlo max num. of evals         = %.2e\n",
+            output->cuba_maxevals);
     fprintf(fp,"# ODE initial step size, abstol, reltol = %.2e, %.2e, %.2e\n",
             ODE_HSTART, ODE_ATOL, ODE_RTOL);
-    fprintf(fp,"# ODE routine                           = %s\n", TOSTRING(ODE_ROUTINE));
+    fprintf(fp,"# ODE routine                           = %s\n",
+            TOSTRING(ODE_ROUTINE));
 
     /* A column consists of 12 characters, 4 whitespaces in between each column */
     fprintf(fp,"#\n# %3s%20s%7s","k", "P_lin","");
@@ -249,11 +294,8 @@ void write_PS(
     fprintf(fp,"%4sP_%dloop%5s","",LOOPS,"");
     fprintf(fp,"%4serror_%dloop\n","",LOOPS);
 
-    for (int i = 0; i < n_points; ++i) {
-        fprintf(fp,"%4s%e%4s%e%4s%e%4s%e\n", "",
-                output->wavenumbers[i], "", output->lin_ps[i], "",
-                output->non_lin_ps[i], "", output->errors[i]);
-    }
+    fprintf(fp,"%4s%e%4s%e%4s%e%4s%e\n", "", output->k, "", output->lin_ps, "",
+            output->non_lin_ps, "", output->error);
 
     fclose(fp);
 }

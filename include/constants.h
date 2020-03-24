@@ -10,21 +10,20 @@
 
 #include <gsl/gsl_spline.h>
 
+// Path to input files
+#define INPUT_PATH  "/space/ge52sir/CLASS/massive_nu_0.07eV/"
+
 // Number of loops (if not set by compile options)
 #ifndef LOOPS
 #define LOOPS 1
 #endif
 
 #define COMPONENTS 2
+#define SPT_COMPONENTS 2
 
 #ifndef TIME_STEPS
 #define TIME_STEPS 100
 #endif
-
-// Number of evaluation points,
-#define N_POINTS 50
-#define K_MIN 1e-2
-#define K_MAX 1e1
 
 // Integration limits
 #define Q_MIN 1e-4
@@ -34,38 +33,6 @@
 // rate D+)
 #define ETA_I -3.18
 #define ETA_F 0.0
-
-// CUBA settings
-#define CUBA_NVEC 1
-#define CUBA_EPSREL 1e-3
-#define CUBA_EPSABS 1e-12
-#define CUBA_VERBOSE 0
-#define CUBA_LAST 4
-#define CUBA_SEED 0
-#define CUBA_MINEVAL 0
-
-#ifndef CUBA_MAXEVAL
-#define CUBA_MAXEVAL 1e6
-#endif
-
-// User may set number of cores to use through N_CORES (if not set,
-// CUBA spawns workers depending on available cores)
-#ifndef N_CORES
-#define N_CORES -1
-#endif
-
-// Maximum number of cores (a value smaller than N_CORES will exit
-// the program unsuccessfully)
-#ifndef MAXCORES
-#define MAXCORES 10
-#endif
-
-#define CUBA_STATEFILE NULL
-#define CUBA_SPIN NULL
-
-#define CUBA_NNEW 1000
-#define CUBA_NMIN 2
-#define CUBA_FLATNESS 25.
 
 // Which GSL interpolation routine to use
 #define INTERPOL_TYPE gsl_interp_cspline
@@ -97,6 +64,8 @@ typedef long double vfloat;
 typedef struct {
     gsl_interp_accel* zeta_acc;
     gsl_spline* zeta_spline;
+    gsl_interp_accel* ic_perturb_accs[1];
+    gsl_spline* ic_perturb_splines[1];
 } evolution_params_t;
 
 // Constants:
