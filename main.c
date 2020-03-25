@@ -63,9 +63,9 @@ int main (int argc, char* argv[]) {
     double cuba_maxevals = 1e6;
     int cuba_verbose     = 1;
 
-    char description[40] = "";
-    char output_path[100] = "/space/ge52sir/non_linear_PS/output/";
-    char cuba_statefile_path[100] =
+    char description[100] = "";
+    char output_path[200] = "/space/ge52sir/non_linear_PS/output/";
+    char cuba_statefile_path[200] =
         "/space/ge52sir/non_linear_PS/output/CUBA_statefiles/";
 
     int c = 0;
