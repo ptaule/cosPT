@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -15,8 +16,31 @@
 #include "../include/constants.h"
 #include "../include/io.h"
 
-
+// Maximum input resolution
 #define MAX_RESOLUTION 500
+
+
+// Returns false if line is empty or starts with a '#'
+static bool strip_line(char line[]) {
+    char * p = line;
+    size_t len = strlen(line);
+
+    // Strip newline or carriage return
+    while (len > 0 && (line[len-1] == '\n' || line[len-1] == '\r'))
+        line[--len] = 0;
+
+    if (len == 0) return false;
+
+    // Advance to first non-whitespace
+    while (isspace(*p)) p++;
+
+    // Skip lines beginning with #
+    if (*p == '#') return false;
+
+    return true;
+}
+
+
 
 void read_and_interpolate(
         const char* filename,   /* in, power spectrum file                          */
@@ -34,25 +58,12 @@ void read_and_interpolate(
         error_verbose("Could not open %s. Exiting.",filename);
     }
 
-    double* wavenumbers    = (double*)calloc(MAX_RESOLUTION, sizeof(double));
-    double* power_spectrum = (double*)calloc(MAX_RESOLUTION, sizeof(double));
+    double* x = (double*)calloc(MAX_RESOLUTION, sizeof(double));
+    double* y = (double*)calloc(MAX_RESOLUTION, sizeof(double));
 
     int i = 0;
     while ((read = getline(&line,&n,fp) != -1)) {
-        char * p = line;
-        size_t len = strlen(line);
-
-        // Strip newline or carriage return
-        while (len > 0 && (line[len-1] == '\n' || line[len-1] == '\r'))
-            line[--len] = 0;
-
-        if (len == 0) continue;
-
-        // Advance to first whitespace
-        while (isspace(*p)) p++;
-
-        // Skip lines beginning with #
-        if (*p == '#') continue;
+        if (!strip_line(line)) continue;
 
         if(i == MAX_RESOLUTION) {
             fclose(fp);
@@ -60,7 +71,7 @@ void read_and_interpolate(
                     "MAX_RESOLUTION = %d. Exiting.", filename,MAX_RESOLUTION);
         }
 
-        int items = sscanf(line,"%lg" "\t" "%lg",&wavenumbers[i],&power_spectrum[i]);
+        int items = sscanf(line,"%lg" "\t" "%lg",&x[i],&y[i]);
 
         if (items != 2) {
             fclose(fp);
@@ -76,22 +87,17 @@ void read_and_interpolate(
     // Interpolate values
     *acc = gsl_interp_accel_alloc();
     *spline = gsl_spline_alloc(INTERPOL_TYPE, i);
-    gsl_spline_init(*spline,wavenumbers,power_spectrum,i);
+    gsl_spline_init(*spline,x,y,i);
 
     fclose(fp);
     free(line);
-    free(wavenumbers);
-    free(power_spectrum);
+    free(x);
+    free(y);
 }
 
-void write_PS(
-        const char* filename,
-        int n_points,
-        const double wavenumbers[],
-        const double power_spectrum[],
-        const double errors[]
-        )
-{
+
+
+void write_PS(const char* filename, const output_t* output) {
     FILE* fp;
 
     fp = fopen(filename,"w");
@@ -101,16 +107,18 @@ void write_PS(
 
     fprintf(fp,"# Matter power spectrum P(k) at %d-loop\n",LOOPS);
     fprintf(fp,"# for k=%e to %e (h/Mpc)\n",
-            wavenumbers[0], wavenumbers[n_points-1]);
-    fprintf(fp,"# Number of wavenumbers: %d\n", n_points);
+            output->wavenumbers[0], output->wavenumbers[output->n_points-1]);
+    fprintf(fp,"# Number of wavenumbers: %d\n", output->n_points);
 
     fprintf(fp,"#\n# Settings/constants used:\n");
+    fprintf(fp,"# Git revision                          = %s\n", GIT_HASH);
+    fprintf(fp,"# Input PS read from                    = %s\n#\n", output->input_ps_file);
     fprintf(fp,"# Monte Carlo abstol, reltol            = %.2e, %.2e\n", CUBA_EPSABS, CUBA_EPSREL);
     fprintf(fp,"# Monte Carlo max num. of evals         = %.2e\n", CUBA_MAXEVAL);
     fprintf(fp,"#\n# \tk\t\t\t\tP(k)\t\t\terror\n");
 
-    for (int i = 0; i < n_points; ++i) {
-        fprintf(fp,"\t%e\t%e\t%e\n", wavenumbers[i], power_spectrum[i], errors[i]);
+    for (int i = 0; i < output->n_points; ++i) {
+        fprintf(fp,"\t%e\t%e\t%e\n", output->wavenumbers[i], output->non_lin_ps[i], output->errors[i]);
     }
 
     fclose(fp);

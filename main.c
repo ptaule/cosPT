@@ -68,15 +68,19 @@ int main () {
         .k = 0.0,
         .component_a = 0,
         .component_b = 0,
-        .diagrams = diagrams,
-        .acc = acc,
-        .spline = spline,
-        .worker_mem = worker_mem
+        .diagrams    = diagrams,
+        .acc         = acc,
+        .spline      = spline,
+        .worker_mem  = worker_mem
     };
 
-    double* const wavenumbers    = (double*)calloc(N_POINTS, sizeof(double));
-    double* const power_spectrum = (double*)calloc(N_POINTS, sizeof(double));
-    double* const errors         = (double*)calloc(N_POINTS, sizeof(double));
+    output_t output = {
+        .input_ps_file = input_ps_file,
+        .n_points      = N_POINTS,
+        .wavenumbers   = (double*)calloc(N_POINTS, sizeof(double)),
+        .non_lin_ps    = (double*)calloc(N_POINTS, sizeof(double)),
+        .errors        = (double*)calloc(N_POINTS, sizeof(double)),
+    };
 
     // Overall factors:
     // - Only integrating over cos_theta_i between 0 and 1, multiply by 2 to
@@ -95,7 +99,7 @@ int main () {
 
     for (int i = 0; i < N_POINTS; ++i) {
         k *= delta_factor;
-        wavenumbers[i] = k;
+        output.wavenumbers[i] = k;
         input.k = k;
 
         Suave(N_DIMS, 1, (integrand_t)cuba_integrand, &input, CUBA_NVEC,
@@ -107,22 +111,22 @@ int main () {
         result[0] *= overall_factor;
         error[0] *= overall_factor;
 
-        power_spectrum[i] = (double)result[0];
-        errors[i]         = (double)error[0];
+        output.non_lin_ps[i] = (double)result[0];
+        output.errors[i]         = (double)error[0];
 
-        printf("k  = %f, result = %e, error = %e, prob = %f\n",
+        printf("k = %f, result = %e, error = %e, prob = %f\n",
                 k, (double)*result, (double)error[0], (double)prob[0]);
     }
 
-    write_PS(output_ps_file, N_POINTS, wavenumbers, power_spectrum, errors);
+    write_PS(output_ps_file, &output);
 
     diagrams_gc(diagrams);
 
     free(worker_mem);
 
-    free(wavenumbers);
-    free(power_spectrum);
-    free(errors);
+    free(output.wavenumbers);
+    free(output.non_lin_ps);
+    free(output.errors);
 
     gsl_spline_free(spline);
     gsl_interp_accel_free(acc);

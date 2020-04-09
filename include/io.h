@@ -10,12 +10,16 @@
 
 #include <gsl/gsl_spline.h>
 
-void read_PS(const char* filename, gsl_interp_accel** acc, gsl_spline** spline);
-void write_PS(const char* filename,
-        int n_points,
-        const double wavenumbers[],
-        const double power_spectrum[],
-        const double errors[]
-        );
+typedef struct {
+    const char* input_ps_file;
+    int n_points;
+    double* wavenumbers;
+    double* non_lin_ps;
+    double* errors;
+} output_t;
+
+void read_and_interpolate(const char* filename, gsl_interp_accel** acc,
+        gsl_spline** spline);
+void write_PS(const char* filename, const output_t* output);
 
 #endif /* ifndef IO_H */

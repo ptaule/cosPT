@@ -14,6 +14,10 @@ TEST_INTERFACE = $(TEST_DIR)/test_interface
 CFLAGS += -Wall -Wextra -Wpedantic
 CPPFLAGS += -I/scratch/Cuba-4.2/ -I/scratch/gsl-2.5/ $(OPTIONS)
 
+# Information about git revision
+GIT_HASH = `git rev-parse --short HEAD`
+CPPFLAGS += -DGIT_HASH="\"$(GIT_HASH)\""
+
 LDFLAGS_GSL  = -L/scratch/gsl-2.5/.libs/ -L/scratch/gsl-2.5/cblas/.libs
 LDLIBS_GSL   = -lgsl -lgslcblas
 LDFLAGS_CUBA = -L/scratch/Cuba-4.2/
