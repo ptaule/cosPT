@@ -59,9 +59,6 @@
 // Which GSL interpolation routine to use
 #define INTERPOL_TYPE gsl_interp_cspline
 
-// Maximum input power spectrum resolution
-#define MAX_RESOLUTION 200
-
 // Debug modes:
 // 1: Perform additional checks during runtime.
 // 2: In addition, print info during runtime.

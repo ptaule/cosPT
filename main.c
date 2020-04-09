@@ -16,7 +16,7 @@
 #include "include/constants.h"
 #include "include/tables.h"
 #include "include/integrand.h"
-#include "include/power_spectrum_io.h"
+#include "include/io.h"
 #include "include/diagrams.h"
 #include "include/integrand.h"
 
@@ -45,7 +45,7 @@ int main () {
     gsl_interp_accel* acc;
     gsl_spline* spline;
 
-    read_PS(input_ps_file,&acc,&spline);
+    read_and_interpolate(input_ps_file,&acc,&spline);
 
     // Array of table_ptrs, one for each worker (thread)
     tables_t* worker_mem = (tables_t*)malloc(CUBA_MAXCORES * sizeof(tables_t));

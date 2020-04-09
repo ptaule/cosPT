@@ -1,5 +1,5 @@
 /*
-   power_spectrum_io.c
+   io.c
 
    Created by Petter Taule on 25.02.2019
    Copyright (c) 2019 Petter Taule. All rights reserved.
@@ -13,11 +13,12 @@
 #include <gsl/gsl_spline.h>
 
 #include "../include/constants.h"
-#include "../include/power_spectrum_io.h"
+#include "../include/io.h"
 
 
+#define MAX_RESOLUTION 500
 
-void read_PS(
+void read_and_interpolate(
         const char* filename,   /* in, power spectrum file                          */
         gsl_interp_accel** acc, /* out, gsl_interpolation accelerated lookup object */
         gsl_spline** spline     /* out, gsl_spline of power spectrum read from file */
