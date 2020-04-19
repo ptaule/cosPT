@@ -14,6 +14,7 @@
 #include <gsl/gsl_spline.h>
 
 #include "../include/constants.h"
+#include "../include/version.h"
 #include "../include/io.h"
 
 // Maximum input resolution
@@ -110,9 +111,13 @@ void write_PS(const char* filename, const output_t* output) {
             output->wavenumbers[0], output->wavenumbers[output->n_points-1]);
     fprintf(fp,"# Number of wavenumbers: %d\n", output->n_points);
 
-    fprintf(fp,"#\n# Settings/constants used:\n");
-    fprintf(fp,"# Git revision                          = %s\n", GIT_HASH);
-    fprintf(fp,"# Input PS read from                    = %s\n#\n", output->input_ps_file);
+    fprintf(fp,"#\n# Settings/constants used:\n#\n");
+    fprintf(fp,"# Git hash                              = %s\n", build_git_sha);
+    fprintf(fp,"# Build time                            = %s\n", build_git_time);
+    fprintf(fp,"# Input PS read from                    = %s\n#\n",
+            output->input_ps_file);
+
+    fprintf(fp,"# Integration limits                    = [%e,%e]\n#\n", Q_MIN, Q_MAX);
     fprintf(fp,"# Monte Carlo abstol, reltol            = %.2e, %.2e\n", CUBA_EPSABS, CUBA_EPSREL);
     fprintf(fp,"# Monte Carlo max num. of evals         = %.2e\n", CUBA_MAXEVAL);
     fprintf(fp,"#\n# \tk\t\t\t\tP(k)\t\t\terror\n");
