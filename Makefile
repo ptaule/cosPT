@@ -3,19 +3,15 @@ EXE=cosPT
 SRC_DIR = src
 OBJ_DIR = obj
 INC_DIR = include
-TEST_DIR = tests
 
 SRC = $(wildcard $(SRC_DIR)/*.c)
 OBJ = $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 HEADERS = $(wildcard $(INC_DIR)/*.h)
 
+GIT = git
 
 CFLAGS += -Wall -Wextra -Wpedantic
 CPPFLAGS += -I/scratch/Cuba-4.2/ -I/scratch/gsl-2.5/ $(OPTIONS)
-
-# Information about git revision and compile time
-GIT_HASH = `git rev-parse --short HEAD`
-CPPFLAGS += -DGIT_HASH="\"$(GIT_HASH)\""
 
 LDFLAGS_GSL  = -L/scratch/gsl-2.5/.libs/ -L/scratch/gsl-2.5/cblas/.libs
 LDLIBS_GSL   = -lgsl -lgslcblas
@@ -33,7 +29,7 @@ all:   CFLAGS   += -O3
 debug: CPPFLAGS += -DDEBUG=2
 debug: CFLAGS   += -O0 -g
 
-.PHONY: all clean run 1loop 2loop
+.PHONY: all clean run 1loop 2loop force
 
 all: $(EXE)
 1loop: $(EXE)
@@ -49,8 +45,15 @@ $(EXE): main.o $(OBJ)
 main.o: main.c $(HEADERS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS) compiler_flags
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+$(SRC_DIR)/version.c: force
+	$(GIT) rev-parse HEAD | awk ' BEGIN {print "#include \"../include/version.h\""} {print "const char * build_git_sha = \"" $$0"\";"} END {}' > $@
+	date '+%d.%m.%Y %R %Z' | awk 'BEGIN {} {print "const char * build_git_time = \""$$0"\";"} END {} ' >> $@
+
+compiler_flags: force
+	echo '$(CPPFLAGS) $(CFLAGS)' | cmp -s - $@ || echo '$(CPPFLAGS) $(CFLAGS)' > $@
 
 clean:
 	$(RM) $(OBJ) main.o
