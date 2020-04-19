@@ -268,20 +268,32 @@ void write_PS(
 
     fprintf(fp,"# Matter power spectrum P(k) at %d-loop (%d "
         "components)\n",LOOPS, COMPONENTS);
-    fprintf(fp,"# for k=%e (h/Mpc)\n", output->k);
+    fprintf(fp,"# for k=%e (h/Mpc)\n#\n", output->k);
     fprintf(fp,"# Description: %s\n", output->description);
+    fprintf(fp,"# Git hash:    %s\n", build_git_sha);
+    fprintf(fp,"# Build time:  %s\n", build_git_time);
 
     fprintf(fp,"#\n# Settings/constants used:\n#\n");
     fprintf(fp,"# Compoent_A, component_B               = %d, %d\n#\n",
             COMPONENT_A, COMPONENT_B);
-    fprintf(fp,"# Git hash                              = %s\n", build_git_sha);
-    fprintf(fp,"# Build time                            = %s\n", build_git_time);
-    fprintf(fp,"# Input PS read from                    = %s\n#\n",
+    fprintf(fp,"# Input PS read from                    = %s\n",
             output->input_ps_file);
+    fprintf(fp,"# Zeta values read from                 = %s\n",
+            output->input_zeta_file);
+    fprintf(fp,"# Redshift values read from             = %s\n",
+            output->input_redshift_file);
+    for (int i = 0; i < 3; ++i) {
+        fprintf(fp,"# Initial perturb. ratios (%d) read from = %s\n",
+                i, output->ic_perturbations_files[i]);
+    }
 
+    fprintf(fp,"#\n");
     fprintf(fp,"# Integration limits                    = [%e,%e]\n", Q_MIN, Q_MAX);
-    fprintf(fp,"# Initial/final times                   = [%e,%e]\n", ETA_I, ETA_F);
-    fprintf(fp,"# Neutrino mass                         = %f\n#\n", M_NU);
+    fprintf(fp,"# Initial/final times                   = [%e,%e]\n\n", ETA_I, ETA_F);
+
+    fprintf(fp,"# Neutrino mass                         = %f\n", M_NU);
+    fprintf(fp,"# Neutrino fraction                     = %f\n", F_NU);
+    fprintf(fp,"# Square root of Omega matter at z = 0  = %f\n#\n", SQRT_OMEGA_M);
 
     fprintf(fp,"# Neutrino kernels (n>1) IC             = %d\n", NEUTRINO_KERNEL_IC);
     fprintf(fp,"# Number of time steps                  = %d\n", TIME_STEPS);

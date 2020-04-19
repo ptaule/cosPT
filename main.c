@@ -51,7 +51,7 @@ int main (int argc, char* argv[]) {
     const char* input_redshift_file = INPUT_PATH "redshift.dat";
     const char* input_wavenumbers   = "input/wavenumbers.dat";
 
-    char* ic_perturbations_files[3];
+    const char* ic_perturbations_files[3];
     ic_perturbations_files[0] = INPUT_PATH "z10_theta_cb_over_aHf_delta_cb.dat";
     ic_perturbations_files[1] = INPUT_PATH "z10_delta_nu_over_delta_cb.dat";
     ic_perturbations_files[2] = INPUT_PATH "z10_theta_nu_over_aHf_delta_cb.dat";
@@ -195,12 +195,15 @@ int main (int argc, char* argv[]) {
     }
 
     output_t output = {
-        .input_ps_file = input_ps_file,
-        .description   = description,
-        .cuba_epsrel   = cuba_epsrel,
-        .cuba_epsabs   = cuba_epsabs,
-        .cuba_maxevals = cuba_maxevals,
-        .k             = k,
+        .input_ps_file          = input_ps_file,
+        .input_zeta_file        = input_zeta_file,
+        .input_redshift_file    = input_redshift_file,
+        .ic_perturbations_files = ic_perturbations_files,
+        .description            = description,
+        .cuba_epsrel            = cuba_epsrel,
+        .cuba_epsabs            = cuba_epsabs,
+        .cuba_maxevals          = cuba_maxevals,
+        .k                      = k,
     };
 
     /* Linear evolution */
