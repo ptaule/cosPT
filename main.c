@@ -50,7 +50,7 @@ int main (int argc, char* argv[]) {
     const char* input_zeta_file     = INPUT_PATH "zeta.dat";
     const char* input_wavenumbers   = "input/wavenumbers.dat";
 
-    char* ic_perturbations_files[1];
+    const char* ic_perturbations_files[1];
     ic_perturbations_files[0] = INPUT_PATH "z10_theta_cb_over_aHf_delta_cb.dat";
 
     // Constants fixed by command line options (and default values)
@@ -191,15 +191,17 @@ int main (int argc, char* argv[]) {
     }
 
     output_t output = {
-        .input_ps_file = input_ps_file,
-        .description   = description,
-        .cuba_epsrel   = cuba_epsrel,
-        .cuba_epsabs   = cuba_epsabs,
-        .cuba_maxevals = cuba_maxevals,
-        .k             = k,
-        .lin_ps        = 0.0,
-        .non_lin_ps    = 0.0,
-        .error         = 0.0,
+        .input_ps_file          = input_ps_file,
+        .input_zeta_file        = input_zeta_file,
+        .ic_perturbations_files = ic_perturbations_files,
+        .description            = description,
+        .cuba_epsrel            = cuba_epsrel,
+        .cuba_epsabs            = cuba_epsabs,
+        .cuba_maxevals          = cuba_maxevals,
+        .k                      = k,
+        .lin_ps                 = 0.0,
+        .non_lin_ps             = 0.0,
+        .error                  = 0.0,
     };
 
     // Overall factors:

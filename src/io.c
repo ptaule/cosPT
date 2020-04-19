@@ -268,15 +268,22 @@ void write_PS(
 
     fprintf(fp,"# Matter power spectrum P(k) at %d-loop (%d "
         "components)\n",LOOPS, COMPONENTS);
-    fprintf(fp,"# for k=%e (h/Mpc)\n", output->k);
-    fprintf(fp,"# Description: %sn", output->description);
+    fprintf(fp,"# for k=%e (h/Mpc)\n#\n", output->k);
+    fprintf(fp,"# Description: %s\n", output->description);
+    fprintf(fp,"# Git hash:    %s\n", build_git_sha);
+    fprintf(fp,"# Build time:  %s\n", build_git_time);
 
     fprintf(fp,"#\n# Settings/constants used:\n#\n");
-    fprintf(fp,"# Git hash                              = %s\n", build_git_sha);
-    fprintf(fp,"# Build time                            = %s\n", build_git_time);
-    fprintf(fp,"# Input PS read from                    = %s\n#\n",
+    fprintf(fp,"# Input PS read from                    = %s\n",
             output->input_ps_file);
+    fprintf(fp,"# Zeta values read from                 = %s\n",
+            output->input_zeta_file);
+    for (int i = 0; i < 1; ++i) {
+        fprintf(fp,"# Initial perturb. ratios (%d) read from = %s\n",
+                i, output->ic_perturbations_files[i]);
+    }
 
+    fprintf(fp,"#\n");
     fprintf(fp,"# Integration limits                    = [%e,%e]\n", Q_MIN, Q_MAX);
     fprintf(fp,"# Initial/final times                   = [%e,%e]\n", ETA_I, ETA_F);
 
