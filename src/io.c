@@ -15,6 +15,7 @@
 #include <gsl/gsl_spline2d.h>
 
 #include "../include/constants.h"
+#include "../include/version.h"
 #include "../include/io.h"
 
 // Maximum input resolution
@@ -271,7 +272,8 @@ void write_PS(
     fprintf(fp,"# Description: %sn", output->description);
 
     fprintf(fp,"#\n# Settings/constants used:\n#\n");
-    fprintf(fp,"# Git revision                          = %s\n", GIT_HASH);
+    fprintf(fp,"# Git hash                              = %s\n", build_git_sha);
+    fprintf(fp,"# Build time                            = %s\n", build_git_time);
     fprintf(fp,"# Input PS read from                    = %s\n#\n",
             output->input_ps_file);
 
