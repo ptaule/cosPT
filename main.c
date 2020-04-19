@@ -204,6 +204,9 @@ int main (int argc, char* argv[]) {
         .cuba_epsabs            = cuba_epsabs,
         .cuba_maxevals          = cuba_maxevals,
         .k                      = k,
+        .lin_ps                 = {0.0},
+        .non_lin_ps             = {0.0},
+        .error                  = {0.0}
     };
 
     /* Linear evolution */
