@@ -42,7 +42,7 @@ run: all
 $(EXE): main.o $(OBJ)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
-main.o: main.c $(HEADERS)
+main.o: main.c $(HEADERS) compiler_flags
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS) compiler_flags
