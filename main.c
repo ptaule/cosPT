@@ -440,5 +440,4 @@ void print_compilation_settings() {
     printf("Time steps                = %d\n", TIME_STEPS);
     printf("Integration limits        = [%e,%e]\n", Q_MIN, Q_MAX);
     printf("Initial/final times       = [%e,%e]\n", ETA_I, ETA_F);
-    printf("Git revision              = %s\n", GIT_HASH);
 }

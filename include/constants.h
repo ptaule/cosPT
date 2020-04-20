@@ -51,10 +51,6 @@
 #define DEBUG 0
 #endif
 
-#ifndef GIT_HASH
-#define GIT_HASH "unknown"
-#endif
-
 // Variable precision
 typedef long double vfloat;
 #define vfloat_fmt   "%Le"
