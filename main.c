@@ -469,5 +469,4 @@ void print_compilation_settings() {
     printf("Initial/final times       = [%e,%e]\n", ETA_I, ETA_F);
     printf("Neutrino mass             = %f\n", M_NU);
     printf("Neutrino kernels (n>1) IC = %d\n", NEUTRINO_KERNEL_IC);
-    printf("Git revision              = %s\n", GIT_HASH);
 }
