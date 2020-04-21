@@ -278,10 +278,6 @@ void write_PS(
             output->input_ps_file);
     fprintf(fp,"# Zeta values read from                 = %s\n",
             output->input_zeta_file);
-    for (int i = 0; i < 1; ++i) {
-        fprintf(fp,"# Initial perturb. ratios (%d) read from = %s\n",
-                i, output->ic_perturbations_files[i]);
-    }
 
     fprintf(fp,"#\n");
     fprintf(fp,"# Integration limits                    = [%e,%e]\n", Q_MIN, Q_MAX);

@@ -11,7 +11,7 @@
 #include <gsl/gsl_spline.h>
 
 // Path to input files
-#define INPUT_PATH  "/space/ge52sir/CLASS/massive_nu_0.07eV/"
+#define INPUT_PATH  "/space/ge52sir/CLASS/fiducial/synchronous/"
 
 // Number of loops (if not set by compile options)
 #ifndef LOOPS
@@ -31,6 +31,7 @@
 
 // Initial/final times (eta is typically defined as the log of a or the growth
 // rate D+)
+#define ETA_I -3.012626621
 #define ETA_F 0.0
 
 // Which GSL interpolation routine to use

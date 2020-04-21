@@ -16,7 +16,6 @@
 typedef struct {
     const char* input_ps_file;
     const char* input_zeta_file;
-    const char** ic_perturbations_files;
     const char* description;
     double cuba_epsrel;
     double cuba_epsabs;
