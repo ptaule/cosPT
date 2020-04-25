@@ -236,13 +236,6 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
     f[3] = rhs[3] + 1.5 * zeta * (1 - F_NU) * y[0] + 1.5 * zeta * (F_NU - k*k/k_FS2) * y[2] +
         (-1.5 * zeta + 1 - n) * y[3];
     /*
-    // etaD parametrization with zeta = 1
-    f[0] = rhs[0] - n * y[0] + y[1];
-    f[1] = rhs[1] + 1.5 * (1 - F_NU) * y[0] + (-0.5 - n) * y[1] + 1.5 * F_NU * y[2];
-    f[2] = rhs[2] - n * y[2] + y[3];
-    f[3] = rhs[3] + 1.5 * (1 - F_NU) * y[0] + 1.5 * (F_NU - k*k/k_FS2) * y[2] + (-0.5 - n) * y[3];
-    */
-    /*
     // eta parametrization with omegaM(eta) from CLASS
     f[0] = rhs[0] - n * y[0] + y[1];
     f[1] = rhs[1] + 1.5 * omegaM * (1 - F_NU) * y[0] + (-2 + 1.5 * omegaM - n) * y[1] +
