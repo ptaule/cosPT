@@ -119,9 +119,19 @@ vfloat compute_SPT_kernel(
         warning_verbose("Number of arguments is %d, while n is %d.", n_args,n);
 #endif
 
-    // For SPT kernels, F_1 = G_1 = ... = 1
+    // Modified poisson term
+#define KAPPA 0.99
+    vfloat kappa_factor = sqrt(1 + 24*KAPPA);
+
+    // For SPT kernels, F_1 = 1
+    // With modified Poisson term, G1 = 6*KAPPA / 1 + sqrt(1 + 24*KAPPA)
     if (n == 1) {
-        return 1.0;
+        if (component == 0) {
+            return 1.0;
+        }
+        else {
+            return 6*KAPPA/(1 + kappa_factor);
+        }
     }
 
     // If kernel_index is not known, -1 is sent as argument
@@ -136,19 +146,15 @@ vfloat compute_SPT_kernel(
         return tables->kernels[index].value;
     }
 
-    // Modified poisson term
-#define KAPPA 0.99
-    vfloat temp_sqrt = sqrt(1 + 24*KAPPA);
-
     // Define some factors dependent on component to compute
     short int a,b;
     if (component == 0) {
-        a = 4 + 2*n * (-1 + temp_sqrt);
+        a = 4 + 2*n * (-1 + kappa_factor);
         b = 8;
     }
     else {
         a = 12*KAPPA;
-        b = 2*n * (-1 + temp_sqrt);
+        b = 2*n * (-1 + kappa_factor);
     }
 
     vfloat value = 0.0;
@@ -160,7 +166,7 @@ vfloat compute_SPT_kernel(
     }
 
     // Divide by overall factor in SPT recursion relation
-    value /= (n - 1) * ((1 + 12*KAPPA - temp_sqrt)*n + 12*KAPPA);
+    value /= (n - 1) * ((1 + 12*KAPPA - kappa_factor)*n + 12*KAPPA);
 
 #undef KAPPA
 
