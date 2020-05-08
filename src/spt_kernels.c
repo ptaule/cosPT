@@ -136,15 +136,19 @@ vfloat compute_SPT_kernel(
         return tables->kernels[index].value;
     }
 
+    // Modified poisson term
+#define KAPPA 0.99
+    vfloat temp_sqrt = sqrt(1 + 24*KAPPA);
+
     // Define some factors dependent on component to compute
     short int a,b;
     if (component == 0) {
-        a = 2 * n + 1;
-        b = 2;
+        a = 4 + 2*n * (-1 + temp_sqrt);
+        b = 8;
     }
     else {
-        a = 3;
-        b = 2 * n;
+        a = 12*KAPPA;
+        b = 2*n * (-1 + temp_sqrt);
     }
 
     vfloat value = 0.0;
@@ -156,7 +160,9 @@ vfloat compute_SPT_kernel(
     }
 
     // Divide by overall factor in SPT recursion relation
-    value /= (2*n + 3) * (n - 1);
+    value /= (n - 1) * ((1 + 12*KAPPA - temp_sqrt)*n + 12*KAPPA);
+
+#undef KAPPA
 
     // Update kernel table
     tables->kernels[index].value = value;
