@@ -27,11 +27,15 @@
 
 // Integration limits
 #define Q_MIN 1e-4
-#define Q_MAX 1e2
+#define Q_MAX 6.5e1
 
 // Initial/final times (eta is typically defined as the log of a or the growth
 // rate D+)
+#define ETA_I -10.0
 #define ETA_F 0.0
+
+// Rescaled Poisson term
+#define KAPPA 0.99
 
 // Which GSL interpolation routine to use
 #define INTERPOL_TYPE gsl_interp_cspline

@@ -207,9 +207,10 @@ typedef struct {
 int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
     ode_input_t input = *(ode_input_t*)ode_input;
     short int n = input.n;
-    const evolution_params_t* params = input.parameters;
+    /* const evolution_params_t* params = input.parameters; */
 
-    double zeta = gsl_spline_eval(params->zeta_spline, eta, params->zeta_acc);
+    /* double zeta = gsl_spline_eval(params->zeta_spline, eta, params->zeta_acc); */
+#define zeta 1
 
     double rhs[COMPONENTS] = {0};
     // If n == 1, rhs = 0
@@ -220,7 +221,8 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
     }
 
     f[0] = rhs[0] - n * y[0] + y[1];
-    f[1] = rhs[1] + 1.5 * zeta * y[0] + (-1.5 * zeta + 1 - n) * y[1];
+    f[1] = rhs[1] + 1.5 * KAPPA * zeta * y[0] + (-1.5 * zeta + 1 - n) * y[1];
+#undef zeta
 
     return GSL_SUCCESS;
 }
@@ -271,26 +273,14 @@ static void kernel_initial_conditions(
     // Use interpolated perturbations ratios from CLASS at linear order
     if (n == 1) {
         tables->kernels[kernel_index].values[0][0] = 1;
-        for (int i = 1; i < COMPONENTS; ++i) {
-            tables->kernels[kernel_index].values[0][i] =
-                gsl_spline_eval(params->ic_perturb_splines[i-1], k,
-                        params->ic_perturb_accs[i-1]);
-        }
+        tables->kernels[kernel_index].values[0][1] =
+            6*KAPPA/(1 + sqrt(1 + 24*KAPPA));
     }
     else {
         // Use SPT-EdS ICs for delta_cb (component 0)
         for (int i = 0; i < 2; ++i) {
-            tables->kernels[kernel_index].values[0][i] =
-                (double)tables->kernels[kernel_index].spt_values[i];
+            tables->kernels[kernel_index].values[0][i] = 0;
         }
-
-        /*
-        // Use SPT-EdS multiplied by (perturbation ratio)^n for theta_cb
-        tables->kernels[kernel_index].values[0][1] =
-            (double)tables->kernels[kernel_index].spt_values[1]
-            * pow(gsl_spline_eval(params->ic_perturb_splines[0], k,
-                        params->ic_perturb_accs[0]) ,n);
-        */
     }
 }
 
