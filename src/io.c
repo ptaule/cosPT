@@ -274,7 +274,7 @@ void write_PS(
     fprintf(fp,"# Build time:  %s\n", build_git_time);
 
     fprintf(fp,"#\n# Settings/constants used:\n#\n");
-    fprintf(fp,"# Compoent_A, component_B               = %d, %d\n#\n",
+    fprintf(fp,"# component_A, component_B              = %d, %d\n#\n",
             COMPONENT_A, COMPONENT_B);
     fprintf(fp,"# Input PS read from                    = %s\n",
             output->input_ps_file);
