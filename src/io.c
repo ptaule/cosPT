@@ -282,14 +282,15 @@ void write_PS(
             output->input_zeta_file);
     fprintf(fp,"# Redshift values read from             = %s\n",
             output->input_redshift_file);
-    for (int i = 0; i < 3; ++i) {
-        fprintf(fp,"# Initial perturb. ratios (%d) read from = %s\n",
-                i, output->ic_perturbations_files[i]);
+    for (int i = 0; i < 4; ++i) {
+        fprintf(fp,"# Initial F1_%d kernel read from         = %s\n",
+                i, output->ic_F1_files[i]);
     }
 
     fprintf(fp,"#\n");
     fprintf(fp,"# Integration limits                    = [%e,%e]\n", Q_MIN, Q_MAX);
-    fprintf(fp,"# Initial/final times                   = [%e,%e]\n\n", ETA_I, ETA_F);
+    fprintf(fp,"# Initial/final times                   = [%e,%e]\n", ETA_I, ETA_F);
+    fprintf(fp,"# Asymptotic time for initialization    = %e\n\n", ETA_ASYMP);
 
     fprintf(fp,"# Neutrino mass                         = %f\n", M_NU);
     fprintf(fp,"# Neutrino fraction                     = %f\n", F_NU);
@@ -317,11 +318,18 @@ void write_PS(
         fprintf(fp,"err_%dloop %s", LOOPS, corr_strings[i]);
     }
 
+    for (int i = 0; i < COMPONENTS; ++i) {
+        fprintf(fp,"%2sF%d(ETA_I)%5s", "", i, "");
+    }
+
     fprintf(fp,"\n%3s% .6e", "", output->k);
 
     for (int i = 0; i < INTEGRAND_COMPONENTS; ++i) {
         fprintf(fp,"%3s% .6e%3s% .6e%3s% .6e", "", output->lin_ps[i], "",
                 output->non_lin_ps[i], "", output->error[i]);
+    }
+    for (int i = 0; i < COMPONENTS; ++i) {
+        fprintf(fp,"%3s% .6e", "", output->F1_eta_i[i]);
     }
     fprintf(fp, "\n");
 

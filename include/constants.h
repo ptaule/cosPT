@@ -24,9 +24,14 @@
 #define COMPONENTS 4
 #define SPT_COMPONENTS 2
 
+// Total number of time steps (including pre ETA_I asymptotic evolution)
 #ifndef TIME_STEPS
 #define TIME_STEPS 100
 #endif
+
+// Define etaD_asymp and grid points between etaD_asymp and etaD_ini
+#define ETA_ASYMP -10.0
+#define PRE_TIME_STEPS 20
 
 // Two-point functions to compute:
 #define INTEGRAND_COMPONENTS 3
@@ -73,8 +78,8 @@ typedef struct {
     gsl_spline* zeta_spline;
     gsl_interp_accel* redshift_acc;
     gsl_spline* redshift_spline;
-    gsl_interp_accel* ic_perturb_accs[3];
-    gsl_spline* ic_perturb_splines[3];
+    gsl_interp_accel* ic_F1_accs[4];
+    gsl_spline* ic_F1_splines[4];
 } evolution_params_t;
 
 // Constants:
