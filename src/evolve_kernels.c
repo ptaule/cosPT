@@ -267,20 +267,48 @@ void evolve_kernels(
     gsl_odeiv2_driver* driver = gsl_odeiv2_driver_alloc_y_new(&sys,
             gsl_odeiv2_step_rkf45, ODE_HSTART, ODE_RTOL, ODE_ATOL);
 
-    double eta_current = eta[0];
+    // For kernels with n > 1 use ODE SOLVER
+    if (input->n > 1) {
+        double eta_current = eta[0];
 
-    // Evolve system
-    for (int i = 1; i < TIME_STEPS; i++) {
-        // y is a pointer to the kernel table at time i
-        double* y = kernels[i];
-        // First copy previous values (i-1) to y
-        memcpy(y, kernels[i-1], COMPONENTS * sizeof(double));
-        // Then evolve y to time index i
-        int status = gsl_odeiv2_driver_apply(driver, &eta_current, eta[i], y);
+        // Evolve system
+        for (int i = 1; i < TIME_STEPS; i++) {
+            // y is a pointer to the kernel table at time i
+            double* y = kernels[i];
+            // First copy previous values (i-1) to y
+            memcpy(y, kernels[i-1], COMPONENTS * sizeof(double));
+            // Then evolve y to time index i
+            int status = gsl_odeiv2_driver_apply(driver, &eta_current, eta[i], y);
 
-        if (status != GSL_SUCCESS) {
-            warning_verbose("GLS ODE driver gave error value = %d.", status);
-            break;
+            if (status != GSL_SUCCESS) {
+                warning_verbose("GLS ODE driver gave error value = %d.", status);
+                break;
+            }
+        }
+    }
+    // For n == 1 kernels, we may multipliy by exp("growing mode" eigenvalue)
+    // before eta_I
+    else {
+        for (int i = 1; i < PRE_TIME_STEPS + 1; ++i) {
+            for (int j = 0; j < COMPONENTS; ++j) {
+                kernels[i][j] = kernels[0][j] *
+                    exp(gsl_spline_eval(input->parameters->omega_eigvals_spline,
+                                input->k, input->parameters->omega_eigvals_acc) *
+                    (eta[i] - eta[0]));
+            }
+        }
+
+        double eta_current = eta[PRE_TIME_STEPS];
+
+        for (int i = PRE_TIME_STEPS + 1; i < TIME_STEPS; i++) {
+            double* y = kernels[i];
+            memcpy(y, kernels[i-1], COMPONENTS * sizeof(double));
+            int status = gsl_odeiv2_driver_apply(driver, &eta_current, eta[i], y);
+
+            if (status != GSL_SUCCESS) {
+                warning_verbose("GLS ODE driver gave error value = %d.", status);
+                break;
+            }
         }
     }
 

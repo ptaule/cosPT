@@ -46,9 +46,11 @@ void print_compilation_settings();
 
 int main (int argc, char* argv[]) {
     // Input files
-    const char* input_ps_file       = INPUT_PATH "z10_pk_cb.dat";
-    const char* input_zeta_file     = INPUT_PATH "zeta.dat";
-    const char* input_redshift_file = INPUT_PATH "redshift.dat";
+    const char* input_ps_file            = INPUT_PATH "z10_pk_cb.dat";
+    const char* input_zeta_file          = INPUT_PATH "zeta.dat";
+    const char* input_redshift_file      = INPUT_PATH "redshift.dat";
+    const char* input_omega_eigvals_file = INPUT_PATH
+        "growing_mode_eigenvalues_etaD_ini.dat";
     const char* input_wavenumbers   = "input/wavenumbers_bao_zoom.dat";
 
     const char* ic_F1_files[COMPONENTS];
@@ -186,29 +188,32 @@ int main (int argc, char* argv[]) {
     };
 
     // Read input files and interpolate
-    read_and_interpolate(input_ps_file,&input.ps_acc,&input.ps_spline);
-    read_and_interpolate(input_redshift_file,&params.redshift_acc,&params.redshift_spline);
-    read_and_interpolate(input_zeta_file,&params.zeta_acc,&params.zeta_spline);
+    read_and_interpolate(input_ps_file, &input.ps_acc, &input.ps_spline);
+    read_and_interpolate(input_redshift_file, &params.redshift_acc,
+            &params.redshift_spline);
+    read_and_interpolate(input_zeta_file, &params.zeta_acc, &params.zeta_spline);
+    read_and_interpolate(input_omega_eigvals_file, &params.omega_eigvals_acc,
+            &params.omega_eigvals_spline);
 
     for (int i = 0; i < COMPONENTS; ++i) {
-        read_and_interpolate(ic_F1_files[i],
-                &params.ic_F1_accs[i], &params.ic_F1_splines[i]);
+        read_and_interpolate(ic_F1_files[i], &params.ic_F1_accs[i],
+                &params.ic_F1_splines[i]);
     }
 
     output_t output = {
-        .input_ps_file       = input_ps_file,
-        .input_zeta_file     = input_zeta_file,
-        .input_redshift_file = input_redshift_file,
-        .ic_F1_files         = ic_F1_files,
-        .description         = description,
-        .cuba_epsrel         = cuba_epsrel,
-        .cuba_epsabs         = cuba_epsabs,
-        .cuba_maxevals       = cuba_maxevals,
-        .k                   = k,
-        .lin_ps              = {0.0},
-        .non_lin_ps          = {0.0},
-        .error               = {0.0},
-        .F1_eta_i            = {0.0}
+        .input_ps_file            = input_ps_file,
+        .input_zeta_file          = input_zeta_file,
+        .input_redshift_file      = input_redshift_file,
+        .input_omega_eigvals_file = input_omega_eigvals_file,
+        .ic_F1_files              = ic_F1_files,
+        .cuba_epsrel              = cuba_epsrel,
+        .cuba_epsabs              = cuba_epsabs,
+        .cuba_maxevals            = cuba_maxevals,
+        .k                        = k,
+        .lin_ps                   = {0.0},
+        .non_lin_ps               = {0.0},
+        .error                    = {0.0},
+        .F1_eta_i                 = {0.0}
     };
 
     /* Linear evolution */
@@ -288,6 +293,8 @@ int main (int argc, char* argv[]) {
     gsl_interp_accel_free(params.redshift_acc);
     gsl_spline_free(params.zeta_spline);
     gsl_interp_accel_free(params.zeta_acc);
+    gsl_spline_free(params.omega_eigvals_spline);
+    gsl_interp_accel_free(params.omega_eigvals_acc);
 
     for (int i = 0; i < COMPONENTS; ++i) {
         gsl_interp_accel_free(params.ic_F1_accs[i]);

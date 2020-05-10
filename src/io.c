@@ -282,6 +282,8 @@ void write_PS(
             output->input_zeta_file);
     fprintf(fp,"# Redshift values read from             = %s\n",
             output->input_redshift_file);
+    fprintf(fp,"# Exp of grow. mode eig. vals from      = %s\n",
+            output->input_omega_eigvals_file);
     for (int i = 0; i < 4; ++i) {
         fprintf(fp,"# Initial F1_%d kernel read from         = %s\n",
                 i, output->ic_F1_files[i]);
@@ -290,7 +292,7 @@ void write_PS(
     fprintf(fp,"#\n");
     fprintf(fp,"# Integration limits                    = [%e,%e]\n", Q_MIN, Q_MAX);
     fprintf(fp,"# Initial/final times                   = [%e,%e]\n", ETA_I, ETA_F);
-    fprintf(fp,"# Asymptotic time for initialization    = %e\n\n", ETA_ASYMP);
+    fprintf(fp,"# Asymptotic time for initialization    = %e\n#\n", ETA_ASYMP);
 
     fprintf(fp,"# Neutrino mass                         = %f\n", M_NU);
     fprintf(fp,"# Neutrino fraction                     = %f\n", F_NU);
