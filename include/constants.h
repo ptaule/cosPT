@@ -58,7 +58,7 @@
 // GSL ODE routine parameters
 #define ODE_HSTART 1e-3 /* Initial step size */
 #define ODE_ATOL 1e-6
-#define ODE_RTOL 1e-3
+#define ODE_RTOL 1e-4
 
 // Debug modes (if not set by compile options):
 //
