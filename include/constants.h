@@ -40,7 +40,7 @@
 
 // Integration limits
 #define Q_MIN 1e-4
-#define Q_MAX 1e2
+#define Q_MAX 6.5e1
 
 /* Initial conditions for n>1 neutrino kernels. Possible values:
  * (1) 0
