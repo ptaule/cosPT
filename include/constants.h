@@ -27,7 +27,7 @@
 
 // Integration limits
 #define Q_MIN 1e-4
-#define Q_MAX 1e2
+#define Q_MAX 6.5e1
 
 // Initial/final times (eta is typically defined as the log of a or the growth
 // rate D+)
@@ -41,7 +41,7 @@
 // GSL ODE routine parameters
 #define ODE_HSTART 1e-3 /* Initial step size */
 #define ODE_ATOL 1e-6
-#define ODE_RTOL 1e-3
+#define ODE_RTOL 1e-4
 
 // Debug modes (if not set by compile options):
 //
