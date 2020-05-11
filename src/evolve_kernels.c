@@ -268,29 +268,10 @@ static void kernel_initial_conditions(
         tables_t* tables
         )
 {
-    // Use interpolated perturbations ratios from CLASS at linear order
-    if (n == 1) {
-        tables->kernels[kernel_index].values[0][0] = 1;
-        for (int i = 1; i < COMPONENTS; ++i) {
-            tables->kernels[kernel_index].values[0][i] =
-                gsl_spline_eval(params->ic_perturb_splines[i-1], k,
-                        params->ic_perturb_accs[i-1]);
-        }
-    }
-    else {
-        // Use SPT-EdS ICs for delta_cb (component 0)
-        for (int i = 0; i < 2; ++i) {
-            tables->kernels[kernel_index].values[0][i] =
-                (double)tables->kernels[kernel_index].spt_values[i];
-        }
-
-        /*
-        // Use SPT-EdS multiplied by (perturbation ratio)^n for theta_cb
-        tables->kernels[kernel_index].values[0][1] =
-            (double)tables->kernels[kernel_index].spt_values[1]
-            * pow(gsl_spline_eval(params->ic_perturb_splines[0], k,
-                        params->ic_perturb_accs[0]) ,n);
-        */
+    // Use SPT-EdS ICs
+    for (int i = 0; i < COMPONENTS; ++i) {
+        tables->kernels[kernel_index].values[0][i] =
+            (double)tables->kernels[kernel_index].spt_values[i];
     }
 }
 
@@ -387,10 +368,7 @@ void compute_F1(
 
     // Use interpolated perturbations ratios from CLASS at linear order
     values[0][0] = 1;
-    for (int i = 1; i < COMPONENTS; ++i) {
-        values[0][i] = gsl_spline_eval(params->ic_perturb_splines[i-1], k,
-                params->ic_perturb_accs[i-1]);
-    }
+    values[0][1] = 1;
 
     // Set up ODE input and system
     ode_input_t input = {

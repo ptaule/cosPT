@@ -50,9 +50,6 @@ int main (int argc, char* argv[]) {
     const char* input_zeta_file     = INPUT_PATH "zeta.dat";
     const char* input_wavenumbers   = "input/wavenumbers_bao_zoom.dat";
 
-    const char* ic_perturbations_files[1];
-    ic_perturbations_files[0] = INPUT_PATH "z10_theta_cb_over_aHf_delta_cb.dat";
-
     // Constants fixed by command line options (and default values)
     max_n_threads        = 100;
     double cuba_epsabs   = 1e-12;
@@ -185,15 +182,9 @@ int main (int argc, char* argv[]) {
     read_and_interpolate(input_ps_file,&input.ps_acc,&input.ps_spline);
     read_and_interpolate(input_zeta_file,&params.zeta_acc,&params.zeta_spline);
 
-    for (int i = 0; i < 1; ++i) {
-        read_and_interpolate(ic_perturbations_files[i],
-                &params.ic_perturb_accs[i], &params.ic_perturb_splines[i]);
-    }
-
     output_t output = {
         .input_ps_file          = input_ps_file,
         .input_zeta_file        = input_zeta_file,
-        .ic_perturbations_files = ic_perturbations_files,
         .description            = description,
         .cuba_epsrel            = cuba_epsrel,
         .cuba_epsabs            = cuba_epsabs,
@@ -265,11 +256,6 @@ int main (int argc, char* argv[]) {
     gsl_interp_accel_free(input.ps_acc);
     gsl_spline_free(params.zeta_spline);
     gsl_interp_accel_free(params.zeta_acc);
-
-    for (int i = 0; i < 1; ++i) {
-        gsl_interp_accel_free(params.ic_perturb_accs[i]);
-        gsl_spline_free(params.ic_perturb_splines[i]);
-    }
 
     return 0;
 }
