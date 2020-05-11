@@ -83,11 +83,17 @@ short int sum_vectors(
 
 
 
-void initialize_timesteps(double eta[], double eta_i, double eta_f) {
-    // Linear time step (including endpoints):
-    double d_eta = fabs(eta_f - eta_i)/(TIME_STEPS - 1);
-    for (int i = 0; i < TIME_STEPS; ++i) {
-        eta[i] = eta_i + i*d_eta;
+void initialize_timesteps(double eta[], double eta_i, double eta_f, double eta_asymp) {
+    // Linear time step (including endpoints)
+    // Between eta_asymp and eta_i
+    double d_eta = fabs(eta_i - eta_asymp)/(PRE_TIME_STEPS);
+    for (int i = 0; i < PRE_TIME_STEPS; ++i) {
+        eta[i] = eta_asymp + i*d_eta;
+    }
+    // Between eta_i and eta_f
+    d_eta = fabs(eta_f - eta_i)/(TIME_STEPS - PRE_TIME_STEPS - 1);
+    for (int i = PRE_TIME_STEPS; i < TIME_STEPS; ++i) {
+        eta[i] = eta_i + (i - PRE_TIME_STEPS) * d_eta;
     }
 }
 

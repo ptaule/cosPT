@@ -50,7 +50,7 @@ short int sum_vectors(
 
 void compute_sum_table(short int sum_table[][N_CONFIGS]);
 
-void initialize_timesteps(double eta[], double eta_i, double eta_f);
+void initialize_timesteps(double eta[], double eta_i, double eta_f, double eta_asymp);
 
 void tables_allocate(tables_t* tables);
 void tables_zero_initialize(tables_t* tables);

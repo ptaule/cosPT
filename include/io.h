@@ -17,7 +17,8 @@ typedef struct {
     const char* input_ps_file;
     const char* input_zeta_file;
     const char* input_redshift_file;
-    const char** ic_perturbations_files;
+    const char* input_omega_eigvals_file;
+    const char** ic_F1_files;
     const char* description;
     double cuba_epsrel;
     double cuba_epsabs;
@@ -26,6 +27,7 @@ typedef struct {
     double lin_ps[INTEGRAND_COMPONENTS];
     double non_lin_ps[INTEGRAND_COMPONENTS];
     double error[INTEGRAND_COMPONENTS];
+    double F1_eta_i[COMPONENTS];
 } output_t;
 
 void read_and_interpolate(const char* filename, gsl_interp_accel** acc, gsl_spline** spline);

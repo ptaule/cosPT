@@ -24,7 +24,8 @@ void compute_F1(
         double k,
         const evolution_params_t* params,
         const double* eta,
-        double* F1 /* out */
+        double* F1_eta_i, /* out */
+        double* F1_eta_f /* out */
         );
 
 #endif /* ifndef EVOLVE_KERNELS_H */

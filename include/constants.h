@@ -24,9 +24,14 @@
 #define COMPONENTS 4
 #define SPT_COMPONENTS 2
 
+// Total number of time steps (including pre ETA_I asymptotic evolution)
 #ifndef TIME_STEPS
-#define TIME_STEPS 100
+#define TIME_STEPS 125
 #endif
+
+// Define etaD_asymp and grid points between etaD_asymp and etaD_ini
+#define ETA_ASYMP -10.0
+#define PRE_TIME_STEPS 25
 
 // Two-point functions to compute:
 #define INTEGRAND_COMPONENTS 3
@@ -35,7 +40,7 @@
 
 // Integration limits
 #define Q_MIN 1e-4
-#define Q_MAX 1e2
+#define Q_MAX 6.5e1
 
 /* Initial conditions for n>1 neutrino kernels. Possible values:
  * (1) 0
@@ -53,7 +58,7 @@
 // GSL ODE routine parameters
 #define ODE_HSTART 1e-3 /* Initial step size */
 #define ODE_ATOL 1e-6
-#define ODE_RTOL 1e-3
+#define ODE_RTOL 1e-4
 
 // Debug modes (if not set by compile options):
 //
@@ -69,12 +74,14 @@ typedef long double vfloat;
 
 // Parameters type
 typedef struct {
-    gsl_interp_accel* zeta_acc;
-    gsl_spline* zeta_spline;
-    gsl_interp_accel* redshift_acc;
-    gsl_spline* redshift_spline;
-    gsl_interp_accel* ic_perturb_accs[3];
-    gsl_spline* ic_perturb_splines[3];
+    gsl_interp_accel*   zeta_acc;
+    gsl_spline*         zeta_spline;
+    gsl_interp_accel*   redshift_acc;
+    gsl_spline*         redshift_spline;
+    gsl_interp_accel*   omega_eigvals_acc;
+    gsl_spline*         omega_eigvals_spline;
+    gsl_interp_accel*   ic_F1_accs[4];
+    gsl_spline*         ic_F1_splines[4];
 } evolution_params_t;
 
 // Constants:

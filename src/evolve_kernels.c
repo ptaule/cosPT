@@ -210,6 +210,11 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
     double k = input.k;
     const evolution_params_t* params = input.parameters;
 
+    // Between eta_asymp and eta_i, set eta = eta_i
+    if (eta < ETA_I) {
+        eta = ETA_I;
+    }
+
     double zeta = gsl_spline_eval(params->zeta_spline, eta, params->zeta_acc);
 
 #define FS_factor 0.907778 * M_NU * SQRT_OMEGA_M
@@ -262,20 +267,48 @@ void evolve_kernels(
     gsl_odeiv2_driver* driver = gsl_odeiv2_driver_alloc_y_new(&sys,
             gsl_odeiv2_step_rkf45, ODE_HSTART, ODE_RTOL, ODE_ATOL);
 
-    double eta_current = eta[0];
+    // For kernels with n > 1 use ODE SOLVER
+    if (input->n > 1) {
+        double eta_current = eta[0];
 
-    // Evolve system
-    for (int i = 1; i < TIME_STEPS; i++) {
-        // y is a pointer to the kernel table at time i
-        double* y = kernels[i];
-        // First copy previous values (i-1) to y
-        memcpy(y, kernels[i-1], COMPONENTS * sizeof(double));
-        // Then evolve y to time index i
-        int status = gsl_odeiv2_driver_apply(driver, &eta_current, eta[i], y);
+        // Evolve system
+        for (int i = 1; i < TIME_STEPS; i++) {
+            // y is a pointer to the kernel table at time i
+            double* y = kernels[i];
+            // First copy previous values (i-1) to y
+            memcpy(y, kernels[i-1], COMPONENTS * sizeof(double));
+            // Then evolve y to time index i
+            int status = gsl_odeiv2_driver_apply(driver, &eta_current, eta[i], y);
 
-        if (status != GSL_SUCCESS) {
-            warning_verbose("GLS ODE driver gave error value = %d.", status);
-            break;
+            if (status != GSL_SUCCESS) {
+                warning_verbose("GLS ODE driver gave error value = %d.", status);
+                break;
+            }
+        }
+    }
+    // For n == 1 kernels, we may multipliy by exp("growing mode" eigenvalue)
+    // before eta_I
+    else {
+        for (int i = 1; i < PRE_TIME_STEPS + 1; ++i) {
+            for (int j = 0; j < COMPONENTS; ++j) {
+                kernels[i][j] = kernels[0][j] *
+                    exp(gsl_spline_eval(input->parameters->omega_eigvals_spline,
+                                input->k, input->parameters->omega_eigvals_acc) *
+                    (eta[i] - eta[0]));
+            }
+        }
+
+        double eta_current = eta[PRE_TIME_STEPS];
+
+        for (int i = PRE_TIME_STEPS + 1; i < TIME_STEPS; i++) {
+            double* y = kernels[i];
+            memcpy(y, kernels[i-1], COMPONENTS * sizeof(double));
+            int status = gsl_odeiv2_driver_apply(driver, &eta_current, eta[i], y);
+
+            if (status != GSL_SUCCESS) {
+                warning_verbose("GLS ODE driver gave error value = %d.", status);
+                break;
+            }
         }
     }
 
@@ -293,49 +326,18 @@ static void kernel_initial_conditions(
         tables_t* tables
         )
 {
-    // Use interpolated perturbations ratios from CLASS at linear order
+    // Use growing mode IC for F1 at eta_asymp
     if (n == 1) {
-        tables->kernels[kernel_index].values[0][0] = 1;
-        for (int i = 1; i < COMPONENTS; ++i) {
+        for (int i = 0; i < COMPONENTS; ++i) {
             tables->kernels[kernel_index].values[0][i] =
-                gsl_spline_eval(params->ic_perturb_splines[i-1], k,
-                        params->ic_perturb_accs[i-1]);
+                gsl_spline_eval(params->ic_F1_splines[i], k,
+                        params->ic_F1_accs[i]);
         }
     }
     else {
-        // Use SPT-EdS ICs for delta_cb (component 0)
-        for (int i = 0; i < 2; ++i) {
-            tables->kernels[kernel_index].values[0][i] =
-                (double)tables->kernels[kernel_index].spt_values[i];
-        }
-
-        /*
-        // Use SPT-EdS multiplied by (perturbation ratio)^n for theta_cb
-        tables->kernels[kernel_index].values[0][1] =
-            (double)tables->kernels[kernel_index].spt_values[1]
-            * pow(gsl_spline_eval(params->ic_perturb_splines[0], k,
-                        params->ic_perturb_accs[0]) ,n);
-        */
-
-        for (int i = 2; i < COMPONENTS; ++i) {
-            /* Various IC options for nu at non-linear order:
-             * (1) 0
-             * (2) SPT-EdS
-             * (3) SPT-EdS multiplied by (perturbation ratio)^n */
-#if NEUTRINO_KERNEL_IC==1
+        // Set F(n>1)-kernels to zero at eta_asymp
+        for (int i = 0; i < COMPONENTS; ++i) {
             tables->kernels[kernel_index].values[0][i] = 0;
-#elif NEUTRINO_KERNEL_IC==2
-            tables->kernels[kernel_index].values[0][i] =
-                (double)tables->kernels[kernel_index].spt_values[i-2];
-#elif NEUTRINO_KERNEL_IC==3
-            tables->kernels[kernel_index].values[0][i] =
-                (double)tables->kernels[kernel_index].spt_values[i-2]
-                * pow(gsl_spline_eval(params->ic_perturb_splines[i-1], k,
-                            params->ic_perturb_accs[i-1]) ,n);
-#else
-            warning_verbose("Invalid value for NEUTRINO_KERNEL_IC = %d.",
-                    NEUTRINO_KERNEL_IC);
-#endif
         }
     }
 }
@@ -418,12 +420,12 @@ short int kernel_evolution(
 
 
 
-/* Compute (F1(z_0))^2 using kernel_evolution(). */
 void compute_F1(
         double k,
         const evolution_params_t* params,
         const double* eta,
-        double* F1 /* out */
+        double* F1_eta_i, /* out */
+        double* F1_eta_f  /* out */
         )
 {
     double** values = (double**)calloc(TIME_STEPS, sizeof(double*));
@@ -431,11 +433,9 @@ void compute_F1(
         values[i] = (double*)calloc(COMPONENTS, sizeof(double));
     }
 
-    // Use interpolated perturbations ratios from CLASS at linear order
-    values[0][0] = 1;
-    for (int i = 1; i < COMPONENTS; ++i) {
-        values[0][i] = gsl_spline_eval(params->ic_perturb_splines[i-1], k,
-                params->ic_perturb_accs[i-1]);
+    for (int i = 0; i < COMPONENTS; ++i) {
+        values[0][i] = gsl_spline_eval(params->ic_F1_splines[i], k,
+                params->ic_F1_accs[i]);
     }
 
     // Set up ODE input and system
@@ -450,7 +450,8 @@ void compute_F1(
     evolve_kernels(&input, eta, values);
 
     for (int i = 0; i < COMPONENTS; ++i) {
-        F1[i] = values[TIME_STEPS - 1][i];
+        F1_eta_i[i] = values[PRE_TIME_STEPS][i];
+        F1_eta_f[i] = values[TIME_STEPS - 1][i];
     }
 
     for (int i = 0; i < TIME_STEPS; ++i) {
