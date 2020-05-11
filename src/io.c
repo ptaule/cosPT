@@ -284,7 +284,7 @@ void write_PS(
             output->input_redshift_file);
     fprintf(fp,"# Exp of grow. mode eig. vals from      = %s\n",
             output->input_omega_eigvals_file);
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < COMPONENTS; ++i) {
         fprintf(fp,"# Initial F1_%d kernel read from         = %s\n",
                 i, output->ic_F1_files[i]);
     }

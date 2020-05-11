@@ -80,8 +80,8 @@ typedef struct {
     gsl_spline*         redshift_spline;
     gsl_interp_accel*   omega_eigvals_acc;
     gsl_spline*         omega_eigvals_spline;
-    gsl_interp_accel*   ic_F1_accs[4];
-    gsl_spline*         ic_F1_splines[4];
+    gsl_interp_accel*   ic_F1_accs[COMPONENTS];
+    gsl_spline*         ic_F1_splines[COMPONENTS];
 } evolution_params_t;
 
 // Constants:
