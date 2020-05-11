@@ -48,7 +48,7 @@ int main (int argc, char* argv[]) {
     // Input files
     const char* input_ps_file       = INPUT_PATH "z10_pk_cb.dat";
     const char* input_zeta_file     = INPUT_PATH "zeta.dat";
-    const char* input_wavenumbers   = "input/wavenumbers.dat";
+    const char* input_wavenumbers   = "input/wavenumbers_bao_zoom.dat";
 
     const char* ic_perturbations_files[1];
     ic_perturbations_files[0] = INPUT_PATH "z10_theta_cb_over_aHf_delta_cb.dat";
