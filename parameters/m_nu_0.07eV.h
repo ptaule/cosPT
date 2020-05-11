@@ -9,7 +9,7 @@
 #define M_NU_0_07EV_H
 
 // Cosmology dependent parameters
-#define ETA_I -3.018232117        /* eta is defined as log(a) or log(D) */
+#define ETA_I -3.018232116        /* eta is defined as log(a) or log(D) */
 #define ETA_F 0.0
 #define M_NU 0.07                 /* Mass of _one_ neutrino             */
 #define F_NU 0.0155853065         /* Neutrino fraction                  */
