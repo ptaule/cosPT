@@ -299,7 +299,8 @@ void write_PS(
     fprintf(fp,"# Square root of Omega matter at z = 0  = %f\n#\n", SQRT_OMEGA_M);
 
     fprintf(fp,"# Neutrino kernels (n>1) IC             = %d\n", NEUTRINO_KERNEL_IC);
-    fprintf(fp,"# Number of time steps                  = %d\n", TIME_STEPS);
+    fprintf(fp,"# Number of time steps (total)          = %d\n", TIME_STEPS);
+    fprintf(fp,"# Number of time steps (before ETA_I)   = %d\n", PRE_TIME_STEPS);
     fprintf(fp,"# Monte Carlo abstol, reltol            = %.2e, %.2e\n",
             output->cuba_epsabs, output->cuba_epsrel);
     fprintf(fp,"# Monte Carlo max num. of evals         = %.2e\n",
