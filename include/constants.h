@@ -24,11 +24,11 @@
 
 // Integration limits
 #define Q_MIN 1e-4
-#define Q_MAX 1e2
+#define Q_MAX 6.5e1
 
 // CUBA settings
 #define CUBA_NVEC 1
-#define CUBA_EPSREL 1e-3
+#define CUBA_EPSREL 1e-4
 #define CUBA_EPSABS 1e-12
 #define CUBA_VERBOSE 0
 #define CUBA_LAST 4
