@@ -206,6 +206,7 @@ int main (int argc, char* argv[]) {
         .input_redshift_file      = input_redshift_file,
         .input_omega_eigvals_file = input_omega_eigvals_file,
         .ic_F1_files              = ic_F1_files,
+        .description              = description,
         .cuba_epsrel              = cuba_epsrel,
         .cuba_epsabs              = cuba_epsabs,
         .cuba_maxevals            = cuba_maxevals,
