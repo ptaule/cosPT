@@ -478,5 +478,4 @@ void print_compilation_settings() {
     printf("Integration limits        = [%e,%e]\n", Q_MIN, Q_MAX);
     printf("Initial/final times       = [%e,%e]\n", ETA_I, ETA_F);
     printf("Neutrino mass             = %f\n", M_NU);
-    printf("Neutrino kernels (n>1) IC = %d\n", NEUTRINO_KERNEL_IC);
 }

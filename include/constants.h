@@ -42,14 +42,6 @@
 #define Q_MIN 1e-4
 #define Q_MAX 6.5e1
 
-/* Initial conditions for n>1 neutrino kernels. Possible values:
- * (1) 0
- * (2) SPT-EdS
- * (3) SPT-EdS multiplied by (perturbation ratio)^n */
-#ifndef NEUTRINO_KERNEL_IC
-#define NEUTRINO_KERNEL_IC 1
-#endif
-
 // Which GSL interpolation routine to use
 #define INTERPOL_TYPE gsl_interp_cspline
 #define INTERPOL_2D_TYPE gsl_interp2d_bilinear
