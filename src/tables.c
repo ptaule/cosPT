@@ -118,8 +118,8 @@ void tables_zero_initialize(tables_t* tables) {
 
     // Reset kernel table elements to default value
     for (int i = 0; i < N_KERNELS; ++i) {
-        tables->kernels[i].ic_computed = false;
-        tables->kernels[i].evolved     = false;
+        tables->kernels[i].spt_computed = false;
+        tables->kernels[i].evolved      = false;
 
         for (int j = 0; j < SPT_COMPONENTS; ++j) {
             tables->kernels[i].spt_values[j] = 0.0;

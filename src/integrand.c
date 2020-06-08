@@ -165,9 +165,7 @@ static void integrand_term(
 
     // If there are no "self" loops, kernels are equal for autocorrelators
     if (l == 0 && r == 0) {
-        // First, compute SPT initial condition
-        compute_SPT_kernels(arguments_l, kernel_index_l, m, tables);
-        // Then, evolve kernels
+        // Evolve kernels
         kernel_evolution(arguments_l, kernel_index_l, m, input->params,
                 tables);
 
@@ -193,10 +191,7 @@ static void integrand_term(
 #endif
     }
     else {
-        // First, compute SPT initial condition
-        compute_SPT_kernels(arguments_l, kernel_index_l, 2*l + m, tables);
-        compute_SPT_kernels(arguments_r, kernel_index_r, 2*r + m, tables);
-        // Then, evolve kernels
+        // Evolve kernels
         kernel_evolution(arguments_l, kernel_index_l, 2*l + m, input->params,
                 tables);
         kernel_evolution(arguments_r, kernel_index_r, 2*r + m, input->params,

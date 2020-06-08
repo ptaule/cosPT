@@ -169,7 +169,7 @@ short int compute_SPT_kernels(
     kernel_t* const kernel = &tables->kernels[kernel_index];
 
     // Check if the SPT kernels are already computed
-    if (kernel->ic_computed) return kernel_index;
+    if (kernel->spt_computed) return kernel_index;
 
     // For SPT kernels, F_1 = G_1 = ... = 1
     if (n == 1) {
@@ -191,7 +191,7 @@ short int compute_SPT_kernels(
     }
 
     // Update kernel table
-    kernel->ic_computed = true;
+    kernel->spt_computed = true;
 
     return kernel_index;
 }

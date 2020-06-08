@@ -15,13 +15,13 @@ typedef struct {
     double** values;    /* TIME_STEPS x COMPONENTS table of kernels      */
     vfloat* spt_values; /* SPT_COMPONENTS array of initial kernels (SPT) */
     bool evolved;       /* Evolved by GSL ODE routine?                   */
-    bool ic_computed;   /* initial condition (SPT) kernel computed?      */
+    bool spt_computed;  /* (SPT) kernel computed?                        */
 } kernel_t;
 
 // Struct storing integration variables
 typedef struct {
-    vfloat magnitudes[LOOPS]; /* Loop momenta magnitudes                                     */
-    vfloat cos_theta[LOOPS];  /* Cosine of polar angles of the loop momenta                  */
+    vfloat magnitudes[LOOPS]; /* Loop momenta magnitudes                    */
+    vfloat cos_theta[LOOPS];  /* Cosine of polar angles of the loop momenta */
 
     /* We assume that the first loop momenta has azimuthal angle 0 */
 #if LOOPS >= 2
