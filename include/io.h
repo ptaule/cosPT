@@ -31,8 +31,14 @@ typedef struct {
 } output_t;
 
 void read_and_interpolate(const char* filename, gsl_interp_accel** acc, gsl_spline** spline);
-void read_and_interpolate_2d(const char* filename, gsl_interp_accel** x_acc,
-        gsl_interp_accel** y_acc, gsl_spline2d** spline);
+void read_and_interpolate_2d(
+        const char* x_grid_file,
+        const char* y_grid_file,
+        const char* data_file,
+        gsl_interp_accel** x_acc,
+        gsl_interp_accel** y_acc,
+        gsl_spline2d** spline
+        );
 
 double get_wavenumber(const char* filename, int a);
 void write_PS(const char* filename, const output_t* output);

@@ -97,103 +97,122 @@ void read_and_interpolate(
 
 
 void read_and_interpolate_2d(
-        const char* filename,     /* in, name of file to be read                      */
+        const char* x_grid_file,  /* in, file with x-grid                             */
+        const char* y_grid_file,  /* in, file with y-grid                             */
+        const char* data_file,    /* in, file with data (z-points)                    */
         gsl_interp_accel** x_acc, /* out, gsl_interpolation accelerated lookup object */
         gsl_interp_accel** y_acc, /* out, gsl_interpolation accelerated lookup object */
         gsl_spline2d** spline     /* out, gsl_spline_2d of values read from file      */
         )
 {
+    double* x = (double*)calloc(MAX_RESOLUTION, sizeof(double));
+    double* y = (double*)calloc(MAX_RESOLUTION, sizeof(double));
+    double* z = (double*)calloc(MAX_RESOLUTION * MAX_RESOLUTION, sizeof(double));
+
+    size_t x_idx  = 0;
+    size_t x_size = 0;
+    size_t y_idx  = 0;
+    size_t y_size = 0;
+
     FILE* fp;
     char* line = NULL;
     size_t n = 0; // Buffer size, changed by getline()
     ssize_t read; // getline() success/error flag
 
-    fp = fopen(filename,"r");
+    // Read x-grid
+    fp = fopen(x_grid_file,"r");
     if (fp == NULL) {
-        error_verbose("Could not open %s. Exiting.",filename);
+        error_verbose("Could not open %s. Exiting.", x_grid_file);
     }
 
-    double* x = (double*)calloc(MAX_RESOLUTION, sizeof(double));
-    double* y = (double*)calloc(MAX_RESOLUTION, sizeof(double));
-    double* z = (double*)calloc(MAX_RESOLUTION * MAX_RESOLUTION, sizeof(double));
-
-    size_t x_size = 0;
-    size_t y_size = 0;
-    size_t i = 0;
-
-    // Read first two (non-empty, non-comment) lines
-    while ((read = getline(&line,&n,fp) != -1) && i < 2) {
-        if (!strip_line(line)) continue;
-
-        /* First non-empty, non-comment line is the x grid */
-        if (i == 0) {
-            size_t j = 0;
-            int offset = 0;
-            char* data = line;
-            while (sscanf(data, " %lf%n", &x[j], &offset) == 1) {
-                j++;
-                data += offset;
-
-                if (j >= MAX_RESOLUTION) {
-                    free(x); free(y); free(z); free(line); fclose(fp);
-                    error_verbose("Number of grid points defined in first "
-                            "(non-empty, non-comment) line in %s exceeds "
-                            "MAX_RESOLUTION = %d. " "Exiting.",
-                            filename,MAX_RESOLUTION);
-                }
-            }
-            x_size = j;
-
-        }
-        /* Second non-empty, non-comment line is the y grid */
-        if (i == 1) {
-            size_t j = 0;
-            int offset = 0;
-            char* data = line;
-            while (sscanf(data, " %lf%n", &y[j], &offset) == 1) {
-                j++;
-                data += offset;
-
-                if (j >= MAX_RESOLUTION) {
-                    free(x); free(y); free(z); free(line); fclose(fp);
-                    error_verbose("Number of grid points defined in second "
-                            "(non-empty, non-comment) line in %s exceeds "
-                            "MAX_RESOLUTION = %d. " "Exiting.",
-                            filename,MAX_RESOLUTION);
-                }
-            }
-            y_size = j;
-        }
-        i++;
-    }
-
-    /* The remaining lines contain the z values*/
-    i = 0;
     while ((read = getline(&line,&n,fp) != -1)) {
         if (!strip_line(line)) continue;
 
-        if (i >= x_size) {
-            free(x); free(y); free(z); free(line); fclose(fp);
-            error_verbose("x grid size and z values provided does match in "
-                    "%s. Exiting.", filename);
+        if (x_idx == MAX_RESOLUTION) {
+            fclose(fp);
+            error_verbose("Number of points in input file %s exceeds "
+                    "MAX_RESOLUTION = %d. Exiting.", x_grid_file ,MAX_RESOLUTION);
         }
-        size_t y_index = 0;
-        size_t z_index = i;
+
+        int items = sscanf(line,"%lg",&x[x_idx]);
+
+        if (items != 1) {
+            fclose(fp);
+            error_verbose("Reading %s: Found row where the number of items "
+                    "is not equal to one. Exiting.", x_grid_file);
+        }
+        x_idx++;
+    }
+    x_size = x_idx;
+    x_idx = 0;
+    fclose(fp);
+
+    // Read y-grid
+    line = NULL;
+    n = 0;
+
+    fp = fopen(y_grid_file,"r");
+    if (fp == NULL) {
+        error_verbose("Could not open %s. Exiting.", y_grid_file);
+    }
+
+    while ((read = getline(&line,&n,fp) != -1)) {
+        if (!strip_line(line)) continue;
+
+        if (y_idx == MAX_RESOLUTION) {
+            fclose(fp);
+            error_verbose("Number of points in input file %s exceeds "
+                    "MAX_RESOLUTION = %d. Exiting.", y_grid_file, MAX_RESOLUTION);
+        }
+
+        int items = sscanf(line,"%lg",&y[y_idx]);
+
+        if (items != 1) {
+            fclose(fp);
+            error_verbose("Reading %s: Found row where the number of items "
+                    "is not equal to one. Exiting.", y_grid_file);
+        }
+        y_idx++;
+    }
+    y_size = y_idx;
+    y_idx = 0;
+    fclose(fp);
+
+    // Read data (z-values). Grid should match x- and y-grid
+    line = NULL;
+    n = 0;
+
+    fp = fopen(data_file, "r");
+    if (fp == NULL) {
+        error_verbose("Could not open %s. Exiting.", data_file);
+    }
+
+    while ((read = getline(&line,&n,fp) != -1)) {
+        if (!strip_line(line)) continue;
+
+        if (x_idx >= x_size) {
+            free(x); free(y); free(z); free(line); fclose(fp);
+            error_verbose("Dimension mismatch between x-grid and first \
+                    dimension of z-grid in %s. Exiting.", data_file);
+        }
+
+        y_idx = 0;
+        size_t z_idx = x_idx;
         int offset = 0;
         char* data = line;
-        while (sscanf(data, " %lf%n", &z[z_index], &offset) == 1) {
+        while (sscanf(data, " %lf%n", &z[z_idx], &offset) == 1) {
             data += offset;
 
-            if (y_index >= y_size) {
+            if (y_idx >= y_size) {
                 free(x); free(y); free(z); free(line); fclose(fp);
-                error_verbose("y grid size and z values provided does match in "
-                        " %s. Exiting.", filename);
+            error_verbose("Dimension mismatch between y-grid and first \
+                    dimension of z-grid in %s. Exiting.", data_file);
             }
-            y_index++;
+            y_idx++;
             /* 1d index conversion in accordance with GSL 2d spline lib */
-            z_index = y_index*x_size + i;
+            z_idx = y_idx*x_size + x_idx;
         }
-        i++;
+        x_idx++;
     }
 
     // Interpolate values

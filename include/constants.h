@@ -44,7 +44,7 @@
 
 // Which GSL interpolation routine to use
 #define INTERPOL_TYPE gsl_interp_cspline
-#define INTERPOL_2D_TYPE gsl_interp2d_bilinear
+#define INTERPOL_2D_TYPE gsl_interp2d_bicubic
 // Which GSL ODE routine to use
 #define ODE_ROUTINE gsl_odeiv2_step_rkf45
 // GSL ODE routine parameters
