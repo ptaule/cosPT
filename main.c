@@ -46,18 +46,18 @@ void print_compilation_settings();
 
 int main (int argc, char* argv[]) {
     // Input files
-    const char* input_ps_file            = INPUT_PATH "z10_pk_cb.dat";
-    const char* input_zeta_file          = INPUT_PATH "zeta.dat";
-    const char* input_redshift_file      = INPUT_PATH "redshift.dat";
-    const char* input_omega_eigvals_file = INPUT_PATH
-        "growing_mode_eigenvalues_etaD_ini.dat";
+    const char* input_ps_file            = CLASS_PATH "z10_pk_cb.dat";
+    const char* input_zeta_file          = CLASS_PATH "zeta_of_etaD.dat";
+    const char* input_redshift_file      = CLASS_PATH "redshift_of_etaD.dat";
+    const char* input_omega_eigvals_file =
+        "input/m_nu_" M_NU_STRING "eV/cg2_growing_mode_eigenvalues_etaD_ini.dat";
     const char* input_wavenumbers   = "input/wavenumbers_bao_zoom.dat";
 
     const char* ic_F1_files[COMPONENTS];
-    ic_F1_files[0] = INPUT_PATH "F1_growing_mode_etaD_-10.dat";
-    ic_F1_files[1] = INPUT_PATH "F2_growing_mode_etaD_-10.dat";
-    ic_F1_files[2] = INPUT_PATH "F3_growing_mode_etaD_-10.dat";
-    ic_F1_files[3] = INPUT_PATH "F4_growing_mode_etaD_-10.dat";
+    ic_F1_files[0] = "input/m_nu_" M_NU_STRING "eV/cg2_F1_growing_mode_etaD_-10.dat";
+    ic_F1_files[1] = "input/m_nu_" M_NU_STRING "eV/cg2_F2_growing_mode_etaD_-10.dat";
+    ic_F1_files[2] = "input/m_nu_" M_NU_STRING "eV/cg2_F3_growing_mode_etaD_-10.dat";
+    ic_F1_files[3] = "input/m_nu_" M_NU_STRING "eV/cg2_F4_growing_mode_etaD_-10.dat";
 
     // Constants fixed by command line options (and default values)
     max_n_threads        = 100;

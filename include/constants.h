@@ -10,11 +10,13 @@
 
 #include <gsl/gsl_spline.h>
 
+#define M_NU_STRING "0.07"
+
 // Include cosmology dependent parameters
 #include "../parameters/m_nu_0.07eV.h"
 
 // Path to input files
-#define INPUT_PATH  "/space/ge52sir/CLASS/massive_nu_0.07eV/"
+#define CLASS_PATH  "/space/ge52sir/class_public/output/massive_nu_" M_NU_STRING "eV/"
 
 // Number of loops (if not set by compile options)
 #ifndef LOOPS
