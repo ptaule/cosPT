@@ -315,7 +315,7 @@ void write_PS(
 
     fprintf(fp,"# Neutrino mass                         = %f\n", M_NU);
     fprintf(fp,"# Neutrino fraction                     = %f\n", F_NU);
-    fprintf(fp,"# Square root of Omega matter at z = 0  = %f\n#\n", SQRT_OMEGA_M);
+    fprintf(fp,"# Omega matter at z = 0                 = %f\n#\n", OMEGA_M_0);
 
     fprintf(fp,"# Number of time steps (total)          = %d\n", TIME_STEPS);
     fprintf(fp,"# Number of time steps (before ETA_I)   = %d\n", PRE_TIME_STEPS);
