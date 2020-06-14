@@ -9,14 +9,16 @@
 #define CONSTANTS_H
 
 #include <gsl/gsl_spline.h>
+#include <gsl/gsl_spline2d.h>
 
-#define M_NU_STRING "0.07"
+#define M_NU_STRING "0.07eV"
 
 // Include cosmology dependent parameters
 #include "../parameters/m_nu_0.07eV.h"
 
-// Path to input files
-#define CLASS_PATH  "/space/ge52sir/class_public/output/massive_nu_" M_NU_STRING "eV/"
+// Paths to input files
+#define EFFCS2_PATH "/home/t30/ben/ge52sir/shoji_komatsu/output/"
+#define CLASS_PATH  "/space/ge52sir/class_public/output/massive_nu_" M_NU_STRING "/noFA_lmax_17/"
 
 // Number of loops (if not set by compile options)
 #ifndef LOOPS
@@ -43,6 +45,12 @@
 // Integration limits
 #define Q_MIN 1e-4
 #define Q_MAX 6.5e1
+
+// Adiabatic sound speed or effective?
+#define CG2 1
+#define EFFCS2 2
+#define SOUND_SPEED CG2
+/* #define SOUND_SPEED EFFCS2 */
 
 // Which GSL interpolation routine to use
 #define INTERPOL_TYPE gsl_interp_cspline
@@ -76,6 +84,9 @@ typedef struct {
     gsl_spline*         omega_eigvals_spline;
     gsl_interp_accel*   ic_F1_accs[COMPONENTS];
     gsl_spline*         ic_F1_splines[COMPONENTS];
+    gsl_interp_accel*   effcs2_x_acc;
+    gsl_interp_accel*   effcs2_y_acc;
+    gsl_spline2d*       effcs2_spline;
 } evolution_params_t;
 
 // Constants:

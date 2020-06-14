@@ -229,23 +229,32 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
 
     // cs2_factor = 2/3 * 1/(omegaM a^2 H^2) * (1 + z)
 #define cs2_factor 2.0/3.0 * 3e3 * 3e3 / OMEGA_M_0
-    // Neutrino temperature today [eV]
-#define T_nu0 1.67734976e-4
 
+    double cs2 = 0.0;
+#if SOUND_SPEED == CG2
+#define T_nu0 1.67734976e-4 /* Neutrino temperature today [eV] */
     // Adiabatic sound speed
     // 5/9 Zeta(5)/Zeta(3) = 7.188..
-    double cg2 = 7.188565369 * cs2_factor * T_nu0 * T_nu0 / (M_NU * M_NU)
+    cs2 = 7.188565369 * cs2_factor * T_nu0 * T_nu0 / (M_NU * M_NU)
         * (1 + gsl_spline_eval(params->redshift_spline, eta, params->redshift_acc));
+#undef T_nu0
+
+#elif SOUND_SPEED == EFFCS2
+    // Effective sound speed
+    cs2 = cs2_factor * gsl_spline2d_eval(params->effcs2_spline, eta, k,
+            params->effcs2_x_acc, params->effcs2_y_acc) *
+         pow( 1 + gsl_spline_eval(params->redshift_spline, eta,
+                     params->redshift_acc), -1);
+#endif
 
     // etaD parametrization with zeta(etaD) from CLASS
     f[0] = rhs[0] - n * y[0] + y[1];
     f[1] = rhs[1] + zeta * (1 - F_NU) * y[0] + (- zeta + 1 - n) * y[1] + zeta * F_NU * y[2];
     f[2] = rhs[2] - n * y[2] + y[3];
-    f[3] = rhs[3] + zeta * (1 - F_NU) * y[0] + zeta * (F_NU - k*k*cg2) * y[2] +
+    f[3] = rhs[3] + zeta * (1 - F_NU) * y[0] + zeta * (F_NU - k*k*cs2) * y[2] +
         (- zeta + 1 - n) * y[3];
 
 #undef cs2_factor
-#undef T_nu0
 
     return GSL_SUCCESS;
 }

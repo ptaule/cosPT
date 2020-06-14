@@ -298,11 +298,15 @@ void write_PS(
     fprintf(fp,"# Input PS read from                    = %s\n",
             output->input_ps_file);
     fprintf(fp,"# Zeta values read from                 = %s\n",
-            output->input_zeta_file);
+            output->zeta_file);
     fprintf(fp,"# Redshift values read from             = %s\n",
-            output->input_redshift_file);
+            output->redshift_file);
+#if SOUND_SPEED == EFFCS2
+    fprintf(fp,"# Effective sound speed read from       = %s\n",
+            output->effcs2_file);
+#endif
     fprintf(fp,"# Exp of grow. mode eig. vals from      = %s\n",
-            output->input_omega_eigvals_file);
+            output->omega_eigvals_file);
     for (int i = 0; i < COMPONENTS; ++i) {
         fprintf(fp,"# Initial F1_%d kernel read from         = %s\n",
                 i, output->ic_F1_files[i]);

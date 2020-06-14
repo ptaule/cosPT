@@ -46,18 +46,38 @@ void print_compilation_settings();
 
 int main (int argc, char* argv[]) {
     // Input files
-    const char* input_ps_file            = CLASS_PATH "z10_pk_cb.dat";
-    const char* input_zeta_file          = CLASS_PATH "zeta_of_etaD.dat";
-    const char* input_redshift_file      = CLASS_PATH "redshift_of_etaD.dat";
-    const char* input_omega_eigvals_file =
-        "input/m_nu_" M_NU_STRING "eV/cg2_growing_mode_eigenvalues_etaD_ini.dat";
-    const char* input_wavenumbers   = "input/wavenumbers_bao_zoom.dat";
+    const char* input_ps_file        = CLASS_PATH "z10_pk_cb.dat";
+    const char* zeta_file            = CLASS_PATH "zeta_of_etaD.dat";
+    const char* redshift_file        = CLASS_PATH "redshift_of_etaD.dat";
+    const char* wavenumber_grid_file = "input/wavenumbers_bao_zoom.dat";
 
+#if SOUND_SPEED == CG2
+    const char* effcs2_etaD_grid_file = "";
+    const char* effcs2_k_grid_file    = "";
+    const char* effcs2_file           = "";
+    const char* omega_eigvals_file =
+        "input/m_nu_" M_NU_STRING "/cg2_growing_mode_eigenvalues_etaD_ini.dat";
     const char* ic_F1_files[COMPONENTS];
-    ic_F1_files[0] = "input/m_nu_" M_NU_STRING "eV/cg2_F1_growing_mode_etaD_-10.dat";
-    ic_F1_files[1] = "input/m_nu_" M_NU_STRING "eV/cg2_F2_growing_mode_etaD_-10.dat";
-    ic_F1_files[2] = "input/m_nu_" M_NU_STRING "eV/cg2_F3_growing_mode_etaD_-10.dat";
-    ic_F1_files[3] = "input/m_nu_" M_NU_STRING "eV/cg2_F4_growing_mode_etaD_-10.dat";
+    ic_F1_files[0] = "input/m_nu_" M_NU_STRING "/cg2_F1_growing_mode_etaD_-10.dat";
+    ic_F1_files[1] = "input/m_nu_" M_NU_STRING "/cg2_F2_growing_mode_etaD_-10.dat";
+    ic_F1_files[2] = "input/m_nu_" M_NU_STRING "/cg2_F3_growing_mode_etaD_-10.dat";
+    ic_F1_files[3] = "input/m_nu_" M_NU_STRING "/cg2_F4_growing_mode_etaD_-10.dat";
+#elif SOUND_SPEED == EFFCS2
+    const char* effcs2_etaD_grid_file = EFFCS2_PATH "m_nu_" M_NU_STRING
+        "/etaD_grid.dat";
+    const char* effcs2_k_grid_file    = EFFCS2_PATH "k_grid.dat";
+    const char* effcs2_file           = EFFCS2_PATH "m_nu_" M_NU_STRING
+        "/effcs2.dat";
+
+    const char* omega_eigvals_file =
+        "input/m_nu_" M_NU_STRING "/effcs2_growing_mode_eigenvalues_etaD_ini.dat";
+    const char* ic_F1_files[COMPONENTS];
+    ic_F1_files[0] = "input/m_nu_" M_NU_STRING "/effcs2_F1_growing_mode_etaD_-10.dat";
+    ic_F1_files[1] = "input/m_nu_" M_NU_STRING "/effcs2_F2_growing_mode_etaD_-10.dat";
+    ic_F1_files[2] = "input/m_nu_" M_NU_STRING "/effcs2_F3_growing_mode_etaD_-10.dat";
+    ic_F1_files[3] = "input/m_nu_" M_NU_STRING "/effcs2_F4_growing_mode_etaD_-10.dat";
+#endif
+
 
     // Constants fixed by command line options (and default values)
     max_n_threads        = 100;
@@ -133,7 +153,7 @@ int main (int argc, char* argv[]) {
     }
     // Get wavenumber from wavenumber index
     int wavenumber_index = atoi(argv[argOffset]);
-    double k = get_wavenumber(input_wavenumbers, wavenumber_index);
+    double k = get_wavenumber(wavenumber_grid_file, wavenumber_index);
 
     char output_ps_file[200];
     char cuba_statefile[200];
@@ -172,10 +192,17 @@ int main (int argc, char* argv[]) {
     initialize_diagrams(diagrams);
 
     evolution_params_t params = {
-        .zeta_acc        = NULL,
-        .zeta_spline     = NULL,
-        .redshift_acc    = NULL,
-        .redshift_spline = NULL,
+        .zeta_acc             = NULL,
+        .zeta_spline          = NULL,
+        .redshift_acc         = NULL,
+        .redshift_spline      = NULL,
+        .omega_eigvals_acc    = NULL,
+        .omega_eigvals_spline = NULL,
+        .ic_F1_accs           = {NULL},
+        .ic_F1_splines        = {NULL},
+        .effcs2_x_acc         = NULL,
+        .effcs2_y_acc         = NULL,
+        .effcs2_spline        = NULL
     };
 
     integration_input_t input = {
@@ -189,11 +216,17 @@ int main (int argc, char* argv[]) {
 
     // Read input files and interpolate
     read_and_interpolate(input_ps_file, &input.ps_acc, &input.ps_spline);
-    read_and_interpolate(input_redshift_file, &params.redshift_acc,
+    read_and_interpolate(redshift_file, &params.redshift_acc,
             &params.redshift_spline);
-    read_and_interpolate(input_zeta_file, &params.zeta_acc, &params.zeta_spline);
-    read_and_interpolate(input_omega_eigvals_file, &params.omega_eigvals_acc,
+    read_and_interpolate(zeta_file, &params.zeta_acc, &params.zeta_spline);
+    read_and_interpolate(omega_eigvals_file, &params.omega_eigvals_acc,
             &params.omega_eigvals_spline);
+
+#if SOUND_SPEED == EFFCS2
+    read_and_interpolate_2d(effcs2_etaD_grid_file, effcs2_k_grid_file,
+            effcs2_file, &params.effcs2_x_acc, &params.effcs2_y_acc,
+            &params.effcs2_spline);
+#endif
 
     for (int i = 0; i < COMPONENTS; ++i) {
         read_and_interpolate(ic_F1_files[i], &params.ic_F1_accs[i],
@@ -201,20 +234,21 @@ int main (int argc, char* argv[]) {
     }
 
     output_t output = {
-        .input_ps_file            = input_ps_file,
-        .input_zeta_file          = input_zeta_file,
-        .input_redshift_file      = input_redshift_file,
-        .input_omega_eigvals_file = input_omega_eigvals_file,
-        .ic_F1_files              = ic_F1_files,
-        .description              = description,
-        .cuba_epsrel              = cuba_epsrel,
-        .cuba_epsabs              = cuba_epsabs,
-        .cuba_maxevals            = cuba_maxevals,
-        .k                        = k,
-        .lin_ps                   = {0.0},
-        .non_lin_ps               = {0.0},
-        .error                    = {0.0},
-        .F1_eta_i                 = {0.0}
+        .input_ps_file      = input_ps_file,
+        .zeta_file          = zeta_file,
+        .redshift_file      = redshift_file,
+        .effcs2_file        = effcs2_file,
+        .omega_eigvals_file = omega_eigvals_file,
+        .ic_F1_files        = ic_F1_files,
+        .description        = description,
+        .cuba_epsrel        = cuba_epsrel,
+        .cuba_epsabs        = cuba_epsabs,
+        .cuba_maxevals      = cuba_maxevals,
+        .k                  = k,
+        .lin_ps             = {0.0},
+        .non_lin_ps         = {0.0},
+        .error              = {0.0},
+        .F1_eta_i           = {0.0}
     };
 
     /* Linear evolution */

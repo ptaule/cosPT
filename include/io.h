@@ -15,9 +15,10 @@
 
 typedef struct {
     const char* input_ps_file;
-    const char* input_zeta_file;
-    const char* input_redshift_file;
-    const char* input_omega_eigvals_file;
+    const char* zeta_file;
+    const char* redshift_file;
+    const char* effcs2_file;
+    const char* omega_eigvals_file;
     const char** ic_F1_files;
     const char* description;
     double cuba_epsrel;
