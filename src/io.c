@@ -205,7 +205,7 @@ void read_and_interpolate_2d(
 
             if (y_idx >= y_size) {
                 free(x); free(y); free(z); free(line); fclose(fp);
-            error_verbose("Dimension mismatch between y-grid and first \
+            error_verbose("Dimension mismatch between y-grid and second \
                     dimension of z-grid in %s. Exiting.", data_file);
             }
             y_idx++;
