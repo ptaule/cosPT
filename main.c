@@ -56,26 +56,26 @@ int main (int argc, char* argv[]) {
     const char* effcs2_k_grid_file    = "";
     const char* effcs2_file           = "";
     const char* omega_eigvals_file =
-        "input/m_nu_" M_NU_STRING "/cg2_growing_mode_eigenvalues_etaD_ini.dat";
+        "input/m_nu_" M_NU_STRING "/cg2/growing_mode_eigenvalues_etaD_ini.dat";
     const char* ic_F1_files[COMPONENTS];
-    ic_F1_files[0] = "input/m_nu_" M_NU_STRING "/cg2_F1_growing_mode_etaD_-10.dat";
-    ic_F1_files[1] = "input/m_nu_" M_NU_STRING "/cg2_F2_growing_mode_etaD_-10.dat";
-    ic_F1_files[2] = "input/m_nu_" M_NU_STRING "/cg2_F3_growing_mode_etaD_-10.dat";
-    ic_F1_files[3] = "input/m_nu_" M_NU_STRING "/cg2_F4_growing_mode_etaD_-10.dat";
+    ic_F1_files[0] = "input/m_nu_" M_NU_STRING "/cg2/F1_growing_mode_etaD_-10.dat";
+    ic_F1_files[1] = "input/m_nu_" M_NU_STRING "/cg2/F2_growing_mode_etaD_-10.dat";
+    ic_F1_files[2] = "input/m_nu_" M_NU_STRING "/cg2/F3_growing_mode_etaD_-10.dat";
+    ic_F1_files[3] = "input/m_nu_" M_NU_STRING "/cg2/F4_growing_mode_etaD_-10.dat";
 #elif SOUND_SPEED == EFFCS2
     const char* effcs2_etaD_grid_file = EFFCS2_PATH "m_nu_" M_NU_STRING
         "/etaD_grid.dat";
     const char* effcs2_k_grid_file    = EFFCS2_PATH "k_grid.dat";
     const char* effcs2_file           = EFFCS2_PATH "m_nu_" M_NU_STRING
-        "/effcs2.dat";
+        "/effcs2_eds.dat";
 
     const char* omega_eigvals_file =
-        "input/m_nu_" M_NU_STRING "/effcs2_growing_mode_eigenvalues_etaD_ini.dat";
+        "input/m_nu_" M_NU_STRING "/effcs2_eds/growing_mode_eigenvalues_etaD_ini.dat";
     const char* ic_F1_files[COMPONENTS];
-    ic_F1_files[0] = "input/m_nu_" M_NU_STRING "/effcs2_F1_growing_mode_etaD_-10.dat";
-    ic_F1_files[1] = "input/m_nu_" M_NU_STRING "/effcs2_F2_growing_mode_etaD_-10.dat";
-    ic_F1_files[2] = "input/m_nu_" M_NU_STRING "/effcs2_F3_growing_mode_etaD_-10.dat";
-    ic_F1_files[3] = "input/m_nu_" M_NU_STRING "/effcs2_F4_growing_mode_etaD_-10.dat";
+    ic_F1_files[0] = "input/m_nu_" M_NU_STRING "/effcs2_eds/F1_growing_mode_etaD_-10.dat";
+    ic_F1_files[1] = "input/m_nu_" M_NU_STRING "/effcs2_eds/F2_growing_mode_etaD_-10.dat";
+    ic_F1_files[2] = "input/m_nu_" M_NU_STRING "/effcs2_eds/F3_growing_mode_etaD_-10.dat";
+    ic_F1_files[3] = "input/m_nu_" M_NU_STRING "/effcs2_eds/F4_growing_mode_etaD_-10.dat";
 #endif
 
 
