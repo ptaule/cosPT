@@ -10,7 +10,11 @@
 
 // Cosmology dependent parameters
 #define ETA_I -3.019732417     /* eta is defined as log(a) or log(D) */
+
+// Final times corresponding to z = 0 and z = 0.5
 #define ETA_F 0.0
+/* #define ETA_F -0.264224123 */
+
 #define M_NU 0.10              /* Mass of _one_ neutrino             */
 #define F_NU 0.0221165830      /* Neutrino fraction                  */
 #define OMEGA_M_0 0.3191035606 /* Omega_M(z=0)                       */
