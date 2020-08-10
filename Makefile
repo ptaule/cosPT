@@ -11,15 +11,18 @@ HEADERS = $(wildcard $(INC_DIR)/*.h)
 GIT = git
 
 CFLAGS += -Wall -Wextra -Wpedantic
-CPPFLAGS += -I/scratch/Cuba-4.2/ -I/scratch/gsl-2.5/ $(OPTIONS)
+CPPFLAGS += -I/scratch/Cuba-4.2/ -I/scratch/gsl-2.5/ -I/scratch/sundials/cvode/include
+CPPFLAGS += $(OPTIONS)
 
-LDFLAGS_GSL  = -L/scratch/gsl-2.5/.libs/ -L/scratch/gsl-2.5/cblas/.libs
-LDLIBS_GSL   = -lgsl -lgslcblas
-LDFLAGS_CUBA = -L/scratch/Cuba-4.2/
-LDLIBS_CUBA  = -lcuba
+LDFLAGS_GSL      = -L/scratch/gsl-2.5/.libs/ -L/scratch/gsl-2.5/cblas/.libs
+LDLIBS_GSL       = -lgsl -lgslcblas
+LDFLAGS_CUBA     = -L/scratch/Cuba-4.2/
+LDLIBS_CUBA      = -lcuba
+LDFLAGS_SUNDIALS = -L/scratch/sundials/cvode/lib/
+LDLIBS_SUNDIALS  = -Wl,-rpath,/scratch/sundials/cvode/lib/ -lsundials_cvode -lsundials_nvecserial
 
-LDFLAGS += $(LDFLAGS_GSL) $(LDFLAGS_CUBA)
-LDLIBS += $(LDLIBS_GSL) $(LDLIBS_CUBA) -lm
+LDFLAGS += $(LDFLAGS_GSL) $(LDFLAGS_CUBA) $(LDFLAGS_SUNDIALS)
+LDLIBS  += $(LDLIBS_GSL) $(LDLIBS_CUBA) $(LDLIBS_SUNDIALS) -lm
 
 all:   CFLAGS   += -O3
 1loop: CPPFLAGS += -DDEBUG=0 -DLOOPS=1
