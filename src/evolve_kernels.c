@@ -11,13 +11,19 @@
 #include <gsl/gsl_combination.h>
 #include <gsl/gsl_sf.h>
 #include <gsl/gsl_spline.h>
-#include <gsl/gsl_odeiv2.h>
+
+#include <cvode/cvode.h> // prototypes for CVODE fcts., consts.
+#include <nvector/nvector_serial.h>  // access to serial N_Vector
+#include <sunmatrix/sunmatrix_dense.h> /* access to dense SUNMatrix            */
+#include <sunlinsol/sunlinsol_dense.h> /* access to dense SUNLinearSolver      */
+#include <sundials/sundials_types.h>   /* defs. of realtype, sunindextype      */
 
 #include "../include/constants.h"
 #include "../include/utilities.h"
 #include "../include/tables.h"
 #include "../include/evolve_kernels.h"
 
+static int check_flag(void *flagvalue, const char *funcname, int opt);
 
 static void vertex(
         short int m_l,
@@ -204,11 +210,20 @@ typedef struct {
 
 
 
-int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
+static int kernel_gradient(
+        realtype eta,
+        N_Vector y_vec,
+        N_Vector dy_vec,
+        void *ode_input
+        )
+{
     ode_input_t input = *(ode_input_t*)ode_input;
     short int n = input.n;
     double k = input.k;
     const evolution_params_t* params = input.parameters;
+
+    realtype* y  = N_VGetArrayPointer(y_vec);
+    realtype* dy = N_VGetArrayPointer(dy_vec);
 
     // Between eta_asymp and eta_i, set eta = eta_i
     if (eta < ETA_I) {
@@ -247,16 +262,84 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
                      params->redshift_acc), -1);
 #endif
 
-    // etaD parametrization with zeta(etaD) from CLASS
-    f[0] = rhs[0] - n * y[0] + y[1];
-    f[1] = rhs[1] + zeta * (1 - F_NU) * y[0] + (- zeta + 1 - n) * y[1] + zeta * F_NU * y[2];
-    f[2] = rhs[2] - n * y[2] + y[3];
-    f[3] = rhs[3] + zeta * (1 - F_NU) * y[0] + zeta * (F_NU - k*k*cs2) * y[2] +
+    dy[0] = rhs[0] - n * y[0] + y[1];
+    dy[1] = rhs[1] + zeta * (1 - F_NU) * y[0] + (- zeta + 1 - n) * y[1] + zeta * F_NU * y[2];
+    dy[2] = rhs[2] - n * y[2] + y[3];
+    dy[3] = rhs[3] + zeta * (1 - F_NU) * y[0] + zeta * (F_NU - k*k*cs2) * y[2] +
         (- zeta + 1 - n) * y[3];
 
 #undef cs2_factor
-
     return GSL_SUCCESS;
+}
+
+
+
+static int jacobian(
+        realtype eta,
+        N_Vector y,
+        N_Vector fy,
+        SUNMatrix J,
+        void *ode_input,
+        N_Vector tmp1,
+        N_Vector tmp2,
+        N_Vector tmp3
+        )
+{
+    ode_input_t input = *(ode_input_t*)ode_input;
+    short int n = input.n;
+    double k = input.k;
+    const evolution_params_t* params = input.parameters;
+
+    // Between eta_asymp and eta_i, set eta = eta_i
+    if (eta < ETA_I) {
+        eta = ETA_I;
+    }
+
+    // zeta always enters with prefactor 1.5, hence we redefine and multiply once
+    double zeta = 1.5 * gsl_spline_eval(params->zeta_spline, eta, params->zeta_acc);
+
+    // cs2_factor = 2/3 * 1/(omegaM a^2 H^2) * (1 + z)
+#define cs2_factor 2.0/3.0 * 3e3 * 3e3 / OMEGA_M_0
+
+    double cs2 = 0.0;
+#if SOUND_SPEED == CG2
+#define T_nu0 1.67734976e-4 /* Neutrino temperature today [eV] */
+    // Adiabatic sound speed
+    // 5/9 Zeta(5)/Zeta(3) = 7.188..
+    cs2 = 7.188565369 * cs2_factor * T_nu0 * T_nu0 / (M_NU * M_NU)
+        * (1 + gsl_spline_eval(params->redshift_spline, eta, params->redshift_acc));
+#undef T_nu0
+
+#elif SOUND_SPEED == EFFCS2
+    // Effective sound speed
+    cs2 = cs2_factor * gsl_spline2d_eval(params->effcs2_spline, eta, k,
+            params->effcs2_x_acc, params->effcs2_y_acc) *
+        pow( 1 + gsl_spline_eval(params->redshift_spline, eta,
+                    params->redshift_acc), -1);
+#endif
+
+    SM_ELEMENT_D(J, 0, 0) = -n;
+    SM_ELEMENT_D(J, 0, 1) = 1;
+    SM_ELEMENT_D(J, 0, 2) = 0;
+    SM_ELEMENT_D(J, 0, 3) = 0;
+
+    SM_ELEMENT_D(J, 1, 0) = zeta * (1 - F_NU);
+    SM_ELEMENT_D(J, 1, 1) = - zeta + 1 - n;
+    SM_ELEMENT_D(J, 1, 2) = zeta * F_NU;
+    SM_ELEMENT_D(J, 1, 3) = 0;
+
+    SM_ELEMENT_D(J, 0, 0) = 0;
+    SM_ELEMENT_D(J, 0, 1) = 0;
+    SM_ELEMENT_D(J, 0, 2) = -n;
+    SM_ELEMENT_D(J, 0, 3) = 1;
+
+    SM_ELEMENT_D(J, 0, 0) = zeta * (1 - F_NU);
+    SM_ELEMENT_D(J, 0, 1) = 0;
+    SM_ELEMENT_D(J, 0, 2) = zeta * (F_NU - k*k*cs2);
+    SM_ELEMENT_D(J, 0, 3) = - zeta + 1 - n;
+
+#undef cs2_factor
+    return 0;
 }
 
 
@@ -267,27 +350,68 @@ void evolve_kernels(
         double** kernels  /* TIME_STEPS*COMPONENTS table of kernels */
         )
 {
-    gsl_odeiv2_system sys = {kernel_gradient, NULL, COMPONENTS, input};
-    gsl_odeiv2_driver* driver = gsl_odeiv2_driver_alloc_y_new(&sys,
-            gsl_odeiv2_step_rkf45, ODE_HSTART, ODE_RTOL, ODE_ATOL);
+    int flag; // For checking if functions have run properly
+    realtype abstol = 1e-8; // absolute tolerance of system
+    realtype reltol = 1e-4; // relative tolerance of system
 
-    // For kernels with n > 1 use ODE SOLVER
+    sunindextype N = 4;
+    N_Vector y; // Problem vector.
+    y = N_VNew_Serial(N);
+    void *cvode_mem = NULL; // Problem dedicated memory.
+    SUNMatrix A;
+    SUNLinearSolver LS;
+    cvode_mem = CVodeCreate(CV_BDF);
+
+    realtype eta0 = eta[PRE_TIME_STEPS];
+    flag = CVodeInit(cvode_mem, kernel_gradient, eta0, y);
+#if DEBUG==1
+    if (check_flag(&flag, "CVodeSetUserData", 1)) return(1);
+#endif
+    flag = CVodeSStolerances(cvode_mem, reltol, abstol);
+#if DEBUG==1
+    if (check_flag(&flag, "CVodeSStolerances", 1)) return(1);
+#endif
+    flag = CVodeSetUserData(cvode_mem, input);
+#if DEBUG==1
+    if (check_flag(&flag, "CVodeSetUserData", 1)) return(1);
+#endif
+    flag = CVodeSetStopTime(cvode_mem, ETA_F);
+#if DEBUG==1
+    if (check_flag(&flag, "CVodeSetStopTime", 1)) return(1);
+#endif
+    A = SUNDenseMatrix(N, N);
+#if DEBUG==1
+    if (check_flag((void *)A, "SUNDenseMatrix", 0)) return(1);
+#endif
+    LS = SUNLinSol_Dense(y, A);
+#if DEBUG==1
+    if (check_flag((void *)LS, "SUNLinSol_Dense", 0)) return(1);
+#endif
+    flag = CVodeSetLinearSolver(cvode_mem, LS, A);
+#if DEBUG==1
+    if (check_flag(&retval, "CVodeSetLinearSolver", 1)) return(1);
+#endif
+    flag = CVodeSetJacFn(cvode_mem, jacobian);
+#if DEBUG==1
+    if(check_flag(&retval, "CVodeSetJacFn", 1)) return(1);
+#endif
+
     if (input->n > 1) {
-        double eta_current = eta[0];
+        NV_Ith_S(y, 0) = 0;
+        NV_Ith_S(y, 1) = 0;
+        NV_Ith_S(y, 2) = 0;
+        NV_Ith_S(y, 3) = 0;
 
-        // Evolve system
-        for (int i = 1; i < TIME_STEPS; i++) {
-            // y is a pointer to the kernel table at time i
-            double* y = kernels[i];
-            // First copy previous values (i-1) to y
-            memcpy(y, kernels[i-1], COMPONENTS * sizeof(double));
-            // Then evolve y to time index i
-            int status = gsl_odeiv2_driver_apply(driver, &eta_current, eta[i], y);
-
-            if (status != GSL_SUCCESS) {
-                warning_verbose("GLS ODE driver gave error value = %d.", status);
-                break;
-            }
+        realtype eta_reached = 0;
+        for (int i = PRE_TIME_STEPS + 1; i < TIME_STEPS; i++) {
+            flag = CVode(cvode_mem, eta[i], y, &eta_reached, CV_NORMAL);
+#if DEBUG==1
+            if (check_flag(&flag, "CVode", 1)) break;
+#endif
+            kernels[i][0] = kernels[0][0];
+            kernels[i][1] = kernels[0][1];
+            kernels[i][2] = kernels[0][2];
+            kernels[i][3] = kernels[0][3];
         }
     }
     // For n == 1 kernels, we may multipliy by exp("growing mode" eigenvalue)
@@ -297,27 +421,34 @@ void evolve_kernels(
             for (int j = 0; j < COMPONENTS; ++j) {
                 kernels[i][j] = kernels[0][j] *
                     exp(gsl_spline_eval(input->parameters->omega_eigvals_spline,
-                                input->k, input->parameters->omega_eigvals_acc) *
-                    (eta[i] - eta[0]));
+                                input->k, input->parameters->omega_eigvals_acc) * (eta[i] - eta[0]));
             }
         }
 
-        double eta_current = eta[PRE_TIME_STEPS];
+        NV_Ith_S(y, 0) = kernels[PRE_TIME_STEPS][0];
+        NV_Ith_S(y, 1) = kernels[PRE_TIME_STEPS][1];
+        NV_Ith_S(y, 2) = kernels[PRE_TIME_STEPS][2];
+        NV_Ith_S(y, 3) = kernels[PRE_TIME_STEPS][3];
 
+        realtype eta_reached = 0;
         for (int i = PRE_TIME_STEPS + 1; i < TIME_STEPS; i++) {
-            double* y = kernels[i];
-            memcpy(y, kernels[i-1], COMPONENTS * sizeof(double));
-            int status = gsl_odeiv2_driver_apply(driver, &eta_current, eta[i], y);
-
-            if (status != GSL_SUCCESS) {
-                warning_verbose("GLS ODE driver gave error value = %d.", status);
-                break;
-            }
+            N_VPrint_Serial(y);
+            flag = CVode(cvode_mem, eta[i], y, &eta_reached, CV_NORMAL);
+#if DEBUG==1
+            if(check_flag(&flag, "CVode", 1)) break;
+#endif
+            N_VPrint_Serial(y);
+            kernels[i][0] = NV_Ith_S(y, 0);
+            kernels[i][1] = NV_Ith_S(y, 1);
+            kernels[i][2] = NV_Ith_S(y, 2);
+            kernels[i][3] = NV_Ith_S(y, 3);
         }
     }
 
-    // Free GSL ODE driver
-    gsl_odeiv2_driver_free(driver);
+    N_VDestroy(y);
+    CVodeFree(&cvode_mem);
+    SUNLinSolFree(LS);
+    SUNMatDestroy(A);
 }
 
 
@@ -462,4 +593,43 @@ void compute_F1(
         free(values[i]);
     }
     free(values);
+}
+
+
+
+// check_flag function is from the cvDiurnals_ky.c example from the CVODE
+// package.
+/*
+   Check function return value...
+   opt == 0 means SUNDIALS function allocates memory so check if
+   returned NULL pointer
+   opt == 1 means SUNDIALS function returns a flag so check if
+   flag >= 0
+   opt == 2 means function allocates memory so check if returned
+   NULL pointer
+*/
+static int check_flag(void *flagvalue, const char *funcname, int opt) {
+    int *errflag;
+
+    /* Check if SUNDIALS function returned NULL pointer - no memory allocated */
+    if (opt == 0 && flagvalue == NULL) {
+        fprintf(stderr, "\nSUNDIALS_ERROR: %s() failed - returned NULL pointer\n\n",
+                funcname);
+        return(1); }
+
+    /* Check if flag < 0 */
+    else if (opt == 1) {
+        errflag = (int *) flagvalue;
+        if (*errflag < 0) {
+            fprintf(stderr, "\nSUNDIALS_ERROR: %s() failed with flag = %d\n\n",
+                    funcname, *errflag);
+            return(1); }}
+
+    /* Check if function returned NULL pointer - no memory allocated */
+    else if (opt == 2 && flagvalue == NULL) {
+        fprintf(stderr, "\nMEMORY_ERROR: %s() failed - returned NULL pointer\n\n",
+                funcname);
+        return(1); }
+
+    return(0);
 }

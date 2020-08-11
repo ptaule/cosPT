@@ -7,42 +7,46 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <math.h>
+#include <time.h>
+#include <getopt.h>
+#include <string.h>
 
-#include <cvode/cvode.h> // prototypes for CVODE fcts., consts.
-#include <nvector/nvector_serial.h>  // access to serial N_Vector
-#include <sunmatrix/sunmatrix_dense.h> /* access to dense SUNMatrix            */
-#include <sunlinsol/sunlinsol_dense.h> /* access to dense SUNLinearSolver      */
-#include <sundials/sundials_types.h>   /* defs. of realtype, sunindextype      */
+#include <gsl/gsl_sf.h>
+
+#include <cuba.h>
 
 #include "include/constants.h"
-#include "include/wavenumbers.h"
+#include "include/utilities.h"
 #include "include/tables.h"
 #include "include/io.h"
+#include "include/diagrams.h"
+#include "include/integrand.h"
+#include "include/evolve_kernels.h"
 
-typedef struct {
-    short int n;
-    double k;
-    gsl_spline** rhs_splines;
-    gsl_interp_accel** rhs_accs;
-    const evolution_params_t* parameters;
-} ode_input_t;
+int max_n_threads;
 
+void init_worker(tables_t* worker_mem, const int* core);
+void exit_worker(tables_t* worker_mem, const int* core);
 
-static int kernel_gradient(realtype eta, N_Vector y_vec, N_Vector dy_vec, void *ode_input);
-static int jacobian(realtype eta, N_Vector y, N_Vector fy, SUNMatrix J, void
-        *ode_input, N_Vector tmp1, N_Vector tmp2, N_Vector tmp3);
+int cuba_integrand(const int *ndim, const cubareal xx[], const int *ncomp,
+        cubareal ff[], void *userdata, const int *nvec, const int *core);
+void set_output_filepaths(
+        char output_ps_file[],
+        char cuba_statefile[],
+        char description[],
+        char output_path[],
+        char cuba_statefile_path[],
+        int a);
 
-static int check_flag(void *flagvalue, const char *funcname, int opt);
+void print_help();
+void print_compilation_settings();
 
-// This macro gives access to the individual components of the data array of an
-// N Vector.
-#define NV_Ith_S(v,i) ( NV_DATA_S(v)[i] )
 
 
 int main (int argc, char* argv[]) {
     // Input files
+    const char* input_ps_file        = CLASS_PATH "z10_pk_cb.dat";
     const char* zeta_file            = CLASS_PATH "zeta_of_etaD.dat";
     const char* redshift_file        = CLASS_PATH "redshift_of_etaD.dat";
     const char* wavenumber_grid_file = "input/wavenumbers_bao_zoom.dat";
@@ -74,9 +78,118 @@ int main (int argc, char* argv[]) {
     ic_F1_files[3] = "input/m_nu_" M_NU_STRING "/effcs2_exact/F4_growing_mode_etaD_-10.dat";
 #endif
 
+
+    // Constants fixed by command line options (and default values)
+    max_n_threads        = 100;
+    double cuba_epsabs   = 1e-12;
+    double cuba_epsrel   = 1e-3;
+    double cuba_maxevals = 1e6;
+    int cuba_verbose     = 1;
+
+    char description[100] = "";
+    char output_path[200] = "/space/ge52sir/non_linear_PS/output/";
+    char cuba_statefile_path[200] =
+        "/space/ge52sir/non_linear_PS/output/CUBA_statefiles/";
+
+    int c = 0;
+    while ((c = getopt(argc, argv, "a:c:C:d:ho:N:r:s:v:")) != -1) {
+        switch (c) {
+        case 'a':
+            cuba_epsabs = atof(optarg);
+            break;
+        case 'c': {
+                      int n_threads = atoi(optarg);
+                      printf("Using %d cores.\n", n_threads);
+                      cubacores(n_threads, 10000);
+                      max_n_threads = n_threads + 1;
+                      break;
+                  }
+        case 'C':
+            max_n_threads = atoi(optarg);
+            break;
+        case 'd':
+            strcpy(description, optarg);
+            break;
+        case 'h':
+            print_help();
+            return 0;
+        case 'o':
+            strcpy(output_path, optarg);
+            break;
+        case 'N':
+            cuba_maxevals = atof(optarg);
+            break;
+        case 'r':
+            cuba_epsrel = atof(optarg);
+            break;
+        case 's':
+            strcpy(cuba_statefile_path, optarg);
+            break;
+        case 'v':
+            cuba_verbose = atoi(optarg);
+            break;
+        case '?':
+            if (optopt == 'a' || optopt == 'c' ||
+                    optopt == 'C' || optopt == 'd' ||
+                    optopt == 'o' || optopt == 'N' ||
+                    optopt == 'r' || optopt == 's' ||
+                    optopt == 'v')
+            {
+                error_verbose("Option %c requires a keyword as argument, see manual "
+                        "(-h) for more information.", optopt);
+            }
+            else {
+                error("Unknown option.");
+            }
+        default:
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    int argOffset = optind;
+    if (argc != argOffset + 1) {
+        error("The number of options and arguments given is not correct. Please "
+                "see manual (-h) for more information.");
+    }
+    // Get wavenumber from wavenumber index
+    int wavenumber_index = atoi(argv[argOffset]);
+    double k = get_wavenumber(wavenumber_grid_file, wavenumber_index);
+
+    char output_ps_file[200];
+    char cuba_statefile[200];
+    set_output_filepaths(output_ps_file, cuba_statefile, description,
+            output_path, cuba_statefile_path, wavenumber_index);
+
+    printf("Compilation settings:\n");
+    print_compilation_settings();
+    printf("\nRuntime settings:\n");
+    printf("Monte Carlo max evals = %.2e\n", cuba_maxevals);
+    printf("Input power spectrum  = %s.\n", input_ps_file);
+    printf("Output file           = %s.\n", output_ps_file);
+    printf("Cuba_statefile        = %s.\n", cuba_statefile);
+
+    // Array of table_ptrs, one for each worker (thread)
+    tables_t* worker_mem = (tables_t*)malloc(max_n_threads * sizeof(tables_t));
+
+    // Set routines to be run before process forking (new worker)
+    cubainit(init_worker, worker_mem);
+    cubaexit(exit_worker, worker_mem);
+
     // Initialize time steps in eta
     double eta[TIME_STEPS];
     initialize_timesteps(eta, ETA_I, ETA_F, ETA_ASYMP);
+
+    // Sum table can be computed right away
+    short int sum_table[N_CONFIGS][N_CONFIGS];
+    compute_sum_table(sum_table);
+    for (int i = 0; i < max_n_threads; ++i) {
+        worker_mem[i].sum_table = (const short int (*)[])sum_table;
+        worker_mem[i].eta = eta;
+    }
+
+    // Initialize diagrams to compute at this order in PT
+    diagram_t diagrams[N_DIAGRAMS];
+    initialize_diagrams(diagrams);
 
     evolution_params_t params = {
         .zeta_acc             = NULL,
@@ -92,7 +205,17 @@ int main (int argc, char* argv[]) {
         .effcs2_spline        = NULL
     };
 
+    integration_input_t input = {
+        .k           = k,
+        .ps_acc      = NULL,
+        .ps_spline   = NULL,
+        .diagrams    = diagrams,
+        .params      = &params,
+        .worker_mem  = worker_mem
+    };
+
     // Read input files and interpolate
+    read_and_interpolate(input_ps_file, &input.ps_acc, &input.ps_spline);
     read_and_interpolate(redshift_file, &params.redshift_acc,
             &params.redshift_spline);
     read_and_interpolate(zeta_file, &params.zeta_acc, &params.zeta_spline);
@@ -110,129 +233,97 @@ int main (int argc, char* argv[]) {
                 &params.ic_F1_splines[i]);
     }
 
-    // Set up ODE input and system
-    ode_input_t ode_input = {
-        .n = 1,
-        .k = 0.0,
-        .parameters = &params,
-        .rhs_splines = NULL,
-        .rhs_accs = NULL,
+    output_t output = {
+        .input_ps_file      = input_ps_file,
+        .zeta_file          = zeta_file,
+        .redshift_file      = redshift_file,
+        .effcs2_file        = effcs2_file,
+        .omega_eigvals_file = omega_eigvals_file,
+        .ic_F1_files        = ic_F1_files,
+        .description        = description,
+        .cuba_epsrel        = cuba_epsrel,
+        .cuba_epsabs        = cuba_epsabs,
+        .cuba_maxevals      = cuba_maxevals,
+        .k                  = k,
+        .lin_ps             = {0.0},
+        .non_lin_ps         = {0.0},
+        .error              = {0.0},
+        .F1_eta_i           = {0.0}
     };
 
-    int flag; // For checking if functions have run properly
-    realtype abstol = 1e-8; // absolute tolerance of system
-    realtype reltol = 1e-4; // relative tolerance of system
+    /* Linear evolution */
+    double F1_eta_f[COMPONENTS];
+    compute_F1(k, input.params, eta, output.F1_eta_i, F1_eta_f);
 
-    // 2. Defining the length of the problem.
-    sunindextype N = 4;
-    // 3. Set vector of initial values.
-    N_Vector y; // Problem vector.
-    y = N_VNew_Serial(N);
-    // 4. Create CVODE Object.
-    void *cvode_mem = NULL; // Problem dedicated memory.
-    SUNMatrix A;
-    SUNLinearSolver LS;
-    cvode_mem = CVodeCreate(CV_BDF);
+    output.lin_ps[0] = gsl_spline_eval(input.ps_spline, k, input.ps_acc)
+        * F1_eta_f[COMPONENT_A] * F1_eta_f[COMPONENT_A];
+    output.lin_ps[1] = gsl_spline_eval(input.ps_spline, k, input.ps_acc)
+        * F1_eta_f[COMPONENT_A] * F1_eta_f[COMPONENT_B];
+    output.lin_ps[2] = gsl_spline_eval(input.ps_spline, k, input.ps_acc)
+        * F1_eta_f[COMPONENT_B] * F1_eta_f[COMPONENT_B];
 
-    double** kernels = (double**)calloc(TIME_STEPS, sizeof(double*));
-    for (int i = 0; i < TIME_STEPS; ++i) {
-        kernels[i] = (double*)calloc(COMPONENTS, sizeof(double));
+    /* Non-linear evolution */
+    // Overall factors:
+    // - Only integrating over cos_theta_i between 0 and 1, multiply by 2 to
+    //   obtain [-1,1] (for each loop momenta)
+    // - Assuming Q1 > Q2 > ..., hence multiply result by LOOPS factorial
+    // - Phi integration of first loop momenta gives a factor 2pi
+    // - Conventionally divide by ((2pi)^3)^(LOOPS)
+    vfloat overall_factor =
+        pow(2,LOOPS) * gsl_sf_fact(LOOPS) * pow(TWOPI, 1 - 3*LOOPS);
+
+    int nregions, neval, fail;
+    cubareal result[INTEGRAND_COMPONENTS];
+    cubareal error[INTEGRAND_COMPONENTS];
+    cubareal prob[INTEGRAND_COMPONENTS];
+
+    // Timing
+    time_t beginning, end;
+    time(&beginning);
+
+    // CUBA settings
+#define CUBA_NVEC 1
+#define CUBA_LAST 4
+#define CUBA_RETAIN_STATEFILE 16
+#define CUBA_SEED 0
+#define CUBA_MINEVAL 0
+#define CUBA_SPIN NULL
+#define CUBA_NNEW 1000
+#define CUBA_NMIN 2
+#define CUBA_FLATNESS 25.
+    Suave(N_DIMS, INTEGRAND_COMPONENTS, (integrand_t)cuba_integrand, &input,
+            CUBA_NVEC, cuba_epsrel, cuba_epsabs,
+            (cuba_verbose | CUBA_LAST | CUBA_RETAIN_STATEFILE), CUBA_SEED,
+            CUBA_MINEVAL, cuba_maxevals, CUBA_NNEW, CUBA_NMIN, CUBA_FLATNESS,
+            cuba_statefile, CUBA_SPIN, &nregions, &neval, &fail, result, error,
+            prob);
+
+    time(&end);
+
+    for (int i = 0; i < INTEGRAND_COMPONENTS; ++i) {
+        output.non_lin_ps[i] = (double)result[i] * overall_factor;
+        output.error[i]      = (double)error[i]  * overall_factor;
     }
 
-    double k = 0;
-    for (int l = 0; l < NUM_WAVENUMBERS; ++l) {
-        k = wavenumbers[l];
-        ode_input.k = k;
+    printf("\nElapsed time: %.0fs\n", difftime(end, beginning));
+    printf("k = %e\n", k);
 
-        for (int i = 0; i < COMPONENTS; ++i) {
-            kernels[0][i] = gsl_spline_eval(params.ic_F1_splines[i], k,
-                    params.ic_F1_accs[i]);
-        }
-
-        for (int i = 1; i < PRE_TIME_STEPS + 1; ++i) {
-            for (int j = 0; j < COMPONENTS; ++j) {
-                kernels[i][j] = kernels[0][j] *
-                    exp(gsl_spline_eval(params.omega_eigvals_spline, k,
-                                params.omega_eigvals_acc) * (eta[i] - eta[0]));
-            }
-        }
-
-        NV_Ith_S(y, 0) = kernels[PRE_TIME_STEPS][0];
-        NV_Ith_S(y, 1) = kernels[PRE_TIME_STEPS][1];
-        NV_Ith_S(y, 2) = kernels[PRE_TIME_STEPS][2];
-        NV_Ith_S(y, 3) = kernels[PRE_TIME_STEPS][3];
-
-        // 5. Initialize CVODE solver.
-        realtype eta0 = eta[PRE_TIME_STEPS]; // Initiale value of time.
-        flag = CVodeInit(cvode_mem, kernel_gradient, eta0, y);
-#if DEBUG==1
-        if(check_flag(&flag, "CVodeSetUserData", 1)) return(1);
-#endif
-
-        // 6. Specify integration tolerances.
-        flag = CVodeSStolerances(cvode_mem, reltol, abstol);
-#if DEBUG==1
-        if (check_flag(&flag, "CVodeSStolerances", 1)) return(1);
-#endif
-
-        // 7. Optional inputs
-        flag = CVodeSetUserData(cvode_mem, &ode_input);
-#if DEBUG==1
-        if (check_flag(&flag, "CVodeSetUserData", 1)) return(1);
-#endif
-        flag = CVodeSetStopTime(cvode_mem, ETA_F);
-#if DEBUG==1
-        if (check_flag(&flag, "CVodeSetStopTime", 1)) return(1);
-#endif
-
-        /* Create dense SUNMatrix for use in linear solves */
-        A = SUNDenseMatrix(N, N);
-#if DEBUG==1
-        if(check_flag((void *)A, "SUNDenseMatrix", 0)) return(1);
-#endif
-
-        /* Create dense SUNLinearSolver object for use by CVode */
-        LS = SUNLinSol_Dense(y, A);
-#if DEBUG==1
-        if(check_flag((void *)LS, "SUNLinSol_Dense", 0)) return(1);
-#endif
-
-        /* Call CVodeSetLinearSolver to attach the matrix and linear solver to CVode */
-        int retval = CVodeSetLinearSolver(cvode_mem, LS, A);
-#if DEBUG==1
-        if(check_flag(&retval, "CVodeSetLinearSolver", 1)) return(1);
-#endif
-
-        /* Set the user-supplied Jacobian routine Jac */
-        retval = CVodeSetJacFn(cvode_mem, jacobian);
-#if DEBUG==1
-        if(check_flag(&retval, "CVodeSetJacFn", 1)) return(1);
-#endif
-
-
-        // 14. Advance solution in time.
-        realtype eta_reached = 0;
-        for (int i = PRE_TIME_STEPS + 1; i < TIME_STEPS; i++) {
-            double eta_current = eta[i];
-            flag = CVode(cvode_mem, eta_current, y, &eta_reached, CV_NORMAL);
-            /* N_VPrint_Serial(y); */
-#if DEBUG==1
-            if(check_flag(&flag, "CVode", 1)) break;
-#endif
-        }
-        printf("%e\t%e\t%e\t%e\t%e\n", k, NV_Ith_S(y,0), NV_Ith_S(y,1), NV_Ith_S(y,2), NV_Ith_S(y,3));
+    char* corr_strings[INTEGRAND_COMPONENTS] = {"<AA>","<AB>","<BB>"};
+    for (int i = 0; i < INTEGRAND_COMPONENTS; ++i) {
+        printf("%s:\tP_lin = % .6e, P_%d-loop = % .6e, err_%d-loop = % .6e, "
+                "prob = %f\n", corr_strings[i], output.lin_ps[i], LOOPS,
+                output.non_lin_ps[i], LOOPS, output.error[i], (double)prob[i]);
     }
 
-    N_VDestroy(y);
-    CVodeFree(&cvode_mem);
-    SUNLinSolFree(LS);
-    SUNMatDestroy(A);
+    write_PS(output_ps_file, &output);
 
-    for (int i = 0; i < TIME_STEPS; ++i) {
-        free(kernels[i]);
-    }
-    free(kernels);
+    /* Free allocated memory */
+    diagrams_gc(diagrams);
 
+    free(worker_mem);
+
+    gsl_spline_free(input.ps_spline);
+    gsl_interp_accel_free(input.ps_acc);
     gsl_spline_free(params.redshift_spline);
     gsl_interp_accel_free(params.redshift_acc);
     gsl_spline_free(params.zeta_spline);
@@ -250,158 +341,175 @@ int main (int argc, char* argv[]) {
 
 
 
-static int jacobian(realtype eta, N_Vector y, N_Vector fy, SUNMatrix J, void
-        *ode_input, N_Vector tmp1, N_Vector tmp2, N_Vector tmp3)
+void init_worker(tables_t* worker_mem, const int* core) {
+    // Master core has number 2^15 = 32768
+    if (*core == 32768) {
+        tables_allocate(&worker_mem[0]);
+        return;
+    }
+    if (*core + 1 >= max_n_threads) {
+        error_verbose("Tried to start worker %d (in addition to the master "
+                "fork), which exceeds MAXCORES = %d.", *core + 1,
+                max_n_threads);
+    }
+    tables_allocate(&worker_mem[*core + 1]);
+}
+
+
+
+void exit_worker(tables_t* worker_mem, const int* core) {
+    // Master core has number 2^15 = 32768
+    if (*core == 32768) {
+        tables_gc(&worker_mem[0]);
+    }
+    else {
+        tables_gc(&worker_mem[*core + 1]);
+    }
+}
+
+
+
+int cuba_integrand(
+        __attribute__((unused)) const int *ndim,
+        const cubareal xx[],
+        __attribute__((unused)) const int *ncomp,
+        cubareal ff[],
+        void *userdata,
+        __attribute__((unused)) const int *nvec,
+        const int *core
+        )
 {
-    ode_input_t input = *(ode_input_t*)ode_input;
-    short int n = input.n;
-    double k = input.k;
-    const evolution_params_t* params = input.parameters;
+    integration_input_t* input = (integration_input_t*)userdata;
+    integration_variables_t vars;
 
-    // Between eta_asymp and eta_i, set eta = eta_i
-    if (eta < ETA_I) {
-        eta = ETA_I;
-    }
+    vfloat ratio = (vfloat)Q_MAX/Q_MIN;
 
-    // zeta always enters with prefactor 1.5, hence we redefine and multiply once
-    double zeta = 1.5 * gsl_spline_eval(params->zeta_spline, eta, params->zeta_acc);
-
-    // cs2_factor = 2/3 * 1/(omegaM a^2 H^2) * (1 + z)
-#define cs2_factor 2.0/3.0 * 3e3 * 3e3 / OMEGA_M_0
-
-    double cs2 = 0.0;
-#if SOUND_SPEED == CG2
-#define T_nu0 1.67734976e-4 /* Neutrino temperature today [eV] */
-    // Adiabatic sound speed
-    // 5/9 Zeta(5)/Zeta(3) = 7.188..
-    cs2 = 7.188565369 * cs2_factor * T_nu0 * T_nu0 / (M_NU * M_NU)
-        * (1 + gsl_spline_eval(params->redshift_spline, eta, params->redshift_acc));
-#undef T_nu0
-
-#elif SOUND_SPEED == EFFCS2
-    // Effective sound speed
-    cs2 = cs2_factor * gsl_spline2d_eval(params->effcs2_spline, eta, k,
-            params->effcs2_x_acc, params->effcs2_y_acc) *
-        pow( 1 + gsl_spline_eval(params->redshift_spline, eta,
-                    params->redshift_acc), -1);
+    vfloat jacobian = 0.0;
+#if LOOPS == 1
+    vars.magnitudes[0] = Q_MIN * pow(ratio,xx[0]);
+    vars.cos_theta[0] = xx[1];
+    jacobian = log(ratio) * pow(vars.magnitudes[0],3);
+#elif LOOPS == 2
+    vars.magnitudes[0] = Q_MIN * pow(ratio,xx[0]);
+    vars.magnitudes[1] = Q_MIN * pow(ratio,xx[0] * xx[1]);
+    vars.cos_theta[0] = xx[2];
+    vars.cos_theta[1] = xx[3];
+    vars.phi[0] = xx[4] * TWOPI;
+    jacobian = TWOPI * xx[0]
+        * pow(log(ratio),2)
+        * pow(vars.magnitudes[0],3)
+        * pow(vars.magnitudes[1],3);
+#else
+    warning_verbose("Monte-carlo integration not implemented for LOOPS = %d.",LOOPS);
 #endif
 
-    SM_ELEMENT_D(J, 0, 0) = -n;
-    SM_ELEMENT_D(J, 0, 1) = 1;
-    SM_ELEMENT_D(J, 0, 2) = 0;
-    SM_ELEMENT_D(J, 0, 3) = 0;
+    // tables points to memory allocated for worker number <*core + 1>
+    // (index 0 is reserved for master(
+    tables_t* tables = &input->worker_mem[*core + 1];
+    // Set tables to zero
+    tables_zero_initialize(tables);
 
-    SM_ELEMENT_D(J, 1, 0) = zeta * (1 - F_NU);
-    SM_ELEMENT_D(J, 1, 1) = - zeta + 1 - n;
-    SM_ELEMENT_D(J, 1, 2) = zeta * F_NU;
-    SM_ELEMENT_D(J, 1, 3) = 0;
+    tables->Q_magnitudes = vars.magnitudes;
 
-    SM_ELEMENT_D(J, 0, 0) = 0;
-    SM_ELEMENT_D(J, 0, 1) = 0;
-    SM_ELEMENT_D(J, 0, 2) = -n;
-    SM_ELEMENT_D(J, 0, 3) = 1;
+    // Initialize sum-, bare_scalar_products-, alpha- and beta-tables
+    compute_bare_scalar_products(input->k, &vars,
+            tables->bare_scalar_products);
+    compute_scalar_products((const vfloat (*)[])tables->bare_scalar_products,
+            tables->scalar_products);
+    compute_alpha_beta_tables((const vfloat (*)[])tables->scalar_products,
+            tables->alpha, tables->beta);
 
-    SM_ELEMENT_D(J, 0, 0) = zeta * (1 - F_NU);
-    SM_ELEMENT_D(J, 0, 1) = 0;
-    SM_ELEMENT_D(J, 0, 2) = zeta * (F_NU - k*k*cs2);
-    SM_ELEMENT_D(J, 0, 3) = - zeta + 1 - n;
+    double* results = ff;
+    for (int i = 0; i < INTEGRAND_COMPONENTS; ++i) results[i] = 0;
 
-#undef cs2_factor
+    integrand(input, tables, results);
+
+    for (int i = 0; i < INTEGRAND_COMPONENTS; ++i) results[i] *= jacobian;
+
     return 0;
 }
 
 
 
-static int kernel_gradient(realtype eta, N_Vector y_vec, N_Vector dy_vec, void *ode_input) {
-    ode_input_t input = *(ode_input_t*)ode_input;
-    short int n = input.n;
-    double k = input.k;
-    const evolution_params_t* params = input.parameters;
+void set_output_filepaths(
+        char output_ps_file[], /* Out */
+        char cuba_statefile[], /* Out */
+        char description[],
+        char output_path[],
+        char cuba_statefile_path[],
+        int a
+        )
+{
+    char a_string[4];
+    sprintf(a_string,"%02d",a);
 
-    realtype* y  = N_VGetArrayPointer(y_vec);
-    realtype* dy = N_VGetArrayPointer(dy_vec);
+    // The name of the output directory is defined through parameter values
+    strcpy(output_ps_file, output_path);
+    strcat(output_ps_file, description);
+    strcat(output_ps_file, "_L" TOSTRING(LOOPS) "_nT" TOSTRING(TIME_STEPS) "/");
 
-    // Between eta_asymp and eta_i, set eta = eta_i
-    if (eta < ETA_I) {
-        eta = ETA_I;
+    // Check that directory exists
+    if (!does_directory_exist(output_ps_file)) {
+        error_verbose("Directory %s does not exist.", output_ps_file);
     }
 
-    // Interpolate RHS
-    double rhs[COMPONENTS] = {0};
-    // If n == 1, rhs = 0
-    if (n > 1) {
-        for (int i = 0; i < COMPONENTS; ++i) {
-            rhs[i] = gsl_spline_eval(input.rhs_splines[i], eta, input.rhs_accs[i]);
-        }
-    }
+    // Basename of output file is defined by a-int
+    strcat(output_ps_file, a_string);
+    strcat(output_ps_file, ".dat");
 
-    // zeta always enters with prefactor 1.5, hence we redefine and multiply once
-    double zeta = 1.5 * gsl_spline_eval(params->zeta_spline, eta, params->zeta_acc);
-
-    // cs2_factor = 2/3 * 1/(omegaM a^2 H^2) * (1 + z)
-#define cs2_factor 2.0/3.0 * 3e3 * 3e3 / OMEGA_M_0
-
-    double cs2 = 0.0;
-#if SOUND_SPEED == CG2
-#define T_nu0 1.67734976e-4 /* Neutrino temperature today [eV] */
-    // Adiabatic sound speed
-    // 5/9 Zeta(5)/Zeta(3) = 7.188..
-    cs2 = 7.188565369 * cs2_factor * T_nu0 * T_nu0 / (M_NU * M_NU)
-        * (1 + gsl_spline_eval(params->redshift_spline, eta, params->redshift_acc));
-#undef T_nu0
-
-#elif SOUND_SPEED == EFFCS2
-    // Effective sound speed
-    cs2 = cs2_factor * gsl_spline2d_eval(params->effcs2_spline, eta, k,
-            params->effcs2_x_acc, params->effcs2_y_acc) *
-        pow( 1 + gsl_spline_eval(params->redshift_spline, eta,
-                    params->redshift_acc), -1);
-#endif
-
-    // etaD parametrization with zeta(etaD) from CLASS
-    dy[0] = rhs[0] - n * y[0] + y[1];
-    dy[1] = rhs[1] + zeta * (1 - F_NU) * y[0] + (- zeta + 1 - n) * y[1] + zeta * F_NU * y[2];
-    dy[2] = rhs[2] - n * y[2] + y[3];
-    dy[3] = rhs[3] + zeta * (1 - F_NU) * y[0] + zeta * (F_NU - k*k*cs2) * y[2] +
-        (- zeta + 1 - n) * y[3];
-
-#undef cs2_factor
-    return 0;
+    // CUBA statefile
+    strcpy(cuba_statefile, cuba_statefile_path);
+    strcat(cuba_statefile, description);
+    strcat(cuba_statefile,  "_L" TOSTRING(LOOPS) "_nT" TOSTRING(TIME_STEPS)
+            "_k_index_");
+    strcat(cuba_statefile, a_string);
 }
 
 
 
-// check_flag function is from the cvDiurnals_ky.c example from the CVODE
-// package.
-/* Check function return value...
-   opt == 0 means SUNDIALS function allocates memory so check if
-   returned NULL pointer
-   opt == 1 means SUNDIALS function returns a flag so check if
-   flag >= 0
-   opt == 2 means function allocates memory so check if returned
-   NULL pointer */
-static int check_flag(void *flagvalue, const char *funcname, int opt) {
-    int *errflag;
+void print_help() {
+    printf( \
+ANSI_COLOR_MAGENTA"cosPT " ANSI_COLOR_RESET "computes 1- and 2-loop \
+corrections to various correlation functions in cosmological perturbation \
+theory.\nThe program takes one argument: the wavenumber index corresponding to \
+the wavenumber at which to compute the power spectrum correction. See "
+ANSI_COLOR_RED "input/wavenumbers.dat" ANSI_COLOR_RESET ".\nIn addition, the \
+program takes these options (which must be given before the arguments):\n\n"
+ANSI_COLOR_BLUE "-a " ANSI_COLOR_RESET
+"Specify absolute tolerance for Monte Carlo integrator. Default: 1e-12.\n"
+ANSI_COLOR_BLUE "-c " ANSI_COLOR_RESET
+"Specify number of threads to spawn. Default: CUBA decides.\n"
+ANSI_COLOR_BLUE "-C " ANSI_COLOR_RESET
+"Specify maximum number of threads CUBA can spawn. Default: 100.\n"
+ANSI_COLOR_BLUE "-d " ANSI_COLOR_RESET
+"Give a description. This partly defines the path of output file.\n"
+ANSI_COLOR_BLUE "-h " ANSI_COLOR_RESET
+"Print help and exit.\n"
+ANSI_COLOR_BLUE "-o " ANSI_COLOR_RESET
+"Specify output_path (to which description is appended).  Default: \
+/space/ge52sir/non_linear_PS/output/.\n"
+ANSI_COLOR_BLUE "-N " ANSI_COLOR_RESET
+"Specify maximum number of CUBA Monte Carlo evaluations. Default: 1e6.\n"
+ANSI_COLOR_BLUE "-r " ANSI_COLOR_RESET
+"Specify relative tolerance for Monte Carlo integrator. Default: 1e-3.\n"
+ANSI_COLOR_BLUE "-s " ANSI_COLOR_RESET
+"Specify path for CUBA statefile. Default: \
+/space/ge52sir/non_linear_PS/output/CUBA_statefiles/.\n"
+ANSI_COLOR_BLUE "-v " ANSI_COLOR_RESET
+"CUBA verbosity level (1, 2 or 3). Default: 1.\n\n"
+"Example usage:\n\n\
+$ cosPT -C 100 -d 2fluid_m_nu_0.07_IC1 -N 1e5 4\n\n\
+Current compilation settings:\n\n");
+    print_compilation_settings();
+}
 
-    /* Check if SUNDIALS function returned NULL pointer - no memory allocated */
-    if (opt == 0 && flagvalue == NULL) {
-        fprintf(stderr, "\nSUNDIALS_ERROR: %s() failed - returned NULL pointer\n\n",
-                funcname);
-        return(1); }
 
-    /* Check if flag < 0 */
-    else if (opt == 1) {
-        errflag = (int *) flagvalue;
-        if (*errflag < 0) {
-            fprintf(stderr, "\nSUNDIALS_ERROR: %s() failed with flag = %d\n\n",
-                    funcname, *errflag);
-            return(1); }}
 
-    /* Check if function returned NULL pointer - no memory allocated */
-    else if (opt == 2 && flagvalue == NULL) {
-        fprintf(stderr, "\nMEMORY_ERROR: %s() failed - returned NULL pointer\n\n",
-                funcname);
-        return(1); }
-
-    return(0);
+void print_compilation_settings() {
+    printf("Loops                     = %d\n", LOOPS);
+    printf("Components                = %d\n", COMPONENTS);
+    printf("Time steps                = %d\n", TIME_STEPS);
+    printf("Integration limits        = [%e,%e]\n", Q_MIN, Q_MAX);
+    printf("Initial/final times       = [%e,%e]\n", ETA_I, ETA_F);
+    printf("Neutrino mass             = %f\n", M_NU);
 }
