@@ -362,47 +362,49 @@ void evolve_kernels(
     SUNLinearSolver LS;
     cvode_mem = CVodeCreate(CV_BDF);
 
-    realtype eta0 = eta[PRE_TIME_STEPS];
-    flag = CVodeInit(cvode_mem, kernel_gradient, eta0, y);
-#if DEBUG==1
-    if (check_flag(&flag, "CVodeSetUserData", 1)) return(1);
-#endif
-    flag = CVodeSStolerances(cvode_mem, reltol, abstol);
-#if DEBUG==1
-    if (check_flag(&flag, "CVodeSStolerances", 1)) return(1);
-#endif
-    flag = CVodeSetUserData(cvode_mem, input);
-#if DEBUG==1
-    if (check_flag(&flag, "CVodeSetUserData", 1)) return(1);
-#endif
-    flag = CVodeSetStopTime(cvode_mem, ETA_F);
-#if DEBUG==1
-    if (check_flag(&flag, "CVodeSetStopTime", 1)) return(1);
-#endif
-    A = SUNDenseMatrix(N, N);
-#if DEBUG==1
-    if (check_flag((void *)A, "SUNDenseMatrix", 0)) return(1);
-#endif
-    LS = SUNLinSol_Dense(y, A);
-#if DEBUG==1
-    if (check_flag((void *)LS, "SUNLinSol_Dense", 0)) return(1);
-#endif
-    flag = CVodeSetLinearSolver(cvode_mem, LS, A);
-#if DEBUG==1
-    if (check_flag(&retval, "CVodeSetLinearSolver", 1)) return(1);
-#endif
-    flag = CVodeSetJacFn(cvode_mem, jacobian);
-#if DEBUG==1
-    if(check_flag(&retval, "CVodeSetJacFn", 1)) return(1);
-#endif
-
+    realtype eta0 = 0;
+    realtype eta_reached = 0;
     if (input->n > 1) {
         NV_Ith_S(y, 0) = 0;
         NV_Ith_S(y, 1) = 0;
         NV_Ith_S(y, 2) = 0;
         NV_Ith_S(y, 3) = 0;
 
-        realtype eta_reached = 0;
+        eta0 = eta[0];
+        flag = CVodeInit(cvode_mem, kernel_gradient, eta0, y);
+#if DEBUG==1
+        if (check_flag(&flag, "CVodeSetUserData", 1)) return(1);
+#endif
+        flag = CVodeSStolerances(cvode_mem, reltol, abstol);
+#if DEBUG==1
+        if (check_flag(&flag, "CVodeSStolerances", 1)) return(1);
+#endif
+        flag = CVodeSetUserData(cvode_mem, input);
+#if DEBUG==1
+        if (check_flag(&flag, "CVodeSetUserData", 1)) return(1);
+#endif
+        flag = CVodeSetStopTime(cvode_mem, ETA_F);
+#if DEBUG==1
+        if (check_flag(&flag, "CVodeSetStopTime", 1)) return(1);
+#endif
+        A = SUNDenseMatrix(N, N);
+#if DEBUG==1
+        if (check_flag((void *)A, "SUNDenseMatrix", 0)) return(1);
+#endif
+        LS = SUNLinSol_Dense(y, A);
+#if DEBUG==1
+        if (check_flag((void *)LS, "SUNLinSol_Dense", 0)) return(1);
+#endif
+        flag = CVodeSetLinearSolver(cvode_mem, LS, A);
+#if DEBUG==1
+        if (check_flag(&retval, "CVodeSetLinearSolver", 1)) return(1);
+#endif
+        flag = CVodeSetJacFn(cvode_mem, jacobian);
+#if DEBUG==1
+        if(check_flag(&retval, "CVodeSetJacFn", 1)) return(1);
+#endif
+
+        eta_reached = 0;
         for (int i = PRE_TIME_STEPS + 1; i < TIME_STEPS; i++) {
             flag = CVode(cvode_mem, eta[i], y, &eta_reached, CV_NORMAL);
 #if DEBUG==1
@@ -430,14 +432,46 @@ void evolve_kernels(
         NV_Ith_S(y, 2) = kernels[PRE_TIME_STEPS][2];
         NV_Ith_S(y, 3) = kernels[PRE_TIME_STEPS][3];
 
-        realtype eta_reached = 0;
+        eta0 = eta[PRE_TIME_STEPS];
+        flag = CVodeInit(cvode_mem, kernel_gradient, eta0, y);
+#if DEBUG==1
+        if (check_flag(&flag, "CVodeSetUserData", 1)) return(1);
+#endif
+        flag = CVodeSStolerances(cvode_mem, reltol, abstol);
+#if DEBUG==1
+        if (check_flag(&flag, "CVodeSStolerances", 1)) return(1);
+#endif
+        flag = CVodeSetUserData(cvode_mem, input);
+#if DEBUG==1
+        if (check_flag(&flag, "CVodeSetUserData", 1)) return(1);
+#endif
+        flag = CVodeSetStopTime(cvode_mem, ETA_F);
+#if DEBUG==1
+        if (check_flag(&flag, "CVodeSetStopTime", 1)) return(1);
+#endif
+        A = SUNDenseMatrix(N, N);
+#if DEBUG==1
+        if (check_flag((void *)A, "SUNDenseMatrix", 0)) return(1);
+#endif
+        LS = SUNLinSol_Dense(y, A);
+#if DEBUG==1
+        if (check_flag((void *)LS, "SUNLinSol_Dense", 0)) return(1);
+#endif
+        flag = CVodeSetLinearSolver(cvode_mem, LS, A);
+#if DEBUG==1
+        if (check_flag(&retval, "CVodeSetLinearSolver", 1)) return(1);
+#endif
+        flag = CVodeSetJacFn(cvode_mem, jacobian);
+#if DEBUG==1
+        if(check_flag(&retval, "CVodeSetJacFn", 1)) return(1);
+#endif
+
+        eta_reached = 0;
         for (int i = PRE_TIME_STEPS + 1; i < TIME_STEPS; i++) {
-            N_VPrint_Serial(y);
             flag = CVode(cvode_mem, eta[i], y, &eta_reached, CV_NORMAL);
 #if DEBUG==1
             if(check_flag(&flag, "CVode", 1)) break;
 #endif
-            N_VPrint_Serial(y);
             kernels[i][0] = NV_Ith_S(y, 0);
             kernels[i][1] = NV_Ith_S(y, 1);
             kernels[i][2] = NV_Ith_S(y, 2);
