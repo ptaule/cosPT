@@ -1,0 +1,194 @@
+/*
+   spt_kernels.cpp
+
+   Created by Petter Taule on 04.09.2020
+   Copyright (c) 2020 Petter Taule. All rights reserved.
+*/
+
+#include <stdexcept>
+#include <algorithm>
+
+#include <gsl/gsl_combination.h>
+#include <gsl/gsl_sf.h>
+
+#include "../include/utilities.hpp"
+#include "../include/tables.hpp"
+#include "../include/spt_kernels.hpp"
+
+double spt_term(
+        short int m_l,
+        short int m_r,
+        short int component,
+        short int args_l[],
+        short int args_r[],
+        short int sum_l,
+        short int sum_r,
+        IntegrandTables& tables
+        )
+{
+    short int n = m_l + m_r;
+
+    short int index_l = compute_SPT_kernels(args_l, -1, m_l, tables);
+    short int index_r = compute_SPT_kernels(args_r, -1, m_r, tables);
+
+    short int a,b;
+    switch (component) {
+        case 0:
+            a = 2 * n + 1;
+            b = 2;
+            break;
+        case 1:
+            a = 3;
+            b = 2 * n;
+            break;
+        default:
+            throw(std::invalid_argument("SPT_term() does not accept argument 'component' which does not equal 0 or 1."));
+    }
+
+    return tables.spt_kernels[index_l].values[1] *
+        (    a * tables.alpha[sum_l][sum_r]
+           * tables.spt_kernels[index_r].values[0]
+           + b * tables.beta[sum_l][sum_r]
+           * tables.spt_kernels[index_r].values[1]
+        );
+}
+
+
+
+void partial_SPT_sum(
+        const short int arguments[], /* kernel arguments                       */
+        short int n,                 /* kernel number                          */
+        short int m,                 /* sum index in kernel recursion relation */
+        short int kernel_index,
+        IntegrandTables& tables
+        )
+{
+    double partial_kernel_values[SPT_COMPONENTS] = {0};
+
+    short int n_kernel_args = tables.settings.n_kernel_args;
+    short int args_l[N_KERNEL_ARGS_MAX] = {0};
+    short int args_r[N_KERNEL_ARGS_MAX] = {0};
+
+    // Initialize args_l and args_r
+    std::fill(&args_l[0], &args_l[n_kernel_args], tables.settings.zero_label);
+    std::fill(&args_r[0], &args_r[n_kernel_args], tables.settings.zero_label);
+
+    // - comb_l starts at {0,1,...,m} and in the while-loop goes over all
+    //   combinations of m elements from {0,...,n} (n choose m possibilities)
+    // - comb_r starts at {m+1,...,n} and in the while-loop goes
+    //   ("backwards") over all combinations of (n-m) elements from {0,...,n}
+    //   (n choose (n-m) possibilities)
+
+    gsl_combination* comb_l = gsl_combination_alloc(n,m);
+    gsl_combination* comb_r = gsl_combination_alloc(n,n-m);
+
+    gsl_combination_init_first(comb_l);
+    gsl_combination_init_last(comb_r);
+
+    do {
+        // Use comb_l and comb_r to find argument combination
+        for (int i = 0; i < m; ++i) {
+            args_l[i] = arguments[gsl_combination_get(comb_l,i)];
+        }
+        for (int i = 0; i < n - m; ++i) {
+            args_r[i] = arguments[gsl_combination_get(comb_r,i)];
+        }
+
+        short int sum_l = tables.sum_table.sum_labels(args_l, n_kernel_args);
+        short int sum_r = tables.sum_table.sum_labels(args_r, n_kernel_args);
+
+        for (int i = 0; i < SPT_COMPONENTS; ++i) {
+            partial_kernel_values[i] += 
+                spt_term(m, n-m, i, args_l, args_r, sum_l, sum_r, tables);
+        }
+
+        // When m != (n - m), we may additionally compute the (n-m)-term by
+        // swapping args_l, sum_l, m with args_r, sum_r and (n-m). Then
+        // compute_SPT_kernels() only needs to sum up to (including) floor(n/2).
+        if (m != n - m) {
+            for (int i = 0; i < SPT_COMPONENTS; ++i) {
+                partial_kernel_values[i] +=
+                    spt_term(n-m, m, i, args_r, args_l, sum_r, sum_l, tables);
+            }
+        }
+    } while (gsl_combination_next(comb_l) == GSL_SUCCESS &&
+             gsl_combination_prev(comb_r) == GSL_SUCCESS
+            );
+
+    // Devide through by symmetrization factor (n choose m)
+    int n_choose_m = gsl_sf_choose(n,m);
+    for (int i = 0; i < SPT_COMPONENTS; ++i) {
+        partial_kernel_values[i] /= n_choose_m;
+    }
+
+    // Add calculated term for each component to kernel table
+    for (int i = 0; i < SPT_COMPONENTS; ++i) {
+        tables.spt_kernels[kernel_index].values[i]
+            += partial_kernel_values[i];
+    }
+
+    gsl_combination_free(comb_l);
+    gsl_combination_free(comb_r);
+}
+
+
+
+short int compute_SPT_kernels(
+        const short int arguments[], /* kernel arguments             */
+        short int kernel_index,      /* index for kernel table       */
+        short int n,                 /* order in perturbation theory */
+        IntegrandTables& tables
+        )
+{
+    // DEBUG: check that the number of non-zero arguments is in fact n, and
+    // that kernel_index is in fact equivalent to arguments
+#if DEBUG >= 1
+    short int argument_index = kernel_index_from_arguments(arguments, tables.settings);
+    if (kernel_index != -1 && argument_index != kernel_index) {
+        throw(std::logic_error("Index computed from kernel arguments does not equal kernel index."));
+    }
+
+    int n_args = 0;
+    for (int i = 0; i < tables.settings.n_kernel_args; ++i) {
+        if (arguments[i] != tables.settings.zero_label) n_args++;
+    }
+    if (n_args != n) {
+        throw(std::invalid_argument("compute_SPT_kernels(): number of non-zero-label arguments in arguments does not equal n."));
+    }
+#endif
+
+    // If kernel_index is not known, -1 is sent as argument
+    if (kernel_index == -1) {
+        kernel_index = kernel_index_from_arguments(arguments, tables.settings);
+    }
+
+    // Alias reference to kernel we are working with for convenience/readability
+    SPTKernel& kernel = tables.spt_kernels[kernel_index];
+
+    // Check if the SPT kernels are already computed
+    if (kernel.computed) return kernel_index;
+
+    // For SPT kernels, F_1 = G_1 = ... = 1
+    if (n == 1) {
+        for (int i = 0; i < SPT_COMPONENTS; ++i) {
+            kernel.values[i] = 1.0;
+        }
+        return kernel_index;
+    }
+
+    // Only sum up to (including) floor(n/2), since partial_SPT_sum()
+    // simultaneously computes terms m and (n-m)
+    for (int m = 1; m <= n/2; ++m) {
+        partial_SPT_sum(arguments, n, m, kernel_index, tables);
+    }
+
+    // Divide by overall factor in SPT recursion relation
+    for (int i = 0; i < SPT_COMPONENTS; ++i) {
+        kernel.values[i] /= (2*n + 3) * (n - 1);
+    }
+
+    // Update kernel table
+    kernel.computed = true;
+
+    return kernel_index;
+}
