@@ -1,4 +1,5 @@
 EXE=cosPT
+BENCHMARK_EXE=bench
 
 SRC_DIR = src
 OBJ_DIR = obj
@@ -28,19 +29,29 @@ all:   CFLAGS   += -O3
 2loop: CFLAGS   += -O3
 debug: CPPFLAGS += -DDEBUG=2 -DN_CORES=0
 debug: CFLAGS   += -O0 -g
+benchmark: CPPFLAGS += -DLOOPS=2
+benchmark: CXXFLAGS += -O0 -g
+benchmark: LDLIBS   += -lbenchmark -pthread
 
-.PHONY: all clean run 1loop 2loop force
+.PHONY: all clean run 1loop 2loop benchmark force
 
 all: $(EXE)
 1loop: $(EXE)
 2loop: $(EXE)
 debug: $(EXE)
+benchmark: $(BENCHMARK_EXE)
 
 run: all
 	./$(EXE)
 
 $(EXE): main.o $(OBJ)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+$(BENCHMARK_EXE): benchmark.o $(OBJ)
+	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+benchmark.o: benchmark.cpp $(HEADERS) compiler_flags
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 main.o: main.c $(HEADERS) compiler_flags
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
