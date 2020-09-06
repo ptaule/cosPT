@@ -46,3 +46,6 @@
 # Plots
 *.png
 *.pdf
+
+# Specific .cpp files
+src/version.cpp
