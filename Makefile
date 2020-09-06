@@ -1,4 +1,6 @@
 EXE=build/cosPT
+DEBUG_EXE=build/debug
+BENCHMARK_EXE=build/bench
 
 SRC_DIR = src
 OBJ_DIR = obj
@@ -25,11 +27,17 @@ LDLIBS += $(LDLIBS_GSL) $(LDLIBS_CUBA)
 all:       CXXFLAGS += -O3
 debug:     CPPFLAGS += -DDEBUG=2
 debug:     CXXFLAGS += -O0 -g
+benchmark: CXXFLAGS += -O3
+benchmark: LDLIBS   += -lbenchmark -pthread
+profile:   CXXFLAGS += -O3 -fno-omit-frame-pointer
+profile:   LDLIBS   += -lbenchmark -pthread
 
-.PHONY: all clean run force
+.PHONY: all clean run benchmark profile force
 
 all: $(EXE)
-debug: $(EXE)
+debug: $(DEBUG_EXE)
+benchmark: $(BENCHMARK_EXE)
+profile: $(BENCHMARK_EXE)
 
 run: all
 	./$(EXE)
@@ -37,7 +45,16 @@ run: all
 $(EXE): main.o $(OBJ)
 	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
+$(DEBUG_EXE): main.o $(OBJ)
+	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+$(BENCHMARK_EXE): benchmark.o $(OBJ)
+	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
 main.o: main.cpp $(HEADERS) compiler_flags
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+benchmark.o: benchmark.cpp $(HEADERS) compiler_flags
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADERS) compiler_flags
@@ -51,4 +68,4 @@ compiler_flags: force
 	echo '$(CPPFLAGS) $(CXXFLAGS)' | cmp -s - $@ || echo '$(CPPFLAGS) $(CXXFLAGS)' > $@
 
 clean:
-	$(RM) $(OBJ) main.o $(EXE)
+	$(RM) $(OBJ) main.o benchmark.o $(EXE)
