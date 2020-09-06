@@ -238,6 +238,7 @@ void compute_alpha_beta_tables(
 // This function computes (addition to) kernel index for fundamental vector
 // arguments. (It assumes that the arguments are fundamentals.)
 inline static short int kernel_index_from_fundamental(short int argument) {
+    short int pow2[] = {1,2,4,8,16,32,64,128};
     short int coeffs[N_COEFFS] = {0};
     label2config(argument,coeffs,N_COEFFS);
 
@@ -246,7 +247,8 @@ inline static short int kernel_index_from_fundamental(short int argument) {
          /* if - Q_i is present, return 2^(2i + 0/2) = 2^(2i)   */
          /* if + Q_i is present, return 2^(2i + 2/2) = 2^(2i+1) */
         if (coeffs[i] != 0) {
-            return pow(2, 2 * i + (coeffs[i] + 1)/2);
+            /* return pow(2, 2 * i + (coeffs[i] + 1)/2); */
+            return pow2[2 * i + (coeffs[i] + 1)/2];
         }
     }
     return 0;

@@ -35,7 +35,7 @@ typedef struct {
     vfloat bare_scalar_products[N_COEFFS][N_COEFFS];
     vfloat alpha[N_CONFIGS][N_CONFIGS];
     vfloat beta[N_CONFIGS][N_CONFIGS];
-    kernel_t kernels[N_KERNELS];
+    kernel_t kernels[N_KERNELS * COMPONENTS];
 } tables_t;
 
 short int sum_vectors(
