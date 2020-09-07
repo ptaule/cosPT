@@ -49,8 +49,8 @@
 // Adiabatic sound speed or effective?
 #define CG2 1
 #define EFFCS2 2
-#define SOUND_SPEED CG2
-/* #define SOUND_SPEED EFFCS2 */
+/* #define SOUND_SPEED CG2 */
+#define SOUND_SPEED EFFCS2
 
 // Which GSL interpolation routine to use
 #define INTERPOL_TYPE gsl_interp_cspline

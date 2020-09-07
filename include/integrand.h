@@ -21,6 +21,7 @@ typedef struct {
     const diagram_t* const diagrams;
     const evolution_params_t* params;
     tables_t* worker_mem;
+    integration_variables_t* vars;
 } integration_input_t;
 
 void integrand(const integration_input_t* data, tables_t* tables, double* results);
