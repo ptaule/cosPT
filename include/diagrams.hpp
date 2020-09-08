@@ -64,8 +64,68 @@ class PowerSpectrumDiagram {
                 ) const;
 };
 
-std::ostream& operator<<(std::ostream& out, const PowerSpectrumDiagram& diagram);
 
-Vec1D<PowerSpectrumDiagram> construct_diagrams(const Settings& settings);
+class BiSpectrumDiagram {
+    private:
+        const Settings& settings;
+
+        /* Is diagram closed (n_ab, n_bc, n_ca > 0) */
+        bool overall_loop;
+
+        void compute_rearrangements(short int n_loops);
+        void compute_sign_flips(
+                short int connecting_lines,
+                short int n_sign_configs,
+                Vec2D<bool> sign_flips
+                );
+        void compute_sign_flips();
+
+        /* Computes argument configurations if rearrangement and sign
+         * configurations are set */
+        void kernel_arguments(short int n_loops, short int a, short int b);
+    public:
+        short int n_ab, n_bc, n_ca;
+        short int n_a, n_b, n_c;
+
+        short int diagram_factor;     /* Topological multiplicative diagram factor */
+
+        short int n_rearrangements;   /* Number of rearrangements of loop momenta  */
+        /* Number of sign_flips for connecting lines */
+        short int n_sign_configs_ab;
+        short int n_sign_configs_bc;
+        short int n_sign_configs_ca;
+
+        /* Table of rearrangements */
+        Vec2D<short int> rearrangements;
+        /* Tables of sign flips, true <-> +1, false <-> -1 */
+        Vec2D<bool> sign_configs_ab;
+        Vec2D<bool> sign_configs_bc;
+        Vec2D<bool> sign_configs_ca;
+
+        /* Argument configuration for each rearrangement and sign setup
+         * (n_rearrangements x n_sign_configs possibilities) */
+        Vec2D<ArgumentConfiguration> arg_configs_a;
+        Vec2D<ArgumentConfiguration> arg_configs_b;
+        Vec2D<ArgumentConfiguration> arg_configs_c;
+
+        BiSpectrumDiagram(
+                const Settings& settings,
+                short int n_ab, short int n_bc, short int n_ca,
+                short int n_a, short int n_b, short int n_c
+                );
+
+        void print_diagram_tags(std::ostream& out) const;
+        /* void print_argument_configuration( */
+        /*         std::ostream& out, */
+        /*         short int a, */
+        /*         short int b */
+        /*         ) const; */
+};
+
+std::ostream& operator<<(std::ostream& out, const PowerSpectrumDiagram& diagram);
+std::ostream& operator<<(std::ostream& out, const BiSpectrumDiagram& diagram);
+
+Vec1D<PowerSpectrumDiagram> construct_ps_diagrams(const Settings& settings);
+Vec1D<BiSpectrumDiagram>    construct_bs_diagrams(const Settings& settings);
 
 #endif /* ifndef DIAGRAMS_HPP */

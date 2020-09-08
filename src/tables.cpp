@@ -48,7 +48,11 @@ Settings::Settings(
         kernel_index_block_size = pow(4, n_loops);
     }
     else if (spectrum == BISPECTRUM) {
-        /* Not implemented */
+        n_coeffs = n_loops + 2;
+        n_configs = 2 * pow(3, n_loops + 1);
+        /* n_kernels = (n_configs/2 + 1) * pow(4, n_loops); */
+        n_kernel_args = 2 * n_loops + 2;
+        zero_label = get_zero_label(n_coeffs);
     }
 }
 

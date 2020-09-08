@@ -80,7 +80,7 @@ int main () {
     // Set routines to be run before process forking (new worker)
     cubainit(init_worker, nullptr);
 
-    Vec1D<PowerSpectrumDiagram> diagrams = construct_diagrams(settings);
+    Vec1D<PowerSpectrumDiagram> diagrams = construct_ps_diagrams(settings);
 
     IntegrationInput input(1e-4, 65, settings, diagrams, input_ps, correlations,
             tables_vec);
