@@ -68,4 +68,4 @@ compiler_flags: force
 	echo '$(CPPFLAGS) $(CXXFLAGS)' | cmp -s - $@ || echo '$(CPPFLAGS) $(CXXFLAGS)' > $@
 
 clean:
-	$(RM) $(OBJ) main.o benchmark.o $(EXE)
+	$(RM) $(OBJ) main.o benchmark.o $(EXE) $(DEBUG_EXE) $(BENCHMARK_EXE)
