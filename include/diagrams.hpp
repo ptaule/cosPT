@@ -29,7 +29,7 @@ class PowerSpectrumDiagram {
 
         /* Computes argument configurations if rearrangement and sign
          * configurations are set */
-        void kernel_arguments(short int n_loops, short int a, short int b);
+        void kernel_arguments(short int n_coeffs, short int a, short int b);
     public:
         short int m;
         short int l;

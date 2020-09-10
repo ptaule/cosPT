@@ -8,10 +8,10 @@
 #include <stdexcept>
 #include <algorithm>
 
-#include <gsl/gsl_combination.h>
 #include <gsl/gsl_sf.h>
 
 #include "../include/utilities.hpp"
+#include "../include/combinatorics.hpp"
 #include "../include/tables.hpp"
 #include "../include/spt_kernels.hpp"
 
@@ -73,26 +73,13 @@ void partial_SPT_sum(
     std::fill(&args_l[0], &args_l[n_kernel_args], tables.settings.zero_label);
     std::fill(&args_r[0], &args_r[n_kernel_args], tables.settings.zero_label);
 
-    // - comb_l starts at {0,1,...,m} and in the while-loop goes over all
-    //   combinations of m elements from {0,...,n} (n choose m possibilities)
-    // - comb_r starts at {m+1,...,n} and in the while-loop goes
-    //   ("backwards") over all combinations of (n-m) elements from {0,...,n}
-    //   (n choose (n-m) possibilities)
-
-    gsl_combination* comb_l = gsl_combination_alloc(n,m);
-    gsl_combination* comb_r = gsl_combination_alloc(n,n-m);
-
-    gsl_combination_init_first(comb_l);
-    gsl_combination_init_last(comb_r);
-
+    /* Go through all ways to pick m (unordered) elements from group of n */
+    Combinations comb(n, m);
     do {
-        // Use comb_l and comb_r to find argument combination
-        for (int i = 0; i < m; ++i) {
-            args_l[i] = arguments[gsl_combination_get(comb_l,i)];
-        }
-        for (int i = 0; i < n - m; ++i) {
-            args_r[i] = arguments[gsl_combination_get(comb_r,i)];
-        }
+        /* Set args_l and args_r from current combination and complement,
+         * respectively */
+        comb.rearrange_from_current_combination(arguments, args_l, m);
+        comb.rearrange_from_current_complement(arguments, args_r, n - m);
 
         short int sum_l = tables.sum_table.sum_labels(args_l, n_kernel_args);
         short int sum_r = tables.sum_table.sum_labels(args_r, n_kernel_args);
@@ -111,9 +98,7 @@ void partial_SPT_sum(
                     spt_term(n-m, m, i, args_r, args_l, sum_r, sum_l, tables);
             }
         }
-    } while (gsl_combination_next(comb_l) == GSL_SUCCESS &&
-             gsl_combination_prev(comb_r) == GSL_SUCCESS
-            );
+    } while (comb.next());
 
     // Devide through by symmetrization factor (n choose m)
     int n_choose_m = gsl_sf_choose(n,m);
@@ -126,9 +111,6 @@ void partial_SPT_sum(
         tables.spt_kernels[kernel_index].values[i]
             += partial_kernel_values[i];
     }
-
-    gsl_combination_free(comb_l);
-    gsl_combination_free(comb_r);
 }
 
 

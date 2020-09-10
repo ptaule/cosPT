@@ -7,20 +7,19 @@
 
 #include <iostream>
 #include <numeric>
-#include <cstring>
 #include <cmath>
 #include <stdexcept>
 
 #include <gsl/gsl_sf.h>
-#include <gsl/gsl_combination.h>
 
-#include "../include/diagrams.hpp"
 #include "../include/utilities.hpp"
+#include "../include/combinatorics.hpp"
 #include "../include/tables.hpp"
+#include "../include/diagrams.hpp"
 
 
 void PowerSpectrumDiagram::kernel_arguments(
-        short int n_loops,
+        short int n_coeffs,
         short int a,
         short int b
         )
@@ -33,18 +32,18 @@ void PowerSpectrumDiagram::kernel_arguments(
 
     /* First argument : k1 - (±k2) - (±k3) - ... */
     short int config[N_COEFFS_MAX] = {0};
-    config[n_loops] = 1;
+    config[n_coeffs - 1] = 1;
 
     for (short int i = 2; i <= m; ++i) {
         // Note extra minus sign from kernel expression
         config[rearrangement[i-2]] = (signs[i-2] ? - 1 : 1);
     }
 
-    arguments_l[0] = config2label(config, n_loops + 1);
-    arguments_r[0] = config2label(config, n_loops + 1);
+    arguments_l[0] = config2label(config, n_coeffs);
+    arguments_r[0] = config2label(config, n_coeffs);
 
     // Reset config
-    memset(config, 0, sizeof(config));
+    std::fill(config, config + n_coeffs, 0);
 
     // Argument indices
     size_t index_l = 1;
@@ -55,34 +54,34 @@ void PowerSpectrumDiagram::kernel_arguments(
     // corresponding terms in the first argument
     for (short int i = 2; i <= m; ++i) {
         config[rearrangement[i-2]] = (signs[i-2] ? 1 : -1);
-        arguments_l[index_l++] = config2label(config, n_loops + 1);
-        arguments_r[index_r++] = config2label(config, n_loops + 1);
-        memset(config,0,sizeof(config));
+        arguments_l[index_l++] = config2label(config, n_coeffs);
+        arguments_r[index_r++] = config2label(config, n_coeffs);
+        std::fill(config, config + n_coeffs, 0);
     }
 
     // l-loop arguments
     for (short int i = 0; i < l; ++i) {
         short int loop_momentum_index = rearrangement[i + m - 1];
         config[loop_momentum_index] = 1;
-        arguments_l[index_l++] = config2label(config, n_loops + 1);
+        arguments_l[index_l++] = config2label(config, n_coeffs);
         config[loop_momentum_index] = -1;
-        arguments_l[index_l++] = config2label(config, n_loops + 1);
+        arguments_l[index_l++] = config2label(config, n_coeffs);
 
-        memset(config,0,sizeof(config));
+        std::fill(config, config + n_coeffs, 0);
     }
     // r-loop arguments
     for (short int i = 0; i < r; ++i) {
         short int loop_momentum_index = rearrangement[i + m - 1 + l];
         config[loop_momentum_index] = 1;
-        arguments_r[index_r++] = config2label(config, n_loops + 1);
+        arguments_r[index_r++] = config2label(config, n_coeffs);
         config[loop_momentum_index] = -1;
-        arguments_r[index_r++] = config2label(config, n_loops + 1);
+        arguments_r[index_r++] = config2label(config, n_coeffs);
 
-        memset(config,0,sizeof(config));
+        std::fill(config, config + n_coeffs, 0);
     }
 
     // Fill remaining spots with zero-label
-    short int zero_label = get_zero_label(n_loops + 1);
+    short int zero_label = get_zero_label(n_coeffs);
     size_t n_kernel_args = static_cast<size_t>(settings.n_kernel_args);
     while (index_l < n_kernel_args) {
         arguments_l[index_l++] = zero_label;
@@ -118,91 +117,33 @@ void PowerSpectrumDiagram::compute_rearrangements(short int n_loops)
         rearrangements[i].resize(n_loops);
     }
 
-    // Default loop-momenta ordering (Q1, Q2, Q3, etc.)
-    Vec1D<short int> loop_momenta(n_loops);
-    std::iota(loop_momenta.begin(), loop_momenta.end(), 0);
+    Vec1D<short int> group_sizes;
 
-    // Loop momenta combinations:
-    // m-1         "connection" loops
-    // s = L-(m-1) "self" loops, divided into:
-    //      l left "self" loops
-    //      r right "self" loops
-    gsl_combination *comb_m = NULL;
-    gsl_combination *comb_s = NULL;
-    gsl_combination *comb_l = NULL;
-    gsl_combination *comb_r = NULL;
-
-    comb_m = gsl_combination_alloc(n_loops, (m-1));
-    comb_s = gsl_combination_alloc(n_loops, n_loops - (m-1));
-    gsl_combination_init_first(comb_m); gsl_combination_init_last(comb_s);
-
-    // We only need l and r groupings when "self"-loops are present
-    if (m < n_loops + 1) {
-        comb_l = gsl_combination_alloc(n_loops - (m-1), l);
-        comb_r = gsl_combination_alloc(n_loops - (m-1), r);
+    /* Connecting loops? */
+    if (m > 1) {
+        group_sizes.push_back(m-1);
+    }
+    if (l > 0) {
+        group_sizes.push_back(l);
+    }
+    if (r > 0) {
+        group_sizes.push_back(r);
     }
 
-    // Rearrangement index (should be between 0 and n_rearrangements)
-    short int rearrangement_index = 0;
+    Orderings orderings(n_loops, group_sizes);
 
-    // Go through possible (m-1)-groupings
+    int counter = 0;
     do {
-        if (m < n_loops + 1) {
-            gsl_combination_init_first(comb_l);
-            gsl_combination_init_last(comb_r);
+        rearrangements.at(counter) = orderings.get_current();
+        ++counter;
+    } while (orderings.next());
 
-            // Go through possible l and r groupings
-            do {
-                // Reference for readability/convenience
-                Vec1D<short int>& rearr = rearrangements[rearrangement_index];
-                for (int i = 0; i < m-1; ++i) {
-                    rearr[i] = loop_momenta[gsl_combination_get(comb_m,i)];
-                }
-
-                for (int i = 0; i < l; ++i) {
-                    int j = m - 1 + i;
-                    rearr[j] = loop_momenta[
-                        gsl_combination_get(comb_s,gsl_combination_get(comb_l,i))];
-                }
-                for (int i = 0; i < r; ++i) {
-                    int j = m - 1 + l + i;
-                    rearr[j] = loop_momenta[
-                        gsl_combination_get(comb_s,gsl_combination_get(comb_r,i))];
-                }
-
-                rearrangement_index++;
-
-            } while (
-                    gsl_combination_next(comb_l) == GSL_SUCCESS &&
-                    gsl_combination_prev(comb_r) == GSL_SUCCESS
-                    );
-        }
-        else {
-            // Reference for readability/convenience
-            Vec1D<short int>& rearr = rearrangements[rearrangement_index];
-            for (int i = 0; i < m-1; ++i) {
-                rearr[i] = loop_momenta[gsl_combination_get(comb_m,i)];
-            }
-            rearrangement_index++;
-        }
-    } while (
-            gsl_combination_next(comb_m) == GSL_SUCCESS &&
-            gsl_combination_prev(comb_s) == GSL_SUCCESS
-            );
-
-    if (rearrangement_index != n_rearrangements) {
-        throw(std::logic_error("PowerSpectrumDiagram::compute_rearrangements(): Created " 
-                    + std::to_string(rearrangement_index) + 
-                    " rearrangements, which does not equal n_rearrangements = " 
+    if (counter != n_rearrangements) {
+        throw(std::logic_error("PowerSpectrumDiagram::compute_rearrangements(): Created "
+                    + std::to_string(counter) +
+                    " rearrangements, which does not equal n_rearrangements = "
                     + std::to_string(n_rearrangements) + "."));
     }
-
-    if (m < n_loops + 1) {
-        gsl_combination_free(comb_l);
-        gsl_combination_free(comb_r);
-    }
-    gsl_combination_free(comb_m);
-    gsl_combination_free(comb_s);
 }
 
 
@@ -259,10 +200,11 @@ PowerSpectrumDiagram::PowerSpectrumDiagram(
             arg_configs_r[a][b].args.resize(n_kernel_args);
 
             // Initialize arguments and kernel indices for this configuration
-            kernel_arguments(n_loops, a, b);
+            kernel_arguments(settings.n_coeffs, a, b);
         }
     }
 }
+
 
 
 void PowerSpectrumDiagram::print_diagram_tags(std::ostream& out) const
@@ -271,6 +213,8 @@ void PowerSpectrumDiagram::print_diagram_tags(std::ostream& out) const
         << "(m,l,r) = (" << m << "," << l << "," << r << ")" 
         << COLOR_RESET;
 }
+
+
 
 void PowerSpectrumDiagram::print_argument_configuration(
         std::ostream& out,
