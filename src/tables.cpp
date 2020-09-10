@@ -33,6 +33,9 @@ Settings::Settings(
     pre_time_steps(pre_time_steps), eta_i(eta_i), eta_f(eta_f),
     eta_asymp(eta_asymp)
 {
+    if (n_loops < 1 || n_loops > 2) {
+        throw(std::invalid_argument("Settings::Settings(): n_loops should be between 1 and 2."));
+    }
     if (spectrum == POWERSPECTRUM) {
         n_coeffs = n_loops + 1;
         n_configs = 2 * pow(3, n_loops);
