@@ -38,8 +38,8 @@ Settings::Settings(
     }
     if (spectrum == POWERSPECTRUM) {
         n_coeffs = n_loops + 1;
-        n_configs = 2 * pow(3, n_loops);
-        n_kernels = (n_configs/2 + 1) * pow(4,n_loops);
+        n_configs = pow(3, n_coeffs);
+        n_kernels = (n_configs/3 + 1) * pow(4,n_loops);
         n_kernel_args = 2 * n_loops + 1;
         zero_label = get_zero_label(n_coeffs);
 
@@ -49,7 +49,7 @@ Settings::Settings(
     }
     else if (spectrum == BISPECTRUM) {
         n_coeffs = n_loops + 2;
-        n_configs = 2 * pow(3, n_loops + 1);
+        n_configs = pow(3, n_coeffs);
         /* n_kernels = (n_configs/2 + 1) * pow(4, n_loops); */
         n_kernel_args = 2 * n_loops + 2;
         zero_label = get_zero_label(n_coeffs);
@@ -155,14 +155,11 @@ short int SumTable::sum_labels(const short int labels[], size_t size) const
     short int n_coeffs = settings.n_coeffs;
     short int res_coeffs[N_COEFFS_MAX];
     label2config(result, res_coeffs, n_coeffs);
-    for (int i = 0; i < n_coeffs - 1; ++i) {
+    for (int i = 0; i < n_coeffs; ++i) {
         short int c = res_coeffs[i];
         if (!(c == -1 || c == 0 || c == 1))
             throw(std::logic_error("SumTable::sum_labels(): Sum of labels does not correspond to an appropriate configuration."));
     }
-    short int c = res_coeffs[n_coeffs - 1];
-    if (!(c == 0 || c == 1))
-        throw(std::logic_error("SumTable::sum_labels(): Sum of labels does not correspond to an appropriate configuration."));
 #endif
 
     return result;
@@ -468,7 +465,7 @@ short int kernel_index_from_arguments(
 #if DEBUG >= 1
     if (!unique_elements(arguments, n_kernel_args,zero_label))
         throw(std::logic_error("kernel_index_from_arguments(): duplicate vector arguments passed."));
-    short int n_k_vectors = 0;
+    short int n_k_labels = 0;
 #endif
 
     short int index = 0;
@@ -479,17 +476,25 @@ short int kernel_index_from_arguments(
 
         // Argument is a k-type vector (i.e. on the form k + c_i Q_i) if k is
         // present. In our vector-label convention, k is the last coefficient,
-        // hence k is present if label >= N_CONFIGS/2
-        if (arguments[i] >= n_configs/2) {
-            index += (arguments[i] - n_configs/2 + 1) * kernel_index_block_size;
+        // hence +k is present if label >= 2 * n_configs/3
+        short int k_threshold = 2 * n_configs/3;
+        if (arguments[i] >= k_threshold) {
+            index += (arguments[i] - k_threshold + 1) * kernel_index_block_size;
 #if DEBUG >= 1
-            n_k_vectors++;
+            /* Count k-type labels */
+            ++n_k_labels;
 #endif
         }
-        else {
-            // In DEBUG-mode, check that this is in fact a fundamental vector
 #if DEBUG >= 1
-            if(!is_fundamental(arguments[i], n_coeffs, n_configs))
+        /* We should not get -k in power spectrum computation */
+        else if (arguments[i] < n_configs/3) {
+            throw(std::logic_error("kernel_index_from_arguments(): got argument with -k."));
+        }
+#endif
+        else {
+#if DEBUG >= 1
+            /* Check that this is in fact a fundamental vector */
+            if(!pure_loop_label(arguments[i], n_coeffs, settings.spectrum))
                 throw(std::logic_error("kernel_index_from_arguments(): argument is neither 0, k-type, or fundamental."));
 #endif
 
@@ -508,7 +513,7 @@ short int kernel_index_from_arguments(
         }
     }
 #if DEBUG >= 1
-    if (n_k_vectors > 1)
+    if (n_k_labels > 1)
         throw(std::logic_error("kernel_index_from_arguments(): more than one argument is of k-type."));
 #endif
 

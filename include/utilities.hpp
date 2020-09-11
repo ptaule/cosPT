@@ -69,20 +69,21 @@ short int config2label(const short int config[], std::size_t size);
 void print_label(
         short int label, 
         short int n_coeffs, 
-        short int zero_label, 
+        Spectrum spectrum,
         std::ostream& out
         );
 
 void print_labels(
         const short int labels[], 
-        std::size_t size,
-        short int n_coeffs, 
-        short int zero_label, 
+        size_t size,
+        short int n_coeffs,
+        short int zero_label,
+        Spectrum spectrum,
         std::ostream& out
         );
 
 short int get_zero_label(short int n_coeffs);
-bool is_fundamental(short int label, short int n_coeffs, short int n_configs);
+bool pure_loop_label( short int label, short int n_coeffs, Spectrum spectrum);
 bool unique_elements(const short int array[], std::size_t length, short int skip);
 
 #endif /* ifndef UTILITIES_HPP */

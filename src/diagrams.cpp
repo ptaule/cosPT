@@ -231,11 +231,11 @@ void PowerSpectrumDiagram::print_argument_configuration(
     out << COLOR_BLUE;
     print_labels(arg_configs_l[a][b].args.data(),
             arg_configs_l[a][b].args.size(), settings.n_coeffs,
-            settings.zero_label, out);
+            settings.zero_label, settings.spectrum, out);
     out << " ";
     print_labels(arg_configs_r[a][b].args.data(),
             arg_configs_r[a][b].args.size(), settings.n_coeffs,
-            settings.zero_label, out);
+            settings.zero_label, settings.spectrum, out);
     out << COLOR_RESET;
 }
 

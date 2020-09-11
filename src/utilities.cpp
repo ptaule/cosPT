@@ -15,20 +15,16 @@ using std::size_t;
 using std::pow;
 
 void label2config(
-        short int label,    // in, label element in [0, N_CONFIG - 1]
+        short int label,    // in, label element in [0, n_config - 1]
         short int config[], // out, array of base 3 digits
         size_t size   // in, size of coefficients
         )
 {
-    // Q-coefficients are element in {-1,0,1}
-    for (std::size_t i = 0; i < size - 1; ++i) {
+    // Coefficients are element in {-1,0,1}
+    for (size_t i = 0; i < size; ++i) {
         config[i] = (label % 3) - 1;
         label /= 3;
     }
-
-    // k-coefficient (last coefficient) is element in {0,1}
-
-    config[size - 1] = label % 3;
 }
 
 
@@ -40,32 +36,58 @@ short int config2label(
 {
     short int label = 0;
 
-    // For Q-coefficients, add 1 to obtain range {0,1,2}
-    for (size_t i = 0; i < size - 1; ++i) {
+    // Add 1 to obtain range {0,1,2}
+    for (size_t i = 0; i < size; ++i) {
         label += (config[i] + 1) * pow(3,i);
     }
-
-    // For k-coefficient, do _not_ add 1, range is {0,1}
-    label += config[size-1] * pow(3,size - 1);
-
     return label;
 }
 
 
 
 void print_label(
-        short int label, 
-        short int n_coeffs, 
+        short int label,
+        short int n_coeffs,
+        Spectrum spectrum,
         std::ostream& out
-        ) 
+        )
 {
     short int config[N_COEFFS_MAX];
     label2config(label, config, n_coeffs);
 
-    if (config[n_coeffs - 1] == 1) {
-        out << "k";
+    if (spectrum == POWERSPECTRUM) {
+        if (config[n_coeffs - 1] == -1) {
+            out << "-k";
+        }
+        else if (config[n_coeffs - 1] == 1) {
+            out << "+k";
+        }
+
+        if (config[n_coeffs - 2] == -1) {
+            out << "-Q" << n_coeffs - 1;
+        }
+        else if (config[n_coeffs - 2] == 1) {
+            out << "+Q" << n_coeffs - 1;
+        }
     }
-    for (int i = 0; i < n_coeffs - 1; ++i) {
+    else if (spectrum == BISPECTRUM) {
+        if (config[n_coeffs - 1] == -1) {
+            out << "-ka";
+        }
+        else if (config[n_coeffs - 1] == 1) {
+            out << "+ka";
+        }
+
+        if (config[n_coeffs - 2] == -1) {
+            out << "-kb" << n_coeffs - 1;
+        }
+        else if (config[n_coeffs - 2] == 1) {
+            out << "+kb" << n_coeffs - 1;
+        }
+
+    }
+
+    for (int i = 0; i < n_coeffs - 2; ++i) {
         if (config[i] == 0) continue;
         else if (config[i] == -1) {
             out << "-Q" << i + 1;
@@ -79,17 +101,18 @@ void print_label(
 
 
 void print_labels(
-        const short int labels[], 
+        const short int labels[],
         size_t size,
-        short int n_coeffs, 
-        short int zero_label, 
+        short int n_coeffs,
+        short int zero_label,
+        Spectrum spectrum,
         std::ostream& out
         )
 {
     out << "(";
     for (size_t i = 0; i < size; ++i) {
         if (labels[i] == zero_label) continue;
-        print_label(labels[i], n_coeffs, out);
+        print_label(labels[i], n_coeffs, spectrum, out);
         out << ", ";
     }
     out << ")";
@@ -104,18 +127,33 @@ short int get_zero_label(short int n_coeffs) {
 
 
 
-bool is_fundamental(short int label, short int n_coeffs, short int n_configs) {
-    // Vector is not fundamental if k is present; this is the case if
-    // label >= N_CONFIGS/2
-    if (label >= n_configs/2) return false;
-
+bool pure_loop_label(short int label, short int n_coeffs, Spectrum spectrum)
+{
     short int coeffs[N_COEFFS_MAX] = {0};
     label2config(label, coeffs, n_coeffs);
 
+    int current = 0;
+    if (spectrum == POWERSPECTRUM) {
+        /* Last label is k, which is not present when the label is pure loop
+         * momentum*/
+        if (coeffs[n_coeffs-1] != 0) {
+            return false;
+        }
+        current = n_coeffs - 2;
+    }
+    else if (spectrum == BISPECTRUM) {
+        /* Two last labels are k_a and k_b, which are not present when the
+         * label is pure loop momentum*/
+        if (coeffs[n_coeffs-1] != 0 || coeffs[n_coeffs - 2] != 0) {
+            return false;
+        }
+        current = n_coeffs - 3;
+    }
+
     short int num_vecs_present = 0;
 
-    // The last coefficient is for k, hence we can skip this (j < N_COEFFS - 1)
-    for (int i = 0; i < n_coeffs - 1; ++i) {
+    /* Go through rest of coefficients and count present momenta */
+    for (int i = current; i >= 0; --i) {
         if (coeffs[i] != 0) num_vecs_present++;
     }
     return (num_vecs_present == 1);
