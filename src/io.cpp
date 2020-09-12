@@ -158,7 +158,7 @@ void write_results(
         k << " (h/Mpc)\n";
     out << "#\n# Description: " << description << "\n";
     out <<    "# Git hash:    " << build_git_sha << "\n";
-    out <<    "# Build time:  " << build_git_time << "\n\n";
+    out <<    "# Build time:  " << build_git_time << "\n";
 
     out << "#\n# Correlations computed (zero-indexed components):\n# ";
     for (auto& el : results.get_correlations()) {
@@ -177,11 +177,11 @@ void write_results(
 
     /* A column consists of 12 characters; 4 whitespaces in between each column */
     
-    out << "#" << setw(15) << "k (h/Mpc)";
+    out << "#\n#" << setw(15) << "k (h/Mpc)";
     for (auto& el : results.get_correlations()) {
         out << setw(11) << "P_lin " << el;
-        out << setw(6) << "P_" << n_loops << "loop " << el;
-        out << setw(6) << "err_" << n_loops << "loop " << el;
+        out << setw(5) << "P_" << n_loops << "loop " << el;
+        out << setw(5) << "err_" << n_loops << "loop " << el;
     }
     out << "\n";
 
@@ -191,6 +191,7 @@ void write_results(
         out << setw(16) << results.non_lin_ps[i];
         out << setw(16) << results.errors[i];
     }
+    out << std::endl;
 
     out.close();
 }

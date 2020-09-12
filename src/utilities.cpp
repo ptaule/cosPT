@@ -84,7 +84,6 @@ void print_label(
         else if (config[n_coeffs - 2] == 1) {
             out << "+kb" << n_coeffs - 1;
         }
-
     }
 
     for (int i = 0; i < n_coeffs - 2; ++i) {
