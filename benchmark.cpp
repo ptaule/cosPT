@@ -21,7 +21,7 @@ static void BM_kernel_index(benchmark::State& state) {
     Spectrum spectrum = POWERSPECTRUM;
     Dynamics dynamics = SPT;
     short int n_loops = 2;
-    Settings settings(n_loops, spectrum, dynamics, 0.1);
+    Settings settings(n_loops, spectrum, dynamics);
 
     short int arguments[] = {13, 7, 1, 5, 3};
 
@@ -42,13 +42,13 @@ static void BM_integrand(benchmark::State& state) {
 
     Vec1D<Correlation> correlations = {{0,0}};
 
-    Settings settings(n_loops, POWERSPECTRUM, SPT, k1);
+    Settings settings(n_loops, POWERSPECTRUM, SPT);
     SumTable sum_table(settings);
 
     Vec1D<PowerSpectrumDiagram> diagrams = construct_ps_diagrams(settings);
 
     Vec1D<IntegrandTables> tables_vec;
-    tables_vec.push_back(IntegrandTables(settings, sum_table, Vec1D<double>()));
+    tables_vec.push_back(IntegrandTables(k1, settings, sum_table, Vec1D<double>()));
 
     IntegrationVariables& vars = tables_vec.at(0).vars;
     vars.magnitudes.at(0) = 0.3;

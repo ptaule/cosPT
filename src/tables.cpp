@@ -24,7 +24,6 @@ Settings::Settings(
         short int n_loops,
         Spectrum spectrum,
         Dynamics dynamics,
-        double k_a,
         short int time_steps,
         short int pre_time_steps,
         short int components,
@@ -32,7 +31,7 @@ Settings::Settings(
         double eta_f,
         double eta_asymp
         ) :
-    dynamics(dynamics), spectrum(spectrum), k_a(k_a), n_loops(n_loops),
+    dynamics(dynamics), spectrum(spectrum), n_loops(n_loops),
     components(components), time_steps(time_steps),
     pre_time_steps(pre_time_steps), eta_i(eta_i), eta_f(eta_f),
     eta_asymp(eta_asymp)
@@ -66,12 +65,11 @@ Settings::Settings(
         short int n_loops,
         Spectrum spectrum,
         Dynamics dynamics,
-        double k_a,
         short int time_steps,
         short int components,
         double eta_i,
         double eta_f
-        ) : Settings(n_loops, spectrum, dynamics, k_a, time_steps, 0, components,
+        ) : Settings(n_loops, spectrum, dynamics, time_steps, 0, components,
             eta_i, eta_f, 0.0)
 {
     if (dynamics != EVOLVE_SPT_IC) {
@@ -84,10 +82,9 @@ Settings::Settings(
 Settings::Settings(
         short int n_loops,
         Spectrum spectrum,
-        Dynamics dynamics,
-        double k_a
+        Dynamics dynamics
         ) :
-    Settings(n_loops, spectrum, dynamics, k_a, 0, 0, 0, 0.0, 0.0, 0.0)
+    Settings(n_loops, spectrum, dynamics, 0, 0, 0, 0.0, 0.0, 0.0)
 {
     if (dynamics != SPT) {
         throw(std::invalid_argument("This constructor is only used for SPT dynamics."));
@@ -212,11 +209,13 @@ Vec1D<double> initialize_eta_grid(const Settings& settings)
 
 
 IntegrandTables::IntegrandTables(
+        double k_a,
+        double k_b,
         const Settings& settings,
         const SumTable& sum_table,
         const Vec1D<double>& eta_grid
         ) :
-    settings(settings), sum_table(sum_table),
+    k_a(k_a), k_b(k_b), settings(settings), sum_table(sum_table),
     vars(IntegrationVariables(settings.n_loops)), eta_grid(eta_grid)
 {
     short int n_coeffs = settings.n_coeffs;
@@ -254,6 +253,22 @@ IntegrandTables::IntegrandTables(
                 kernels.at(i).values.at(j).resize(components);
             }
         }
+    }
+}
+
+
+
+IntegrandTables::IntegrandTables(
+        double k_a,
+        const Settings& settings,
+        const SumTable& sum_table,
+        const Vec1D<double>& eta_grid
+        ) :
+    IntegrandTables(k_a, 0, settings, sum_table, eta_grid)
+{
+    if (settings.spectrum == BISPECTRUM) {
+        throw(std::invalid_argument("IntegrandTables::IntegrandTables(): \
+this constructor can only be used for spetrum = POWERSPECTRUM."));
     }
 }
 

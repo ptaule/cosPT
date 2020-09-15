@@ -17,9 +17,6 @@ class Settings {
         Dynamics dynamics;
         Spectrum spectrum;
 
-        double k_a = 0.0;
-        double k_b = 0.0; // For bispectrum
-
         short int n_loops;
 
         short int n_coeffs;
@@ -40,7 +37,6 @@ class Settings {
                 short int n_loops,
                 Spectrum spectrum,
                 Dynamics dynamics,
-                double k1,
                 short int time_steps,
                 short int pre_time_steps,
                 short int components,
@@ -52,7 +48,6 @@ class Settings {
                 short int n_loops,
                 Spectrum spectrum,
                 Dynamics dynamics,
-                double k1,
                 short int time_steps,
                 short int components,
                 double eta_i,
@@ -61,8 +56,7 @@ class Settings {
         Settings(
                 short int n_loops,
                 Spectrum spectrum,
-                Dynamics dynamics,
-                double k1
+                Dynamics dynamics
                 );
 };
 
@@ -118,6 +112,9 @@ class IntegrandTables {
         void bs_compute_scalar_products();
         void bs_compute_alpha_beta();
     public:
+        double k_a = 0.0;
+        double k_b = 0.0; // For bispectrum
+
         const Settings& settings;
 
         const SumTable& sum_table;
@@ -134,8 +131,16 @@ class IntegrandTables {
         Vec1D<Kernel> kernels;
 
         IntegrandTables(
+                double k_a,
+                double k_b,
                 const Settings& settings,
-                const SumTable& sum_table, 
+                const SumTable& sum_table,
+                const Vec1D<double>& eta_grid
+                );
+        IntegrandTables(
+                double k_a,
+                const Settings& settings,
+                const SumTable& sum_table,
                 const Vec1D<double>& eta_grid
                 );
 
@@ -143,7 +148,7 @@ class IntegrandTables {
         void compute_tables();
 };
 
-Vec1D<double> initialize_eta_grid(const Settings& settings); 
+Vec1D<double> initialize_eta_grid(const Settings& settings);
 
 short int kernel_index_from_arguments(
         const short int arguments[],

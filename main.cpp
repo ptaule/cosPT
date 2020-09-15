@@ -34,6 +34,8 @@ int cuba_integrand(
         );
 
 int main () {
+    double k_a = 1.047129e-01;
+
     short int n_loops = 1;
     const std::string& input_ps_file = "/home/pettertaule/repos/class_public/output/fiducial/newtonian/z1_pk.dat";
     Interpolation1D input_ps(input_ps_file);
@@ -48,9 +50,7 @@ int main () {
 
     cubacores(n_cores, 10000);
 
-    double k_a = 3.467369e-02;
-
-    Settings settings(n_loops, POWERSPECTRUM, SPT, k_a);
+    Settings settings(n_loops, POWERSPECTRUM, SPT);
     SumTable sum_table(settings);
     Vec1D<double> eta_grid;
     Vec1D<IntegrandTables> tables_vec;
