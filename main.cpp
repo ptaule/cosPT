@@ -22,23 +22,6 @@
 
 using std::pow;
 
-class WorkerInput {
-    public:
-        Settings* settings = nullptr;
-        SumTable* sum_table = nullptr;
-        Vec1D<double>* eta_grid = nullptr;
-        Vec1D<IntegrandTables>* tables_vec = nullptr;
-};
-
-
-// init_worker() cannot take arguments in c++, hence global variable
-WorkerInput worker_input;
-
-void init_worker() 
-{
-    worker_input.tables_vec->push_back(IntegrandTables(*worker_input.settings,
-                *worker_input.sum_table, *worker_input.eta_grid));
-}
 
 int cuba_integrand(
         __attribute__((unused)) const int *ndim,
@@ -60,7 +43,7 @@ int main () {
     double cuba_epsabs   = 1e-12;
     double cuba_epsrel   = 1e-4;
     double cuba_maxevals = 1e6;
-    int cuba_verbose     = 0;
+    int cuba_verbose     = 2;
     int n_cores = 4;
 
     cubacores(n_cores, 10000);
@@ -72,13 +55,10 @@ int main () {
     Vec1D<double> eta_grid;
     Vec1D<IntegrandTables> tables_vec;
 
-    worker_input.settings   = &settings;
-    worker_input.sum_table  = &sum_table;
-    worker_input.eta_grid   = &eta_grid;
-    worker_input.tables_vec = &tables_vec;
-
-    // Set routines to be run before process forking (new worker)
-    cubainit(init_worker, nullptr);
+    /* (Master + n_cores) instances of IntegrandTables */
+    for (int i = 0; i < n_cores + 1; ++i) {
+        tables_vec.push_back(IntegrandTables(k_a, settings, sum_table, eta_grid));
+    }
 
     Vec1D<PowerSpectrumDiagram> diagrams = construct_ps_diagrams(settings);
 
