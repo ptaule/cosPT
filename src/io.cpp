@@ -45,7 +45,7 @@ void read_columns_from_file(
 
     while (getline(input, line)) {
         /* Ignore empty lines or lines beginning with # */
-        if (line.empty() || line[0] == '#') {
+        if (line.empty() || line.at(0) == '#') {
             continue;
         }
 
@@ -98,7 +98,7 @@ void read_data_grid_from_file(
 
     while (getline(input, line)) {
         /* Ignore empty lines or lines beginning with # */
-        if (line.empty() || line[0] == '#') {
+        if (line.empty() || line.at(0) == '#') {
             continue;
         }
 
@@ -187,9 +187,9 @@ void write_results(
 
     out << std::setw(16) << k;
     for (size_t i = 0; i < results.get_correlations().size(); ++i) {
-        out << setw(16) << results.lin_ps[i];
-        out << setw(16) << results.non_lin_ps[i];
-        out << setw(16) << results.errors[i];
+        out << setw(16) << results.lin_ps.at(i);
+        out << setw(16) << results.non_lin_ps.at(i);
+        out << setw(16) << results.errors.at(i);
     }
     out << std::endl;
 

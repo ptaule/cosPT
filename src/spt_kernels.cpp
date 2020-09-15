@@ -15,6 +15,11 @@
 #include "../include/tables.hpp"
 #include "../include/spt_kernels.hpp"
 
+/* Turn off vector bounds check if not in debug-mode */
+#if DEBUG == 0
+#define at(x) operator[](x)
+#endif
+
 double spt_term(
         short int m_l,
         short int m_r,
@@ -108,7 +113,7 @@ void partial_SPT_sum(
 
     // Add calculated term for each component to kernel table
     for (int i = 0; i < SPT_COMPONENTS; ++i) {
-        tables.spt_kernels[kernel_index].values[i]
+        tables.spt_kernels.at(kernel_index).values[i]
             += partial_kernel_values[i];
     }
 }
@@ -145,7 +150,7 @@ short int compute_SPT_kernels(
     }
 
     // Alias reference to kernel we are working with for convenience/readability
-    SPTKernel& kernel = tables.spt_kernels[kernel_index];
+    SPTKernel& kernel = tables.spt_kernels.at(kernel_index);
 
     // Check if the SPT kernels are already computed
     if (kernel.computed) return kernel_index;

@@ -14,6 +14,11 @@
 
 #include "../include/combinatorics.hpp"
 
+/* Turn off vector bounds check if not in debug-mode */
+#if DEBUG == 0
+#define at(x) operator[](x)
+#endif
+
 template <class T>
 using Vec1D = std::vector<T>;
 
@@ -46,10 +51,10 @@ bool Combinations::next_combination() {
     /* Go through the rest */
     for (int i = k - 2; i >= 0; --i) {
         /* Element i cannot be greater than (n - (k - i)) */
-        if (combination[i] < (n - k + i)) {
+        if (combination.at(i) < (n - k + i)) {
             /* Increment this element, elements right of this is set in
              * increasing order */
-            std::iota(combination.begin() + i, combination.end(), ++combination[i]);
+            std::iota(combination.begin() + i, combination.end(), ++combination.at(i));
             return true;
         }
     }
@@ -67,17 +72,17 @@ bool Combinations::next_complement() {
      * than previous number, decrement and return */
 
     for (int i = complement.size() - 1; i > 0; --i) {
-        if (complement[i] > (complement[i-1] + 1)) {
+        if (complement.at(i) > (complement.at(i-1) + 1)) {
             /* Decrement this element, elements right of this is set to their
              * maximal value */
-            --complement[i];
+            --complement.at(i);
             std::iota(complement.begin() + i + 1, complement.end(), k + i + 1);
             return true;
         }
     }
     /* First element */
-    if (complement[0] > 0) {
-        --complement[0];
+    if (complement.at(0) > 0) {
+        --complement.at(0);
         std::iota(complement.begin() + 1, complement.end(), k + 1);
         return true;
     }
@@ -136,10 +141,10 @@ void Combinations::rearrange_from_current(
     }
 
     for (int i = 0; i < k; ++i) {
-        *(first + i) = copy[combination[i]];
+        *(first + i) = copy.at(combination.at(i));
     }
     for (int i = k; i < n; ++i) {
-        *(first + i) = copy[complement[i-k]];
+        *(first + i) = copy.at(complement.at(i-k));
     }
 }
 
@@ -155,7 +160,7 @@ void Combinations::rearrange_from_current_combination(
         throw(std::invalid_argument("Combinations::rearrange_from_current_combination(): size != k."));
     }
     for (int i = 0; i < k; ++i) {
-        rearranged[i] = original[combination[i]];
+        rearranged[i] = original[combination.at(i)];
     }
 }
 
@@ -171,9 +176,14 @@ void Combinations::rearrange_from_current_complement(
         throw(std::invalid_argument("Combinations::rearrange_from_current_complement(): size != k."));
     }
     for (int i = 0; i < n - k; ++i) {
-        rearranged[i] = original[complement[i]];
+        rearranged[i] = original[complement.at(i)];
     }
 }
+
+
+
+/* Orderings code is not performance critical, therefore always check bounds */
+#undef at
 
 
 
@@ -203,8 +213,8 @@ Orderings::Orderings(int n, const Vec1D<short int>& group_sizes)
 
     int remaining = n;
     for (size_t i = 0; i < group_sizes.size(); ++i) {
-        combinations_vec.push_back(Combinations(remaining, group_sizes[i]));
-        remaining -= group_sizes[i];
+        combinations_vec.push_back(Combinations(remaining, group_sizes.at(i)));
+        remaining -= group_sizes.at(i);
     }
 }
 

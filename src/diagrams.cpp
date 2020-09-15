@@ -18,18 +18,17 @@
 #include "../include/tables.hpp"
 #include "../include/diagrams.hpp"
 
-
 void PowerSpectrumDiagram::kernel_arguments(
         short int n_coeffs,
         short int a,
         short int b
         )
 {
-    Vec1D<short int>& rearrangement = rearrangements[a];
-    Vec1D<bool>& signs = sign_configs[b];
+    Vec1D<short int>& rearrangement = rearrangements.at(a);
+    Vec1D<bool>& signs = sign_configs.at(b);
 
-    Vec1D<short int>& arguments_l = arg_configs_l[a][b].args;
-    Vec1D<short int>& arguments_r = arg_configs_r[a][b].args;
+    Vec1D<short int>& arguments_l = arg_configs_l.at(a).at(b).args;
+    Vec1D<short int>& arguments_r = arg_configs_r.at(a).at(b).args;
 
     /* First argument : k1 - (±k2) - (±k3) - ... */
     short int config[N_COEFFS_MAX] = {0};
@@ -37,11 +36,11 @@ void PowerSpectrumDiagram::kernel_arguments(
 
     for (short int i = 2; i <= m; ++i) {
         // Note extra minus sign from kernel expression
-        config[rearrangement[i-2]] = (signs[i-2] ? - 1 : 1);
+        config[rearrangement.at(i-2)] = (signs.at(i-2) ? - 1 : 1);
     }
 
-    arguments_l[0] = config2label(config, n_coeffs);
-    arguments_r[0] = config2label(config, n_coeffs);
+    arguments_l.at(0) = config2label(config, n_coeffs);
+    arguments_r.at(0) = config2label(config, n_coeffs);
 
     // Reset config
     std::fill(config, config + n_coeffs, 0);
@@ -54,29 +53,29 @@ void PowerSpectrumDiagram::kernel_arguments(
     // (m-1) entries of rearrangement[]. Note that the signs are opposite of
     // corresponding terms in the first argument
     for (short int i = 2; i <= m; ++i) {
-        config[rearrangement[i-2]] = (signs[i-2] ? 1 : -1);
-        arguments_l[index_l++] = config2label(config, n_coeffs);
-        arguments_r[index_r++] = config2label(config, n_coeffs);
+        config[rearrangement.at(i-2)] = (signs.at(i-2) ? 1 : -1);
+        arguments_l.at(index_l++) = config2label(config, n_coeffs);
+        arguments_r.at(index_r++) = config2label(config, n_coeffs);
         std::fill(config, config + n_coeffs, 0);
     }
 
     // l-loop arguments
     for (short int i = 0; i < l; ++i) {
-        short int loop_momentum_index = rearrangement[i + m - 1];
+        short int loop_momentum_index = rearrangement.at(i + m - 1);
         config[loop_momentum_index] = 1;
-        arguments_l[index_l++] = config2label(config, n_coeffs);
+        arguments_l.at(index_l++) = config2label(config, n_coeffs);
         config[loop_momentum_index] = -1;
-        arguments_l[index_l++] = config2label(config, n_coeffs);
+        arguments_l.at(index_l++) = config2label(config, n_coeffs);
 
         std::fill(config, config + n_coeffs, 0);
     }
     // r-loop arguments
     for (short int i = 0; i < r; ++i) {
-        short int loop_momentum_index = rearrangement[i + m - 1 + l];
+        short int loop_momentum_index = rearrangement.at(i + m - 1 + l);
         config[loop_momentum_index] = 1;
-        arguments_r[index_r++] = config2label(config, n_coeffs);
+        arguments_r.at(index_r++) = config2label(config, n_coeffs);
         config[loop_momentum_index] = -1;
-        arguments_r[index_r++] = config2label(config, n_coeffs);
+        arguments_r.at(index_r++) = config2label(config, n_coeffs);
 
         std::fill(config, config + n_coeffs, 0);
     }
@@ -85,10 +84,10 @@ void PowerSpectrumDiagram::kernel_arguments(
     short int zero_label = get_zero_label(n_coeffs);
     size_t n_kernel_args = static_cast<size_t>(settings.n_kernel_args);
     while (index_l < n_kernel_args) {
-        arguments_l[index_l++] = zero_label;
+        arguments_l.at(index_l++) = zero_label;
     }
     while (index_r < n_kernel_args) {
-        arguments_r[index_r++] = zero_label;
+        arguments_r.at(index_r++) = zero_label;
     }
 
 #if DEBUG >= 1
@@ -102,9 +101,9 @@ void PowerSpectrumDiagram::kernel_arguments(
     }
 #endif
 
-    arg_configs_l[a][b].kernel_index =
+    arg_configs_l.at(a).at(b).kernel_index =
         kernel_index_from_arguments(arguments_l.data(), settings);
-    arg_configs_r[a][b].kernel_index =
+    arg_configs_r.at(a).at(b).kernel_index =
         kernel_index_from_arguments(arguments_r.data(), settings);
 }
 
@@ -115,7 +114,7 @@ void PowerSpectrumDiagram::compute_rearrangements(short int n_loops)
     // Allocate memory for rearrangements
     rearrangements.resize(n_rearrangements);
     for (short int i = 0; i < n_rearrangements; ++i) {
-        rearrangements[i].resize(n_loops);
+        rearrangements.at(i).resize(n_loops);
     }
 
     Vec1D<short int> group_sizes;
@@ -155,14 +154,14 @@ void PowerSpectrumDiagram::compute_sign_flips() {
 
     for (short int i = 0; i < n_sign_configs; ++i) {
         // Signs of k2,...,km can be flipped, hence allocate (m-1)-length array
-        sign_configs[i].resize(m-1);
+        sign_configs.at(i).resize(m-1);
     }
 
     // Loop over possible sign configurations and store in sign table
     for (short int i = 0; i < n_sign_configs; ++i) {
         for (short int j = 0; j < (m-1); ++j) {
             // Add 1 so that the first sign configuration is +1,+1,...,+1
-            sign_configs[i][j] = (i/(int)pow(2,j) + 1) % 2;
+            sign_configs.at(i).at(j) = (i/(int)pow(2,j) + 1) % 2;
         }
     }
 }
@@ -198,12 +197,12 @@ PowerSpectrumDiagram::PowerSpectrumDiagram(
     arg_configs_r.resize(n_rearrangements);
 
     for (short int a = 0; a < n_rearrangements; ++a) {
-        arg_configs_l[a].resize(n_sign_configs);
-        arg_configs_r[a].resize(n_sign_configs);
+        arg_configs_l.at(a).resize(n_sign_configs);
+        arg_configs_r.at(a).resize(n_sign_configs);
 
         for (short int b = 0; b < n_sign_configs; ++b) {
-            arg_configs_l[a][b].args.resize(n_kernel_args);
-            arg_configs_r[a][b].args.resize(n_kernel_args);
+            arg_configs_l.at(a).at(b).args.resize(n_kernel_args);
+            arg_configs_r.at(a).at(b).args.resize(n_kernel_args);
 
             // Initialize arguments and kernel indices for this configuration
             kernel_arguments(settings.n_coeffs, a, b);
@@ -229,12 +228,12 @@ void PowerSpectrumDiagram::print_argument_configuration(
         ) const
 {
     out << COLOR_BLUE;
-    print_labels(arg_configs_l[a][b].args.data(),
-            arg_configs_l[a][b].args.size(), settings.n_coeffs,
+    print_labels(arg_configs_l.at(a).at(b).args.data(),
+            arg_configs_l.at(a).at(b).args.size(), settings.n_coeffs,
             settings.zero_label, settings.spectrum, out);
     out << " ";
-    print_labels(arg_configs_r[a][b].args.data(),
-            arg_configs_r[a][b].args.size(), settings.n_coeffs,
+    print_labels(arg_configs_r.at(a).at(b).args.data(),
+            arg_configs_r.at(a).at(b).args.size(), settings.n_coeffs,
             settings.zero_label, settings.spectrum, out);
     out << COLOR_RESET;
 }
@@ -245,7 +244,7 @@ void BiSpectrumDiagram::compute_rearrangements(short int n_loops) {
     // Allocate memory for rearrangements
     rearrangements.resize(n_rearrangements);
     for (short int i = 0; i < n_rearrangements; ++i) {
-        rearrangements[i].resize(n_loops);
+        rearrangements.at(i).resize(n_loops);
     }
 
     Vec1D<short int> group_sizes;
@@ -305,14 +304,14 @@ void BiSpectrumDiagram::compute_sign_flips(
     /* Allocate memory for sign configurations */
     sign_configs.resize(n_sign_configs);
     for (short int i = 0; i < n_sign_configs; ++i) {
-        sign_configs[i].resize(connecting_lines - 1);
+        sign_configs.at(i).resize(connecting_lines - 1);
     }
 
     /* Loop over possible sign configurations and store */
     for (short int i = 0; i < n_sign_configs; ++i) {
         for (short int j = 0; j < (connecting_lines - 1); ++j) {
             // Add 1 so that the first sign configuration is +1,+1,...,+1
-            sign_configs[i][j] = (i/(int)pow(2,j) + 1) % 2;
+            sign_configs.at(i).at(j) = (i/(int)pow(2,j) + 1) % 2;
         }
     }
 }
@@ -379,9 +378,9 @@ BiSpectrumDiagram::BiSpectrumDiagram(
     arg_configs_c.resize(n_rearrangements);
 
     for (short int a = 0; a < n_rearrangements; ++a) {
-        arg_configs_a[a].resize(n_sign_configs_ab * n_sign_configs_ca);
-        arg_configs_b[a].resize(n_sign_configs_bc * n_sign_configs_ab);
-        arg_configs_c[a].resize(n_sign_configs_ca * n_sign_configs_bc);
+        arg_configs_a.at(a).resize(n_sign_configs_ab * n_sign_configs_ca);
+        arg_configs_b.at(a).resize(n_sign_configs_bc * n_sign_configs_ab);
+        arg_configs_c.at(a).resize(n_sign_configs_ca * n_sign_configs_bc);
 
         /* for (short int b = 0; b < n_sign_configs; ++b) { */
         /*     arg_configs_a[a][b].args.resize(n_kernel_args); */

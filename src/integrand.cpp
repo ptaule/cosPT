@@ -18,29 +18,12 @@
 #include "../include/interpolation.hpp"
 #include "../include/integrand.hpp"
 
+/* Turn off vector bounds check if not in debug-mode */
+#if DEBUG == 0
+#define at(x) operator[](x)
+#endif
 
 using std::size_t;
-
-/* // For debuggin purposes */
-/* __attribute__((unused)) */
-/* void print_evolved_kernel( */
-/*         const short int arguments[], */
-/*         short int index, */
-/*         short int n, */
-/*         const tables_t* tables */
-/*         ) */
-/* { */
-/*     printf("F%d",n); */
-/*     print_labels(arguments, N_KERNEL_ARGS); */
-/*     printf("\n"); */
-/*     for (int i = 0; i < TIME_STEPS; ++i) { */
-/*         for (int j = 0; j < COMPONENTS; ++j) { */
-/*             printf("%.5e\t",tables->kernels[index].values[i][j]); */
-/*         } */
-/*         printf("\n"); */
-/*     } */
-/* } */
-
 
 
 double compute_k1(
@@ -51,19 +34,20 @@ double compute_k1(
         const Vec2D<double>& bare_scalar_products
         )
 {
-    double k1 = bare_scalar_products[n_coeffs - 1][n_coeffs - 1];
+    double k1 = bare_scalar_products.at(n_coeffs - 1).at(n_coeffs - 1);
     for (int i = 2; i <= m; ++i) {
-        int index = rearrangement[i-2];
-        k1 += bare_scalar_products[index][index];
+        int index = rearrangement.at(i-2);
+        k1 += bare_scalar_products.at(index).at(index);
         // Note that elements in the signs-array correspond to rearranged loop
         // momenta, thus we use 'i-2', not 'index' as index here
-        k1 -= 2 * (signs[i-2] ? 1 : -1) * bare_scalar_products[n_coeffs - 1][index];
+        k1 -= 2 * (signs.at(i-2) ? 1 : -1)
+            * bare_scalar_products.at(n_coeffs - 1).at(index);
     }
 
     for (int i = 3; i <= m; ++i) {
         for (int j = 2; j < i; ++j) {
-            k1 += 2 * (signs[i-2] ? 1 : -1) * (signs[j-2] ? 1 : -1) *
-                bare_scalar_products[rearrangement[i-2]][rearrangement[j-2]];
+            k1 += 2 * (signs.at(i-2) ? 1 : -1) * (signs.at(j-2) ? 1 : -1) *
+                bare_scalar_products.at(rearrangement.at(i-2)).at(rearrangement.at(j-2));
         }
     }
 
@@ -82,17 +66,17 @@ inline int heaviside_theta(
     if (m == 1) return 1;
 
     // Heaviside-theta (k1 - k2)
-    if (k1 <= Q_magnitudes[rearrangement[0]]) return 0;
+    if (k1 <= Q_magnitudes.at(rearrangement.at(0))) return 0;
 
 #if DEBUG >= 1
     // Check that the heaviside-theta (k2 - k3) etc. are satisfied by
     // (reparametrized) momenta from CUBA
     for (int i = 3; i <= m; ++i) {
-        if ( Q_magnitudes[rearrangement[i-3]]
-                < Q_magnitudes[rearrangement[i-2]])
+        if ( Q_magnitudes.at(rearrangement.at(i-3))
+                < Q_magnitudes.at(rearrangement.at(i-2)))
             throw(std::logic_error("Heaviside theta: Q" +
-                        std::to_string(rearrangement[i-3] + 1) + " < Q" +
-                        std::to_string(rearrangement[i-2] + 1) + "."));
+                        std::to_string(rearrangement.at(i-3) + 1) + " < Q" +
+                        std::to_string(rearrangement.at(i-2) + 1) + "."));
     }
 #endif
     return m;
@@ -109,11 +93,11 @@ void integrand_term(
         Vec1D<double>& term_results
         )
 {
-    short int kernel_index_l = diagram.arg_configs_l[a][b].kernel_index;
-    short int kernel_index_r = diagram.arg_configs_r[a][b].kernel_index;
+    short int kernel_index_l = diagram.arg_configs_l.at(a).at(b).kernel_index;
+    short int kernel_index_r = diagram.arg_configs_r.at(a).at(b).kernel_index;
 
-    const short int* arguments_l = diagram.arg_configs_l[a][b].args.data();
-    const short int* arguments_r = diagram.arg_configs_r[a][b].args.data();
+    const short int* arguments_l = diagram.arg_configs_l.at(a).at(b).args.data();
+    const short int* arguments_r = diagram.arg_configs_r.at(a).at(b).args.data();
 
     /* Compute kernels */
     compute_SPT_kernels(arguments_l, kernel_index_l, 2*diagram.l + diagram.m, tables);
@@ -123,18 +107,18 @@ void integrand_term(
     // If l != r, there are two diagrams corresponding to l <-> r
     if (diagram.l == diagram.r) {
         for (size_t i = 0; i < correlations.size(); ++i) {
-            term_results[i] = 
-                tables.spt_kernels[kernel_index_l].values[correlations[i].first] *
-                tables.spt_kernels[kernel_index_r].values[correlations[i].second];
+            term_results.at(i) =
+                tables.spt_kernels.at(kernel_index_l).values[correlations.at(i).first] *
+                tables.spt_kernels.at(kernel_index_r).values[correlations.at(i).second];
         }
     } else {
         for (size_t i = 0; i < correlations.size(); ++i) {
-            term_results[i] = 
-                tables.spt_kernels[kernel_index_l].values[correlations[i].first] *
-                tables.spt_kernels[kernel_index_r].values[correlations[i].second]
+            term_results[i] =
+                tables.spt_kernels.at(kernel_index_l).values[correlations.at(i).first] *
+                tables.spt_kernels.at(kernel_index_r).values[correlations.at(i).second]
                 +
-                tables.spt_kernels[kernel_index_l].values[correlations[i].second] *
-                tables.spt_kernels[kernel_index_r].values[correlations[i].first];
+                tables.spt_kernels.at(kernel_index_l).values[correlations.at(i).second] *
+                tables.spt_kernels.at(kernel_index_r).values[correlations.at(i).first];
         }
     }
 }
@@ -142,7 +126,7 @@ void integrand_term(
 
 
 void integrand(
-        const IntegrationInput& input, 
+        const IntegrationInput& input,
         IntegrandTables& tables,
         Vec1D<double>& results
         )
@@ -155,7 +139,7 @@ void integrand(
         std::cout << std::endl;
 #endif
         Vec1D<double> diagram_results(n_correlations, 0);
-        // Loop over momentum rearrangement and sign flips 
+        // Loop over momentum rearrangement and sign flips
         for (short int a = 0; a < dg.n_rearrangements; ++a) {
             for (short int b = 0; b < dg.n_sign_configs; ++b) {
 #if DEBUG >= 2
@@ -164,9 +148,9 @@ void integrand(
                 Vec1D<double> term_results(n_correlations);
 
                 double k1 = compute_k1(dg.m, input.settings.n_coeffs,
-                        dg.rearrangements[a], dg.sign_configs[b],
+                        dg.rearrangements.at(a), dg.sign_configs.at(b),
                         tables.bare_scalar_products);
-                int h_theta = heaviside_theta(dg.m, k1, dg.rearrangements[a],
+                int h_theta = heaviside_theta(dg.m, k1, dg.rearrangements.at(a),
                         tables.vars.magnitudes);
                 if (h_theta == 0) {
 #if DEBUG >= 2
@@ -179,7 +163,7 @@ void integrand(
                     el *= h_theta * input.input_ps.eval(k1);
                 }
                 for (size_t j = 0; j < n_correlations; ++j) {
-                    diagram_results[j] += term_results[j];
+                    diagram_results.at(j) += term_results.at(j);
                 }
 #if DEBUG >= 2
                 for (auto& el : term_results) {
@@ -191,9 +175,9 @@ void integrand(
         }
 
         for (size_t j = 0; j < n_correlations; ++j) {
-            diagram_results[j] *= dg.diagram_factor;
-            diagram_results[j] /= dg.n_rearrangements * dg.n_sign_configs;
-            results[j] += diagram_results[j];
+            diagram_results.at(j) *= dg.diagram_factor;
+            diagram_results.at(j) /= dg.n_rearrangements * dg.n_sign_configs;
+            results.at(j) += diagram_results.at(j);
         }
     }
     for (short int i = 0; i < input.settings.n_loops; ++i) {

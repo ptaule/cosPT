@@ -120,11 +120,10 @@ int main () {
 
     Results results(correlations);
 
-
     for (size_t i = 0; i < correlations.size(); ++i) {
-        results.lin_ps[i]     = input_ps.eval(k_a);
-        results.non_lin_ps[i] = overall_factor * static_cast<double>(integration_results[i]);
-        results.errors[i]     = overall_factor * static_cast<double>(integration_errors[i]);
+        results.lin_ps.at(i)     = input_ps.eval(k_a);
+        results.non_lin_ps.at(i) = overall_factor * static_cast<double>(integration_results.at(i));
+        results.errors.at(i)     = overall_factor * static_cast<double>(integration_errors.at(i));
     }
 
     write_results(
@@ -146,6 +145,10 @@ int main () {
 
 
 
+/* Turn off vector bounds check if not in debug-mode */
+#if DEBUG == 0
+#define at(x) operator[](x)
+#endif
 int cuba_integrand(
         __attribute__((unused)) const int *ndim,
         const cubareal xx[],
@@ -160,7 +163,7 @@ int cuba_integrand(
 
     /*  For thread <*core + 1> (index 0 is reserved for master), we use the */
     /*  IntegrandTables number *core+1 */
-    IntegrandTables& tables = input->tables_vec[*core + 1];
+    IntegrandTables& tables = input->tables_vec.at(*core + 1);
 
     short int n_loops = input->settings.n_loops;
     IntegrationVariables& vars = tables.vars;
@@ -171,16 +174,16 @@ int cuba_integrand(
 
     switch (n_loops) {
         case 1:
-            vars.magnitudes[0] = input->q_min * pow(ratio,xx[0]);
-            vars.cos_theta[0] = xx[1];
+            vars.magnitudes.at(0) = input->q_min * pow(ratio,xx[0]);
+            vars.cos_theta.at(0) = xx[1];
             jacobian = log(ratio) * CUBE(vars.magnitudes[0]);
             break;
         case 2:
-            vars.magnitudes[0] = input->q_min * pow(ratio,xx[0]);
-            vars.magnitudes[1] = input->q_min * pow(ratio,xx[0] * xx[1]);
-            vars.cos_theta[0] = xx[2];
-            vars.cos_theta[1] = xx[3];
-            vars.phi[0] = xx[4] * TWOPI;
+            vars.magnitudes.at(0) = input->q_min * pow(ratio,xx[0]);
+            vars.magnitudes.at(1) = input->q_min * pow(ratio,xx[0] * xx[1]);
+            vars.cos_theta.at(0) = xx[2];
+            vars.cos_theta.at(1) = xx[3];
+            vars.phi.at(0) = xx[4] * TWOPI;
             jacobian = TWOPI * xx[0]
                 * SQUARE(log_ratio)
                 * CUBE(vars.magnitudes[0])
@@ -199,7 +202,8 @@ int cuba_integrand(
     integrand(*input, tables, results);
 
     for (size_t i = 0; i < input->correlations.size(); ++i) {
-        ff[i] = results[i] * jacobian;
+        ff[i] = results.at(i) * jacobian;
     }
     return 0;
 }
+#undef at

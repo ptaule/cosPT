@@ -13,8 +13,12 @@
 #include "../include/utilities.hpp"
 #include "../include/tables.hpp"
 
-using std::size_t;
+/* Turn off vector bounds check if not in debug-mode */
+#if DEBUG == 0
+#define at(x) operator[](x)
+#endif
 
+using std::size_t;
 
 Settings::Settings(
         short int n_loops,
@@ -181,7 +185,7 @@ Vec1D<double> initialize_eta_grid(const Settings& settings)
         // Linear time step (including endpoints)
         double d_eta = std::abs(eta_f - eta_i)/(time_steps - 1);
         for (int i = 0; i < time_steps; ++i) {
-            eta_grid[i] = eta_i + i * d_eta;
+            eta_grid.at(i) = eta_i + i * d_eta;
         }
     }
     else if (dynamics == EVOLVE_ASYMP_IC) {
@@ -191,12 +195,12 @@ Vec1D<double> initialize_eta_grid(const Settings& settings)
         // Between eta_asymp and eta_i
         double d_eta = std::abs(eta_i - eta_asymp)/(pre_time_steps);
         for (int i = 0; i < pre_time_steps; ++i) {
-            eta_grid[i] = eta_asymp + i*d_eta;
+            eta_grid.at(i) = eta_asymp + i*d_eta;
         }
         // Between eta_i and eta_f
         d_eta = std::abs(eta_f - eta_i)/(time_steps - pre_time_steps - 1);
         for (int i = pre_time_steps; i < time_steps; ++i) {
-            eta_grid[i] = eta_i + (i - pre_time_steps) * d_eta;
+            eta_grid.at(i) = eta_i + (i - pre_time_steps) * d_eta;
         }
     }
     else {
@@ -223,16 +227,16 @@ IntegrandTables::IntegrandTables(
 
     bare_scalar_products.resize(n_coeffs);
     for (short int i = 0; i < n_coeffs; ++i) {
-        bare_scalar_products[i].resize(n_coeffs);
+        bare_scalar_products.at(i).resize(n_coeffs);
     }
 
     scalar_products.resize(n_configs);
     alpha.resize(n_configs);
     beta.resize(n_configs);
     for (short int i = 0; i < n_configs; ++i) {
-        scalar_products[i].resize(n_configs);
-        alpha[i].resize(n_configs);
-        beta[i].resize(n_configs);
+        scalar_products.at(i).resize(n_configs);
+        alpha.at(i).resize(n_configs);
+        beta.at(i).resize(n_configs);
     }
 
     if (settings.dynamics == SPT || settings.dynamics == EVOLVE_SPT_IC) {
@@ -245,9 +249,9 @@ IntegrandTables::IntegrandTables(
         kernels.resize(n_kernels);
 
         for (short int i = 0; i < n_kernels; ++i) {
-            kernels[i].values.resize(time_steps);
+            kernels.at(i).values.resize(time_steps);
             for (short int j = 0; j < time_steps; ++j) {
-                kernels[i].values[j].resize(components);
+                kernels.at(i).values.at(j).resize(components);
             }
         }
     }
@@ -275,9 +279,9 @@ void IntegrandTables::reset()
 void IntegrandTables::reset_spt_kernels()
 {
     for (int i = 0; i < settings.n_kernels; ++i) {
-        spt_kernels[i].computed = false;
-        spt_kernels[i].values[0] = 0;
-        spt_kernels[i].values[1] = 0;
+        spt_kernels.at(i).computed = false;
+        spt_kernels.at(i).values[0] = 0;
+        spt_kernels.at(i).values[1] = 0;
     }
 }
 
@@ -286,10 +290,11 @@ void IntegrandTables::reset_spt_kernels()
 void IntegrandTables::reset_kernels()
 {
     for (int i = 0; i < settings.n_kernels; ++i) {
-        kernels[i].computed = false;
+        kernels.at(i).computed = false;
 
         for (short int j = 0; j < settings.time_steps; ++j) {
-            std::fill(kernels[i].values[j].begin(), kernels[i].values[j].end(), 0);
+            std::fill(kernels.at(i).values.at(j).begin(),
+                    kernels.at(i).values.at(j).end(), 0);
         }
     }
 }
@@ -299,53 +304,54 @@ void IntegrandTables::reset_kernels()
 void IntegrandTables::ps_compute_bare_scalar_products()
 {
     short int n_loops = settings.n_loops;
+    short int n_coeffs = settings.n_coeffs;
 
     // Diagonal products correspond to Q1*Q1, etc.
     for (int i = 0; i < n_loops; ++i) {
-        bare_scalar_products[i][i] = vars.magnitudes[i] * vars.magnitudes[i];
+        bare_scalar_products.at(i).at(i) =
+            vars.magnitudes.at(i) * vars.magnitudes.at(i);
     }
-    double k_a = settings.k_a;
-    bare_scalar_products[n_loops][n_loops] = k_a*k_a;
+    bare_scalar_products.at(n_coeffs - 1).at(n_coeffs - 1) = k_a * k_a;
 
     // Products involving k and Q_i has the form k*Q_i*cos(theta_i)
-    for (int i = 0; i < n_loops; ++i) {
-        double value = k_a * vars.magnitudes[i] * vars.cos_theta[i];
-        bare_scalar_products[n_loops][i] = value;
-        bare_scalar_products[i][n_loops] = value;
+    for (int i = 0; i < n_coeffs - 1; ++i) {
+        double value = k_a * vars.magnitudes.at(i) * vars.cos_theta.at(i);
+        bare_scalar_products.at(n_coeffs - 1).at(i) = value;
+        bare_scalar_products.at(i).at(n_coeffs - 1) = value;
     }
 
     if (n_loops > 1) {
         // Compute Q_1 * Q_i
         // (This is a special case since phi_1 is chosen to be zero.)
-        double cos_theta_1 = vars.cos_theta[0];
+        double cos_theta_1 = vars.cos_theta.at(0);
         double sin_theta_1 = sqrt(1 - pow(cos_theta_1,2));
-        double Q_1 = vars.magnitudes[0];
+        double Q_1 = vars.magnitudes.at(0);
         for (int i = 1; i < n_loops; ++i) {
-            double sin_theta_i = sqrt(1 - pow(vars.cos_theta[i],2));
+            double sin_theta_i = sqrt(1 - pow(vars.cos_theta.at(i),2));
             double value =
-                sin_theta_1 * cos(vars.phi[i-1]) * sin_theta_i
-                + cos_theta_1 * vars.cos_theta[i];
-            value *= Q_1 * vars.magnitudes[i];
+                sin_theta_1 * cos(vars.phi.at(i-1)) * sin_theta_i
+                + cos_theta_1 * vars.cos_theta.at(i);
+            value *= Q_1 * vars.magnitudes.at(i);
 
-            bare_scalar_products[i][0] = value;
-            bare_scalar_products[0][i] = value;
+            bare_scalar_products.at(i).at(0) = value;
+            bare_scalar_products.at(0).at(i) = value;
         }
 
         // Compute Q_i * Q_j for {i,j} != 1
         // (Q_i symbol is 1-indexed while arrays are 0-indexed)
         for (int i = 1; i < n_loops; ++i) {
             for (int j = 1; j < i; ++j) {
-                double sin_theta_i = sqrt(1 - pow(vars.cos_theta[i],2));
-                double sin_theta_j = sqrt(1 - pow(vars.cos_theta[j],2));
+                double sin_theta_i = sqrt(1 - pow(vars.cos_theta.at(i),2));
+                double sin_theta_j = sqrt(1 - pow(vars.cos_theta.at(j),2));
 
                 double value =
-                    cos(vars.phi[i-1]) * sin_theta_i * cos(vars.phi[j-1]) * sin_theta_j
-                    + sin(vars.phi[i-1]) * sin_theta_i * sin(vars.phi[j-1]) * sin_theta_j
-                    + vars.cos_theta[i] * vars.cos_theta[j];
+                    cos(vars.phi.at(i-1)) * sin_theta_i * cos(vars.phi.at(j-1)) * sin_theta_j
+                    + sin(vars.phi.at(i-1)) * sin_theta_i * sin(vars.phi.at(j-1)) * sin_theta_j
+                    + vars.cos_theta.at(i) * vars.cos_theta.at(j);
 
-                value *= vars.magnitudes[i] * vars.magnitudes[j];
-                bare_scalar_products[i][j] = value;
-                bare_scalar_products[j][i] = value;
+                value *= vars.magnitudes.at(i) * vars.magnitudes.at(j);
+                bare_scalar_products.at(i).at(j) = value;
+                bare_scalar_products.at(j).at(i) = value;
             }
         }
     }
@@ -373,15 +379,15 @@ void IntegrandTables::ps_compute_scalar_products()
             for (int i = 0; i < n_coeffs; ++i) {
                 for (int j = 0; j < n_coeffs; ++j) {
                     product_value += a_coeffs[i] * b_coeffs[j]
-                        * bare_scalar_products[i][j];
+                        * bare_scalar_products.at(i).at(j);
                 }
             }
             if (a == b) {
-                scalar_products[a][a] = product_value;
+                scalar_products.at(a).at(a) = product_value;
             }
             else {
-                scalar_products[a][b] = product_value;
-                scalar_products[b][a] = product_value;
+                scalar_products.at(a).at(b) = product_value;
+                scalar_products.at(b).at(a) = product_value;
             }
         }
     }
@@ -396,8 +402,8 @@ void IntegrandTables::ps_compute_alpha_beta()
         for (int b = 0; b < n_configs; ++b) {
             // Special case when a == b
             if (a == b) {
-                alpha[a][b] = 2.0;
-                beta[a][b] = 2.0;
+                alpha.at(a).at(b) = 2.0;
+                beta.at(a).at(b) = 2.0;
                 continue;
             }
 
@@ -407,13 +413,13 @@ void IntegrandTables::ps_compute_alpha_beta()
             // If the first argument is the zero-vector, alpha and beta remains 0
             // If the second argument is the zero-vector, beta remains 0
             if (a != settings.zero_label) {
-                double product_ab = scalar_products[a][b];
-                double product_aa = scalar_products[a][a];
+                double product_ab = scalar_products.at(a).at(b);
+                double product_aa = scalar_products.at(a).at(a);
 
                 alpha_val = 1 + product_ab/product_aa;
 
                 if (b != settings.zero_label) {
-                    double product_bb = scalar_products[b][b];
+                    double product_bb = scalar_products.at(b).at(b);
 
                     beta_val = product_ab / 2.0
                         * ( 1.0 / product_aa + 1.0 / product_bb
@@ -421,8 +427,8 @@ void IntegrandTables::ps_compute_alpha_beta()
                           );
                 }
             }
-            alpha[a][b] = alpha_val;
-            beta[a][b] = beta_val;
+            alpha.at(a).at(b) = alpha_val;
+            beta.at(a).at(b) = beta_val;
         }
     }
 }
