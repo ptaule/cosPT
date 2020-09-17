@@ -25,8 +25,8 @@ LDFLAGS += $(LDFLAGS_GSL) $(LDFLAGS_CUBA)
 LDLIBS += $(LDLIBS_GSL) $(LDLIBS_CUBA)
 
 all:       CXXFLAGS += -O3
-debug:     CPPFLAGS += -DDEBUG=2
-debug:     CXXFLAGS += -O0 -g
+debug:     CPPFLAGS += -D_GLIBCXX_DEBUG -DDEBUG=2
+debug:     CXXFLAGS += -g3 -Og
 benchmark: CXXFLAGS += -O3
 benchmark: LDLIBS   += -lbenchmark -pthread
 profile:   CXXFLAGS += -O3 -fno-omit-frame-pointer
