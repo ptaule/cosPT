@@ -65,7 +65,6 @@ enum Dynamics {SPT, EVOLVE_SPT_IC, EVOLVE_ASYMP_IC};
 void label2config(short int label, short int config[], std::size_t size);
 short int config2label(const short int config[], std::size_t size);
 
-
 void print_label(
         short int label, 
         short int n_coeffs, 
@@ -84,6 +83,30 @@ void print_labels(
 
 short int get_zero_label(short int n_coeffs);
 bool pure_loop_label( short int label, short int n_coeffs, Spectrum spectrum);
-bool unique_elements(const short int array[], std::size_t length, short int skip);
+
+
+
+template <typename T>
+void change_sign(const T array[], T result[], std::size_t size) {
+    for (std::size_t i = 0; i < size; ++i) {
+        result[i] = -array[i];
+    }
+}
+
+
+
+template <typename T>
+/* Are there duplicate elements of the array? Yes, return true; */
+/* no, return false. Do not consider elements equal to skip. */
+bool unique_elements(const T array[], size_t size, T skip) {
+    for (size_t i = 0; i < size; ++i) {
+        T val = array[i];
+        if (val == skip) continue;
+        for (size_t j = i + 1; j < size; ++j) {
+            if (array[j] == val) return false;
+        }
+    }
+    return true;
+}
 
 #endif /* ifndef UTILITIES_HPP */

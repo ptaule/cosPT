@@ -82,7 +82,12 @@ class BiSpectrumDiagram {
 
         /* Computes argument configurations if rearrangement and sign
          * configurations are set */
-        void kernel_arguments(short int n_loops, short int a, short int b);
+        void kernel_arguments(
+                short int n_coeffs,
+                short int i,
+                short int j,
+                short int overall_loop_idx
+                );
     public:
         short int n_ab, n_bc, n_ca;
         short int n_a, n_b, n_c;
@@ -102,11 +107,12 @@ class BiSpectrumDiagram {
         Vec2D<bool> sign_configs_bc;
         Vec2D<bool> sign_configs_ca;
 
-        /* Argument configuration for each rearrangement and sign setup
-         * (n_rearrangements x n_sign_configs possibilities) */
-        Vec2D<ArgumentConfiguration> arg_configs_a;
-        Vec2D<ArgumentConfiguration> arg_configs_b;
-        Vec2D<ArgumentConfiguration> arg_configs_c;
+        /* Argument configuration for each rearrangement, sign setup and
+         * (potential) overall loop assosiation
+         * (n_rearrangements x n_sign_configs x 3 possibilities) */
+        Vec3D<ArgumentConfiguration> arg_configs_a;
+        Vec3D<ArgumentConfiguration> arg_configs_b;
+        Vec3D<ArgumentConfiguration> arg_configs_c;
 
         BiSpectrumDiagram(
                 const Settings& settings,

@@ -119,6 +119,14 @@ void print_labels(
 
 
 
+void change_sign(short int config[], std::size_t size) {
+    for (size_t i = 0; i < size; ++i) {
+        config[i] *= -1;
+    }
+}
+
+
+
 short int get_zero_label(short int n_coeffs) {
     const short int coeffs[N_COEFFS_MAX] = {0};
     return config2label(coeffs, n_coeffs);

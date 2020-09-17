@@ -47,15 +47,21 @@ Settings::Settings(
         zero_label = get_zero_label(n_coeffs);
 
         /* Define block size for kernel indexing. A block consists of all */
-        /* fundamental vector argument combinations. */
-        kernel_index_block_size = pow(4, n_loops);
+        /* single loop label argument combinations. */
+        single_loop_block_size = pow(4, n_loops);
     }
     else if (spectrum == BISPECTRUM) {
         n_coeffs = n_loops + 2;
         n_configs = pow(3, n_coeffs);
-        /* n_kernels = (n_configs/2 + 1) * pow(4, n_loops); */
+        n_kernels = pow(n_configs - pow(3, n_loops), 2) * pow(4, n_loops);
         n_kernel_args = 2 * n_loops + 2;
         zero_label = get_zero_label(n_coeffs);
+
+        single_loop_block_size = pow(4, n_loops);
+        /* Max/min single_loops labels */
+        single_loop_label_min = 13 * n_configs / 27;
+        single_loop_label_max = 14 * n_configs / 27;
+        first_composite_block_size = 26 * n_configs/27 * single_loop_block_size;
     }
 }
 
@@ -476,20 +482,21 @@ short int kernel_index_from_arguments(
 {
     short int pow2[] = {1,2,4,8,16,32,64,128};
 
-    short int n_coeffs = settings.n_coeffs;
-    short int n_configs = settings.n_configs;
-    short int zero_label = settings.zero_label;
-    short int n_kernel_args = settings.n_kernel_args;
-    short int kernel_index_block_size = settings.kernel_index_block_size;
+    short int n_coeffs               = settings.n_coeffs;
+    short int n_configs              = settings.n_configs;
+    short int zero_label             = settings.zero_label;
+    short int n_kernel_args          = settings.n_kernel_args;
+    short int single_loop_block_size = settings.single_loop_block_size;
 
     // In DEBUG-mode, check that non-zero arguments (zero_label) are unique
 #if DEBUG >= 1
-    if (!unique_elements(arguments, n_kernel_args,zero_label))
+    if (!unique_elements(arguments, n_kernel_args, zero_label))
         throw(std::logic_error("kernel_index_from_arguments(): duplicate vector arguments passed."));
     short int n_k_labels = 0;
 #endif
 
     short int index = 0;
+    short int k_threshold = 2 * n_configs/3;
 
     for (int i = 0; i < n_kernel_args; ++i) {
         // First, check if argument is a zero vector
@@ -498,9 +505,8 @@ short int kernel_index_from_arguments(
         // Argument is a k-type vector (i.e. on the form k + c_i Q_i) if k is
         // present. In our vector-label convention, k is the last coefficient,
         // hence +k is present if label >= 2 * n_configs/3
-        short int k_threshold = 2 * n_configs/3;
         if (arguments[i] >= k_threshold) {
-            index += (arguments[i] - k_threshold + 1) * kernel_index_block_size;
+            index += (arguments[i] - k_threshold + 1) * single_loop_block_size;
 #if DEBUG >= 1
             /* Count k-type labels */
             ++n_k_labels;
@@ -536,6 +542,84 @@ short int kernel_index_from_arguments(
 #if DEBUG >= 1
     if (n_k_labels > 1)
         throw(std::logic_error("kernel_index_from_arguments(): more than one argument is of k-type."));
+#endif
+
+    return index;
+}
+
+
+
+short int bs_kernel_index_from_arguments(
+        const short int arguments[],
+        const Settings& settings
+        )
+{
+    short int pow2[] = {1,2,4,8,16,32,64,128};
+
+    short int n_coeffs                   = settings.n_coeffs;
+    short int n_configs                  = settings.n_configs;
+    short int zero_label                 = settings.zero_label;
+    short int n_kernel_args              = settings.n_kernel_args;
+    short int single_loop_block_size     = settings.single_loop_block_size;
+
+    short int single_loop_label_min      = settings.single_loop_label_min;
+    short int single_loop_label_max      = settings.single_loop_label_max;
+    short int first_composite_block_size = settings.first_composite_block_size;
+
+    // In DEBUG-mode, check that non-zero arguments (zero_label) are unique
+#if DEBUG >= 1
+    if (!unique_elements(arguments, n_kernel_args, zero_label))
+        throw(std::logic_error("kernel_index_from_arguments(): duplicate vector arguments passed."));
+    short int n_k_labels = 0;
+#endif
+
+    short int index = 0;
+
+    /* Counter of composite arguments, i.e. not single loop momenta */
+    int n_composite = 0;
+
+    for (int i = 0; i < n_kernel_args; ++i) {
+        // First, check if argument is a zero vector
+        if (arguments[i] == zero_label) continue;
+
+        // Argument is not single pure loop if label < pure_single_loop_min or
+        // label >= pure_single_loop_max */
+        if (arguments[i] < single_loop_label_min) {
+            short int block = n_composite > 0 ? single_loop_block_size : first_composite_block_size;
+            index += (arguments[i] + 1) * block;
+
+            ++n_composite;
+        }
+        else if (arguments[i] >= single_loop_label_max) {
+            short int block = n_composite > 0 ? single_loop_block_size : first_composite_block_size;
+            index += (arguments[i] - n_configs/27 + 1) * block;
+
+            ++n_composite;
+        }
+        else {
+#if DEBUG >= 1
+            /* Check that this is in fact a single loop label */
+            if(!pure_loop_label(arguments[i], n_coeffs, settings.spectrum))
+                throw(std::logic_error("kernel_index_from_arguments(): argument is neither 0, single loop or composite."));
+#endif
+
+            /* Convert argument_label to coefficient array */
+            short int coeffs[N_COEFFS_MAX] = {0};
+            label2config(arguments[i], coeffs, n_coeffs);
+
+            /* The last coefficient is for k, hence we can skip this */
+            for (int j = 0; j < n_coeffs - 1; ++j) {
+                /* if - Q_j is present, add 2^(2j + 0/2) = 2^(2j)   */
+                /* if + Q_j is present, add 2^(2j + 2/2) = 2^(2j+1) */
+                if (coeffs[j] != 0) {
+                    index += pow2[2 * j + (coeffs[j] + 1)/2];
+                }
+            }
+        }
+    }
+#if DEBUG >= 1
+    if (n_composite > 2)
+        throw(std::logic_error("kernel_index_from_arguments(): more than one argument is of composite type."));
 #endif
 
     return index;

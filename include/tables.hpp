@@ -24,7 +24,11 @@ class Settings {
         short int n_kernels;
         short int n_kernel_args;
         short int zero_label;
-        short int kernel_index_block_size;
+        short int single_loop_block_size;
+
+        short int single_loop_label_min = 0;      /* Bispectrum */
+        short int single_loop_label_max = 0;      /* Bispectrum */
+        short int first_composite_block_size = 0; /* Bispectrum */
 
         short int components     = 0;
         short int time_steps     = 0;
