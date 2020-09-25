@@ -33,11 +33,13 @@ int cuba_integrand(
         const int *core
         );
 
+
+
 int main () {
     double k_a = 1.047129e-01;
 
     short int n_loops = 1;
-    const std::string& input_ps_file = "/home/pettertaule/repos/class_public/output/fiducial/newtonian/z1_pk.dat";
+    const std::string input_ps_file = "/home/pettertaule/repos/class_public/output/fiducial/newtonian/z1_pk.dat";
     Interpolation1D input_ps(input_ps_file);
 
     Vec1D<Correlation> correlations = {{0,0}};
@@ -91,7 +93,7 @@ int main () {
 #define CUBA_NMIN 2
 #define CUBA_FLATNESS 25.
     Suave(3 * n_loops - 1, correlations.size(), (integrand_t)cuba_integrand,
-            &input, CUBA_NVEC, cuba_epsrel, cuba_epsabs, 
+            &input, CUBA_NVEC, cuba_epsrel, cuba_epsabs,
             (cuba_verbose | CUBA_LAST | CUBA_RETAIN_STATEFILE), CUBA_SEED,
             CUBA_MINEVAL, cuba_maxevals, CUBA_NNEW, CUBA_NMIN, CUBA_FLATNESS,
             nullptr, CUBA_SPIN, &nregions, &neval, &fail,
