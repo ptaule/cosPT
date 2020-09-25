@@ -111,9 +111,8 @@ void PowerSpectrumDiagram::kernel_arguments(
 void PowerSpectrumDiagram::compute_rearrangements(short int n_loops)
 {
     // Allocate memory for rearrangements
-    rearrangements.resize(n_rearrangements);
-    for (short int i = 0; i < n_rearrangements; ++i) {
-        rearrangements.at(i).resize(n_loops);
+    for (auto& rearr : rearrangements) {
+        rearr.resize(n_loops);
     }
 
     Vec1D<short int> group_sizes;
@@ -136,29 +135,20 @@ void PowerSpectrumDiagram::compute_rearrangements(short int n_loops)
         rearrangements.at(counter) = orderings.get_current();
         ++counter;
     } while (orderings.next());
-
-    if (counter != n_rearrangements) {
-        throw(std::logic_error("PowerSpectrumDiagram::compute_rearrangements(): Created "
-                    + std::to_string(counter) +
-                    " rearrangements, which does not equal n_rearrangements = "
-                    + std::to_string(n_rearrangements) + "."));
-    }
 }
 
 
 
 void PowerSpectrumDiagram::compute_sign_flips() {
     // Allocate memory for sign configurations
-    sign_configs.resize(n_sign_configs);
-
-    for (short int i = 0; i < n_sign_configs; ++i) {
+    for (auto& sign_config : sign_configs) {
         // Signs of k2,...,km can be flipped, hence allocate (m-1)-length array
-        sign_configs.at(i).resize(m-1);
+        sign_config.resize(m-1);
     }
 
     // Loop over possible sign configurations and store in sign table
-    for (short int i = 0; i < n_sign_configs; ++i) {
-        for (short int j = 0; j < (m-1); ++j) {
+    for (size_t i = 0; i < sign_configs.size(); ++i) {
+        for (size_t j = 0; j < static_cast<size_t>(m-1); ++j) {
             // Add 1 so that the first sign configuration is +1,+1,...,+1
             sign_configs.at(i).at(j) = (i/(int)pow(2,j) + 1) % 2;
         }
@@ -184,22 +174,24 @@ PowerSpectrumDiagram::PowerSpectrumDiagram(
     diagram_factor = (gsl_sf_fact(2*l + m) * gsl_sf_fact(2*r + m)) /
         (pow(2,l+r) * gsl_sf_fact(l) * gsl_sf_fact(r) * gsl_sf_fact(m));
 
-    n_rearrangements = gsl_sf_fact(n_loops) /
-        (gsl_sf_fact(m-1) * gsl_sf_fact(l) * gsl_sf_fact(r));
-    n_sign_configs = pow(2,m-1);
+    rearrangements.resize(
+            gsl_sf_fact(n_loops) /
+            (gsl_sf_fact(m-1) * gsl_sf_fact(l) * gsl_sf_fact(r))
+            );
+    sign_configs.resize(pow(2,m-1));
 
     compute_rearrangements(n_loops);
     compute_sign_flips();
 
     // Allocate memory
-    arg_configs_l.resize(n_rearrangements);
-    arg_configs_r.resize(n_rearrangements);
+    arg_configs_l.resize(rearrangements.size());
+    arg_configs_r.resize(rearrangements.size());
 
-    for (short int a = 0; a < n_rearrangements; ++a) {
-        arg_configs_l.at(a).resize(n_sign_configs);
-        arg_configs_r.at(a).resize(n_sign_configs);
+    for (size_t a = 0; a < rearrangements.size(); ++a) {
+        arg_configs_l.at(a).resize(sign_configs.size());
+        arg_configs_r.at(a).resize(sign_configs.size());
 
-        for (short int b = 0; b < n_sign_configs; ++b) {
+        for (size_t b = 0; b < sign_configs.size(); ++b) {
             arg_configs_l.at(a).at(b).args.resize(n_kernel_args);
             arg_configs_r.at(a).at(b).args.resize(n_kernel_args);
 
@@ -679,8 +671,8 @@ std::ostream& operator<<(std::ostream& out, const PowerSpectrumDiagram& diagram)
     diagram.print_diagram_tags(out);
     out << std::endl;
 
-    for (short int a = 0; a < diagram.n_rearrangements; ++a) {
-        for (short int b = 0; b < diagram.n_sign_configs; ++b) {
+    for (size_t a = 0; a < diagram.rearrangements.size(); ++a) {
+        for (size_t b = 0; b < diagram.sign_configs.size(); ++b) {
             out << "\t";
             diagram.print_argument_configuration(out, a, b);
             out << std::endl;

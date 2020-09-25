@@ -140,8 +140,8 @@ void integrand(
 #endif
         Vec1D<double> diagram_results(n_correlations, 0);
         // Loop over momentum rearrangement and sign flips
-        for (short int a = 0; a < dg.n_rearrangements; ++a) {
-            for (short int b = 0; b < dg.n_sign_configs; ++b) {
+        for (size_t a = 0; a < dg.rearrangements.size(); ++a) {
+            for (size_t b = 0; b < dg.sign_configs.size(); ++b) {
 #if DEBUG >= 2
                 dg.print_argument_configuration(std::cout, a, b);
 #endif
@@ -176,7 +176,7 @@ void integrand(
 
         for (size_t j = 0; j < n_correlations; ++j) {
             diagram_results.at(j) *= dg.diagram_factor;
-            diagram_results.at(j) /= dg.n_rearrangements * dg.n_sign_configs;
+            diagram_results.at(j) /= dg.rearrangements.size() * dg.sign_configs.size();
             results.at(j) += diagram_results.at(j);
         }
     }

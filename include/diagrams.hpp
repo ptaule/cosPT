@@ -37,8 +37,6 @@ class PowerSpectrumDiagram {
 
         short int diagram_factor;     /* Topological multiplicative diagram factor */
 
-        short int n_rearrangements;   /* Number of rearrangements of loop momenta  */
-        short int n_sign_configs;     /* Number of sign flips                      */
         /* Table of rearrangements */
         Vec2D<short int> rearrangements;
         /* Table of sign flips, true <-> +1, false <-> -1 */
