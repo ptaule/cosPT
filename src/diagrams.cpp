@@ -280,63 +280,119 @@ void BiSpectrumDiagram::compute_rearrangements(short int n_loops) {
         rearrangements.at(counter) = orderings.get_current();
         ++counter;
     } while (orderings.next());
-
-    if (counter != n_rearrangements) {
-        throw(std::logic_error("PowerSpectrumDiagram::compute_rearrangements(): Created "
-                    + std::to_string(counter) +
-                    " rearrangements, which does not equal n_rearrangements = "
-                    + std::to_string(n_rearrangements) + "."));
-    }
 }
 
 
 
-void BiSpectrumDiagram::compute_sign_flips(
-        short int connecting_lines,
-        short int n_sign_configs,
-        Vec2D<bool> sign_configs
-        )
+Vec2D<bool> BiSpectrumDiagram::connecting_line_sign_flips(
+        short int n_connecting_loops
+        ) const
 {
-    if (connecting_lines == 0) {
-        return;
+    if (n_connecting_loops == 0) {
+        return Vec2D<bool>();
     }
+    short int n_sign_configs = pow(2, n_connecting_loops);
+
+    Vec2D<bool> sign_configs;
+
     /* Allocate memory for sign configurations */
     sign_configs.resize(n_sign_configs);
     for (short int i = 0; i < n_sign_configs; ++i) {
-        sign_configs.at(i).resize(connecting_lines - 1);
+        sign_configs.at(i).resize(n_connecting_loops);
     }
 
     /* Loop over possible sign configurations and store */
     for (short int i = 0; i < n_sign_configs; ++i) {
-        for (short int j = 0; j < (connecting_lines - 1); ++j) {
+        for (short int j = 0; j < n_connecting_loops; ++j) {
             // Add 1 so that the first sign configuration is +1,+1,...,+1
             sign_configs.at(i).at(j) = (i/(int)pow(2,j) + 1) % 2;
         }
     }
+    return sign_configs;
+}
+
+
+
+Vec2D<bool> BiSpectrumDiagram::compute_sign_flips(
+        const Vec2D<bool>& sign_configs_ab,
+        const Vec2D<bool>& sign_configs_bc,
+        const Vec2D<bool>& sign_configs_ca
+        )
+{
+    short int n_connecting_loops = n_connecting_loops_ab +
+        n_connecting_loops_bc + n_connecting_loops_ca;
+
+    short int n_sign_configs = pow(2, n_connecting_loops);
+
+    Vec2D<bool> sign_configs;
+
+    /* Allocate memory for sign configurations */
+    sign_configs.resize(n_sign_configs);
+    for (short int i = 0; i < n_sign_configs; ++i) {
+        sign_configs.at(i).resize(n_connecting_loops);
+    }
+
+    /* Combine sign_configs_ab,... into sign_configs */
+    size_t idx = 0;
+    size_t i = 0;
+    do {
+        size_t j = 0;
+        do {
+            size_t k = 0;
+            do {
+                if (!sign_configs_ab.empty()) {
+                    std::copy(sign_configs_ab.at(i).begin(),
+                            sign_configs_ab.at(i).end(),
+                            sign_configs.at(idx).begin());
+                }
+                if (!sign_configs_bc.empty()) {
+                    size_t shift = n_connecting_loops_ab;
+                    std::copy(sign_configs_bc.at(j).begin(),
+                            sign_configs_bc.at(j).end(),
+                            sign_configs.at(idx).begin() + shift);
+                }
+                if (!sign_configs_ca.empty()) {
+                    size_t shift = n_connecting_loops_ab + n_connecting_loops_bc;
+                    std::copy(sign_configs_ca.at(k).begin(),
+                            sign_configs_ca.at(k).end(),
+                            sign_configs.at(idx).begin() + shift);
+                }
+                idx++;
+            } while (++k < sign_configs_ca.size());
+        } while (++j < sign_configs_bc.size());
+    } while (++i < sign_configs_ab.size());
+
+    return sign_configs;
 }
 
 
 
 void BiSpectrumDiagram::kernel_arguments(
         short int n_coeffs,
-        short int i, /* Rearrangement index */
-        short int j, /* Sign config index */
+        short int rearr_idx, /* Rearrangement index */
+        short int sign_idx, /* Sign config index */
         short int overall_loop_idx /* Overall loop assosiation index */
         )
 {
-    Vec1D<short int>& rearrangement = rearrangements.at(i);
+    Vec1D<short int>& rearrangement = rearrangements.at(rearr_idx);
 
-    short int rearr_idx = 0; /* How many loop momenta have been assigned */
+    short int rearr_counter = 0; /* How many loop momenta have been assigned */
     short int k_a_idx = n_coeffs - 1;
     short int k_b_idx = n_coeffs - 2;
 
-    Vec1D<bool>& signs_ab = sign_configs_ab.at(j);
-    Vec1D<bool>& signs_bc = sign_configs_bc.at(j);
-    Vec1D<bool>& signs_ca = sign_configs_ca.at(j);
+    Vec1D<bool> signs = sign_configs.at(sign_idx);
+    Vec1D<bool> signs_ab(signs.begin(), signs.begin() + n_connecting_loops_ab);
+    Vec1D<bool> signs_bc(signs.begin() + n_connecting_loops_ab,
+            signs.begin() + n_connecting_loops_ab + n_connecting_loops_bc);
+    Vec1D<bool> signs_ca(signs.begin() + n_connecting_loops_ab + n_connecting_loops_bc,
+            signs.end());
 
-    Vec1D<short int>& args_a = arg_configs_a.at(i).at(j).args;
-    Vec1D<short int>& args_b = arg_configs_b.at(i).at(j).args;
-    Vec1D<short int>& args_c = arg_configs_c.at(i).at(j).args;
+    Vec1D<short int>& args_a =
+        arg_configs_a.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args;
+    Vec1D<short int>& args_b =
+        arg_configs_b.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args;
+    Vec1D<short int>& args_c =
+        arg_configs_c.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args;
 
     /* How many arguments have been assigned to the kernels a,b,c? */
     short int args_a_idx = 0;
@@ -359,7 +415,7 @@ void BiSpectrumDiagram::kernel_arguments(
 
     if (overall_loop) {
         /* Add (rearranged) first loop momenta to all connecting lines */
-        short int loop_idx = rearrangement.at(rearr_idx++);
+        short int loop_idx = rearrangement.at(rearr_counter++);
         config_ab[loop_idx] = 1;
         config_bc[loop_idx] = 1;
         config_ca[loop_idx] = 1;
@@ -403,11 +459,11 @@ got overall_loop_idx > 2."));
 
     /* Add connecting loops */
     for (int n = 2; n <= n_ab; ++n) {
-        short int loop_idx = rearrangement.at(rearr_idx++);
+        short int loop_idx = rearrangement.at(rearr_counter++);
 
         /* Opposite sign for main connecting loop */
-        config_ab[loop_idx]     = (sign_configs_ab.at(j).at(n - 2)) ? -1 : 1;
-        config_single[loop_idx] = (sign_configs_ab.at(j).at(n - 2)) ? 1 : -1;
+        config_ab[loop_idx]     = (signs_ab.at(n - 2)) ? -1 : 1;
+        config_single[loop_idx] = (signs_ab.at(n - 2)) ? 1 : -1;
 
         args_b.at(args_b_idx++) = config2label(config_single, n_coeffs);
 
@@ -423,10 +479,10 @@ got overall_loop_idx > 2."));
     }
 
     for (int n = 2; n <= n_bc; ++n) {
-        short int loop_idx = rearrangement.at(rearr_idx++);
+        short int loop_idx = rearrangement.at(rearr_counter++);
 
-        config_bc[loop_idx]     = (sign_configs_bc.at(j).at(n - 2)) ? -1 : 1;
-        config_single[loop_idx] = (sign_configs_bc.at(j).at(n - 2)) ? 1 : -1;
+        config_bc[loop_idx]     = (signs_bc.at(n - 2)) ? -1 : 1;
+        config_single[loop_idx] = (signs_bc.at(n - 2)) ? 1 : -1;
 
         args_c.at(args_c_idx++) = config2label(config_single, n_coeffs);
 
@@ -442,10 +498,10 @@ got overall_loop_idx > 2."));
     }
 
     for (int n = 2; n <= n_ca; ++n) {
-        short int loop_idx = rearrangement.at(rearr_idx++);
+        short int loop_idx = rearrangement.at(rearr_counter++);
 
-        config_ca[loop_idx]     = (sign_configs_ca.at(j).at(n - 2)) ? -1 : 1;
-        config_single[loop_idx] = (sign_configs_ca.at(j).at(n - 2)) ? 1 : -1;
+        config_ca[loop_idx]     = (signs_ca.at(n - 2)) ? -1 : 1;
+        config_single[loop_idx] = (signs_ca.at(n - 2)) ? 1 : -1;
 
         args_a.at(args_a_idx++) = config2label(config_single, n_coeffs);
 
@@ -462,21 +518,21 @@ got overall_loop_idx > 2."));
 
     /* Add self loops */
     if (n_a > 0) {
-        short int loop_idx = rearrangement.at(rearr_idx);
+        short int loop_idx = rearrangement.at(rearr_counter);
         config_single[loop_idx] = 1;
         args_a.at(args_a_idx++) = config2label(config_single, n_coeffs);
         config_single[loop_idx] = -1;
         args_a.at(args_a_idx++) = config2label(config_single, n_coeffs);
     }
     if (n_b > 0) {
-        short int loop_idx = rearrangement.at(rearr_idx);
+        short int loop_idx = rearrangement.at(rearr_counter);
         config_single[loop_idx] = 1;
         args_b.at(args_b_idx++) = config2label(config_single, n_coeffs);
         config_single[loop_idx] = -1;
         args_b.at(args_b_idx++) = config2label(config_single, n_coeffs);
     }
     if (n_c > 0) {
-        short int loop_idx = rearrangement.at(rearr_idx);
+        short int loop_idx = rearrangement.at(rearr_counter);
         config_single[loop_idx] = 1;
         args_c.at(args_c_idx++) = config2label(config_single, n_coeffs);
         config_single[loop_idx] = -1;
@@ -501,18 +557,18 @@ got overall_loop_idx > 2."));
      * n_kernel_args. Checking this explicitly: */
     if (args_a.size() != n_kernel_args ||
         args_b.size() != n_kernel_args ||
-        args_c.size() != n_kernel_args ||
+        args_c.size() != n_kernel_args
        ) {
         throw(std::logic_error("BiSpectrumDiagram::kernel_arguments(): \
 Size of left argument vector does not equal n_kernel_args."));
     }
 #endif
 
-    arg_configs_a.at(i).at(j).at(overall_loop_idx).kernel_index =
+    arg_configs_a.at(rearr_idx).at(sign_idx).at(overall_loop_idx).kernel_index =
         kernel_index_from_arguments(args_a.data(), settings);
-    arg_configs_b.at(i).at(j).at(overall_loop_idx).kernel_index =
+    arg_configs_b.at(rearr_idx).at(sign_idx).at(overall_loop_idx).kernel_index =
         kernel_index_from_arguments(args_b.data(), settings);
-    arg_configs_c.at(i).at(j).at(overall_loop_idx).kernel_index =
+    arg_configs_c.at(rearr_idx).at(sign_idx).at(overall_loop_idx).kernel_index =
         kernel_index_from_arguments(args_c.data(), settings);
 }
 
@@ -531,14 +587,16 @@ BiSpectrumDiagram::BiSpectrumDiagram(
     n_a(n_a), n_b(n_b), n_c(n_c)
 {
     short int n_loops = settings.n_loops;
+    short int n_coeffs = settings.n_coeffs;
     short int n_kernel_args = settings.n_kernel_args;
 
     if (n_ab + n_bc + n_ca + n_a + n_b + n_c != n_loops + 2) {
-        throw(std::invalid_argument(
-                    "n_ab + n_bc + n_ca + n_a + n_b + n_c != n_loops + 2"));
+        throw(std::invalid_argument("BiSpectrumDiagram::BiSpectrumDiagram(): \
+n_ab + n_bc + n_ca + n_a + n_b + n_c != n_loops + 2"));
     }
     if ((n_ab > 0) + (n_bc > 0) + (n_ca > 0) < 2) {
-        throw(std::invalid_argument("More than one number out of {n_ab, n_bc, n_ca} is zero."));
+        throw(std::invalid_argument("BiSpectrumDiagram::BiSpectrumDiagram(): \
+More than one number out of {n_ab, n_bc, n_ca} is zero."));
     }
     overall_loop = true;
     if (n_ab == 0 || n_bc == 0 || n_ca == 0) {
@@ -555,22 +613,27 @@ BiSpectrumDiagram::BiSpectrumDiagram(
          gsl_sf_fact(n_ab) * gsl_sf_fact(n_bc) * gsl_sf_fact(n_ca)
          );
 
-    n_rearrangements = gsl_sf_fact(n_loops) /
+    rearrangements.resize(
+            gsl_sf_fact(n_loops) /
         (
          gsl_sf_fact(n_ab > 0 ? n_ab - 1 : 0) *
          gsl_sf_fact(n_bc > 0 ? n_bc - 1 : 0) *
          gsl_sf_fact(n_ca > 0 ? n_ca - 1 : 0) *
          gsl_sf_fact(n_a) * gsl_sf_fact(n_b) * gsl_sf_fact(n_c)
-        );
-
-    n_sign_configs_ab = pow(2, n_ab > 0 ? n_ab - 1 : 0);
-    n_sign_configs_bc = pow(2, n_bc > 0 ? n_bc - 1 : 0);
-    n_sign_configs_ca = pow(2, n_ca > 0 ? n_ca - 1 : 0);
+        ));
 
     compute_rearrangements(n_loops);
-    compute_sign_flips(n_ab, n_sign_configs_ab, sign_configs_ab);
-    compute_sign_flips(n_bc, n_sign_configs_bc, sign_configs_bc);
-    compute_sign_flips(n_ab, n_sign_configs_ab, sign_configs_ab);
+
+    n_connecting_loops_ab = n_ab > 1 ? n_ab - 1 : 0;
+    n_connecting_loops_bc = n_bc > 1 ? n_bc - 1 : 0;
+    n_connecting_loops_ca = n_ca > 1 ? n_ca - 1 : 0;
+
+    Vec2D<bool> sign_configs_ab = connecting_line_sign_flips(n_connecting_loops_ab);
+    Vec2D<bool> sign_configs_bc = connecting_line_sign_flips(n_connecting_loops_bc);
+    Vec2D<bool> sign_configs_ca = connecting_line_sign_flips(n_connecting_loops_ca);
+
+    sign_configs = compute_sign_flips(sign_configs_ab, sign_configs_bc,
+            sign_configs_ca);
 
     // Allocate memory
     arg_configs_a.resize(n_rearrangements);
@@ -578,11 +641,11 @@ BiSpectrumDiagram::BiSpectrumDiagram(
     arg_configs_c.resize(n_rearrangements);
 
     for (short int i = 0; i < n_rearrangements; ++i) {
-        arg_configs_a.at(i).resize(n_sign_configs_ab * n_sign_configs_ca);
-        arg_configs_b.at(i).resize(n_sign_configs_bc * n_sign_configs_ab);
-        arg_configs_c.at(i).resize(n_sign_configs_ca * n_sign_configs_bc);
+        arg_configs_a.at(i).resize(sign_configs.size());
+        arg_configs_b.at(i).resize(sign_configs.size());
+        arg_configs_c.at(i).resize(sign_configs.size());
 
-        for (short int j = 0; j < n_sign_configs; ++j) {
+        for (size_t j = 0; j < sign_configs.size(); ++j) {
             short int overall_loop_assosiations = overall_loop ? 3 : 1;
             arg_configs_a.at(i).at(j).resize(overall_loop_assosiations);
             arg_configs_b.at(i).at(j).resize(overall_loop_assosiations);

@@ -72,22 +72,28 @@ class BiSpectrumDiagram {
         /* Is diagram closed (n_ab, n_bc, n_ca > 0) */
         bool overall_loop;
 
+        /* Number of sign_flips for connecting lines */
+        short int n_connecting_loops_ab;
+        short int n_connecting_loops_bc;
+        short int n_connecting_loops_ca;
+
         void compute_rearrangements(short int n_loops);
-        void compute_sign_flips(
-                short int connecting_lines,
-                short int n_sign_configs,
-                Vec2D<bool> sign_flips
+        Vec2D<bool> connecting_line_sign_flips(short int n_connecting_loops) const;
+        Vec2D<bool> compute_sign_flips(
+                const Vec2D<bool>& sign_configs_ab,
+                const Vec2D<bool>& sign_configs_bc,
+                const Vec2D<bool>& sign_configs_ca
                 );
-        void compute_sign_flips();
 
         /* Computes argument configurations if rearrangement and sign
          * configurations are set */
         void kernel_arguments(
-                short int n_coeffs,
-                short int i,
-                short int j,
-                short int overall_loop_idx
-                );
+              short int n_coeffs,
+              short int rearr_idx,
+              short int sign_idx,
+              short int overall_loop_idx
+              );
+
     public:
         short int n_ab, n_bc, n_ca;
         short int n_a, n_b, n_c;
@@ -95,17 +101,11 @@ class BiSpectrumDiagram {
         short int diagram_factor;     /* Topological multiplicative diagram factor */
 
         short int n_rearrangements;   /* Number of rearrangements of loop momenta  */
-        /* Number of sign_flips for connecting lines */
-        short int n_sign_configs_ab;
-        short int n_sign_configs_bc;
-        short int n_sign_configs_ca;
 
         /* Table of rearrangements */
         Vec2D<short int> rearrangements;
         /* Tables of sign flips, true <-> +1, false <-> -1 */
-        Vec2D<bool> sign_configs_ab;
-        Vec2D<bool> sign_configs_bc;
-        Vec2D<bool> sign_configs_ca;
+        Vec2D<bool> sign_configs;
 
         /* Argument configuration for each rearrangement, sign setup and
          * (potential) overall loop assosiation
