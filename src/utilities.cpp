@@ -134,7 +134,7 @@ short int get_zero_label(short int n_coeffs) {
 
 
 
-bool pure_loop_label(short int label, short int n_coeffs, Spectrum spectrum)
+bool single_loop_label(short int label, short int n_coeffs, Spectrum spectrum)
 {
     short int coeffs[N_COEFFS_MAX] = {0};
     label2config(label, coeffs, n_coeffs);

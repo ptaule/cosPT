@@ -82,7 +82,7 @@ void print_labels(
         );
 
 short int get_zero_label(short int n_coeffs);
-bool pure_loop_label( short int label, short int n_coeffs, Spectrum spectrum);
+bool single_loop_label( short int label, short int n_coeffs, Spectrum spectrum);
 
 
 
