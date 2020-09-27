@@ -13,26 +13,28 @@ HEADERS = $(wildcard $(INC_DIR)/*.hpp)
 GIT = git
 CXX ?= g++
 
-CXXFLAGS += -Wall -Wextra -Wpedantic -std=c++14
-CPPFLAGS += -I/scratch/Cuba-4.2/ -I/scratch/gsl-2.5/
+CXXFLAGS += -Wall -Wextra -Wpedantic -std=c++14 #-Wconversion
 
-LDFLAGS_GSL  = -L/scratch/gsl-2.5/.libs/ -L/scratch/gsl-2.5/cblas/.libs
-LDLIBS_GSL   = -lgsl -lgslcblas
-LDFLAGS_CUBA = -L/scratch/Cuba-4.2/
-LDLIBS_CUBA  = -lcuba
+all: CPPFLAGS += -DDEBUG=0 -I/space/ge52sir/Cuba-4.2/ -I/space/ge52sir/gsl-2.6/
+all: CXXFLAGS += -O3
+all: LDFLAGS  += -L/space/ge52sir/Cuba-4.2/ -L/space/ge52sir/gsl-2.6/.libs/ -L/space/ge52sir/gsl-2.6/cblas/.libs/
 
-LDFLAGS += $(LDFLAGS_GSL) $(LDFLAGS_CUBA)
-LDLIBS += $(LDLIBS_GSL) $(LDLIBS_CUBA)
+cluster: CPPFLAGS += -DDEBUG=0 -I./Cuba-4.2/ -I./gsl-2.6/
+cluster: CXXFLAGS += -O3
+cluster: LDFLAGS  += -L./Cuba-4.2/ -L./gsl-2.6/.libs/ -L./gsl-2.6/cblas/.libs/
 
-all:       CXXFLAGS += -O3
-debug:     CPPFLAGS += -D_GLIBCXX_DEBUG -DDEBUG=2
-debug:     CXXFLAGS += -g3 -Og
+debug: CPPFLAGS   += -D_GLIBCXX_DEBUG -DDEBUG=2 -I/space/ge52sir/Cuba-4.2/ -I/space/ge52sir/gsl-2.6/
+debug: CXXFLAGS   += -g3 -Og
+debug: LDFLAGS    += -L/space/ge52sir/Cuba-4.2/ -L/space/ge52sir/gsl-2.6/.libs/ -L/space/ge52sir/gsl-2.6/cblas/.libs/
+
 benchmark: CXXFLAGS += -O3
 benchmark: LDLIBS   += -lbenchmark -pthread
 profile:   CXXFLAGS += -O3 -fno-omit-frame-pointer
 profile:   LDLIBS   += -lbenchmark -pthread
 
-.PHONY: all clean run benchmark profile force
+LDLIBS  = -lcuba -lgsl -lgslcblas
+
+.PHONY: all clean run debug benchmark profile force
 
 all: $(EXE)
 debug: $(DEBUG_EXE)
