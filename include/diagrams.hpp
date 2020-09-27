@@ -98,8 +98,6 @@ class BiSpectrumDiagram {
 
         short int diagram_factor;     /* Topological multiplicative diagram factor */
 
-        short int n_rearrangements;   /* Number of rearrangements of loop momenta  */
-
         /* Table of rearrangements */
         Vec2D<short int> rearrangements;
         /* Tables of sign flips, true <-> +1, false <-> -1 */
@@ -118,12 +116,15 @@ class BiSpectrumDiagram {
                 short int n_a, short int n_b, short int n_c
                 );
 
+        bool has_overall_loop() const {return overall_loop;}
+
         void print_diagram_tags(std::ostream& out) const;
-        /* void print_argument_configuration( */
-        /*         std::ostream& out, */
-        /*         short int a, */
-        /*         short int b */
-        /*         ) const; */
+        void print_argument_configuration(
+                std::ostream& out,
+                short int rearr_idx,
+                short int sign_idx,
+                short int overall_loop_idx = 0
+                ) const;
 };
 
 std::ostream& operator<<(std::ostream& out, const PowerSpectrumDiagram& diagram);

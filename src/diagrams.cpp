@@ -101,9 +101,9 @@ void PowerSpectrumDiagram::kernel_arguments(
 #endif
 
     arg_configs_l.at(a).at(b).kernel_index =
-        kernel_index_from_arguments(arguments_l.data(), settings);
+        ps_kernel_index_from_arguments(arguments_l.data(), settings);
     arg_configs_r.at(a).at(b).kernel_index =
-        kernel_index_from_arguments(arguments_r.data(), settings);
+        ps_kernel_index_from_arguments(arguments_r.data(), settings);
 }
 
 
@@ -233,9 +233,8 @@ void PowerSpectrumDiagram::print_argument_configuration(
 
 void BiSpectrumDiagram::compute_rearrangements(short int n_loops) {
     // Allocate memory for rearrangements
-    rearrangements.resize(n_rearrangements);
-    for (short int i = 0; i < n_rearrangements; ++i) {
-        rearrangements.at(i).resize(n_loops);
+    for (auto& rearr : rearrangements) {
+        rearr.resize(n_loops);
     }
 
     Vec1D<short int> group_sizes;
@@ -376,8 +375,8 @@ void BiSpectrumDiagram::kernel_arguments(
     Vec1D<bool> signs_ab(signs.begin(), signs.begin() + n_connecting_loops_ab);
     Vec1D<bool> signs_bc(signs.begin() + n_connecting_loops_ab,
             signs.begin() + n_connecting_loops_ab + n_connecting_loops_bc);
-    Vec1D<bool> signs_ca(signs.begin() + n_connecting_loops_ab + n_connecting_loops_bc,
-            signs.end());
+    Vec1D<bool> signs_ca(signs.begin() + n_connecting_loops_ab
+            + n_connecting_loops_bc, signs.end());
 
     Vec1D<short int>& args_a =
         arg_configs_a.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args;
@@ -450,62 +449,85 @@ got overall_loop_idx > 2."));
     }
 
     /* Add connecting loops */
-    for (int n = 2; n <= n_ab; ++n) {
-        short int loop_idx = rearrangement.at(rearr_counter++);
-
-        /* Opposite sign for main connecting loop */
-        config_ab[loop_idx]     = (signs_ab.at(n - 2)) ? -1 : 1;
-        config_single[loop_idx] = (signs_ab.at(n - 2)) ? 1 : -1;
-
-        args_b.at(args_b_idx++) = config2label(config_single, n_coeffs);
-
-        config_single[loop_idx] *= -1;
-        args_a.at(args_a_idx++) = config2label(config_single, n_coeffs);
-
-        std::fill(config_single, config_single + n_coeffs, 0);
+    if (n_ab == 1) {
+       change_sign(config_ab, config_ab_sign_flip, n_coeffs);
+       args_a.at(args_a_idx++) = config2label(config_ab_sign_flip, n_coeffs);
+       args_b.at(args_b_idx++) = config2label(config_ab, n_coeffs);
     }
-    if (n_ab > 0) {
-        change_sign(config_ab, config_ab_sign_flip, n_coeffs);
-        args_a.at(args_a_idx++) = config2label(config_ab_sign_flip, n_coeffs);
-        args_b.at(args_b_idx++) = config2label(config_ab, n_coeffs);
-    }
+    else {
+       for (int n = 2; n <= n_ab; ++n) {
+          short int loop_idx = rearrangement.at(rearr_counter++);
 
-    for (int n = 2; n <= n_bc; ++n) {
-        short int loop_idx = rearrangement.at(rearr_counter++);
+          /* Opposite sign for main connecting loop */
+          config_ab[loop_idx]     = (signs_ab.at(n - 2)) ? -1 : 1;
+          config_single[loop_idx] = (signs_ab.at(n - 2)) ? 1 : -1;
 
-        config_bc[loop_idx]     = (signs_bc.at(n - 2)) ? -1 : 1;
-        config_single[loop_idx] = (signs_bc.at(n - 2)) ? 1 : -1;
+          change_sign(config_ab, config_ab_sign_flip, n_coeffs);
 
-        args_c.at(args_c_idx++) = config2label(config_single, n_coeffs);
+          args_b.at(args_b_idx++) = config2label(config_ab, n_coeffs);
+          args_b.at(args_b_idx++) = config2label(config_single, n_coeffs);
 
-        config_single[loop_idx] *= -1;
-        args_b.at(args_b_idx++) = config2label(config_single, n_coeffs);
+          config_single[loop_idx] *= -1;
 
-        std::fill(config_single, config_single + n_coeffs, 0);
-    }
-    if (n_bc > 0) {
-        change_sign(config_bc, config_bc_sign_flip, n_coeffs);
-        args_b.at(args_b_idx++) = config2label(config_bc_sign_flip, n_coeffs);
-        args_c.at(args_c_idx++) = config2label(config_bc, n_coeffs);
+          args_a.at(args_a_idx++) = config2label(config_ab_sign_flip, n_coeffs);
+          args_a.at(args_a_idx++) = config2label(config_single, n_coeffs);
+
+          std::fill(config_single, config_single + n_coeffs, 0);
+       }
     }
 
-    for (int n = 2; n <= n_ca; ++n) {
-        short int loop_idx = rearrangement.at(rearr_counter++);
-
-        config_ca[loop_idx]     = (signs_ca.at(n - 2)) ? -1 : 1;
-        config_single[loop_idx] = (signs_ca.at(n - 2)) ? 1 : -1;
-
-        args_a.at(args_a_idx++) = config2label(config_single, n_coeffs);
-
-        config_single[loop_idx] *= -1;
-        args_c.at(args_c_idx++) = config2label(config_single, n_coeffs);
-
-        std::fill(config_single, config_single + n_coeffs, 0);
+    if (n_bc == 1) {
+       change_sign(config_bc, config_bc_sign_flip, n_coeffs);
+       args_b.at(args_b_idx++) = config2label(config_bc_sign_flip, n_coeffs);
+       args_c.at(args_c_idx++) = config2label(config_bc, n_coeffs);
     }
-    if (n_ca > 0) {
-        change_sign(config_ca, config_ca_sign_flip, n_coeffs);
-        args_a.at(args_a_idx++) = config2label(config_ca_sign_flip, n_coeffs);
-        args_c.at(args_c_idx++) = config2label(config_ca, n_coeffs);
+    else {
+       for (int n = 2; n <= n_bc; ++n) {
+          short int loop_idx = rearrangement.at(rearr_counter++);
+
+          /* Opposite sign for main connecting loop */
+          config_bc[loop_idx]     = (signs_bc.at(n - 2)) ? -1 : 1;
+          config_single[loop_idx] = (signs_bc.at(n - 2)) ? 1 : -1;
+
+          change_sign(config_bc, config_bc_sign_flip, n_coeffs);
+
+          args_c.at(args_c_idx++) = config2label(config_bc, n_coeffs);
+          args_c.at(args_c_idx++) = config2label(config_single, n_coeffs);
+
+          config_single[loop_idx] *= -1;
+
+          args_b.at(args_b_idx++) = config2label(config_bc_sign_flip, n_coeffs);
+          args_b.at(args_b_idx++) = config2label(config_single, n_coeffs);
+
+          std::fill(config_single, config_single + n_coeffs, 0);
+       }
+    }
+
+    if (n_ca == 1) {
+       change_sign(config_ca, config_ca_sign_flip, n_coeffs);
+       args_c.at(args_c_idx++) = config2label(config_ca_sign_flip, n_coeffs);
+       args_a.at(args_a_idx++) = config2label(config_ca, n_coeffs);
+    }
+    else {
+       for (int n = 2; n <= n_ca; ++n) {
+          short int loop_idx = rearrangement.at(rearr_counter++);
+
+          /* Opposite sign for main connecting loop */
+          config_ca[loop_idx]     = (signs_ca.at(n - 2)) ? -1 : 1;
+          config_single[loop_idx] = (signs_ca.at(n - 2)) ? 1 : -1;
+
+          change_sign(config_ca, config_ca_sign_flip, n_coeffs);
+
+          args_a.at(args_a_idx++) = config2label(config_ca, n_coeffs);
+          args_a.at(args_a_idx++) = config2label(config_single, n_coeffs);
+
+          config_single[loop_idx] *= -1;
+
+          args_c.at(args_c_idx++) = config2label(config_ca_sign_flip, n_coeffs);
+          args_c.at(args_c_idx++) = config2label(config_single, n_coeffs);
+
+          std::fill(config_single, config_single + n_coeffs, 0);
+       }
     }
 
     /* Add self loops */
@@ -557,11 +579,11 @@ Size of left argument vector does not equal n_kernel_args."));
 #endif
 
     arg_configs_a.at(rearr_idx).at(sign_idx).at(overall_loop_idx).kernel_index =
-        kernel_index_from_arguments(args_a.data(), settings);
+        bs_kernel_index_from_arguments(args_a.data(), settings);
     arg_configs_b.at(rearr_idx).at(sign_idx).at(overall_loop_idx).kernel_index =
-        kernel_index_from_arguments(args_b.data(), settings);
+        bs_kernel_index_from_arguments(args_b.data(), settings);
     arg_configs_c.at(rearr_idx).at(sign_idx).at(overall_loop_idx).kernel_index =
-        kernel_index_from_arguments(args_c.data(), settings);
+        bs_kernel_index_from_arguments(args_c.data(), settings);
 }
 
 
@@ -628,11 +650,11 @@ More than one number out of {n_ab, n_bc, n_ca} is zero."));
             sign_configs_ca);
 
     // Allocate memory
-    arg_configs_a.resize(n_rearrangements);
-    arg_configs_b.resize(n_rearrangements);
-    arg_configs_c.resize(n_rearrangements);
+    arg_configs_a.resize(rearrangements.size());
+    arg_configs_b.resize(rearrangements.size());
+    arg_configs_c.resize(rearrangements.size());
 
-    for (short int i = 0; i < n_rearrangements; ++i) {
+    for (size_t i = 0; i < rearrangements.size(); ++i) {
         arg_configs_a.at(i).resize(sign_configs.size());
         arg_configs_b.at(i).resize(sign_configs.size());
         arg_configs_c.at(i).resize(sign_configs.size());
@@ -667,7 +689,36 @@ void BiSpectrumDiagram::print_diagram_tags(std::ostream& out) const
 
 
 
-std::ostream& operator<<(std::ostream& out, const PowerSpectrumDiagram& diagram) {
+void BiSpectrumDiagram::print_argument_configuration(
+        std::ostream& out,
+        short int rearr_idx,
+        short int sign_idx,
+        short int overall_loop_idx
+        ) const
+{
+    out << COLOR_BLUE;
+    print_labels(arg_configs_a.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args.data(),
+            arg_configs_a.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args.size(),
+            settings.n_coeffs, settings.zero_label, settings.spectrum, out);
+    out << " ";
+    print_labels(arg_configs_b.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args.data(),
+            arg_configs_b.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args.size(),
+            settings.n_coeffs, settings.zero_label, settings.spectrum, out);
+    out << " ";
+    print_labels(arg_configs_c.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args.data(),
+            arg_configs_c.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args.size(),
+            settings.n_coeffs, settings.zero_label, settings.spectrum, out);
+    std::cout << "\t";
+    std::cout << arg_configs_a.at(rearr_idx).at(sign_idx).at(overall_loop_idx).kernel_index << " ";
+    std::cout << arg_configs_b.at(rearr_idx).at(sign_idx).at(overall_loop_idx).kernel_index << " ";
+    std::cout << arg_configs_c.at(rearr_idx).at(sign_idx).at(overall_loop_idx).kernel_index << " ";
+    out << COLOR_RESET;
+}
+
+
+
+std::ostream& operator<<(std::ostream& out, const PowerSpectrumDiagram& diagram)
+{
     diagram.print_diagram_tags(out);
     out << std::endl;
 
@@ -676,6 +727,32 @@ std::ostream& operator<<(std::ostream& out, const PowerSpectrumDiagram& diagram)
             out << "\t";
             diagram.print_argument_configuration(out, a, b);
             out << std::endl;
+        }
+    }
+    return out;
+}
+
+
+
+std::ostream& operator<<(std::ostream& out, const BiSpectrumDiagram& diagram)
+{
+    diagram.print_diagram_tags(out);
+    out << std::endl;
+
+    for (size_t i = 0; i < diagram.rearrangements.size(); ++i) {
+        for (size_t j = 0; j < diagram.sign_configs.size(); ++j) {
+            if (diagram.has_overall_loop()) {
+                for (size_t k = 0; k < 3; ++k) {
+                    out << "\t";
+                    diagram.print_argument_configuration(out, i, j, k);
+                    out << std::endl;
+                }
+            }
+            else {
+                out << "\t";
+                diagram.print_argument_configuration(out, i, j);
+                out << std::endl;
+            }
         }
     }
     return out;

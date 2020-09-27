@@ -27,7 +27,7 @@ static void BM_kernel_index(benchmark::State& state) {
 
     for (auto _ : state) {
         // This code gets timed
-        kernel_index_from_arguments(arguments, settings);
+        ps_kernel_index_from_arguments(arguments, settings);
     }
 }
 

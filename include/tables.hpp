@@ -156,7 +156,11 @@ class IntegrandTables {
 
 Vec1D<double> initialize_eta_grid(const Settings& settings);
 
-short int kernel_index_from_arguments(
+short int ps_kernel_index_from_arguments(
+        const short int arguments[],
+        const Settings& settings
+        );
+short int bs_kernel_index_from_arguments(
         const short int arguments[],
         const Settings& settings
         );

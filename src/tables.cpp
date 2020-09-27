@@ -36,8 +36,13 @@ Settings::Settings(
     pre_time_steps(pre_time_steps), eta_i(eta_i), eta_f(eta_f),
     eta_asymp(eta_asymp)
 {
-    if (n_loops < 1 || n_loops > 2) {
-        throw(std::invalid_argument("Settings::Settings(): n_loops should be between 1 and 2."));
+    if (spectrum == POWERSPECTRUM && (n_loops < 1 || n_loops > 2)) {
+        throw(std::invalid_argument("Settings::Settings(): POWERSPECTRUM only \
+implemented for n_loops = 1,2."));
+    }
+    if (spectrum == BISPECTRUM && (n_loops != 1)) {
+        throw(std::invalid_argument("Settings::Settings(): BISPECTRUM only \
+implemented for n_loops = 1."));
     }
     if (spectrum == POWERSPECTRUM) {
         n_coeffs = n_loops + 1;
@@ -62,8 +67,10 @@ Settings::Settings(
 
         single_loop_block_size = pow(4, n_loops);
         /* Max/min single_loops labels */
-        single_loop_label_min = 13 * n_configs / 27;
-        single_loop_label_max = 14 * n_configs / 27;
+        single_loop_label_min = 4 * n_configs / 9;
+        single_loop_label_max = 5 * n_configs / 9 - 1;
+        /* Composite label has either k_a, k_b, or multiple loop momenta
+         * (applicable for overall loop diagram) */
         first_composite_block_size = 26 * n_configs/27 * single_loop_block_size;
     }
 
@@ -494,7 +501,7 @@ void IntegrandTables::compute_tables()
 
 
 
-short int kernel_index_from_arguments(
+short int ps_kernel_index_from_arguments(
         const short int arguments[],
         const Settings& settings
         )
@@ -575,9 +582,9 @@ short int bs_kernel_index_from_arguments(
         const Settings& settings
         )
 {
+   /* Precompute powers of two for speedup */
     short int pow2[] = {1,2,4,8,16,32,64,128};
 
-    short int n_coeffs                   = settings.n_coeffs;
     short int n_configs                  = settings.n_configs;
     short int zero_label                 = settings.zero_label;
     short int n_kernel_args              = settings.n_kernel_args;
@@ -587,10 +594,13 @@ short int bs_kernel_index_from_arguments(
     short int single_loop_label_max      = settings.single_loop_label_max;
     short int first_composite_block_size = settings.first_composite_block_size;
 
+    const Vec1D<short int>& single_loops = settings.single_loops;
+
     // In DEBUG-mode, check that non-zero arguments (zero_label) are unique
 #if DEBUG >= 1
     if (!unique_elements(arguments, n_kernel_args, zero_label))
-        throw(std::logic_error("kernel_index_from_arguments(): duplicate vector arguments passed."));
+        throw(std::logic_error("bs_kernel_index_from_arguments(): \
+duplicate vector arguments passed."));
 #endif
 
     short int index = 0;
@@ -605,41 +615,40 @@ short int bs_kernel_index_from_arguments(
         // Argument is not single loop if label < single_loop_label_min or
         // label > single_loop_label_max */
         if (arguments[i] < single_loop_label_min) {
-            short int block = n_composite > 0 ? single_loop_block_size : first_composite_block_size;
-            index += (arguments[i] + 1) * block;
+            index += (arguments[i] + 1) *
+                (n_composite > 0 ? single_loop_block_size :
+                 first_composite_block_size);
 
             ++n_composite;
         }
-        else if (arguments[i] >= single_loop_label_max) {
+        else if (arguments[i] > single_loop_label_max) {
             short int block = n_composite > 0 ? single_loop_block_size : first_composite_block_size;
-            index += (arguments[i] - n_configs/27 + 1) * block;
+            index += (arguments[i] - n_configs/9 + 1) * block;
 
             ++n_composite;
         }
         else {
-#if DEBUG >= 1
-            /* Check that this is in fact a single loop label */
-            if(!single_loop_label(arguments[i], n_coeffs, settings.spectrum))
-                throw(std::logic_error("kernel_index_from_arguments(): argument is neither 0, single loop or composite."));
-#endif
-
-            /* Convert argument_label to coefficient array */
-            short int coeffs[N_COEFFS_MAX] = {0};
-            label2config(arguments[i], coeffs, n_coeffs);
-
-            /* The last coefficient is for k, hence we can skip this */
-            for (int j = 0; j < n_coeffs - 1; ++j) {
-                /* if - Q_j is present, add 2^(2j + 0/2) = 2^(2j)   */
-                /* if + Q_j is present, add 2^(2j + 2/2) = 2^(2j+1) */
-                if (coeffs[j] != 0) {
-                    index += pow2[2 * j + (coeffs[j] + 1)/2];
+            /* Single loop */
+            for (size_t j = 0; j < single_loops.size(); ++j) {
+                if (arguments[i] == single_loops[j]) {
+                    index += pow2[j];
+                    goto found_single_loop;
                 }
             }
+            /* Went through loop, which means that argument is composite, hence
+             * connecting line with overall loop */
+            index += (arguments[i] - single_loop_label_min + 1) *
+                (n_composite > 0 ? single_loop_block_size :
+                 first_composite_block_size);
+            ++n_composite;
+
+found_single_loop: ;
         }
     }
 #if DEBUG >= 1
     if (n_composite > 2)
-        throw(std::logic_error("kernel_index_from_arguments(): more than one argument is of composite type."));
+        throw(std::logic_error("bs_kernel_index_from_arguments(): more than two \
+arguments is of composite type."));
 #endif
 
     return index;

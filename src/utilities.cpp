@@ -79,10 +79,10 @@ void print_label(
         }
 
         if (config[n_coeffs - 2] == -1) {
-            out << "-kb" << n_coeffs - 1;
+            out << "-kb";
         }
         else if (config[n_coeffs - 2] == 1) {
-            out << "+kb" << n_coeffs - 1;
+            out << "+kb";
         }
     }
 
