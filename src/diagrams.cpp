@@ -101,9 +101,9 @@ void PowerSpectrumDiagram::kernel_arguments(
 #endif
 
     arg_configs_l.at(a).at(b).kernel_index =
-        ps_kernel_index_from_arguments(arguments_l.data(), settings);
+        ps::kernel_index_from_arguments(arguments_l.data(), settings);
     arg_configs_r.at(a).at(b).kernel_index =
-        ps_kernel_index_from_arguments(arguments_r.data(), settings);
+        ps::kernel_index_from_arguments(arguments_r.data(), settings);
 }
 
 
@@ -579,11 +579,11 @@ Size of left argument vector does not equal n_kernel_args."));
 #endif
 
     arg_configs_a.at(rearr_idx).at(sign_idx).at(overall_loop_idx).kernel_index =
-        bs_kernel_index_from_arguments(args_a.data(), settings);
+        bs::kernel_index_from_arguments(args_a.data(), settings);
     arg_configs_b.at(rearr_idx).at(sign_idx).at(overall_loop_idx).kernel_index =
-        bs_kernel_index_from_arguments(args_b.data(), settings);
+        bs::kernel_index_from_arguments(args_b.data(), settings);
     arg_configs_c.at(rearr_idx).at(sign_idx).at(overall_loop_idx).kernel_index =
-        bs_kernel_index_from_arguments(args_c.data(), settings);
+        bs::kernel_index_from_arguments(args_c.data(), settings);
 }
 
 
@@ -760,7 +760,7 @@ std::ostream& operator<<(std::ostream& out, const BiSpectrumDiagram& diagram)
 
 
 
-Vec1D<PowerSpectrumDiagram> construct_ps_diagrams(const Settings& settings) {
+Vec1D<PowerSpectrumDiagram> ps::construct_diagrams(const Settings& settings) {
     Vec1D<PowerSpectrumDiagram> diagrams;
 
     short int n_loops = settings.n_loops;
@@ -787,7 +787,7 @@ Vec1D<PowerSpectrumDiagram> construct_ps_diagrams(const Settings& settings) {
 
 
 
-Vec1D<BiSpectrumDiagram> construct_bs_diagrams(const Settings& settings) {
+Vec1D<BiSpectrumDiagram> bs::construct_diagrams(const Settings& settings) {
     Vec1D<BiSpectrumDiagram> diagrams;
 
     short int n_loops = settings.n_loops;

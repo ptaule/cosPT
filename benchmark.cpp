@@ -27,7 +27,7 @@ static void BM_kernel_index(benchmark::State& state) {
 
     for (auto _ : state) {
         // This code gets timed
-        ps_kernel_index_from_arguments(arguments, settings);
+        ps::kernel_index_from_arguments(arguments, settings);
     }
 }
 
@@ -45,7 +45,7 @@ static void BM_integrand(benchmark::State& state) {
     Settings settings(n_loops, POWERSPECTRUM, SPT);
     SumTable sum_table(settings);
 
-    Vec1D<PowerSpectrumDiagram> diagrams = construct_ps_diagrams(settings);
+    Vec1D<PowerSpectrumDiagram> diagrams = ps::construct_diagrams(settings);
 
     Vec1D<IntegrandTables> tables_vec;
     tables_vec.push_back(IntegrandTables(k1, settings, sum_table, Vec1D<double>()));

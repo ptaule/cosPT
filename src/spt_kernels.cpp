@@ -130,7 +130,8 @@ short int compute_SPT_kernels(
     // DEBUG: check that the number of non-zero arguments is in fact n, and
     // that kernel_index is in fact equivalent to arguments
 #if DEBUG >= 1
-    short int argument_index = ps_kernel_index_from_arguments(arguments, tables.settings);
+    short int argument_index = tables.kernel_index_from_arguments(arguments,
+            tables.settings);
     if (kernel_index != -1 && argument_index != kernel_index) {
         throw(std::logic_error("Index computed from kernel arguments does not equal kernel index."));
     }
@@ -146,7 +147,8 @@ short int compute_SPT_kernels(
 
     // If kernel_index is not known, -1 is sent as argument
     if (kernel_index == -1) {
-        kernel_index = ps_kernel_index_from_arguments(arguments, tables.settings);
+        kernel_index = tables.kernel_index_from_arguments(arguments,
+                tables.settings);
     }
 
     // Alias reference to kernel we are working with for convenience/readability

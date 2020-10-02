@@ -62,7 +62,7 @@ int main () {
         tables_vec.push_back(IntegrandTables(k_a, settings, sum_table, eta_grid));
     }
 
-    Vec1D<PowerSpectrumDiagram> diagrams = construct_ps_diagrams(settings);
+    Vec1D<PowerSpectrumDiagram> diagrams = ps::construct_diagrams(settings);
 
     IntegrationInput input(1e-4, 65, settings, diagrams, input_ps, correlations,
             tables_vec);

@@ -9,6 +9,7 @@
 #define TABLES_HPP
 
 #include <vector>
+#include <functional>
 
 #include "utilities.hpp"
 
@@ -108,15 +109,11 @@ class IntegrandTables {
         void reset_spt_kernels();
         void reset_kernels();
 
-        // Power spectrum
-        void ps_compute_bare_scalar_products();
-        void ps_compute_scalar_products();
-        void ps_compute_alpha_beta();
+        void ps_compute_bare_scalar_products(); /* Power spectrum */
+        void bs_compute_bare_scalar_products(); /* Bispectrum */
 
-        // Bi-spectrum
-        void bs_compute_bare_scalar_products();
-        void bs_compute_scalar_products();
-        void bs_compute_alpha_beta();
+        void compute_scalar_products();
+        void compute_alpha_beta();
     public:
         double k_a = 0.0;
         double k_b = 0.0; // For bispectrum
@@ -135,6 +132,9 @@ class IntegrandTables {
 
         Vec1D<SPTKernel> spt_kernels;
         Vec1D<Kernel> kernels;
+
+        std::function<short int (const short int[], const Settings&)>
+           kernel_index_from_arguments;
 
         IntegrandTables(
                 double k_a,
@@ -156,13 +156,18 @@ class IntegrandTables {
 
 Vec1D<double> initialize_eta_grid(const Settings& settings);
 
-short int ps_kernel_index_from_arguments(
-        const short int arguments[],
-        const Settings& settings
-        );
-short int bs_kernel_index_from_arguments(
-        const short int arguments[],
-        const Settings& settings
-        );
+namespace ps {
+    short int kernel_index_from_arguments(
+            const short int arguments[],
+            const Settings& settings
+            );
+}
+
+namespace bs {
+    short int kernel_index_from_arguments(
+            const short int arguments[],
+            const Settings& settings
+            );
+}
 
 #endif /* ifndef TABLES_HPP */

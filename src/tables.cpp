@@ -256,6 +256,17 @@ IntegrandTables::IntegrandTables(
     short int time_steps = settings.time_steps;
     short int components = settings.components;
 
+    if (settings.spectrum == POWERSPECTRUM) {
+        kernel_index_from_arguments = ps::kernel_index_from_arguments;
+    }
+    else if (settings.spectrum == BISPECTRUM) {
+        kernel_index_from_arguments = bs::kernel_index_from_arguments;
+    }
+    else {
+        throw(std::invalid_argument("IntegrandTables::IntegrandTables(): \
+                    Unknown dynamics in Settings settings."));
+    }
+
     bare_scalar_products.resize(n_coeffs);
     for (short int i = 0; i < n_coeffs; ++i) {
         bare_scalar_products.at(i).resize(n_coeffs);
@@ -406,8 +417,14 @@ void IntegrandTables::ps_compute_bare_scalar_products()
 
 
 
+void IntegrandTables::bs_compute_bare_scalar_products()
+{
+}
+
+
+
 /* Computes table of scalar_products given bare_scalar_products table */
-void IntegrandTables::ps_compute_scalar_products()
+void IntegrandTables::compute_scalar_products()
 {
     short int n_coeffs = settings.n_coeffs;
     short int n_configs = settings.n_configs;
@@ -442,7 +459,7 @@ void IntegrandTables::ps_compute_scalar_products()
 
 
 
-void IntegrandTables::ps_compute_alpha_beta()
+void IntegrandTables::compute_alpha_beta()
 {
     short int n_configs = settings.n_configs;
     for (int a = 0; a < n_configs; ++a) {
@@ -480,28 +497,23 @@ void IntegrandTables::ps_compute_alpha_beta()
     }
 }
 
-void IntegrandTables::bs_compute_bare_scalar_products() {}
-void IntegrandTables::bs_compute_scalar_products() {}
-void IntegrandTables::bs_compute_alpha_beta() {}
 
 
 void IntegrandTables::compute_tables()
 {
     if (settings.spectrum == POWERSPECTRUM) {
         ps_compute_bare_scalar_products();
-        ps_compute_scalar_products();
-        ps_compute_alpha_beta();
     }
     else if (settings.spectrum == BISPECTRUM) {
         bs_compute_bare_scalar_products();
-        bs_compute_scalar_products();
-        bs_compute_alpha_beta();
     }
+    compute_scalar_products();
+    compute_alpha_beta();
 }
 
 
 
-short int ps_kernel_index_from_arguments(
+short int ps::kernel_index_from_arguments(
         const short int arguments[],
         const Settings& settings
         )
@@ -522,7 +534,7 @@ short int ps_kernel_index_from_arguments(
     short int single_loop_label_min = settings.single_loop_label_min;
 
     if (!unique_elements(arguments, n_kernel_args, zero_label))
-        throw(std::logic_error("ps_kernel_index_from_arguments(): \
+        throw(std::logic_error("ps::kernel_index_from_arguments(): \
 duplicate vector arguments passed."));
     short int n_k_labels = 0;
 #endif
@@ -546,7 +558,7 @@ duplicate vector arguments passed."));
 #if DEBUG >= 1
         /* We should not get -k in power spectrum computation */
         else if (arguments[i] < single_loop_label_min) {
-            throw(std::logic_error("ps_kernel_index_from_arguments(): \
+            throw(std::logic_error("ps::kernel_index_from_arguments(): \
 got argument with -k."));
         }
 #endif
@@ -561,14 +573,14 @@ got argument with -k."));
 #if DEBUG >= 1
             /* Check that this is in fact a fundamental vector */
             if(!single_loop_label(arguments[i], n_coeffs, settings.spectrum))
-                throw(std::logic_error("ps_kernel_index_from_arguments(): \
+                throw(std::logic_error("ps::kernel_index_from_arguments(): \
 argument is neither 0, k-type, or fundamental."));
 #endif
         }
     }
 #if DEBUG >= 1
     if (n_k_labels > 1)
-        throw(std::logic_error("ps_kernel_index_from_arguments(): \
+        throw(std::logic_error("ps::kernel_index_from_arguments(): \
 more than one argument is of k-type."));
 #endif
 
@@ -577,7 +589,7 @@ more than one argument is of k-type."));
 
 
 
-short int bs_kernel_index_from_arguments(
+short int bs::kernel_index_from_arguments(
         const short int arguments[],
         const Settings& settings
         )
@@ -599,7 +611,7 @@ short int bs_kernel_index_from_arguments(
     // In DEBUG-mode, check that non-zero arguments (zero_label) are unique
 #if DEBUG >= 1
     if (!unique_elements(arguments, n_kernel_args, zero_label))
-        throw(std::logic_error("bs_kernel_index_from_arguments(): \
+        throw(std::logic_error("bs::kernel_index_from_arguments(): \
 duplicate vector arguments passed."));
 #endif
 
@@ -647,7 +659,7 @@ found_single_loop: ;
     }
 #if DEBUG >= 1
     if (n_composite > 2)
-        throw(std::logic_error("bs_kernel_index_from_arguments(): more than two \
+        throw(std::logic_error("bs::kernel_index_from_arguments(): more than two \
 arguments is of composite type."));
 #endif
 

@@ -130,7 +130,12 @@ class BiSpectrumDiagram {
 std::ostream& operator<<(std::ostream& out, const PowerSpectrumDiagram& diagram);
 std::ostream& operator<<(std::ostream& out, const BiSpectrumDiagram& diagram);
 
-Vec1D<PowerSpectrumDiagram> construct_ps_diagrams(const Settings& settings);
-Vec1D<BiSpectrumDiagram>    construct_bs_diagrams(const Settings& settings);
+namespace ps {
+    Vec1D<PowerSpectrumDiagram> construct_diagrams(const Settings& settings);
+}
+
+namespace bs {
+    Vec1D<BiSpectrumDiagram> construct_diagrams(const Settings& settings);
+}
 
 #endif /* ifndef DIAGRAMS_HPP */
