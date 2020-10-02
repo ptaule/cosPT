@@ -17,7 +17,8 @@
 void Interpolation1D::initialize(const Vec1D<double>& x, const Vec1D<double>& y)
 {
     if (x.size() != y.size()) {
-        throw(std::invalid_argument("Dimensions of x and y vectors are not equal."));
+        throw(std::invalid_argument(
+            "Dimensions of x and y vectors are not equal."));
     }
 
     acc = gsl_interp_accel_alloc();
@@ -69,7 +70,8 @@ void Interpolation2D::initialize(
         ) 
 {
     if (x.size() * y.size() != z.size()) {
-        throw(std::invalid_argument("Length of z vector does not equal x.size() * y.size()."));
+        throw(std::invalid_argument(
+            "Length of z vector does not equal x.size() * y.size()."));
     }
 
     x_acc = gsl_interp_accel_alloc();

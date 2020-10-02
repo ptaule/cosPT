@@ -96,7 +96,9 @@ void PowerSpectrumDiagram::kernel_arguments(
     if (arguments_l.size() != n_kernel_args ||
         arguments_r.size() != n_kernel_args
        ) {
-        throw(std::logic_error("PowerSpectrumDiagram::kernel_arguments(): Size of left argument vector does not equal n_kernel_args."));
+        throw(std::logic_error(
+            "PowerSpectrumDiagram::kernel_arguments(): Size of left argument "
+            "vector does not equal n_kernel_args."));
     }
 #endif
 
@@ -427,9 +429,10 @@ void BiSpectrumDiagram::kernel_arguments(
                 config_bc[k_b_idx] = -1;
                 break;
             default:
-                throw(std::invalid_argument("BiSpectrumDiagram::kernel_arguments(): \
-got overall_loop_idx > 2."));
-        }
+                throw(
+                    std::invalid_argument("BiSpectrumDiagram::kernel_arguments("
+                                          "): got overall_loop_idx > 2."));
+            }
     }
     else {
         if (n_ab == 0) {
@@ -573,8 +576,9 @@ got overall_loop_idx > 2."));
         args_b.size() != n_kernel_args ||
         args_c.size() != n_kernel_args
        ) {
-        throw(std::logic_error("BiSpectrumDiagram::kernel_arguments(): \
-Size of left argument vector does not equal n_kernel_args."));
+        throw(std::logic_error(
+            "BiSpectrumDiagram::kernel_arguments(): Size of left argument "
+            "vector does not equal n_kernel_args."));
     }
 #endif
 
@@ -605,12 +609,14 @@ BiSpectrumDiagram::BiSpectrumDiagram(
     short int n_kernel_args = settings.n_kernel_args;
 
     if (n_ab + n_bc + n_ca + n_a + n_b + n_c != n_loops + 2) {
-        throw(std::invalid_argument("BiSpectrumDiagram::BiSpectrumDiagram(): \
-n_ab + n_bc + n_ca + n_a + n_b + n_c != n_loops + 2"));
+        throw(std::invalid_argument(
+            "BiSpectrumDiagram::BiSpectrumDiagram(): n_ab + n_bc + n_ca + n_a "
+            "+ n_b + n_c != n_loops + 2"));
     }
     if ((n_ab > 0) + (n_bc > 0) + (n_ca > 0) < 2) {
-        throw(std::invalid_argument("BiSpectrumDiagram::BiSpectrumDiagram(): \
-More than one number out of {n_ab, n_bc, n_ca} is zero."));
+        throw(std::invalid_argument(
+            "BiSpectrumDiagram::BiSpectrumDiagram(): More than one number out "
+            "of {n_ab, n_bc, n_ca} is zero."));
     }
     overall_loop = true;
     if (n_ab == 0 || n_bc == 0 || n_ca == 0) {
@@ -774,7 +780,8 @@ Vec1D<PowerSpectrumDiagram> ps::construct_diagrams(const Settings& settings) {
         short int r = 0;
         while (l >= r) {
             if (index >= 2 * n_loops) {
-                throw(std::logic_error("construct_diagrams(): Index larger than 2 * n_loops."));
+                throw(std::logic_error(
+                    "construct_diagrams(): Index larger than 2 * n_loops."));
             }
             diagrams.push_back(PowerSpectrumDiagram(settings, m, l, r));
 

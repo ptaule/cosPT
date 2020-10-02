@@ -37,12 +37,12 @@ Settings::Settings(
     eta_asymp(eta_asymp)
 {
     if (spectrum == POWERSPECTRUM && (n_loops < 1 || n_loops > 2)) {
-        throw(std::invalid_argument("Settings::Settings(): POWERSPECTRUM only \
-implemented for n_loops = 1,2."));
+        throw(std::invalid_argument("Settings::Settings(): POWERSPECTRUM only "
+                                    "implemented for n_loops = 1,2."));
     }
     if (spectrum == BISPECTRUM && (n_loops != 1)) {
-        throw(std::invalid_argument("Settings::Settings(): BISPECTRUM only \
-implemented for n_loops = 1."));
+        throw(std::invalid_argument("Settings::Settings(): BISPECTRUM only "
+                                    "implemented for n_loops = 1."));
     }
     if (spectrum == POWERSPECTRUM) {
         n_coeffs = n_loops + 1;
@@ -105,7 +105,8 @@ Settings::Settings(
             eta_i, eta_f, 0.0)
 {
     if (dynamics != EVOLVE_SPT_IC) {
-        throw(std::invalid_argument("Settings::Settings(): This constructor is only used for EVOLVE_SPT_IC dynamics."));
+        throw(std::invalid_argument("Settings::Settings(): This constructor is "
+                                    "only used for EVOLVE_SPT_IC dynamics."));
     }
 }
 
@@ -119,7 +120,8 @@ Settings::Settings(
     Settings(n_loops, spectrum, dynamics, 0, 0, 0, 0.0, 0.0, 0.0)
 {
     if (dynamics != SPT) {
-        throw(std::invalid_argument("This constructor is only used for SPT dynamics."));
+        throw(std::invalid_argument(
+            "This constructor is only used for SPT dynamics."));
     }
 }
 
@@ -191,7 +193,9 @@ short int SumTable::sum_labels(const short int labels[], size_t size) const
     for (int i = 0; i < n_coeffs; ++i) {
         short int c = res_coeffs[i];
         if (!(c == -1 || c == 0 || c == 1))
-            throw(std::logic_error("SumTable::sum_labels(): Sum of labels does not correspond to an appropriate configuration."));
+            throw(std::logic_error(
+                "SumTable::sum_labels(): Sum of labels does not correspond to "
+                "an appropriate configuration."));
     }
 #endif
 
@@ -233,7 +237,8 @@ Vec1D<double> initialize_eta_grid(const Settings& settings)
         }
     }
     else {
-        throw(std::invalid_argument("initialize_eta_grid(): incorrect dynamics."));
+        throw(std::invalid_argument(
+            "initialize_eta_grid(): incorrect dynamics."));
     }
     return eta_grid;
 }

@@ -74,9 +74,10 @@ inline int heaviside_theta(
     for (int i = 3; i <= m; ++i) {
         if ( Q_magnitudes.at(rearrangement.at(i-3))
                 < Q_magnitudes.at(rearrangement.at(i-2)))
-            throw(std::logic_error("Heaviside theta: Q" +
-                        std::to_string(rearrangement.at(i-3) + 1) + " < Q" +
-                        std::to_string(rearrangement.at(i-2) + 1) + "."));
+            throw(std::logic_error(
+                "Heaviside theta: Q" +
+                std::to_string(rearrangement.at(i - 3) + 1) + " < Q" +
+                std::to_string(rearrangement.at(i - 2) + 1) + "."));
     }
 #endif
     return m;

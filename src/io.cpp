@@ -59,12 +59,16 @@ void read_columns_from_file(
                 columns.at(i).push_back(value);
             }
             else {
-                throw(std::runtime_error("Found line with number of columns not equal to n_columns in " + filename));
+                throw(std::runtime_error("Found line with number of columns "
+                                         "not equal to n_columns in " +
+                                         filename));
             }
             i++;
         }
         if (i != n_columns) {
-            throw(std::runtime_error("Found line with number of columns not equal to n_columns in " + filename));
+            throw(std::runtime_error(
+                "Found line with number of columns not equal to n_columns in " +
+                filename));
         }
     }
     input.close();
@@ -114,7 +118,8 @@ void read_data_grid_from_file(
 
         while (ss >> value) {
             if (column_idx >= n_columns) {
-                throw(std::runtime_error("Number of columns exceeds n_columns."));
+                throw(
+                    std::runtime_error("Number of columns exceeds n_columns."));
             }
 
             data.at(idx) = value;
@@ -122,7 +127,8 @@ void read_data_grid_from_file(
             idx = row_idx + column_idx * n_rows;
         }
         if (column_idx != n_columns) {
-            throw(std::runtime_error("Number of columns does not equal n_columns."));
+            throw(std::runtime_error(
+                "Number of columns does not equal n_columns."));
         }
         row_idx++;
     }
@@ -151,9 +157,10 @@ void write_results(
     std::ofstream out(output_file);
 
     if (out.fail()){
-        throw(std::runtime_error("Could not open " + output_file + " for writing."));
+        throw(std::runtime_error("Could not open " + output_file +
+                                 " for writing."));
     }
-    
+
     out << "# Matter power spectrum P(k) at " << n_loops << "-loop for k = " <<
         k << " (h/Mpc)\n";
     out << "#\n# Description: " << description << "\n";

@@ -47,8 +47,10 @@ double spt_term(
             b = 2 * n;
             break;
         default:
-            throw(std::invalid_argument("SPT_term() does not accept argument 'component' which does not equal 0 or 1."));
-    }
+            throw(std::invalid_argument(
+                "SPT_term() does not accept argument 'component' which does "
+                "not equal 0 or 1."));
+        }
 
     return tables.spt_kernels[index_l].values[1] *
         (    a * tables.alpha[sum_l][sum_r]
@@ -133,7 +135,8 @@ short int compute_SPT_kernels(
     short int argument_index = tables.kernel_index_from_arguments(arguments,
             tables.settings);
     if (kernel_index != -1 && argument_index != kernel_index) {
-        throw(std::logic_error("Index computed from kernel arguments does not equal kernel index."));
+        throw(std::logic_error("Index computed from kernel arguments does not "
+                               "equal kernel index."));
     }
 
     int n_args = 0;
@@ -141,7 +144,9 @@ short int compute_SPT_kernels(
         if (arguments[i] != tables.settings.zero_label) n_args++;
     }
     if (n_args != n) {
-        throw(std::invalid_argument("compute_SPT_kernels(): number of non-zero-label arguments in arguments does not equal n."));
+        throw(std::invalid_argument(
+            "compute_SPT_kernels(): number of non-zero-label arguments in "
+            "arguments does not equal n."));
     }
 #endif
 

@@ -28,7 +28,8 @@ Combinations::Combinations(int n, int k)
     : n(n), k(k)
 {
     if (k < 0 || k > n) {
-        throw(std::invalid_argument("Combinations::Combinations(): k >= 0 && k <= n is required."));
+        throw(std::invalid_argument(
+            "Combinations::Combinations(): k >= 0 && k <= n is required."));
     }
     combination.resize(k);
     complement.resize(n - k);
@@ -98,8 +99,8 @@ bool Combinations::next() {
 
     /* If bool variables differ, throw error */
     if (next_comb ^ next_comp) {
-        throw(std::logic_error(
-            "Combinations::next(): inconsistency between combination and complement."));
+        throw(std::logic_error("Combinations::next(): inconsistency between "
+                               "combination and complement."));
     }
 #if DEBUG >= 1
     if (next_comb) {
@@ -107,8 +108,8 @@ bool Combinations::next() {
     }
     else {
         if (counter != gsl_sf_choose(n,k)) {
-            throw(std::logic_error(
-                "Combinations::next(): Did not create (n choose k) combinations."));
+            throw(std::logic_error("Combinations::next(): Did not create (n "
+                                   "choose k) combinations."));
         }
     }
 #endif
@@ -132,12 +133,13 @@ void Combinations::rearrange_from_current(
 {
     if (first == last) {
         throw(std::logic_error(
-                    "Combinations::rearrange_from_current(): first == last."));
+            "Combinations::rearrange_from_current(): first == last."));
     }
     Vec1D<short int> copy(first, last);
 
     if (copy.size() != static_cast<size_t>(n)) {
-        throw(std::logic_error("Combinations::rearrange_from_current(): size of subvector from first,last is not n."));
+        throw(std::logic_error("Combinations::rearrange_from_current(): size "
+                               "of subvector from first,last is not n."));
     }
 
     for (int i = 0; i < k; ++i) {
@@ -157,7 +159,8 @@ void Combinations::rearrange_from_current_combination(
         ) const
 {
     if (size != static_cast<size_t>(k)) {
-        throw(std::invalid_argument("Combinations::rearrange_from_current_combination(): size != k."));
+        throw(std::invalid_argument(
+            "Combinations::rearrange_from_current_combination(): size != k."));
     }
     for (int i = 0; i < k; ++i) {
         rearranged[i] = original[combination.at(i)];
@@ -173,7 +176,8 @@ void Combinations::rearrange_from_current_complement(
         ) const
 {
     if (size != static_cast<size_t>(n - k)) {
-        throw(std::invalid_argument("Combinations::rearrange_from_current_complement(): size != k."));
+        throw(std::invalid_argument(
+            "Combinations::rearrange_from_current_complement(): size != k."));
     }
     for (int i = 0; i < n - k; ++i) {
         rearranged[i] = original[complement.at(i)];
@@ -191,18 +195,21 @@ Orderings::Orderings(int n, const Vec1D<short int>& group_sizes)
     : n(n)
 {
     if (n < 1) {
-        throw(std::invalid_argument("Orderings::Orderings(): n must be greater than 0."));
+        throw(std::invalid_argument(
+            "Orderings::Orderings(): n must be greater than 0."));
     }
 
     int sum = 0;
     for (auto& el : group_sizes) {
         if (el <= 0) {
-            throw(std::invalid_argument("Orderings::Orderings(): group_size must be strictly positive."));
+            throw(std::invalid_argument("Orderings::Orderings(): group_size "
+                                        "must be strictly positive."));
         }
         sum += el;
     }
     if ((sum != n)) {
-        throw(std::invalid_argument("Orderings::Orderings(): sum of group sizes does not equal n."));
+        throw(std::invalid_argument(
+            "Orderings::Orderings(): sum of group sizes does not equal n."));
     }
 
     /* Start with increasing order (0,...,n) */
