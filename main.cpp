@@ -59,7 +59,7 @@ int main () {
 
     /* (Master + n_cores) instances of IntegrandTables */
     for (int i = 0; i < n_cores + 1; ++i) {
-        tables_vec.push_back(IntegrandTables(k_a, settings, sum_table, eta_grid));
+        tables_vec.emplace_back(k_a, settings, sum_table, eta_grid);
     }
 
     Vec1D<PowerSpectrumDiagram> diagrams = ps::construct_diagrams(settings);

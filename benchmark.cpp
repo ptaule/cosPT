@@ -48,7 +48,7 @@ static void BM_integrand(benchmark::State& state) {
     Vec1D<PowerSpectrumDiagram> diagrams = ps::construct_diagrams(settings);
 
     Vec1D<IntegrandTables> tables_vec;
-    tables_vec.push_back(IntegrandTables(k1, settings, sum_table, Vec1D<double>()));
+    tables_vec.emplace_back(k1, settings, sum_table, Vec1D<double>());
 
     IntegrationVariables& vars = tables_vec.at(0).vars;
     vars.magnitudes.at(0) = 0.3;

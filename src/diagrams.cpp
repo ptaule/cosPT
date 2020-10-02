@@ -777,7 +777,7 @@ Vec1D<PowerSpectrumDiagram> ps::construct_diagrams(const Settings& settings) {
                 throw(std::logic_error(
                     "construct_diagrams(): Index larger than 2 * n_loops."));
             }
-            diagrams.push_back(PowerSpectrumDiagram(settings, m, l, r));
+            diagrams.emplace_back(settings, m, l, r);
 
             l = n_loops + 1 - m - (++r);
             index++;
@@ -806,14 +806,14 @@ Vec1D<BiSpectrumDiagram> bs::construct_diagrams(const Settings& settings) {
                 int n_c = 0;
                 while (n_b >= n_c) {
                     /* Three diagrams, picking n_ab, n_bc, or n_ca as line being zero */
-                    diagrams.push_back(BiSpectrumDiagram(settings, 0,    n_bc, n_ca, n_a, n_b, n_c));
-                    diagrams.push_back(BiSpectrumDiagram(settings, n_bc, 0,    n_ca, n_a, n_b, n_c));
-                    diagrams.push_back(BiSpectrumDiagram(settings, n_ca, n_bc, 0,    n_a, n_b, n_c));
+                    diagrams.emplace_back(settings, 0,    n_bc, n_ca, n_a, n_b, n_c);
+                    diagrams.emplace_back(settings, n_bc, 0,    n_ca, n_a, n_b, n_c);
+                    diagrams.emplace_back(settings, n_ca, n_bc, 0,    n_a, n_b, n_c);
                     /* If n_b != n_c, there are diagrams with n_b <-> n_c */
                     if (n_b != n_c) {
-                        diagrams.push_back(BiSpectrumDiagram(settings, 0,    n_bc, n_ca, n_a, n_c, n_b));
-                        diagrams.push_back(BiSpectrumDiagram(settings, n_bc, 0,    n_ca, n_a, n_c, n_b));
-                        diagrams.push_back(BiSpectrumDiagram(settings, n_ca, n_bc, 0,    n_a, n_c, n_b));
+                        diagrams.emplace_back(settings, 0,    n_bc, n_ca, n_a, n_c, n_b);
+                        diagrams.emplace_back(settings, n_bc, 0,    n_ca, n_a, n_c, n_b);
+                        diagrams.emplace_back(settings, n_ca, n_bc, 0,    n_a, n_c, n_b);
                     }
 
                     n_b = n_self - n_a - (++n_c);
@@ -834,10 +834,10 @@ Vec1D<BiSpectrumDiagram> bs::construct_diagrams(const Settings& settings) {
                     int n_b = n_self - n_a;
                     int n_c = 0;
                     while (n_b >= n_c) {
-                        diagrams.push_back(BiSpectrumDiagram(settings, n_ab, n_bc, n_ca, n_a, n_b, n_c));
+                        diagrams.emplace_back(settings, n_ab, n_bc, n_ca, n_a, n_b, n_c);
                         /* If n_b != n_c, there is a diagram with n_b <-> n_c */
                         if (n_b != n_c) {
-                            diagrams.push_back(BiSpectrumDiagram(settings, n_ab, n_bc, n_ca, n_a, n_c, n_b));
+                            diagrams.emplace_back(settings, n_ab, n_bc, n_ca, n_a, n_c, n_b);
                         }
 
                         n_b = n_self - n_a - (++n_c);
