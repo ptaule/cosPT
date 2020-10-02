@@ -38,7 +38,7 @@ int cuba_integrand(
 int main () {
     double k_a = 1.047129e-01;
 
-    short int n_loops = 1;
+    int n_loops = 1;
     const std::string input_ps_file = "/home/pettertaule/repos/class_public/output/fiducial/newtonian/z1_pk.dat";
     Interpolation1D input_ps(input_ps_file);
 
@@ -147,7 +147,7 @@ int cuba_integrand(
     /*  IntegrandTables number *core+1 */
     IntegrandTables& tables = input->tables_vec.at(*core + 1);
 
-    short int n_loops = input->settings.n_loops;
+    int n_loops = input->settings.n_loops;
     IntegrationVariables& vars = tables.vars;
 
     double ratio = input->q_max/input->q_min;

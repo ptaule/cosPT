@@ -22,8 +22,8 @@ class Combinations {
         int counter = 1;
 #endif
 
-        std::vector<short int> combination;
-        std::vector<short int> complement;
+        std::vector<int> combination;
+        std::vector<int> complement;
 
         bool next_combination();
         bool next_complement();
@@ -35,25 +35,25 @@ class Combinations {
 
         bool next();
         void reset();
-        std::vector<short int> get_current_combination() const {
+        std::vector<int> get_current_combination() const {
             return combination;
         };
-        std::vector<short int> get_current_complement() const {
+        std::vector<int> get_current_complement() const {
             return complement;
         }
 
         void rearrange_from_current(
-                std::vector<short int>::iterator first,
-                std::vector<short int>::iterator last
+                std::vector<int>::iterator first,
+                std::vector<int>::iterator last
                 ) const;
         void rearrange_from_current_combination(
-                const short int original[],
-                short int rearranged[],
+                const int original[],
+                int rearranged[],
                 std::size_t size
                 ) const;
         void rearrange_from_current_complement(
-                const short int original[],
-                short int rearranged[],
+                const int original[],
+                int rearranged[],
                 std::size_t size
                 ) const;
 };
@@ -63,14 +63,14 @@ class Orderings {
         int n;
 
         std::vector<Combinations> combinations_vec;
-        std::vector<short int> normal_ordering;
+        std::vector<int> normal_ordering;
     public:
-        Orderings(int n, const std::vector<short int>& group_sizes);
+        Orderings(int n, const std::vector<int>& group_sizes);
 
         bool next();
         void reset();
 
-        std::vector<short int> get_current() const;
+        std::vector<int> get_current() const;
 };
 
 std::ostream& operator<<(std::ostream& out, const Combinations& combinations);

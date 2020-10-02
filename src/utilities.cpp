@@ -15,9 +15,9 @@ using std::size_t;
 using std::pow;
 
 void label2config(
-        short int label,    // in, label element in [0, n_config - 1]
-        short int config[], // out, array of base 3 digits
-        size_t size   // in, size of coefficients
+        int label,    /* in, label element in [0, n_config - 1] */
+        int config[], /* out, array of base 3 digits            */
+        size_t size   /* in, size of coefficients               */
         )
 {
     // Coefficients are element in {-1,0,1}
@@ -29,12 +29,12 @@ void label2config(
 
 
 
-short int config2label(
-        const short int config[], // in, array of base 3 digits
+int config2label(
+        const int config[], // in, array of base 3 digits
         size_t size         // in, size of coefficients
         )
 {
-    short int label = 0;
+    int label = 0;
 
     // Add 1 to obtain range {0,1,2}
     for (size_t i = 0; i < size; ++i) {
@@ -46,13 +46,13 @@ short int config2label(
 
 
 void print_label(
-        short int label,
-        short int n_coeffs,
+        int label,
+        int n_coeffs,
         Spectrum spectrum,
         std::ostream& out
         )
 {
-    short int config[N_COEFFS_MAX];
+    int config[N_COEFFS_MAX];
     label2config(label, config, n_coeffs);
 
     if (spectrum == POWERSPECTRUM) {
@@ -100,10 +100,10 @@ void print_label(
 
 
 void print_labels(
-        const short int labels[],
+        const int labels[],
         size_t size,
-        short int n_coeffs,
-        short int zero_label,
+        int n_coeffs,
+        int zero_label,
         Spectrum spectrum,
         std::ostream& out
         )
@@ -119,7 +119,7 @@ void print_labels(
 
 
 
-void change_sign(short int config[], std::size_t size) {
+void change_sign(int config[], std::size_t size) {
     for (size_t i = 0; i < size; ++i) {
         config[i] *= -1;
     }
@@ -127,16 +127,16 @@ void change_sign(short int config[], std::size_t size) {
 
 
 
-short int get_zero_label(short int n_coeffs) {
-    const short int coeffs[N_COEFFS_MAX] = {0};
+int get_zero_label(int n_coeffs) {
+    const int coeffs[N_COEFFS_MAX] = {0};
     return config2label(coeffs, n_coeffs);
 }
 
 
 
-bool single_loop_label(short int label, short int n_coeffs, Spectrum spectrum)
+bool single_loop_label(int label, int n_coeffs, Spectrum spectrum)
 {
-    short int coeffs[N_COEFFS_MAX] = {0};
+    int coeffs[N_COEFFS_MAX] = {0};
     label2config(label, coeffs, n_coeffs);
 
     int current = 0;
@@ -157,7 +157,7 @@ bool single_loop_label(short int label, short int n_coeffs, Spectrum spectrum)
         current = n_coeffs - 3;
     }
 
-    short int num_vecs_present = 0;
+    int num_vecs_present = 0;
 
     /* Go through rest of coefficients and count present momenta */
     for (int i = current; i >= 0; --i) {

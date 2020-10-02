@@ -127,15 +127,15 @@ void Combinations::reset()
 
 
 void Combinations::rearrange_from_current(
-        Vec1D<short int>::iterator first,
-        Vec1D<short int>::iterator last
+        Vec1D<int>::iterator first,
+        Vec1D<int>::iterator last
         ) const
 {
     if (first == last) {
         throw(std::logic_error(
             "Combinations::rearrange_from_current(): first == last."));
     }
-    Vec1D<short int> copy(first, last);
+    Vec1D<int> copy(first, last);
 
     if (copy.size() != static_cast<size_t>(n)) {
         throw(std::logic_error("Combinations::rearrange_from_current(): size "
@@ -153,8 +153,8 @@ void Combinations::rearrange_from_current(
 
 
 void Combinations::rearrange_from_current_combination(
-        const short int original[],
-        short int rearranged[],
+        const int original[],
+        int rearranged[],
         size_t size
         ) const
 {
@@ -170,8 +170,8 @@ void Combinations::rearrange_from_current_combination(
 
 
 void Combinations::rearrange_from_current_complement(
-        const short int original[],
-        short int rearranged[],
+        const int original[],
+        int rearranged[],
         size_t size
         ) const
 {
@@ -191,7 +191,7 @@ void Combinations::rearrange_from_current_complement(
 
 
 
-Orderings::Orderings(int n, const Vec1D<short int>& group_sizes)
+Orderings::Orderings(int n, const Vec1D<int>& group_sizes)
     : n(n)
 {
     if (n < 1) {
@@ -262,9 +262,9 @@ void Orderings::reset()
 
 
 
-std::vector<short int> Orderings::get_current() const
+std::vector<int> Orderings::get_current() const
 {
-    Vec1D<short int> ordering(normal_ordering);
+    Vec1D<int> ordering(normal_ordering);
 
     int cursor = 0;
     for (size_t i = 0; i < combinations_vec.size(); ++i) {
@@ -278,8 +278,8 @@ std::vector<short int> Orderings::get_current() const
 
 
 std::ostream& operator<<(std::ostream& out, const Combinations& combinations) {
-    Vec1D<short int> combination = combinations.get_current_combination();
-    Vec1D<short int> complement = combinations.get_current_complement();
+    Vec1D<int> combination = combinations.get_current_combination();
+    Vec1D<int> complement = combinations.get_current_complement();
 
     for (auto& el : combination) {
         out << el << "  ";
@@ -292,7 +292,7 @@ std::ostream& operator<<(std::ostream& out, const Combinations& combinations) {
 }
 
 std::ostream& operator<<(std::ostream& out, const Orderings& orderings) {
-    Vec1D<short int> ordering = orderings.get_current();
+    Vec1D<int> ordering = orderings.get_current();
 
     for (auto& el : ordering) {
        out << el << "  ";

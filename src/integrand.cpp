@@ -27,9 +27,9 @@ using std::size_t;
 
 
 double compute_k1(
-        short int m,
-        short int n_coeffs,
-        const Vec1D<short int>& rearrangement,
+        int m,
+        int n_coeffs,
+        const Vec1D<int>& rearrangement,
         const Vec1D<bool>& signs,
         const Vec2D<double>& bare_scalar_products
         )
@@ -57,9 +57,9 @@ double compute_k1(
 
 
 inline int heaviside_theta(
-        short int m,
+        int m,
         double k1,
-        const Vec1D<short int>& rearrangement,
+        const Vec1D<int>& rearrangement,
         const Vec1D<double>& Q_magnitudes
         )
 {
@@ -87,18 +87,18 @@ inline int heaviside_theta(
 
 void integrand_term(
         const PowerSpectrumDiagram& diagram,
-        short int a,
-        short int b,
+        int a,
+        int b,
         const Vec1D<Correlation>& correlations,
         IntegrandTables& tables,
         Vec1D<double>& term_results
         )
 {
-    short int kernel_index_l = diagram.arg_configs_l.at(a).at(b).kernel_index;
-    short int kernel_index_r = diagram.arg_configs_r.at(a).at(b).kernel_index;
+    int kernel_index_l = diagram.arg_configs_l.at(a).at(b).kernel_index;
+    int kernel_index_r = diagram.arg_configs_r.at(a).at(b).kernel_index;
 
-    const short int* arguments_l = diagram.arg_configs_l.at(a).at(b).args.data();
-    const short int* arguments_r = diagram.arg_configs_r.at(a).at(b).args.data();
+    const int* arguments_l = diagram.arg_configs_l.at(a).at(b).args.data();
+    const int* arguments_r = diagram.arg_configs_r.at(a).at(b).args.data();
 
     /* Compute kernels */
     compute_SPT_kernels(arguments_l, kernel_index_l, 2*diagram.l + diagram.m, tables);
@@ -181,7 +181,7 @@ void integrand(
             results.at(j) += diagram_results.at(j);
         }
     }
-    for (short int i = 0; i < input.settings.n_loops; ++i) {
+    for (int i = 0; i < input.settings.n_loops; ++i) {
         for (auto& el : results) {
             el *= input.input_ps.eval(tables.vars.magnitudes[i]);
         }

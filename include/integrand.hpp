@@ -15,7 +15,7 @@
 #include "diagrams.hpp"
 #include "tables.hpp"
 
-using Correlation = std::pair<short int, short int>;
+using Correlation = std::pair<int, int>;
 
 class IntegrationInput {
     public:

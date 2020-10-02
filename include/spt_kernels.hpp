@@ -11,10 +11,10 @@
 #include "utilities.hpp"
 #include "tables.hpp"
 
-short int compute_SPT_kernels(
-        const short int arguments[],
-        short int kernel_index,
-        short int n,
+int compute_SPT_kernels(
+        const int arguments[],
+        int kernel_index,
+        int n,
         IntegrandTables& tables
         );
 

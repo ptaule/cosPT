@@ -18,50 +18,50 @@ class Settings {
         Dynamics dynamics;
         Spectrum spectrum;
 
-        short int n_loops;
+        int n_loops;
 
-        short int n_coeffs;
-        short int n_configs;
-        short int n_kernels;
-        short int n_kernel_args;
-        short int zero_label;
-        short int single_loop_label_min;
-        short int single_loop_label_max;
-        short int single_loop_block_size;
+        int n_coeffs;
+        int n_configs;
+        int n_kernels;
+        int n_kernel_args;
+        int zero_label;
+        int single_loop_label_min;
+        int single_loop_label_max;
+        int single_loop_block_size;
 
-        Vec1D<short int> single_loops;
+        Vec1D<int> single_loops;
 
-        short int first_composite_block_size = 0; /* Bispectrum */
+        int first_composite_block_size = 0; /* Bispectrum */
 
-        short int components     = 0;
-        short int time_steps     = 0;
-        short int pre_time_steps = 0;
-        double eta_i             = 0.0;
-        double eta_f             = 0.0;
-        double eta_asymp         = 0.0;
+        int components     = 0;
+        int time_steps     = 0;
+        int pre_time_steps = 0;
+        double eta_i       = 0.0;
+        double eta_f       = 0.0;
+        double eta_asymp   = 0.0;
 
         Settings(
-                short int n_loops,
+                int n_loops,
                 Spectrum spectrum,
                 Dynamics dynamics,
-                short int time_steps,
-                short int pre_time_steps,
-                short int components,
+                int time_steps,
+                int pre_time_steps,
+                int components,
                 double eta_i,
                 double eta_f,
                 double eta_asymp
                 );
         Settings(
-                short int n_loops,
+                int n_loops,
                 Spectrum spectrum,
                 Dynamics dynamics,
-                short int time_steps,
-                short int components,
+                int time_steps,
+                int components,
                 double eta_i,
                 double eta_f
                 );
         Settings(
-                short int n_loops,
+                int n_loops,
                 Spectrum spectrum,
                 Dynamics dynamics
                 );
@@ -73,7 +73,7 @@ class IntegrationVariables {
         Vec1D<double> cos_theta;  /* Cosine of polar angles of the loop momenta */
         Vec1D<double> phi;        /* Azimutal angles */
 
-        IntegrationVariables(short int n_loops) {
+        IntegrationVariables(int n_loops) {
             magnitudes.resize(n_loops);
             cos_theta.resize(n_loops);
             phi.resize(n_loops - 1);
@@ -83,12 +83,12 @@ class IntegrationVariables {
 class SumTable {
     private:
         const Settings& settings;
-        Vec2D<short int> sum_table;
+        Vec2D<int> sum_table;
 
-        short int sum_two_labels(short int a, short int b);
+        int sum_two_labels(int a, int b);
     public:
         SumTable(const Settings& settings);
-        short int sum_labels(const short int labels[], size_t size) const;
+        int sum_labels(const int labels[], size_t size) const;
 };
 
 class SPTKernel {
@@ -133,7 +133,7 @@ class IntegrandTables {
         Vec1D<SPTKernel> spt_kernels;
         Vec1D<Kernel> kernels;
 
-        std::function<short int (const short int[], const Settings&)>
+        std::function<int (const int[], const Settings&)>
            kernel_index_from_arguments;
 
         IntegrandTables(
@@ -157,15 +157,15 @@ class IntegrandTables {
 Vec1D<double> initialize_eta_grid(const Settings& settings);
 
 namespace ps {
-    short int kernel_index_from_arguments(
-            const short int arguments[],
+    int kernel_index_from_arguments(
+            const int arguments[],
             const Settings& settings
             );
 }
 
 namespace bs {
-    short int kernel_index_from_arguments(
-            const short int arguments[],
+    int kernel_index_from_arguments(
+            const int arguments[],
             const Settings& settings
             );
 }

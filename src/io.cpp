@@ -27,7 +27,7 @@ using std::setw;
  * beginning with '#' */
 void read_columns_from_file(
         const std::string& filename,  /* in, name of file to be read */
-        unsigned short int n_columns, /* in, number of columns       */
+        unsigned int n_columns, /* in, number of columns       */
         Vec2D<double>& columns        /* out, columns                */
         )
 {
@@ -39,7 +39,7 @@ void read_columns_from_file(
     }
 
     columns.resize(n_columns);
-    for (unsigned short int i = 0; i < n_columns; ++i) {
+    for (unsigned int i = 0; i < n_columns; ++i) {
         columns.at(i).reserve(RESERVE_SIZE);
     }
 
@@ -53,7 +53,7 @@ void read_columns_from_file(
         double value;
 
         // Column counter
-        unsigned short int i = 0;
+        unsigned int i = 0;
         while (ss >> value) {
             if (i < n_columns) {
                 columns.at(i).push_back(value);
@@ -82,8 +82,8 @@ void read_columns_from_file(
 void read_data_grid_from_file(
         const std::string& filename,
         Vec1D<double>& data,
-        unsigned short int n_rows,
-        unsigned short int n_columns
+        unsigned int n_rows,
+        unsigned int n_columns
         )
 {
     std::ifstream input;
@@ -144,7 +144,7 @@ void write_results(
         const std::string& output_file,
         const std::string& input_ps_file,
         const std::string& description,
-        short int n_loops,
+        int n_loops,
         double cuba_epsabs,
         double cuba_epsrel,
         double cuba_maxevals,

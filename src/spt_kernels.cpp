@@ -21,22 +21,22 @@
 #endif
 
 double spt_term(
-        short int m_l,
-        short int m_r,
-        short int component,
-        short int args_l[],
-        short int args_r[],
-        short int sum_l,
-        short int sum_r,
+        int m_l,
+        int m_r,
+        int component,
+        int args_l[],
+        int args_r[],
+        int sum_l,
+        int sum_r,
         IntegrandTables& tables
         )
 {
-    short int n = m_l + m_r;
+    int n = m_l + m_r;
 
-    short int index_l = compute_SPT_kernels(args_l, -1, m_l, tables);
-    short int index_r = compute_SPT_kernels(args_r, -1, m_r, tables);
+    int index_l = compute_SPT_kernels(args_l, -1, m_l, tables);
+    int index_r = compute_SPT_kernels(args_r, -1, m_r, tables);
 
-    short int a,b;
+    int a,b;
     switch (component) {
         case 0:
             a = 2 * n + 1;
@@ -63,18 +63,18 @@ double spt_term(
 
 
 void partial_SPT_sum(
-        const short int arguments[], /* kernel arguments                       */
-        short int n,                 /* kernel number                          */
-        short int m,                 /* sum index in kernel recursion relation */
-        short int kernel_index,
+        const int arguments[], /* kernel arguments                       */
+        int n,                 /* kernel number                          */
+        int m,                 /* sum index in kernel recursion relation */
+        int kernel_index,
         IntegrandTables& tables
         )
 {
     double partial_kernel_values[SPT_COMPONENTS] = {0};
 
-    short int n_kernel_args = tables.settings.n_kernel_args;
-    short int args_l[N_KERNEL_ARGS_MAX] = {0};
-    short int args_r[N_KERNEL_ARGS_MAX] = {0};
+    int n_kernel_args = tables.settings.n_kernel_args;
+    int args_l[N_KERNEL_ARGS_MAX] = {0};
+    int args_r[N_KERNEL_ARGS_MAX] = {0};
 
     // Initialize args_l and args_r
     std::fill(&args_l[0], &args_l[n_kernel_args], tables.settings.zero_label);
@@ -88,8 +88,8 @@ void partial_SPT_sum(
         comb.rearrange_from_current_combination(arguments, args_l, m);
         comb.rearrange_from_current_complement(arguments, args_r, n - m);
 
-        short int sum_l = tables.sum_table.sum_labels(args_l, n_kernel_args);
-        short int sum_r = tables.sum_table.sum_labels(args_r, n_kernel_args);
+        int sum_l = tables.sum_table.sum_labels(args_l, n_kernel_args);
+        int sum_r = tables.sum_table.sum_labels(args_r, n_kernel_args);
 
         for (int i = 0; i < SPT_COMPONENTS; ++i) {
             partial_kernel_values[i] += 
@@ -122,17 +122,17 @@ void partial_SPT_sum(
 
 
 
-short int compute_SPT_kernels(
-        const short int arguments[], /* kernel arguments             */
-        short int kernel_index,      /* index for kernel table       */
-        short int n,                 /* order in perturbation theory */
+int compute_SPT_kernels(
+        const int arguments[], /* kernel arguments             */
+        int kernel_index,      /* index for kernel table       */
+        int n,                 /* order in perturbation theory */
         IntegrandTables& tables
         )
 {
     // DEBUG: check that the number of non-zero arguments is in fact n, and
     // that kernel_index is in fact equivalent to arguments
 #if DEBUG >= 1
-    short int argument_index = tables.kernel_index_from_arguments(arguments,
+    int argument_index = tables.kernel_index_from_arguments(arguments,
             tables.settings);
     if (kernel_index != -1 && argument_index != kernel_index) {
         throw(std::logic_error("Index computed from kernel arguments does not "

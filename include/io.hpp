@@ -16,24 +16,24 @@
 
 
 void read_columns_from_file(
-        const std::string& filename,  /* in, name of file to be read */
-        unsigned short int n_columns, /* in, number of columns       */
-        Vec2D<double>& columns        /* out, columns                */
+        const std::string& filename, /* in, name of file to be read */
+        unsigned int n_columns,      /* in, number of columns       */
+        Vec2D<double>& columns       /* out, columns                */
         );
 
 
 void read_data_grid_from_file(
         const std::string& filename,
         Vec1D<double>& data,
-        unsigned short int n_rows,
-        unsigned short int n_columns
+        unsigned int n_rows,
+        unsigned int n_columns
         );
 
 void write_results(
         const std::string& output_file,
         const std::string& input_ps_file,
         const std::string& description,
-        short int n_loops,
+        int n_loops,
         double cuba_epsabs,
         double cuba_epsrel,
         double cuba_maxevals,

@@ -27,7 +27,7 @@
 #define CUBE(x) x*x*x
 
 /* Debug modes (if not set by compile options): */
-/* 1: Perform additional checks during runtime. */  
+/* 1: Perform additional checks during runtime. */
 /* 2: In addition, print info during */
 /* runtime.  */
 #ifndef DEBUG
@@ -62,27 +62,27 @@ enum Dynamics {SPT, EVOLVE_SPT_IC, EVOLVE_ASYMP_IC};
 
 /* Utility functions */
 
-void label2config(short int label, short int config[], std::size_t size);
-short int config2label(const short int config[], std::size_t size);
+void label2config(int label, int config[], std::size_t size);
+int config2label(const int config[], std::size_t size);
 
 void print_label(
-        short int label, 
-        short int n_coeffs, 
+        int label,
+        int n_coeffs,
         Spectrum spectrum,
         std::ostream& out
         );
 
 void print_labels(
-        const short int labels[], 
+        const int labels[],
         size_t size,
-        short int n_coeffs,
-        short int zero_label,
+        int n_coeffs,
+        int zero_label,
         Spectrum spectrum,
         std::ostream& out
         );
 
-short int get_zero_label(short int n_coeffs);
-bool single_loop_label( short int label, short int n_coeffs, Spectrum spectrum);
+int get_zero_label(int n_coeffs);
+bool single_loop_label(int label, int n_coeffs, Spectrum spectrum);
 
 
 

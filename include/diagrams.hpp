@@ -16,29 +16,27 @@
 
 class ArgumentConfiguration {
     public:
-        short int kernel_index;
-        Vec1D<short int> args;
+        int kernel_index;
+        Vec1D<int> args;
 };
 
 class PowerSpectrumDiagram {
     private:
         const Settings& settings;
 
-        void compute_rearrangements(short int n_loops);
+        void compute_rearrangements(int n_loops);
         void compute_sign_flips();
 
         /* Computes argument configurations if rearrangement and sign
          * configurations are set */
-        void kernel_arguments(short int n_coeffs, short int a, short int b);
+        void kernel_arguments(int n_coeffs, int a, int b);
     public:
-        short int m;
-        short int l;
-        short int r;
+        int m, l, r;
 
-        short int diagram_factor;     /* Topological multiplicative diagram factor */
+        int diagram_factor;     /* Topological multiplicative diagram factor */
 
         /* Table of rearrangements */
-        Vec2D<short int> rearrangements;
+        Vec2D<int> rearrangements;
         /* Table of sign flips, true <-> +1, false <-> -1 */
         Vec2D<bool> sign_configs;
 
@@ -49,16 +47,14 @@ class PowerSpectrumDiagram {
 
         PowerSpectrumDiagram(
                 const Settings& settings,
-                short int m,
-                short int l,
-                short int r
+                int m, int l, int r
                 );
 
         void print_diagram_tags(std::ostream& out) const;
         void print_argument_configuration(
                 std::ostream& out,
-                short int a,
-                short int b
+                int a,
+                int b
                 ) const;
 };
 
@@ -71,12 +67,12 @@ class BiSpectrumDiagram {
         bool overall_loop;
 
         /* Number of sign_flips for connecting lines */
-        short int n_connecting_loops_ab;
-        short int n_connecting_loops_bc;
-        short int n_connecting_loops_ca;
+        int n_connecting_loops_ab;
+        int n_connecting_loops_bc;
+        int n_connecting_loops_ca;
 
-        void compute_rearrangements(short int n_loops);
-        Vec2D<bool> connecting_line_sign_flips(short int n_connecting_loops) const;
+        void compute_rearrangements(int n_loops);
+        Vec2D<bool> connecting_line_sign_flips(int n_connecting_loops) const;
         Vec2D<bool> compute_sign_flips(
                 const Vec2D<bool>& sign_configs_ab,
                 const Vec2D<bool>& sign_configs_bc,
@@ -86,20 +82,20 @@ class BiSpectrumDiagram {
         /* Computes argument configurations if rearrangement and sign
          * configurations are set */
         void kernel_arguments(
-              short int n_coeffs,
-              short int rearr_idx,
-              short int sign_idx,
-              short int overall_loop_idx
+              int n_coeffs,
+              int rearr_idx,
+              int sign_idx,
+              int overall_loop_idx
               );
 
     public:
-        short int n_ab, n_bc, n_ca;
-        short int n_a, n_b, n_c;
+        int n_ab, n_bc, n_ca;
+        int n_a, n_b, n_c;
 
-        short int diagram_factor;     /* Topological multiplicative diagram factor */
+        int diagram_factor;     /* Topological multiplicative diagram factor */
 
         /* Table of rearrangements */
-        Vec2D<short int> rearrangements;
+        Vec2D<int> rearrangements;
         /* Tables of sign flips, true <-> +1, false <-> -1 */
         Vec2D<bool> sign_configs;
 
@@ -112,8 +108,8 @@ class BiSpectrumDiagram {
 
         BiSpectrumDiagram(
                 const Settings& settings,
-                short int n_ab, short int n_bc, short int n_ca,
-                short int n_a, short int n_b, short int n_c
+                int n_ab, int n_bc, int n_ca,
+                int n_a, int n_b, int n_c
                 );
 
         bool has_overall_loop() const {return overall_loop;}
@@ -121,9 +117,9 @@ class BiSpectrumDiagram {
         void print_diagram_tags(std::ostream& out) const;
         void print_argument_configuration(
                 std::ostream& out,
-                short int rearr_idx,
-                short int sign_idx,
-                short int overall_loop_idx = 0
+                int rearr_idx,
+                int sign_idx,
+                int overall_loop_idx = 0
                 ) const;
 };
 

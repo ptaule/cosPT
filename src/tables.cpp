@@ -21,12 +21,12 @@
 using std::size_t;
 
 Settings::Settings(
-        short int n_loops,
+        int n_loops,
         Spectrum spectrum,
         Dynamics dynamics,
-        short int time_steps,
-        short int pre_time_steps,
-        short int components,
+        int time_steps,
+        int pre_time_steps,
+        int components,
         double eta_i,
         double eta_f,
         double eta_asymp
@@ -75,8 +75,8 @@ Settings::Settings(
     }
 
     /* List of single loop labels */
-    short int coeffs[N_COEFFS_MAX] = {zero_label};
-    short int label;
+    int coeffs[N_COEFFS_MAX] = {zero_label};
+    int label;
 
     for (int i = 0; i < n_loops; ++i) {
         coeffs[i] = -1;
@@ -94,11 +94,11 @@ Settings::Settings(
 
 
 Settings::Settings(
-        short int n_loops,
+        int n_loops,
         Spectrum spectrum,
         Dynamics dynamics,
-        short int time_steps,
-        short int components,
+        int time_steps,
+        int components,
         double eta_i,
         double eta_f
         ) : Settings(n_loops, spectrum, dynamics, time_steps, 0, components,
@@ -113,7 +113,7 @@ Settings::Settings(
 
 
 Settings::Settings(
-        short int n_loops,
+        int n_loops,
         Spectrum spectrum,
         Dynamics dynamics
         ) :
@@ -127,13 +127,13 @@ Settings::Settings(
 
 
 
-short int SumTable::sum_two_labels(short int a, short int b)
+int SumTable::sum_two_labels(int a, int b)
 {
-    short int n_coeffs = settings.n_coeffs;
+    int n_coeffs = settings.n_coeffs;
 
-    short int a_coeffs[N_COEFFS_MAX]   = {0};
-    short int b_coeffs[N_COEFFS_MAX]   = {0};
-    short int res_coeffs[N_COEFFS_MAX] = {0};
+    int a_coeffs[N_COEFFS_MAX]   = {0};
+    int b_coeffs[N_COEFFS_MAX]   = {0};
+    int res_coeffs[N_COEFFS_MAX] = {0};
 
     label2config(a, a_coeffs, n_coeffs);
     label2config(b, b_coeffs, n_coeffs);
@@ -148,8 +148,8 @@ short int SumTable::sum_two_labels(short int a, short int b)
 
 SumTable::SumTable(const Settings& settings) : settings(settings)
 {
-    short int n_configs = settings.n_configs;
-    short int zero_label = settings.zero_label;
+    int n_configs = settings.n_configs;
+    int zero_label = settings.zero_label;
 
     sum_table.resize(n_configs);
     for (int a = 0; a < n_configs; ++a) {
@@ -170,13 +170,13 @@ SumTable::SumTable(const Settings& settings) : settings(settings)
 
 
 
-short int SumTable::sum_labels(const short int labels[], size_t size) const
+int SumTable::sum_labels(const int labels[], size_t size) const
 {
-    short int zero_label = settings.zero_label;
+    int zero_label = settings.zero_label;
 
     if (size == 1) return labels[0];
 
-    short int result = labels[0];
+    int result = labels[0];
 
     for (size_t i = 1; i < size; ++i) {
         if (labels[i] == zero_label) continue;
@@ -187,11 +187,11 @@ short int SumTable::sum_labels(const short int labels[], size_t size) const
     // i.e. that Q-coefficients are elements of (-1,0,1) and k-coefficient is
     // an element of (0,1)
 #if DEBUG >= 1
-    short int n_coeffs = settings.n_coeffs;
-    short int res_coeffs[N_COEFFS_MAX];
+    int n_coeffs = settings.n_coeffs;
+    int res_coeffs[N_COEFFS_MAX];
     label2config(result, res_coeffs, n_coeffs);
     for (int i = 0; i < n_coeffs; ++i) {
-        short int c = res_coeffs[i];
+        int c = res_coeffs[i];
         if (!(c == -1 || c == 0 || c == 1))
             throw(std::logic_error(
                 "SumTable::sum_labels(): Sum of labels does not correspond to "
@@ -222,7 +222,7 @@ Vec1D<double> initialize_eta_grid(const Settings& settings)
         }
     }
     else if (dynamics == EVOLVE_ASYMP_IC) {
-        short int pre_time_steps = settings.pre_time_steps;
+        int pre_time_steps = settings.pre_time_steps;
         double eta_asymp = settings.eta_asymp;
         // Linear time step (including endpoints)
         // Between eta_asymp and eta_i
@@ -255,11 +255,11 @@ IntegrandTables::IntegrandTables(
     k_a(k_a), k_b(k_b), settings(settings), sum_table(sum_table),
     vars(IntegrationVariables(settings.n_loops)), eta_grid(eta_grid)
 {
-    short int n_coeffs = settings.n_coeffs;
-    short int n_configs = settings.n_configs;
-    short int n_kernels = settings.n_kernels;
-    short int time_steps = settings.time_steps;
-    short int components = settings.components;
+    int n_coeffs = settings.n_coeffs;
+    int n_configs = settings.n_configs;
+    int n_kernels = settings.n_kernels;
+    int time_steps = settings.time_steps;
+    int components = settings.components;
 
     if (settings.spectrum == POWERSPECTRUM) {
         kernel_index_from_arguments = ps::kernel_index_from_arguments;
@@ -273,14 +273,14 @@ IntegrandTables::IntegrandTables(
     }
 
     bare_scalar_products.resize(n_coeffs);
-    for (short int i = 0; i < n_coeffs; ++i) {
+    for (int i = 0; i < n_coeffs; ++i) {
         bare_scalar_products.at(i).resize(n_coeffs);
     }
 
     scalar_products.resize(n_configs);
     alpha.resize(n_configs);
     beta.resize(n_configs);
-    for (short int i = 0; i < n_configs; ++i) {
+    for (int i = 0; i < n_configs; ++i) {
         scalar_products.at(i).resize(n_configs);
         alpha.at(i).resize(n_configs);
         beta.at(i).resize(n_configs);
@@ -295,9 +295,9 @@ IntegrandTables::IntegrandTables(
         spt_kernels.resize(n_kernels);
         kernels.resize(n_kernels);
 
-        for (short int i = 0; i < n_kernels; ++i) {
+        for (int i = 0; i < n_kernels; ++i) {
             kernels.at(i).values.resize(time_steps);
-            for (short int j = 0; j < time_steps; ++j) {
+            for (int j = 0; j < time_steps; ++j) {
                 kernels.at(i).values.at(j).resize(components);
             }
         }
@@ -355,7 +355,7 @@ void IntegrandTables::reset_kernels()
     for (int i = 0; i < settings.n_kernels; ++i) {
         kernels.at(i).computed = false;
 
-        for (short int j = 0; j < settings.time_steps; ++j) {
+        for (int j = 0; j < settings.time_steps; ++j) {
             std::fill(kernels.at(i).values.at(j).begin(),
                     kernels.at(i).values.at(j).end(), 0);
         }
@@ -366,8 +366,8 @@ void IntegrandTables::reset_kernels()
 
 void IntegrandTables::ps_compute_bare_scalar_products()
 {
-    short int n_loops = settings.n_loops;
-    short int n_coeffs = settings.n_coeffs;
+    int n_loops = settings.n_loops;
+    int n_coeffs = settings.n_coeffs;
 
     // Diagonal products correspond to Q1*Q1, etc.
     for (int i = 0; i < n_loops; ++i) {
@@ -431,11 +431,11 @@ void IntegrandTables::bs_compute_bare_scalar_products()
 /* Computes table of scalar_products given bare_scalar_products table */
 void IntegrandTables::compute_scalar_products()
 {
-    short int n_coeffs = settings.n_coeffs;
-    short int n_configs = settings.n_configs;
+    int n_coeffs = settings.n_coeffs;
+    int n_configs = settings.n_configs;
 
-    short int a_coeffs[N_COEFFS_MAX];
-    short int b_coeffs[N_COEFFS_MAX];
+    int a_coeffs[N_COEFFS_MAX];
+    int b_coeffs[N_COEFFS_MAX];
 
     // Scalar product matrix is symmetric, hence compute indices [a,b] and
     // [b,a] simultaneously
@@ -466,7 +466,7 @@ void IntegrandTables::compute_scalar_products()
 
 void IntegrandTables::compute_alpha_beta()
 {
-    short int n_configs = settings.n_configs;
+    int n_configs = settings.n_configs;
     for (int a = 0; a < n_configs; ++a) {
         for (int b = 0; b < n_configs; ++b) {
             // Special case when a == b
@@ -518,33 +518,33 @@ void IntegrandTables::compute_tables()
 
 
 
-short int ps::kernel_index_from_arguments(
-        const short int arguments[],
+int ps::kernel_index_from_arguments(
+        const int arguments[],
         const Settings& settings
         )
 {
    /* Precompute powers of two for speedup */
-    short int pow2[] = {1,2,4,8,16,32,64,128};
+    int pow2[] = {1,2,4,8,16,32,64,128};
 
-    short int zero_label                 = settings.zero_label;
-    short int n_kernel_args              = settings.n_kernel_args;
-    short int single_loop_block_size     = settings.single_loop_block_size;
-    short int single_loop_label_max      = settings.single_loop_label_max;
+    int zero_label                 = settings.zero_label;
+    int n_kernel_args              = settings.n_kernel_args;
+    int single_loop_block_size     = settings.single_loop_block_size;
+    int single_loop_label_max      = settings.single_loop_label_max;
 
-    const Vec1D<short int>& single_loops = settings.single_loops;
+    const Vec1D<int>& single_loops = settings.single_loops;
 
     // In DEBUG-mode, check that non-zero arguments (zero_label) are unique
 #if DEBUG >= 1
-    short int n_coeffs              = settings.n_coeffs;
-    short int single_loop_label_min = settings.single_loop_label_min;
+    int n_coeffs              = settings.n_coeffs;
+    int single_loop_label_min = settings.single_loop_label_min;
 
     if (!unique_elements(arguments, n_kernel_args, zero_label))
         throw(std::logic_error("ps::kernel_index_from_arguments(): \
 duplicate vector arguments passed."));
-    short int n_k_labels = 0;
+    int n_k_labels = 0;
 #endif
 
-    short int index = 0;
+    int index = 0;
 
     for (int i = 0; i < n_kernel_args; ++i) {
         // First, check if argument is a zero vector
@@ -594,24 +594,24 @@ more than one argument is of k-type."));
 
 
 
-short int bs::kernel_index_from_arguments(
-        const short int arguments[],
+int bs::kernel_index_from_arguments(
+        const int arguments[],
         const Settings& settings
         )
 {
    /* Precompute powers of two for speedup */
-    short int pow2[] = {1,2,4,8,16,32,64,128};
+    int pow2[] = {1,2,4,8,16,32,64,128};
 
-    short int n_configs                  = settings.n_configs;
-    short int zero_label                 = settings.zero_label;
-    short int n_kernel_args              = settings.n_kernel_args;
-    short int single_loop_block_size     = settings.single_loop_block_size;
+    int n_configs                  = settings.n_configs;
+    int zero_label                 = settings.zero_label;
+    int n_kernel_args              = settings.n_kernel_args;
+    int single_loop_block_size     = settings.single_loop_block_size;
 
-    short int single_loop_label_min      = settings.single_loop_label_min;
-    short int single_loop_label_max      = settings.single_loop_label_max;
-    short int first_composite_block_size = settings.first_composite_block_size;
+    int single_loop_label_min      = settings.single_loop_label_min;
+    int single_loop_label_max      = settings.single_loop_label_max;
+    int first_composite_block_size = settings.first_composite_block_size;
 
-    const Vec1D<short int>& single_loops = settings.single_loops;
+    const Vec1D<int>& single_loops = settings.single_loops;
 
     // In DEBUG-mode, check that non-zero arguments (zero_label) are unique
 #if DEBUG >= 1
@@ -620,7 +620,7 @@ short int bs::kernel_index_from_arguments(
 duplicate vector arguments passed."));
 #endif
 
-    short int index = 0;
+    int index = 0;
 
     /* Counter of composite arguments, i.e. not single loop momenta */
     int n_composite = 0;
@@ -639,7 +639,7 @@ duplicate vector arguments passed."));
             ++n_composite;
         }
         else if (arguments[i] > single_loop_label_max) {
-            short int block = n_composite > 0 ? single_loop_block_size : first_composite_block_size;
+            int block = n_composite > 0 ? single_loop_block_size : first_composite_block_size;
             index += (arguments[i] - n_configs/9 + 1) * block;
 
             ++n_composite;

@@ -20,10 +20,10 @@ static void BM_kernel_index(benchmark::State& state) {
     // Perform setup here
     Spectrum spectrum = POWERSPECTRUM;
     Dynamics dynamics = SPT;
-    short int n_loops = 2;
+    int n_loops = 2;
     Settings settings(n_loops, spectrum, dynamics);
 
-    short int arguments[] = {13, 7, 1, 5, 3};
+    int arguments[] = {13, 7, 1, 5, 3};
 
     for (auto _ : state) {
         // This code gets timed
@@ -35,7 +35,7 @@ static void BM_kernel_index(benchmark::State& state) {
 
 static void BM_integrand(benchmark::State& state) {
     // Perform setup here
-    short int n_loops = 2;
+    int n_loops = 2;
     double k1 = 0.2;
 
     Interpolation1D input_ps("/home/pettertaule/repos/class_public/output/fiducial/newtonian/z1_pk.dat");
