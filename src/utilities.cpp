@@ -165,18 +165,3 @@ bool single_loop_label(int label, int n_coeffs, Spectrum spectrum)
     }
     return (num_vecs_present == 1);
 }
-
-
-
-// Are there duplicate elements of the array? Yes, return true;
-// no, return false. Do not consider elements equal to skip.
-bool unique_elements(const short int array[], size_t size, short int skip) {
-    for (size_t i = 0; i < size; ++i) {
-        short int val = array[i];
-        if (val == skip) continue;
-        for (size_t j = i + 1; j < size; ++j) {
-            if (array[j] == val) return false;
-        }
-    }
-    return true;
-}
