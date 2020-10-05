@@ -27,9 +27,7 @@ class Interpolation1D {
 
         void initialize(const Vec1D<double>& x, const Vec1D<double>& y);
     public:
-        Interpolation1D() = delete;
-        Interpolation1D(const Interpolation1D&) = delete;
-
+        Interpolation1D() : spline(nullptr), acc(nullptr), type(nullptr) {}
         Interpolation1D(
                 const Vec1D<double>& x,
                 const Vec1D<double>& y,
@@ -41,6 +39,9 @@ class Interpolation1D {
                 );
         Interpolation1D(const std::string& filename, const gsl_interp_type* type);
         Interpolation1D(const std::string& filename);
+        Interpolation1D(const Interpolation1D&) = delete;
+        Interpolation1D(Interpolation1D&& other);
+
 
         double eval(double x) const {
             return gsl_spline_eval(spline, x, acc);
@@ -66,8 +67,8 @@ class Interpolation2D {
                 const Vec1D<double>& z
                 );
     public:
-        Interpolation2D() = delete;
-        Interpolation2D(const Interpolation2D&) = delete;
+        Interpolation2D() :
+            spline(nullptr), x_acc(nullptr), y_acc(nullptr), type(nullptr) {}
         Interpolation2D(
                 const Vec1D<double>& x,
                 const Vec1D<double>& y,
@@ -90,6 +91,9 @@ class Interpolation2D {
                 const std::string& y_grid_file,
                 const std::string& data_file
                 );
+        Interpolation2D(const Interpolation2D&) = delete;
+        Interpolation2D(Interpolation2D&&);
+
 
         double eval(double x, double y) const {
             return gsl_spline2d_eval(spline, x, y, x_acc, y_acc);

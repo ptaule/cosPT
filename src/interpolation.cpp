@@ -63,6 +63,18 @@ Interpolation1D::Interpolation1D(const std::string& filename)
 
 
 
+Interpolation1D::Interpolation1D(Interpolation1D&& other) {
+    spline = other.spline;
+    acc    = other.acc;
+    type   = other.type;
+
+    other.spline = nullptr;
+    other.acc    = nullptr;
+    other.type   = nullptr;
+}
+
+
+
 void Interpolation2D::initialize(
         const Vec1D<double>& x,
         const Vec1D<double>& y,
@@ -131,3 +143,18 @@ Interpolation2D::Interpolation2D(
         ) : Interpolation2D(x_grid_file, y_grid_file, data_file,
             gsl_interp2d_bicubic)
 {}
+
+
+
+Interpolation2D::Interpolation2D(Interpolation2D&& other)
+{
+    x_acc = other.x_acc;
+    y_acc = other.y_acc;
+    spline = other.spline;
+    type = other.type;
+
+    other.x_acc = nullptr;
+    other.y_acc = nullptr;
+    other.spline = nullptr;
+    other.type = nullptr;
+}
