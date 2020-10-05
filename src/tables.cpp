@@ -11,6 +11,7 @@
 #include <cmath>
 
 #include "../include/utilities.hpp"
+#include "../include/parameters.hpp"
 #include "../include/tables.hpp"
 
 /* Turn off vector bounds check if not in debug-mode */
@@ -20,116 +21,9 @@
 
 using std::size_t;
 
-Settings::Settings(
-        int n_loops,
-        Spectrum spectrum,
-        Dynamics dynamics,
-        int time_steps,
-        int pre_time_steps,
-        int components,
-        double eta_i,
-        double eta_f,
-        double eta_asymp
-        ) :
-    dynamics(dynamics), spectrum(spectrum), n_loops(n_loops),
-    components(components), time_steps(time_steps),
-    pre_time_steps(pre_time_steps), eta_i(eta_i), eta_f(eta_f),
-    eta_asymp(eta_asymp)
-{
-    if (spectrum == POWERSPECTRUM && (n_loops < 1 || n_loops > 2)) {
-        throw(std::invalid_argument("Settings::Settings(): POWERSPECTRUM only "
-                                    "implemented for n_loops = 1,2."));
-    }
-    if (spectrum == BISPECTRUM && (n_loops != 1)) {
-        throw(std::invalid_argument("Settings::Settings(): BISPECTRUM only "
-                                    "implemented for n_loops = 1."));
-    }
-    if (spectrum == POWERSPECTRUM) {
-        n_coeffs = n_loops + 1;
-        n_configs = pow(3, n_coeffs);
-        n_kernels = (n_configs/3 + 1) * pow(4,n_loops);
-        n_kernel_args = 2 * n_loops + 1;
-        zero_label = get_zero_label(n_coeffs);
-
-        /* Define block size for kernel indexing. A block consists of all */
-        /* single loop label argument combinations. */
-        single_loop_block_size = pow(4, n_loops);
-        /* Max/min single_loops labels */
-        single_loop_label_min = n_configs / 3;
-        single_loop_label_max = 2 * n_configs / 3 - 1;
-    }
-    else if (spectrum == BISPECTRUM) {
-        n_coeffs = n_loops + 2;
-        n_configs = pow(3, n_coeffs);
-        n_kernels = pow(n_configs - pow(3, n_loops), 2) * pow(4, n_loops);
-        n_kernel_args = 2 * n_loops + 2;
-        zero_label = get_zero_label(n_coeffs);
-
-        single_loop_block_size = pow(4, n_loops);
-        /* Max/min single_loops labels */
-        single_loop_label_min = 4 * n_configs / 9;
-        single_loop_label_max = 5 * n_configs / 9 - 1;
-        /* Composite label has either k_a, k_b, or multiple loop momenta
-         * (applicable for overall loop diagram) */
-        first_composite_block_size = 26 * n_configs/27 * single_loop_block_size;
-    }
-
-    /* List of single loop labels */
-    int coeffs[N_COEFFS_MAX] = {zero_label};
-    int label;
-
-    for (int i = 0; i < n_loops; ++i) {
-        coeffs[i] = -1;
-        label = config2label(coeffs, n_coeffs);
-        single_loops.push_back(label);
-
-        coeffs[i] = 1;
-        label = config2label(coeffs, n_coeffs);
-        single_loops.push_back(label);
-
-        coeffs[i] = 0;
-    }
-}
-
-
-
-Settings::Settings(
-        int n_loops,
-        Spectrum spectrum,
-        Dynamics dynamics,
-        int time_steps,
-        int components,
-        double eta_i,
-        double eta_f
-        ) : Settings(n_loops, spectrum, dynamics, time_steps, 0, components,
-            eta_i, eta_f, 0.0)
-{
-    if (dynamics != EVOLVE_SPT_IC) {
-        throw(std::invalid_argument("Settings::Settings(): This constructor is "
-                                    "only used for EVOLVE_SPT_IC dynamics."));
-    }
-}
-
-
-
-Settings::Settings(
-        int n_loops,
-        Spectrum spectrum,
-        Dynamics dynamics
-        ) :
-    Settings(n_loops, spectrum, dynamics, 0, 0, 0, 0.0, 0.0, 0.0)
-{
-    if (dynamics != SPT) {
-        throw(std::invalid_argument(
-            "This constructor is only used for SPT dynamics."));
-    }
-}
-
-
-
 int SumTable::sum_two_labels(int a, int b)
 {
-    int n_coeffs = settings.n_coeffs;
+    int n_coeffs = params.n_coeffs;
 
     int a_coeffs[N_COEFFS_MAX]   = {0};
     int b_coeffs[N_COEFFS_MAX]   = {0};
@@ -146,10 +40,10 @@ int SumTable::sum_two_labels(int a, int b)
 
 
 
-SumTable::SumTable(const Settings& settings) : settings(settings)
+SumTable::SumTable(const Parameters& params) : params(params)
 {
-    int n_configs = settings.n_configs;
-    int zero_label = settings.zero_label;
+    int n_configs = params.n_configs;
+    int zero_label = params.zero_label;
 
     sum_table.resize(n_configs);
     for (int a = 0; a < n_configs; ++a) {
@@ -172,7 +66,7 @@ SumTable::SumTable(const Settings& settings) : settings(settings)
 
 int SumTable::sum_labels(const int labels[], size_t size) const
 {
-    int zero_label = settings.zero_label;
+    int zero_label = params.zero_label;
 
     if (size == 1) return labels[0];
 
@@ -187,7 +81,7 @@ int SumTable::sum_labels(const int labels[], size_t size) const
     // i.e. that Q-coefficients are elements of (-1,0,1) and k-coefficient is
     // an element of (0,1)
 #if DEBUG >= 1
-    int n_coeffs = settings.n_coeffs;
+    int n_coeffs = params.n_coeffs;
     int res_coeffs[N_COEFFS_MAX];
     label2config(result, res_coeffs, n_coeffs);
     for (int i = 0; i < n_coeffs; ++i) {
@@ -204,72 +98,31 @@ int SumTable::sum_labels(const int labels[], size_t size) const
 
 
 
-Vec1D<double> initialize_eta_grid(const Settings& settings)
-{
-    Vec1D<double> eta_grid(settings.time_steps, 0.0);
-
-    double eta_i = settings.eta_i;
-    double eta_f = settings.eta_f;
-    double time_steps = settings.time_steps;
-
-    Dynamics dynamics = settings.dynamics;
-
-    if (dynamics == EVOLVE_SPT_IC) {
-        // Linear time step (including endpoints)
-        double d_eta = std::abs(eta_f - eta_i)/(time_steps - 1);
-        for (int i = 0; i < time_steps; ++i) {
-            eta_grid.at(i) = eta_i + i * d_eta;
-        }
-    }
-    else if (dynamics == EVOLVE_ASYMP_IC) {
-        int pre_time_steps = settings.pre_time_steps;
-        double eta_asymp = settings.eta_asymp;
-        // Linear time step (including endpoints)
-        // Between eta_asymp and eta_i
-        double d_eta = std::abs(eta_i - eta_asymp)/(pre_time_steps);
-        for (int i = 0; i < pre_time_steps; ++i) {
-            eta_grid.at(i) = eta_asymp + i*d_eta;
-        }
-        // Between eta_i and eta_f
-        d_eta = std::abs(eta_f - eta_i)/(time_steps - pre_time_steps - 1);
-        for (int i = pre_time_steps; i < time_steps; ++i) {
-            eta_grid.at(i) = eta_i + (i - pre_time_steps) * d_eta;
-        }
-    }
-    else {
-        throw(std::invalid_argument(
-            "initialize_eta_grid(): incorrect dynamics."));
-    }
-    return eta_grid;
-}
-
-
-
 IntegrandTables::IntegrandTables(
         double k_a,
         double k_b,
-        const Settings& settings,
+        const Parameters& params,
+        const EvolutionParameters& ev_params,
         const SumTable& sum_table,
-        const Vec1D<double>& eta_grid
+        const EtaGrid& eta_grid
         ) :
-    k_a(k_a), k_b(k_b), settings(settings), sum_table(sum_table),
-    vars(IntegrationVariables(settings.n_loops)), eta_grid(eta_grid)
+    k_a(k_a), k_b(k_b), params(params), ev_params(ev_params),
+    sum_table(sum_table), eta_grid(eta_grid),
+    vars(IntegrationVariables(params.n_loops))
 {
-    int n_coeffs = settings.n_coeffs;
-    int n_configs = settings.n_configs;
-    int n_kernels = settings.n_kernels;
-    int time_steps = settings.time_steps;
-    int components = settings.components;
+    int n_coeffs = params.n_coeffs;
+    int n_configs = params.n_configs;
+    int n_kernels = params.n_kernels;
 
-    if (settings.spectrum == POWERSPECTRUM) {
+    if (params.spectrum == POWERSPECTRUM) {
         kernel_index_from_arguments = ps::kernel_index_from_arguments;
     }
-    else if (settings.spectrum == BISPECTRUM) {
+    else if (params.spectrum == BISPECTRUM) {
         kernel_index_from_arguments = bs::kernel_index_from_arguments;
     }
     else {
-        throw(std::invalid_argument("IntegrandTables::IntegrandTables(): \
-                    Unknown dynamics in Settings settings."));
+        throw(std::invalid_argument("IntegrandTables::IntegrandTables(): Unknown "
+                                    "dynamics in Parameters params."));
     }
 
     bare_scalar_products.resize(n_coeffs);
@@ -286,19 +139,20 @@ IntegrandTables::IntegrandTables(
         beta.at(i).resize(n_configs);
     }
 
-    if (settings.dynamics == SPT || settings.dynamics == EVOLVE_SPT_IC) {
-        spt_kernels.resize(settings.n_kernels);
+    if (params.dynamics == SPT || params.dynamics == EVOLVE_SPT_IC) {
+        spt_kernels.resize(params.n_kernels);
     }
-    if (settings.dynamics == EVOLVE_SPT_IC ||
-        settings.dynamics == EVOLVE_ASYMP_IC
+    if (params.dynamics == EVOLVE_SPT_IC ||
+        params.dynamics == EVOLVE_ASYMP_IC
         ) {
         spt_kernels.resize(n_kernels);
         kernels.resize(n_kernels);
 
         for (int i = 0; i < n_kernels; ++i) {
-            kernels.at(i).values.resize(time_steps);
-            for (int j = 0; j < time_steps; ++j) {
-                kernels.at(i).values.at(j).resize(components);
+            kernels.at(i).values.resize(eta_grid.get_time_steps());
+
+            for (int j = 0; j < eta_grid.get_time_steps(); ++j) {
+                kernels.at(i).values.at(j).resize(COMPONENTS);
             }
         }
     }
@@ -308,15 +162,17 @@ IntegrandTables::IntegrandTables(
 
 IntegrandTables::IntegrandTables(
         double k_a,
-        const Settings& settings,
+        const Parameters& params,
+        const EvolutionParameters& ev_params,
         const SumTable& sum_table,
-        const Vec1D<double>& eta_grid
+        const EtaGrid& eta_grid
         ) :
-    IntegrandTables(k_a, 0, settings, sum_table, eta_grid)
+    IntegrandTables(k_a, 0, params, ev_params, sum_table, eta_grid)
 {
-    if (settings.spectrum == BISPECTRUM) {
-        throw(std::invalid_argument("IntegrandTables::IntegrandTables(): \
-this constructor can only be used for spetrum = POWERSPECTRUM."));
+    if (params.spectrum == BISPECTRUM) {
+        throw(std::invalid_argument(
+            "IntegrandTables::IntegrandTables(): this constructor can only be "
+            "used for spetrum = POWERSPECTRUM."));
     }
 }
 
@@ -327,12 +183,12 @@ void IntegrandTables::reset()
     // bare_scalar_products, alpha, beta tables etc. are completely rewritten
     // by their respective compute-functions, hence no need to zero initialize
 
-    if (settings.dynamics == SPT ||
-        settings.dynamics == EVOLVE_SPT_IC) {
+    if (params.dynamics == SPT ||
+        params.dynamics == EVOLVE_SPT_IC) {
         reset_spt_kernels();
     }
-    if (settings.dynamics == EVOLVE_SPT_IC ||
-        settings.dynamics == EVOLVE_ASYMP_IC) {
+    if (params.dynamics == EVOLVE_SPT_IC ||
+        params.dynamics == EVOLVE_ASYMP_IC) {
         reset_kernels();
     }
 }
@@ -341,7 +197,7 @@ void IntegrandTables::reset()
 
 void IntegrandTables::reset_spt_kernels()
 {
-    for (int i = 0; i < settings.n_kernels; ++i) {
+    for (int i = 0; i < params.n_kernels; ++i) {
         spt_kernels.at(i).computed = false;
         spt_kernels.at(i).values[0] = 0;
         spt_kernels.at(i).values[1] = 0;
@@ -352,11 +208,11 @@ void IntegrandTables::reset_spt_kernels()
 
 void IntegrandTables::reset_kernels()
 {
-    for (int i = 0; i < settings.n_kernels; ++i) {
+    for (int i = 0; i < params.n_kernels; ++i) {
         kernels.at(i).computed = false;
 
-        for (int j = 0; j < settings.time_steps; ++j) {
-            std::fill(kernels.at(i).values.at(j).begin(),
+        for (int j = 0; j < eta_grid.get_time_steps(); ++j) {
+          std::fill(kernels.at(i).values.at(j).begin(),
                     kernels.at(i).values.at(j).end(), 0);
         }
     }
@@ -366,8 +222,8 @@ void IntegrandTables::reset_kernels()
 
 void IntegrandTables::ps_compute_bare_scalar_products()
 {
-    int n_loops = settings.n_loops;
-    int n_coeffs = settings.n_coeffs;
+    int n_loops = params.n_loops;
+    int n_coeffs = params.n_coeffs;
 
     // Diagonal products correspond to Q1*Q1, etc.
     for (int i = 0; i < n_loops; ++i) {
@@ -431,8 +287,8 @@ void IntegrandTables::bs_compute_bare_scalar_products()
 /* Computes table of scalar_products given bare_scalar_products table */
 void IntegrandTables::compute_scalar_products()
 {
-    int n_coeffs = settings.n_coeffs;
-    int n_configs = settings.n_configs;
+    int n_coeffs = params.n_coeffs;
+    int n_configs = params.n_configs;
 
     int a_coeffs[N_COEFFS_MAX];
     int b_coeffs[N_COEFFS_MAX];
@@ -466,7 +322,7 @@ void IntegrandTables::compute_scalar_products()
 
 void IntegrandTables::compute_alpha_beta()
 {
-    int n_configs = settings.n_configs;
+    int n_configs = params.n_configs;
     for (int a = 0; a < n_configs; ++a) {
         for (int b = 0; b < n_configs; ++b) {
             // Special case when a == b
@@ -481,13 +337,13 @@ void IntegrandTables::compute_alpha_beta()
 
             // If the first argument is the zero-vector, alpha and beta remains 0
             // If the second argument is the zero-vector, beta remains 0
-            if (a != settings.zero_label) {
+            if (a != params.zero_label) {
                 double product_ab = scalar_products.at(a).at(b);
                 double product_aa = scalar_products.at(a).at(a);
 
                 alpha_val = 1 + product_ab/product_aa;
 
-                if (b != settings.zero_label) {
+                if (b != params.zero_label) {
                     double product_bb = scalar_products.at(b).at(b);
 
                     beta_val = product_ab / 2.0
@@ -506,10 +362,10 @@ void IntegrandTables::compute_alpha_beta()
 
 void IntegrandTables::compute_tables()
 {
-    if (settings.spectrum == POWERSPECTRUM) {
+    if (params.spectrum == POWERSPECTRUM) {
         ps_compute_bare_scalar_products();
     }
-    else if (settings.spectrum == BISPECTRUM) {
+    else if (params.spectrum == BISPECTRUM) {
         bs_compute_bare_scalar_products();
     }
     compute_scalar_products();
@@ -520,27 +376,27 @@ void IntegrandTables::compute_tables()
 
 int ps::kernel_index_from_arguments(
         const int arguments[],
-        const Settings& settings
+        const Parameters& params
         )
 {
    /* Precompute powers of two for speedup */
     int pow2[] = {1,2,4,8,16,32,64,128};
 
-    int zero_label                 = settings.zero_label;
-    int n_kernel_args              = settings.n_kernel_args;
-    int single_loop_block_size     = settings.single_loop_block_size;
-    int single_loop_label_max      = settings.single_loop_label_max;
+    int zero_label                 = params.zero_label;
+    int n_kernel_args              = params.n_kernel_args;
+    int single_loop_block_size     = params.single_loop_block_size;
+    int single_loop_label_max      = params.single_loop_label_max;
 
-    const Vec1D<int>& single_loops = settings.single_loops;
+    const Vec1D<int>& single_loops = params.single_loops;
 
     // In DEBUG-mode, check that non-zero arguments (zero_label) are unique
 #if DEBUG >= 1
-    int n_coeffs              = settings.n_coeffs;
-    int single_loop_label_min = settings.single_loop_label_min;
+    int n_coeffs              = params.n_coeffs;
+    int single_loop_label_min = params.single_loop_label_min;
 
     if (!unique_elements(arguments, n_kernel_args, zero_label))
-        throw(std::logic_error("ps::kernel_index_from_arguments(): \
-duplicate vector arguments passed."));
+        throw(std::logic_error("ps::kernel_index_from_arguments(): duplicate "
+                               "vector arguments passed."));
     int n_k_labels = 0;
 #endif
 
@@ -563,8 +419,8 @@ duplicate vector arguments passed."));
 #if DEBUG >= 1
         /* We should not get -k in power spectrum computation */
         else if (arguments[i] < single_loop_label_min) {
-            throw(std::logic_error("ps::kernel_index_from_arguments(): \
-got argument with -k."));
+            throw(std::logic_error(
+                "ps::kernel_index_from_arguments(): got argument with -k."));
         }
 #endif
         else {
@@ -577,16 +433,17 @@ got argument with -k."));
             }
 #if DEBUG >= 1
             /* Check that this is in fact a fundamental vector */
-            if(!single_loop_label(arguments[i], n_coeffs, settings.spectrum))
-                throw(std::logic_error("ps::kernel_index_from_arguments(): \
-argument is neither 0, k-type, or fundamental."));
+            if(!single_loop_label(arguments[i], n_coeffs, params.spectrum))
+                throw(std::logic_error(
+                    "ps::kernel_index_from_arguments(): argument is neither 0, "
+                    "k-type, or fundamental."));
 #endif
         }
     }
 #if DEBUG >= 1
     if (n_k_labels > 1)
-        throw(std::logic_error("ps::kernel_index_from_arguments(): \
-more than one argument is of k-type."));
+        throw(std::logic_error("ps::kernel_index_from_arguments(): more than one "
+                               "argument is of k-type."));
 #endif
 
     return index;
@@ -596,28 +453,28 @@ more than one argument is of k-type."));
 
 int bs::kernel_index_from_arguments(
         const int arguments[],
-        const Settings& settings
+        const Parameters& params
         )
 {
    /* Precompute powers of two for speedup */
     int pow2[] = {1,2,4,8,16,32,64,128};
 
-    int n_configs                  = settings.n_configs;
-    int zero_label                 = settings.zero_label;
-    int n_kernel_args              = settings.n_kernel_args;
-    int single_loop_block_size     = settings.single_loop_block_size;
+    int n_configs                  = params.n_configs;
+    int zero_label                 = params.zero_label;
+    int n_kernel_args              = params.n_kernel_args;
+    int single_loop_block_size     = params.single_loop_block_size;
 
-    int single_loop_label_min      = settings.single_loop_label_min;
-    int single_loop_label_max      = settings.single_loop_label_max;
-    int first_composite_block_size = settings.first_composite_block_size;
+    int single_loop_label_min      = params.single_loop_label_min;
+    int single_loop_label_max      = params.single_loop_label_max;
+    int first_composite_block_size = params.first_composite_block_size;
 
-    const Vec1D<int>& single_loops = settings.single_loops;
+    const Vec1D<int>& single_loops = params.single_loops;
 
     // In DEBUG-mode, check that non-zero arguments (zero_label) are unique
 #if DEBUG >= 1
     if (!unique_elements(arguments, n_kernel_args, zero_label))
-        throw(std::logic_error("bs::kernel_index_from_arguments(): \
-duplicate vector arguments passed."));
+        throw(std::logic_error("bs::kernel_index_from_arguments(): duplicate "
+                               "vector arguments passed."));
 #endif
 
     int index = 0;
@@ -664,8 +521,8 @@ found_single_loop: ;
     }
 #if DEBUG >= 1
     if (n_composite > 2)
-        throw(std::logic_error("bs::kernel_index_from_arguments(): more than two \
-arguments is of composite type."));
+        throw(std::logic_error("bs::kernel_index_from_arguments(): more than two "
+                               "arguments is of composite type."));
 #endif
 
     return index;

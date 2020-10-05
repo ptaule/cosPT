@@ -15,6 +15,7 @@
 
 #include "../include/utilities.hpp"
 #include "../include/combinatorics.hpp"
+#include "../include/parameters.hpp"
 #include "../include/tables.hpp"
 #include "../include/diagrams.hpp"
 
@@ -81,8 +82,8 @@ void PowerSpectrumDiagram::kernel_arguments(
     }
 
     // Fill remaining spots with zero-label
-    int zero_label = settings.zero_label;
-    size_t n_kernel_args = static_cast<size_t>(settings.n_kernel_args);
+    int zero_label = params.zero_label;
+    size_t n_kernel_args = static_cast<size_t>(params.n_kernel_args);
     while (index_l < n_kernel_args) {
         arguments_l.at(index_l++) = zero_label;
     }
@@ -103,9 +104,9 @@ void PowerSpectrumDiagram::kernel_arguments(
 #endif
 
     arg_configs_l.at(a).at(b).kernel_index =
-        ps::kernel_index_from_arguments(arguments_l.data(), settings);
+        ps::kernel_index_from_arguments(arguments_l.data(), params);
     arg_configs_r.at(a).at(b).kernel_index =
-        ps::kernel_index_from_arguments(arguments_r.data(), settings);
+        ps::kernel_index_from_arguments(arguments_r.data(), params);
 }
 
 
@@ -160,12 +161,12 @@ void PowerSpectrumDiagram::compute_sign_flips() {
 
 
 PowerSpectrumDiagram::PowerSpectrumDiagram(
-        const Settings& settings,
+        const Parameters& params,
         int m, int l, int r
-        ) : settings(settings), m(m), l(l), r(r)
+        ) : params(params), m(m), l(l), r(r)
 {
-    int n_loops = settings.n_loops;
-    int n_kernel_args = settings.n_kernel_args;
+    int n_loops = params.n_loops;
+    int n_kernel_args = params.n_kernel_args;
 
     if (m + l + r != n_loops + 1) {
         throw(std::invalid_argument("m + l + r != n_loops + 1"));
@@ -196,7 +197,7 @@ PowerSpectrumDiagram::PowerSpectrumDiagram(
             arg_configs_r.at(a).at(b).args.resize(n_kernel_args);
 
             // Initialize arguments and kernel indices for this configuration
-            kernel_arguments(settings.n_coeffs, a, b);
+            kernel_arguments(params.n_coeffs, a, b);
         }
     }
 }
@@ -220,12 +221,12 @@ void PowerSpectrumDiagram::print_argument_configuration(
 {
     out << COLOR_BLUE;
     print_labels(arg_configs_l.at(a).at(b).args.data(),
-            arg_configs_l.at(a).at(b).args.size(), settings.n_coeffs,
-            settings.zero_label, settings.spectrum, out);
+            arg_configs_l.at(a).at(b).args.size(), params.n_coeffs,
+            params.zero_label, params.spectrum, out);
     out << " ";
     print_labels(arg_configs_r.at(a).at(b).args.data(),
-            arg_configs_r.at(a).at(b).args.size(), settings.n_coeffs,
-            settings.zero_label, settings.spectrum, out);
+            arg_configs_r.at(a).at(b).args.size(), params.n_coeffs,
+            params.zero_label, params.spectrum, out);
     out << COLOR_RESET;
 }
 
@@ -555,8 +556,8 @@ void BiSpectrumDiagram::kernel_arguments(
     }
 
     // Fill remaining spots with zero-label
-    int zero_label = settings.zero_label;
-    int n_kernel_args = settings.n_kernel_args;
+    int zero_label = params.zero_label;
+    int n_kernel_args = params.n_kernel_args;
     while (args_a_idx < n_kernel_args) {
         args_a.at(args_a_idx++) = zero_label;
     }
@@ -581,26 +582,26 @@ void BiSpectrumDiagram::kernel_arguments(
 #endif
 
     arg_configs_a.at(rearr_idx).at(sign_idx).at(overall_loop_idx).kernel_index =
-        bs::kernel_index_from_arguments(args_a.data(), settings);
+        bs::kernel_index_from_arguments(args_a.data(), params);
     arg_configs_b.at(rearr_idx).at(sign_idx).at(overall_loop_idx).kernel_index =
-        bs::kernel_index_from_arguments(args_b.data(), settings);
+        bs::kernel_index_from_arguments(args_b.data(), params);
     arg_configs_c.at(rearr_idx).at(sign_idx).at(overall_loop_idx).kernel_index =
-        bs::kernel_index_from_arguments(args_c.data(), settings);
+        bs::kernel_index_from_arguments(args_c.data(), params);
 }
 
 
 
 BiSpectrumDiagram::BiSpectrumDiagram(
-                const Settings& settings,
+                const Parameters& params,
                 int n_ab, int n_bc, int n_ca,
                 int n_a, int n_b, int n_c
-        ) : settings(settings),
+        ) : params(params),
     n_ab(n_ab), n_bc(n_bc), n_ca(n_ca),
     n_a(n_a), n_b(n_b), n_c(n_c)
 {
-    int n_loops = settings.n_loops;
-    int n_coeffs = settings.n_coeffs;
-    int n_kernel_args = settings.n_kernel_args;
+    int n_loops = params.n_loops;
+    int n_coeffs = params.n_coeffs;
+    int n_kernel_args = params.n_kernel_args;
 
     if (n_ab + n_bc + n_ca + n_a + n_b + n_c != n_loops + 2) {
         throw(std::invalid_argument(
@@ -699,15 +700,15 @@ void BiSpectrumDiagram::print_argument_configuration(
     out << COLOR_BLUE;
     print_labels(arg_configs_a.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args.data(),
             arg_configs_a.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args.size(),
-            settings.n_coeffs, settings.zero_label, settings.spectrum, out);
+            params.n_coeffs, params.zero_label, params.spectrum, out);
     out << " ";
     print_labels(arg_configs_b.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args.data(),
             arg_configs_b.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args.size(),
-            settings.n_coeffs, settings.zero_label, settings.spectrum, out);
+            params.n_coeffs, params.zero_label, params.spectrum, out);
     out << " ";
     print_labels(arg_configs_c.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args.data(),
             arg_configs_c.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args.size(),
-            settings.n_coeffs, settings.zero_label, settings.spectrum, out);
+            params.n_coeffs, params.zero_label, params.spectrum, out);
     std::cout << "\t";
     std::cout << arg_configs_a.at(rearr_idx).at(sign_idx).at(overall_loop_idx).kernel_index << " ";
     std::cout << arg_configs_b.at(rearr_idx).at(sign_idx).at(overall_loop_idx).kernel_index << " ";
@@ -760,10 +761,10 @@ std::ostream& operator<<(std::ostream& out, const BiSpectrumDiagram& diagram)
 
 
 
-Vec1D<PowerSpectrumDiagram> ps::construct_diagrams(const Settings& settings) {
+Vec1D<PowerSpectrumDiagram> ps::construct_diagrams(const Parameters& params) {
     Vec1D<PowerSpectrumDiagram> diagrams;
 
-    int n_loops = settings.n_loops;
+    int n_loops = params.n_loops;
     int m = 0;
     int index = 0;
 
@@ -777,7 +778,7 @@ Vec1D<PowerSpectrumDiagram> ps::construct_diagrams(const Settings& settings) {
                 throw(std::logic_error(
                     "construct_diagrams(): Index larger than 2 * n_loops."));
             }
-            diagrams.emplace_back(settings, m, l, r);
+            diagrams.emplace_back(params, m, l, r);
 
             l = n_loops + 1 - m - (++r);
             index++;
@@ -788,10 +789,10 @@ Vec1D<PowerSpectrumDiagram> ps::construct_diagrams(const Settings& settings) {
 
 
 
-Vec1D<BiSpectrumDiagram> bs::construct_diagrams(const Settings& settings) {
+Vec1D<BiSpectrumDiagram> bs::construct_diagrams(const Parameters& params) {
     Vec1D<BiSpectrumDiagram> diagrams;
 
-    int n_loops = settings.n_loops;
+    int n_loops = params.n_loops;
 
     /* Need to place L + 2 lines */
     /* First, consider diagram where a connecting line is zero, e.g. n_ab = 0 */
@@ -806,14 +807,14 @@ Vec1D<BiSpectrumDiagram> bs::construct_diagrams(const Settings& settings) {
                 int n_c = 0;
                 while (n_b >= n_c) {
                     /* Three diagrams, picking n_ab, n_bc, or n_ca as line being zero */
-                    diagrams.emplace_back(settings, 0,    n_bc, n_ca, n_a, n_b, n_c);
-                    diagrams.emplace_back(settings, n_bc, 0,    n_ca, n_a, n_b, n_c);
-                    diagrams.emplace_back(settings, n_ca, n_bc, 0,    n_a, n_b, n_c);
+                    diagrams.emplace_back(params, 0,    n_bc, n_ca, n_a, n_b, n_c);
+                    diagrams.emplace_back(params, n_bc, 0,    n_ca, n_a, n_b, n_c);
+                    diagrams.emplace_back(params, n_ca, n_bc, 0,    n_a, n_b, n_c);
                     /* If n_b != n_c, there are diagrams with n_b <-> n_c */
                     if (n_b != n_c) {
-                        diagrams.emplace_back(settings, 0,    n_bc, n_ca, n_a, n_c, n_b);
-                        diagrams.emplace_back(settings, n_bc, 0,    n_ca, n_a, n_c, n_b);
-                        diagrams.emplace_back(settings, n_ca, n_bc, 0,    n_a, n_c, n_b);
+                        diagrams.emplace_back(params, 0,    n_bc, n_ca, n_a, n_c, n_b);
+                        diagrams.emplace_back(params, n_bc, 0,    n_ca, n_a, n_c, n_b);
+                        diagrams.emplace_back(params, n_ca, n_bc, 0,    n_a, n_c, n_b);
                     }
 
                     n_b = n_self - n_a - (++n_c);
@@ -834,10 +835,10 @@ Vec1D<BiSpectrumDiagram> bs::construct_diagrams(const Settings& settings) {
                     int n_b = n_self - n_a;
                     int n_c = 0;
                     while (n_b >= n_c) {
-                        diagrams.emplace_back(settings, n_ab, n_bc, n_ca, n_a, n_b, n_c);
+                        diagrams.emplace_back(params, n_ab, n_bc, n_ca, n_a, n_b, n_c);
                         /* If n_b != n_c, there is a diagram with n_b <-> n_c */
                         if (n_b != n_c) {
-                            diagrams.emplace_back(settings, n_ab, n_bc, n_ca, n_a, n_c, n_b);
+                            diagrams.emplace_back(params, n_ab, n_bc, n_ca, n_a, n_c, n_b);
                         }
 
                         n_b = n_self - n_a - (++n_c);

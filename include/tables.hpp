@@ -12,60 +12,8 @@
 #include <functional>
 
 #include "utilities.hpp"
+#include "parameters.hpp"
 
-class Settings {
-    public:
-        Dynamics dynamics;
-        Spectrum spectrum;
-
-        int n_loops;
-
-        int n_coeffs;
-        int n_configs;
-        int n_kernels;
-        int n_kernel_args;
-        int zero_label;
-        int single_loop_label_min;
-        int single_loop_label_max;
-        int single_loop_block_size;
-
-        Vec1D<int> single_loops;
-
-        int first_composite_block_size = 0; /* Bispectrum */
-
-        int components     = 0;
-        int time_steps     = 0;
-        int pre_time_steps = 0;
-        double eta_i       = 0.0;
-        double eta_f       = 0.0;
-        double eta_asymp   = 0.0;
-
-        Settings(
-                int n_loops,
-                Spectrum spectrum,
-                Dynamics dynamics,
-                int time_steps,
-                int pre_time_steps,
-                int components,
-                double eta_i,
-                double eta_f,
-                double eta_asymp
-                );
-        Settings(
-                int n_loops,
-                Spectrum spectrum,
-                Dynamics dynamics,
-                int time_steps,
-                int components,
-                double eta_i,
-                double eta_f
-                );
-        Settings(
-                int n_loops,
-                Spectrum spectrum,
-                Dynamics dynamics
-                );
-};
 
 class IntegrationVariables {
     public:
@@ -80,16 +28,18 @@ class IntegrationVariables {
         }
 };
 
+
 class SumTable {
     private:
-        const Settings& settings;
+        const Parameters& params;
         Vec2D<int> sum_table;
 
         int sum_two_labels(int a, int b);
     public:
-        SumTable(const Settings& settings);
+        SumTable(const Parameters& params);
         int sum_labels(const int labels[], size_t size) const;
 };
+
 
 class SPTKernel {
     public:
@@ -97,11 +47,50 @@ class SPTKernel {
         bool computed = false;
 };
 
+
 class Kernel {
     public:
         Vec2D<double> values;
         bool computed = false;
 };
+
+
+class EtaGrid {
+    private:
+        const int pre_time_steps;
+        const int time_steps;
+        const double eta_ini;
+        const double eta_fin;
+        const double eta_asymp;
+
+        Vec1D<double> grid;
+    public:
+        EtaGrid(
+                const int pre_time_steps,
+                const int time_steps,
+                const double eta_ini,
+                const double eta_fin,
+                const double eta_asymp
+                );
+
+        EtaGrid(
+                const int time_steps,
+                const double eta_ini,
+                const double eta_fin
+                );
+
+        int get_pre_time_steps() const {return pre_time_steps;}
+        int get_time_steps() const {return time_steps;}
+        double get_eta_ini() const {return eta_ini;}
+        double get_eta_fin() const {return eta_fin;}
+        double get_eta_asymp() const {return eta_asymp;}
+
+        const double& operator[](int i) const {return grid[i];}
+};
+
+
+std::ostream& operator<<(std::ostream& out, const EtaGrid& eta_grid);
+
 
 /* Tables inside integration, one instance for each integration thread */
 class IntegrandTables {
@@ -118,12 +107,12 @@ class IntegrandTables {
         double k_a = 0.0;
         double k_b = 0.0; // For bispectrum
 
-        const Settings& settings;
-
+        const Parameters& params;
+        const EvolutionParameters& ev_params;
         const SumTable& sum_table;
-        IntegrationVariables vars;
+        const EtaGrid& eta_grid;
 
-        const Vec1D<double>& eta_grid;
+        IntegrationVariables vars;
 
         Vec2D<double> bare_scalar_products; /* N_COEFFS x N_COEFFS   */
         Vec2D<double> scalar_products;      /* N_CONFIGS x N_CONFIGS */
@@ -133,41 +122,37 @@ class IntegrandTables {
         Vec1D<SPTKernel> spt_kernels;
         Vec1D<Kernel> kernels;
 
-        std::function<int (const int[], const Settings&)>
-           kernel_index_from_arguments;
+        std::function<int(const int[], const Parameters &)>
+            kernel_index_from_arguments;
 
         IntegrandTables(
                 double k_a,
                 double k_b,
-                const Settings& settings,
+                const Parameters& params,
+                const EvolutionParameters& ev_params,
                 const SumTable& sum_table,
-                const Vec1D<double>& eta_grid
+                const EtaGrid& eta_grid
                 );
         IntegrandTables(
                 double k_a,
-                const Settings& settings,
+                const Parameters& params,
+                const EvolutionParameters& ev_params,
                 const SumTable& sum_table,
-                const Vec1D<double>& eta_grid
+                const EtaGrid& eta_grid
                 );
 
         void reset();
         void compute_tables();
 };
 
-Vec1D<double> initialize_eta_grid(const Settings& settings);
-
 namespace ps {
-    int kernel_index_from_arguments(
-            const int arguments[],
-            const Settings& settings
-            );
+int kernel_index_from_arguments(const int arguments[],
+                                const Parameters &params);
 }
 
 namespace bs {
-    int kernel_index_from_arguments(
-            const int arguments[],
-            const Settings& settings
-            );
+int kernel_index_from_arguments(const int arguments[],
+                                const Parameters &params);
 }
 
 #endif /* ifndef TABLES_HPP */

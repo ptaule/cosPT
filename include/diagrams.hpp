@@ -12,7 +12,7 @@
 #include <iosfwd>
 
 #include "utilities.hpp"
-#include "tables.hpp"
+#include "parameters.hpp"
 
 class ArgumentConfiguration {
     public:
@@ -22,7 +22,7 @@ class ArgumentConfiguration {
 
 class PowerSpectrumDiagram {
     private:
-        const Settings& settings;
+        const Parameters& params;
 
         void compute_rearrangements(int n_loops);
         void compute_sign_flips();
@@ -46,7 +46,7 @@ class PowerSpectrumDiagram {
         Vec2D<ArgumentConfiguration> arg_configs_r;
 
         PowerSpectrumDiagram(
-                const Settings& settings,
+                const Parameters& params,
                 int m, int l, int r
                 );
 
@@ -61,7 +61,7 @@ class PowerSpectrumDiagram {
 
 class BiSpectrumDiagram {
     private:
-        const Settings& settings;
+        const Parameters& params;
 
         /* Is diagram closed (n_ab, n_bc, n_ca > 0) */
         bool overall_loop;
@@ -107,7 +107,7 @@ class BiSpectrumDiagram {
         Vec3D<ArgumentConfiguration> arg_configs_c;
 
         BiSpectrumDiagram(
-                const Settings& settings,
+                const Parameters& params,
                 int n_ab, int n_bc, int n_ca,
                 int n_a, int n_b, int n_c
                 );
@@ -127,11 +127,11 @@ std::ostream& operator<<(std::ostream& out, const PowerSpectrumDiagram& diagram)
 std::ostream& operator<<(std::ostream& out, const BiSpectrumDiagram& diagram);
 
 namespace ps {
-    Vec1D<PowerSpectrumDiagram> construct_diagrams(const Settings& settings);
+    Vec1D<PowerSpectrumDiagram> construct_diagrams(const Parameters& params);
 }
 
 namespace bs {
-    Vec1D<BiSpectrumDiagram> construct_diagrams(const Settings& settings);
+    Vec1D<BiSpectrumDiagram> construct_diagrams(const Parameters& params);
 }
 
 #endif /* ifndef DIAGRAMS_HPP */

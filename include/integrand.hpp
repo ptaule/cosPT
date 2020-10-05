@@ -22,7 +22,7 @@ class IntegrationInput {
         double q_min = 0;
         double q_max = 0;
 
-        const Settings& settings;
+        const Parameters& params;
         const std::vector<PowerSpectrumDiagram>& diagrams;
         const Interpolation1D& input_ps;
 
@@ -33,13 +33,13 @@ class IntegrationInput {
         IntegrationInput(
                 double q_min,
                 double q_max,
-                const Settings& settings,
+                const Parameters& params,
                 const Vec1D<PowerSpectrumDiagram>& diagrams,
                 const Interpolation1D& input_ps,
                 const Vec1D<Correlation>& correlations,
                 Vec1D<IntegrandTables>& tables_vec
                 ) :
-            q_min(q_min), q_max(q_max), settings(settings), diagrams(diagrams),
+            q_min(q_min), q_max(q_max), params(params), diagrams(diagrams),
             input_ps(input_ps), correlations(correlations),
             tables_vec(tables_vec) {}
 };

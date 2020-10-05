@@ -148,7 +148,7 @@ void integrand(
 #endif
                 Vec1D<double> term_results(n_correlations);
 
-                double k1 = compute_k1(dg.m, input.settings.n_coeffs,
+                double k1 = compute_k1(dg.m, input.params.n_coeffs,
                         dg.rearrangements.at(a), dg.sign_configs.at(b),
                         tables.bare_scalar_products);
                 int h_theta = heaviside_theta(dg.m, k1, dg.rearrangements.at(a),
@@ -181,7 +181,7 @@ void integrand(
             results.at(j) += diagram_results.at(j);
         }
     }
-    for (int i = 0; i < input.settings.n_loops; ++i) {
+    for (int i = 0; i < input.params.n_loops; ++i) {
         for (auto& el : results) {
             el *= input.input_ps.eval(tables.vars.magnitudes[i]);
         }

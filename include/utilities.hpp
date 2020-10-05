@@ -16,7 +16,10 @@
 #define N_COEFFS_MAX 3
 /* Maximum number of kernel arguments at 2-loop */
 #define N_KERNEL_ARGS_MAX 5
+
+/* Number of components */
 #define SPT_COMPONENTS 2
+#define COMPONENTS 4
 
 /* Constants: */
 #define PI    3.14159265359
