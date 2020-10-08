@@ -40,7 +40,9 @@ class Interpolation1D {
         Interpolation1D(const std::string& filename, const gsl_interp_type* type);
         Interpolation1D(const std::string& filename);
         Interpolation1D(const Interpolation1D&) = delete;
+        Interpolation1D& operator=(const Interpolation1D&) = delete;
         Interpolation1D(Interpolation1D&& other);
+        Interpolation1D& operator=(Interpolation1D&& other);
 
 
         double eval(double x) const {
@@ -92,7 +94,9 @@ class Interpolation2D {
                 const std::string& data_file
                 );
         Interpolation2D(const Interpolation2D&) = delete;
+        Interpolation2D& operator=(const Interpolation2D&) = delete;
         Interpolation2D(Interpolation2D&&);
+        Interpolation2D& operator=(Interpolation2D&&);
 
 
         double eval(double x, double y) const {

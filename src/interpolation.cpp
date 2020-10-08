@@ -75,6 +75,22 @@ Interpolation1D::Interpolation1D(Interpolation1D&& other) {
 
 
 
+Interpolation1D& Interpolation1D::operator=(Interpolation1D&& other)
+{
+    if (this != &other) {
+        spline = other.spline;
+        acc = other.acc;
+        type = other.type;
+
+        other.spline = nullptr;
+        other.acc    = nullptr;
+        other.type   = nullptr;
+    }
+    return *this;
+}
+
+
+
 void Interpolation2D::initialize(
         const Vec1D<double>& x,
         const Vec1D<double>& y,
@@ -157,4 +173,22 @@ Interpolation2D::Interpolation2D(Interpolation2D&& other)
     other.y_acc = nullptr;
     other.spline = nullptr;
     other.type = nullptr;
+}
+
+
+
+Interpolation2D& Interpolation2D::operator=(Interpolation2D&& other)
+{
+    if (this != &other) {
+        spline = other.spline;
+        x_acc = other.x_acc;
+        y_acc = other.y_acc;
+        type = other.type;
+
+        other.spline = nullptr;
+        other.x_acc  = nullptr;
+        other.y_acc  = nullptr;
+        other.type   = nullptr;
+    }
+    return *this;
 }
