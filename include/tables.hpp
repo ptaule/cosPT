@@ -57,14 +57,15 @@ class Kernel {
 
 class EtaGrid {
     private:
-        const int pre_time_steps;
-        const int time_steps;
-        const double eta_ini;
-        const double eta_fin;
-        const double eta_asymp;
+        int pre_time_steps = 0;
+        int time_steps     = 0;
+        double eta_ini     = 0;
+        double eta_fin     = 0;
+        double eta_asymp   = 0;
 
         Vec1D<double> grid;
     public:
+        EtaGrid() = default;
         EtaGrid(
                 const int pre_time_steps,
                 const int time_steps,
@@ -85,7 +86,10 @@ class EtaGrid {
         double get_eta_fin() const {return eta_fin;}
         double get_eta_asymp() const {return eta_asymp;}
 
+        const Vec1D<double>& get_grid() const {return grid;}
+
         const double& operator[](int i) const {return grid[i];}
+        const double& at(int i) const {return grid.at(i);}
 };
 
 
@@ -108,8 +112,9 @@ class IntegrandTables {
         double k_b = 0.0; // For bispectrum
 
         const Parameters& params;
-        const EvolutionParameters& ev_params;
         const SumTable& sum_table;
+
+        const EvolutionParameters& ev_params;
         const EtaGrid& eta_grid;
 
         IntegrationVariables vars;
@@ -129,15 +134,15 @@ class IntegrandTables {
                 double k_a,
                 double k_b,
                 const Parameters& params,
-                const EvolutionParameters& ev_params,
                 const SumTable& sum_table,
+                const EvolutionParameters& ev_params,
                 const EtaGrid& eta_grid
                 );
         IntegrandTables(
                 double k_a,
                 const Parameters& params,
-                const EvolutionParameters& ev_params,
                 const SumTable& sum_table,
+                const EvolutionParameters& ev_params,
                 const EtaGrid& eta_grid
                 );
 

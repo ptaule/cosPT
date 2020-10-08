@@ -92,7 +92,7 @@ void partial_SPT_sum(
         int sum_r = tables.sum_table.sum_labels(args_r, n_kernel_args);
 
         for (int i = 0; i < SPT_COMPONENTS; ++i) {
-            partial_kernel_values[i] += 
+            partial_kernel_values[i] +=
                 spt_term(m, n-m, i, args_l, args_r, sum_l, sum_r, tables);
         }
 

@@ -37,9 +37,13 @@ int cuba_integrand(
 
 int main () {
     double k_a = 1.047129e-01;
+    double q_min = 1e-4;
+    double q_max = 65;
 
     int n_loops = 1;
     const std::string input_ps_file = "/home/pettertaule/repos/class_public/output/fiducial/newtonian/z1_pk.dat";
+    const std::string output_file = "test.dat";
+
     Interpolation1D input_ps(input_ps_file);
 
     Vec1D<Correlation> correlations = {{0,0}};
@@ -52,20 +56,21 @@ int main () {
 
     cubacores(n_cores, 10000);
 
-    Settings settings(n_loops, POWERSPECTRUM, SPT);
-    SumTable sum_table(settings);
-    Vec1D<double> eta_grid;
+    Parameters params(n_loops, POWERSPECTRUM, SPT);
+    SumTable sum_table(params);
+    EvolutionParameters ev_params;
+    EtaGrid eta_grid;
     Vec1D<IntegrandTables> tables_vec;
 
     /* (Master + n_cores) instances of IntegrandTables */
     for (int i = 0; i < n_cores + 1; ++i) {
-        tables_vec.emplace_back(k_a, settings, sum_table, eta_grid);
+        tables_vec.emplace_back(k_a, params, sum_table, ev_params, eta_grid);
     }
 
-    Vec1D<PowerSpectrumDiagram> diagrams = ps::construct_diagrams(settings);
+    Vec1D<PowerSpectrumDiagram> diagrams = ps::construct_diagrams(params);
 
-    IntegrationInput input(1e-4, 65, settings, diagrams, input_ps, correlations,
-            tables_vec);
+    IntegrationInput input(q_min, q_max, diagrams, input_ps, correlations,
+                           tables_vec);
 
     /* Non-linear evolution */
     // Overall factors:
@@ -103,13 +108,15 @@ int main () {
     Results results(correlations);
 
     for (size_t i = 0; i < correlations.size(); ++i) {
-        results.lin_ps.at(i)     = input_ps.eval(k_a);
-        results.non_lin_ps.at(i) = overall_factor * static_cast<double>(integration_results.at(i));
-        results.errors.at(i)     = overall_factor * static_cast<double>(integration_errors.at(i));
+        results.lin_ps.at(i) = input_ps.eval(k_a);
+        results.non_lin_ps.at(i) =
+            overall_factor * static_cast<double>(integration_results.at(i));
+        results.errors.at(i) =
+            overall_factor * static_cast<double>(integration_errors.at(i));
     }
 
     write_results(
-            "test.dat",
+            output_file,
             input_ps_file,
             "",
             n_loops,
@@ -147,11 +154,11 @@ int cuba_integrand(
     /*  IntegrandTables number *core+1 */
     IntegrandTables& tables = input->tables_vec.at(*core + 1);
 
-    int n_loops = input->settings.n_loops;
+    int n_loops = tables.params.n_loops;
     IntegrationVariables& vars = tables.vars;
 
     double ratio = input->q_max/input->q_min;
-    double log_ratio = log(ratio);
+    double log_ratio = std::log(ratio);
     double jacobian = 0.0;
 
     switch (n_loops) {
@@ -180,7 +187,7 @@ int cuba_integrand(
     // Compute sum-, bare_scalar_products-, alpha- and beta-tables
     tables.compute_tables();
 
-    Vec1D<double> results(input->correlations.size(), 0);
+    Vec1D<double> results(input->correlations.size(), 0.0);
     integrand(*input, tables, results);
 
     for (size_t i = 0; i < input->correlations.size(); ++i) {

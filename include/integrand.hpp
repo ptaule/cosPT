@@ -22,31 +22,29 @@ class IntegrationInput {
         double q_min = 0;
         double q_max = 0;
 
-        const Parameters& params;
-        const std::vector<PowerSpectrumDiagram>& diagrams;
+        const Vec1D<PowerSpectrumDiagram>& diagrams;
         const Interpolation1D& input_ps;
 
         const Vec1D<Correlation>& correlations;
 
-        std::vector<IntegrandTables>& tables_vec;
+        Vec1D<IntegrandTables>& tables_vec;
 
         IntegrationInput(
                 double q_min,
                 double q_max,
-                const Parameters& params,
                 const Vec1D<PowerSpectrumDiagram>& diagrams,
                 const Interpolation1D& input_ps,
                 const Vec1D<Correlation>& correlations,
                 Vec1D<IntegrandTables>& tables_vec
                 ) :
-            q_min(q_min), q_max(q_max), params(params), diagrams(diagrams),
+            q_min(q_min), q_max(q_max), diagrams(diagrams),
             input_ps(input_ps), correlations(correlations),
             tables_vec(tables_vec) {}
 };
 
 
 void integrand(
-        const IntegrationInput& input, 
+        const IntegrationInput& input,
         IntegrandTables& tables,
         Vec1D<double>& results
         );
@@ -64,8 +62,8 @@ class Results {
             return correlations;
         }
 
-        Results(const Vec1D<Correlation>& correlations) 
-            : correlations(correlations) 
+        Results(const Vec1D<Correlation>& correlations)
+            : correlations(correlations)
         {
             lin_ps.resize(correlations.size());
             non_lin_ps.resize(correlations.size());

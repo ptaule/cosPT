@@ -5,9 +5,10 @@
    Copyright (c) 2020 Petter Taule. All rights reserved.
 */
 
-#include <stdexcept>
-#include <cmath>
 #include <iostream>
+#include <stdexcept>
+#include <utility>
+#include <cmath>
 
 #include "../include/integrand.hpp"
 
@@ -139,16 +140,16 @@ void integrand(
         dg.print_diagram_tags(std::cout);
         std::cout << std::endl;
 #endif
-        Vec1D<double> diagram_results(n_correlations, 0);
+        Vec1D<double> diagram_results(n_correlations, 0.0);
+
         // Loop over momentum rearrangement and sign flips
         for (size_t a = 0; a < dg.rearrangements.size(); ++a) {
             for (size_t b = 0; b < dg.sign_configs.size(); ++b) {
 #if DEBUG >= 2
                 dg.print_argument_configuration(std::cout, a, b);
 #endif
-                Vec1D<double> term_results(n_correlations);
 
-                double k1 = compute_k1(dg.m, input.params.n_coeffs,
+                double k1 = compute_k1(dg.m, tables.params.n_coeffs,
                         dg.rearrangements.at(a), dg.sign_configs.at(b),
                         tables.bare_scalar_products);
                 int h_theta = heaviside_theta(dg.m, k1, dg.rearrangements.at(a),
@@ -159,6 +160,8 @@ void integrand(
 #endif
                     continue;
                 }
+
+                Vec1D<double> term_results(n_correlations, 0.0);
                 integrand_term(dg, a, b, input.correlations, tables, term_results);
                 for (auto& el : term_results) {
                     el *= h_theta * input.input_ps.eval(k1);
@@ -181,7 +184,7 @@ void integrand(
             results.at(j) += diagram_results.at(j);
         }
     }
-    for (int i = 0; i < input.params.n_loops; ++i) {
+    for (int i = 0; i < tables.params.n_loops; ++i) {
         for (auto& el : results) {
             el *= input.input_ps.eval(tables.vars.magnitudes[i]);
         }

@@ -102,12 +102,12 @@ IntegrandTables::IntegrandTables(
         double k_a,
         double k_b,
         const Parameters& params,
-        const EvolutionParameters& ev_params,
         const SumTable& sum_table,
+        const EvolutionParameters& ev_params,
         const EtaGrid& eta_grid
         ) :
-    k_a(k_a), k_b(k_b), params(params), ev_params(ev_params),
-    sum_table(sum_table), eta_grid(eta_grid),
+    k_a(k_a), k_b(k_b), params(params), sum_table(sum_table),
+    ev_params(ev_params), eta_grid(eta_grid),
     vars(IntegrationVariables(params.n_loops))
 {
     int n_coeffs = params.n_coeffs;
@@ -149,11 +149,8 @@ IntegrandTables::IntegrandTables(
         kernels.resize(n_kernels);
 
         for (int i = 0; i < n_kernels; ++i) {
-            kernels.at(i).values.resize(eta_grid.get_time_steps());
-
-            for (int j = 0; j < eta_grid.get_time_steps(); ++j) {
-                kernels.at(i).values.at(j).resize(COMPONENTS);
-            }
+            kernels.at(i).values.assign(eta_grid.get_time_steps(),
+                                        Vec1D<double>(COMPONENTS));
         }
     }
 }
@@ -163,11 +160,11 @@ IntegrandTables::IntegrandTables(
 IntegrandTables::IntegrandTables(
         double k_a,
         const Parameters& params,
-        const EvolutionParameters& ev_params,
         const SumTable& sum_table,
+        const EvolutionParameters& ev_params,
         const EtaGrid& eta_grid
         ) :
-    IntegrandTables(k_a, 0, params, ev_params, sum_table, eta_grid)
+    IntegrandTables(k_a, 0, params, sum_table, ev_params, eta_grid)
 {
     if (params.spectrum == BISPECTRUM) {
         throw(std::invalid_argument(
