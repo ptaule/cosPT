@@ -56,21 +56,21 @@ int main () {
 
     cubacores(n_cores, 10000);
 
-    Parameters params(n_loops, POWERSPECTRUM, SPT);
-    SumTable sum_table(params);
+    LoopParameters loop_params(n_loops, POWERSPECTRUM, SPT);
+    SumTable sum_table(loop_params);
     EvolutionParameters ev_params;
     EtaGrid eta_grid;
     Vec1D<IntegrandTables> tables_vec;
 
     /* (Master + n_cores) instances of IntegrandTables */
     for (int i = 0; i < n_cores + 1; ++i) {
-        tables_vec.emplace_back(k_a, params, sum_table, ev_params, eta_grid);
+        tables_vec.emplace_back(k_a, loop_params, sum_table, ev_params, eta_grid);
     }
 
-    Vec1D<PowerSpectrumDiagram> diagrams = ps::construct_diagrams(params);
+    Vec1D<PowerSpectrumDiagram> diagrams = ps::construct_diagrams(loop_params);
 
-    IntegrationInput input(q_min, q_max, diagrams, input_ps, correlations,
-                           tables_vec);
+    IntegrationInput input(q_min, q_max, diagrams, correlations, input_ps,
+            tables_vec);
 
     /* Non-linear evolution */
     // Overall factors:
@@ -154,7 +154,7 @@ int cuba_integrand(
     /*  IntegrandTables number *core+1 */
     IntegrandTables& tables = input->tables_vec.at(*core + 1);
 
-    int n_loops = tables.params.n_loops;
+    int n_loops = tables.loop_params.get_n_loops();
     IntegrationVariables& vars = tables.vars;
 
     double ratio = input->q_max/input->q_min;

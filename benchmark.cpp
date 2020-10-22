@@ -35,13 +35,13 @@ static void BM_kernel_index(benchmark::State& state) {
     Spectrum spectrum = POWERSPECTRUM;
     Dynamics dynamics = SPT;
     int n_loops = 2;
-    Parameters params(n_loops, spectrum, dynamics);
+    LoopParameters loop_params(n_loops, spectrum, dynamics);
 
     int arguments[] = {22, 16, 10, 14, 12};
 
     for (auto _ : state) {
         // This code gets timed
-        ps::kernel_index_from_arguments(arguments, params);
+        loop_params.arguments_2_kernel_index(arguments);
     }
 }
 
@@ -59,17 +59,17 @@ static void BM_integrand(benchmark::State& state) {
 
     Vec1D<Correlation> correlations = {{0,0}};
 
-    Parameters params(n_loops, POWERSPECTRUM, SPT);
-    SumTable sum_table(params);
+    LoopParameters loop_params(n_loops, POWERSPECTRUM, SPT);
+    SumTable sum_table(loop_params);
     EvolutionParameters ev_params;
     EtaGrid eta_grid;
 
     Vec1D<IntegrandTables> tables_vec;
-    tables_vec.emplace_back(k1, params, sum_table, ev_params, eta_grid);
+    tables_vec.emplace_back(k1, loop_params, sum_table, ev_params, eta_grid);
 
-    Vec1D<PowerSpectrumDiagram> diagrams = ps::construct_diagrams(params);
+    Vec1D<PowerSpectrumDiagram> diagrams = ps::construct_diagrams(loop_params);
 
-    IntegrationInput input(q_min, q_max, diagrams, input_ps, correlations,
+    IntegrationInput input(q_min, q_max, diagrams, correlations, input_ps,
             tables_vec);
 
     cubareal* xx = new cubareal[correlations.size()];
@@ -94,12 +94,6 @@ static void BM_integrand(benchmark::State& state) {
 }
 
 
-// Register the functions as benchmarks
-BENCHMARK(BM_kernel_index);
-BENCHMARK(BM_integrand);
-// Run the benchmark
-BENCHMARK_MAIN();
-
 /* Turn off vector bounds check if not in debug-mode */
 #if DEBUG == 0
 #define at(x) operator[](x)
@@ -120,7 +114,7 @@ int cuba_integrand(
     /*  IntegrandTables number *core+1 */
     IntegrandTables& tables = input->tables_vec.at(0);
 
-    int n_loops = tables.params.n_loops;
+    int n_loops = tables.loop_params.get_n_loops();
     IntegrationVariables& vars = tables.vars;
 
     double ratio = input->q_max/input->q_min;
@@ -162,3 +156,10 @@ int cuba_integrand(
     return 0;
 }
 #undef at
+
+
+// Register the functions as benchmarks
+/* BENCHMARK(BM_kernel_index); */
+BENCHMARK(BM_integrand);
+// Run the benchmark
+BENCHMARK_MAIN();

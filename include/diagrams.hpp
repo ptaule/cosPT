@@ -22,7 +22,7 @@ class ArgumentConfiguration {
 
 class PowerSpectrumDiagram {
     private:
-        const Parameters& params;
+        const LoopParameters& loop_params;
 
         void compute_rearrangements(int n_loops);
         void compute_sign_flips();
@@ -46,7 +46,7 @@ class PowerSpectrumDiagram {
         Vec2D<ArgumentConfiguration> arg_configs_r;
 
         PowerSpectrumDiagram(
-                const Parameters& params,
+                const LoopParameters& params,
                 int m, int l, int r
                 );
 
@@ -61,7 +61,7 @@ class PowerSpectrumDiagram {
 
 class BiSpectrumDiagram {
     private:
-        const Parameters& params;
+        const LoopParameters& loop_params;
 
         /* Is diagram closed (n_ab, n_bc, n_ca > 0) */
         bool overall_loop;
@@ -107,7 +107,7 @@ class BiSpectrumDiagram {
         Vec3D<ArgumentConfiguration> arg_configs_c;
 
         BiSpectrumDiagram(
-                const Parameters& params,
+                const LoopParameters& loop_params,
                 int n_ab, int n_bc, int n_ca,
                 int n_a, int n_b, int n_c
                 );
@@ -127,11 +127,13 @@ std::ostream& operator<<(std::ostream& out, const PowerSpectrumDiagram& diagram)
 std::ostream& operator<<(std::ostream& out, const BiSpectrumDiagram& diagram);
 
 namespace ps {
-    Vec1D<PowerSpectrumDiagram> construct_diagrams(const Parameters& params);
+    Vec1D<PowerSpectrumDiagram> construct_diagrams(const LoopParameters&
+            loop_params);
 }
 
 namespace bs {
-    Vec1D<BiSpectrumDiagram> construct_diagrams(const Parameters& params);
+    Vec1D<BiSpectrumDiagram> construct_diagrams(const LoopParameters&
+            loop_params);
 }
 
 #endif /* ifndef DIAGRAMS_HPP */

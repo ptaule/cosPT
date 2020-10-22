@@ -13,8 +13,10 @@
 #include "../include/integrand.hpp"
 
 #include "../include/utilities.hpp"
+#include "../include/parameters.hpp"
 #include "../include/tables.hpp"
 #include "../include/spt_kernels.hpp"
+#include "../include/kernel_evolution.hpp"
 #include "../include/diagrams.hpp"
 #include "../include/interpolation.hpp"
 #include "../include/integrand.hpp"
@@ -86,7 +88,7 @@ inline int heaviside_theta(
 
 
 
-void integrand_term(
+void evolve_integrand_term(
         const PowerSpectrumDiagram& diagram,
         int a,
         int b,
@@ -102,25 +104,82 @@ void integrand_term(
     const int* arguments_r = diagram.arg_configs_r.at(a).at(b).args.data();
 
     /* Compute kernels */
-    compute_SPT_kernels(arguments_l, kernel_index_l, 2*diagram.l + diagram.m, tables);
-    compute_SPT_kernels(arguments_r, kernel_index_r, 2*diagram.r + diagram.m, tables);
+    kernel_evolution(arguments_l, kernel_index_l, 2 * diagram.l + diagram.m,
+                        tables);
+    kernel_evolution(arguments_r, kernel_index_r, 2 * diagram.r + diagram.m,
+                        tables);
+
+    int time_steps = tables.eta_grid.get_time_steps();
 
     // Get values for two-point correlators
     // If l != r, there are two diagrams corresponding to l <-> r
     if (diagram.l == diagram.r) {
         for (size_t i = 0; i < correlations.size(); ++i) {
             term_results.at(i) =
-                tables.spt_kernels.at(kernel_index_l).values[correlations.at(i).first] *
-                tables.spt_kernels.at(kernel_index_r).values[correlations.at(i).second];
+                tables.kernels.at(kernel_index_l)
+                    .values.at(time_steps - 1)[correlations.at(i).first] *
+                tables.kernels.at(kernel_index_r)
+                    .values.at(time_steps - 1)[correlations.at(i).second];
         }
     } else {
         for (size_t i = 0; i < correlations.size(); ++i) {
             term_results[i] =
-                tables.spt_kernels.at(kernel_index_l).values[correlations.at(i).first] *
-                tables.spt_kernels.at(kernel_index_r).values[correlations.at(i).second]
-                +
-                tables.spt_kernels.at(kernel_index_l).values[correlations.at(i).second] *
-                tables.spt_kernels.at(kernel_index_r).values[correlations.at(i).first];
+                tables.kernels.at(kernel_index_l)
+                        .values.at(time_steps - 1)[correlations.at(i).first] *
+                    tables.kernels.at(kernel_index_r)
+                        .values.at(time_steps - 1)[correlations.at(i).second]
+                        +
+                tables.kernels.at(kernel_index_l)
+                        .values.at(time_steps - 1)[correlations.at(i).second] *
+                    tables.kernels.at(kernel_index_r)
+                        .values.at(time_steps - 1)[correlations.at(i).first];
+        }
+    }
+}
+
+
+
+void spt_integrand_term(
+        const PowerSpectrumDiagram& diagram,
+        int a,
+        int b,
+        const Vec1D<Correlation>& correlations,
+        IntegrandTables& tables,
+        Vec1D<double>& term_results
+        )
+{
+    int kernel_index_l = diagram.arg_configs_l.at(a).at(b).kernel_index;
+    int kernel_index_r = diagram.arg_configs_r.at(a).at(b).kernel_index;
+
+    const int* arguments_l = diagram.arg_configs_l.at(a).at(b).args.data();
+    const int* arguments_r = diagram.arg_configs_r.at(a).at(b).args.data();
+
+    /* Compute kernels */
+    compute_SPT_kernels(arguments_l, kernel_index_l, 2 * diagram.l + diagram.m,
+                        tables);
+    compute_SPT_kernels(arguments_r, kernel_index_r, 2 * diagram.r + diagram.m,
+                        tables);
+
+    // Get values for two-point correlators
+    // If l != r, there are two diagrams corresponding to l <-> r
+    if (diagram.l == diagram.r) {
+        for (size_t i = 0; i < correlations.size(); ++i) {
+            term_results.at(i) = tables.spt_kernels.at(kernel_index_l)
+                                     .values[correlations.at(i).first] *
+                                 tables.spt_kernels.at(kernel_index_r)
+                                     .values[correlations.at(i).second];
+        }
+    } else {
+        for (size_t i = 0; i < correlations.size(); ++i) {
+            term_results[i] = tables.spt_kernels.at(kernel_index_l)
+                                      .values[correlations.at(i).first] *
+                                  tables.spt_kernels.at(kernel_index_r)
+                                      .values[correlations.at(i).second]
+                                    +
+                              tables.spt_kernels.at(kernel_index_l)
+                                      .values[correlations.at(i).second] *
+                                  tables.spt_kernels.at(kernel_index_r)
+                                      .values[correlations.at(i).first];
         }
     }
 }
@@ -149,7 +208,7 @@ void integrand(
                 dg.print_argument_configuration(std::cout, a, b);
 #endif
 
-                double k1 = compute_k1(dg.m, tables.params.n_coeffs,
+                double k1 = compute_k1(dg.m, tables.loop_params.get_n_coeffs(),
                         dg.rearrangements.at(a), dg.sign_configs.at(b),
                         tables.bare_scalar_products);
                 int h_theta = heaviside_theta(dg.m, k1, dg.rearrangements.at(a),
@@ -162,7 +221,7 @@ void integrand(
                 }
 
                 Vec1D<double> term_results(n_correlations, 0.0);
-                integrand_term(dg, a, b, input.correlations, tables, term_results);
+                spt_integrand_term(dg, a, b, input.correlations, tables, term_results);
                 for (auto& el : term_results) {
                     el *= h_theta * input.input_ps.eval(k1);
                 }
@@ -184,7 +243,7 @@ void integrand(
             results.at(j) += diagram_results.at(j);
         }
     }
-    for (int i = 0; i < tables.params.n_loops; ++i) {
+    for (int i = 0; i < tables.loop_params.get_n_loops(); ++i) {
         for (auto& el : results) {
             el *= input.input_ps.eval(tables.vars.magnitudes[i]);
         }

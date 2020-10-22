@@ -23,9 +23,8 @@ class IntegrationInput {
         double q_max = 0;
 
         const Vec1D<PowerSpectrumDiagram>& diagrams;
-        const Interpolation1D& input_ps;
-
         const Vec1D<Correlation>& correlations;
+        const Interpolation1D& input_ps;
 
         Vec1D<IntegrandTables>& tables_vec;
 
@@ -33,12 +32,12 @@ class IntegrationInput {
                 double q_min,
                 double q_max,
                 const Vec1D<PowerSpectrumDiagram>& diagrams,
-                const Interpolation1D& input_ps,
                 const Vec1D<Correlation>& correlations,
+                const Interpolation1D& input_ps,
                 Vec1D<IntegrandTables>& tables_vec
                 ) :
             q_min(q_min), q_max(q_max), diagrams(diagrams),
-            input_ps(input_ps), correlations(correlations),
+            correlations(correlations), input_ps(input_ps),
             tables_vec(tables_vec) {}
 };
 

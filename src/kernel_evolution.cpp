@@ -167,7 +167,7 @@ void compute_RHS_sum(
         )
 {
     int time_steps    = tables.eta_grid.get_time_steps();
-    int n_kernel_args = tables.params.n_kernel_args;
+    int n_kernel_args = tables.loop_params.get_n_kernel_args();
 
     Vec2D<double> rhs_sum;
     Vec2D<double> partial_rhs_sum;
@@ -188,8 +188,10 @@ void compute_RHS_sum(
         }
 
         /* Initialize args_l and args_r */
-        std::fill(&args_l[0], &args_l[n_kernel_args], tables.params.zero_label);
-        std::fill(&args_r[0], &args_r[n_kernel_args], tables.params.zero_label);
+        std::fill(&args_l[0], &args_l[n_kernel_args],
+                tables.loop_params.get_zero_label());
+        std::fill(&args_r[0], &args_r[n_kernel_args],
+                tables.loop_params.get_zero_label());
 
         /* Go through all ways to pick m (unordered) elements from group of n */
         Combinations comb(n, m);
@@ -239,8 +241,8 @@ class ODEInput {
         const EvolutionParameters& ev_params;
         const std::array<Interpolation1D, COMPONENTS>& rhs;
 
-        ODEInput(int n, 
-                double k, 
+        ODEInput(int n,
+                double k,
                 double eta_ini,
                 const EvolutionParameters &ev_params,
                 const std::array<Interpolation1D, COMPONENTS>& rhs
@@ -394,16 +396,18 @@ int kernel_evolution(
         )
 {
 #if DEBUG >= 1
-    int argument_index = tables.kernel_index_from_arguments(arguments,
-            tables.params);
+    int argument_index = tables.loop_params.arguments_2_kernel_index(arguments);
+
     if (kernel_index != -1 && argument_index != kernel_index) {
         throw(std::logic_error("Index computed from kernel arguments does not "
                                "equal kernel index."));
     }
 
     int n_args = 0;
-    for (int i = 0; i < tables.params.n_kernel_args; ++i) {
-        if (arguments[i] != tables.params.zero_label) n_args++;
+    for (int i = 0; i < tables.loop_params.get_n_kernel_args(); ++i) {
+        if (arguments[i] != tables.loop_params.get_zero_label()){
+            n_args++;
+        }
     }
     if (n_args != n) {
         throw(std::invalid_argument(
@@ -414,8 +418,7 @@ int kernel_evolution(
 
     // If kernel_index is not known, -1 is sent as argument
     if (kernel_index == -1) {
-        kernel_index = tables.kernel_index_from_arguments(arguments,
-                tables.params);
+        kernel_index = tables.loop_params.arguments_2_kernel_index(arguments);
     }
 
     // Alias reference to kernel we are working with for convenience/readability
@@ -425,7 +428,8 @@ int kernel_evolution(
     if (kernel.computed) return kernel_index;
 
     // Compute k (sum of kernel arguments)
-    int sum = tables.sum_table.sum_labels(arguments, tables.params.n_kernel_args);
+    int sum = tables.sum_table.sum_labels(arguments,
+            tables.loop_params.get_n_kernel_args());
     double k = std::sqrt(tables.scalar_products[sum][sum]);
 
     // Set initial conditions

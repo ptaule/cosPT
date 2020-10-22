@@ -9,7 +9,6 @@
 #define TABLES_HPP
 
 #include <vector>
-#include <functional>
 
 #include "utilities.hpp"
 #include "parameters.hpp"
@@ -31,12 +30,14 @@ class IntegrationVariables {
 
 class SumTable {
     private:
-        const Parameters& params;
+        const int zero_label;
+        const int n_coeffs;
+
         Vec2D<int> sum_table;
 
         int sum_two_labels(int a, int b);
     public:
-        SumTable(const Parameters& params);
+        SumTable(const LoopParameters& loop_params);
         int sum_labels(const int labels[], size_t size) const;
 };
 
@@ -108,10 +109,11 @@ class IntegrandTables {
         void compute_scalar_products();
         void compute_alpha_beta();
     public:
-        double k_a = 0.0;
-        double k_b = 0.0; // For bispectrum
+        double k_a    = 0.0;
+        double k_b    = 0.0; // For bispectrum
+        double cos_ab = 0.0; // For bispectrum
 
-        const Parameters& params;
+        const LoopParameters& loop_params;
         const SumTable& sum_table;
 
         const EvolutionParameters& ev_params;
@@ -127,20 +129,18 @@ class IntegrandTables {
         Vec1D<SPTKernel> spt_kernels;
         Vec1D<Kernel> kernels;
 
-        std::function<int(const int[], const Parameters &)>
-            kernel_index_from_arguments;
-
         IntegrandTables(
                 double k_a,
                 double k_b,
-                const Parameters& params,
+                double cos_ab,
+                const LoopParameters& loop_params,
                 const SumTable& sum_table,
                 const EvolutionParameters& ev_params,
                 const EtaGrid& eta_grid
                 );
         IntegrandTables(
                 double k_a,
-                const Parameters& params,
+                const LoopParameters& loop_params,
                 const SumTable& sum_table,
                 const EvolutionParameters& ev_params,
                 const EtaGrid& eta_grid
@@ -150,14 +150,5 @@ class IntegrandTables {
         void compute_tables();
 };
 
-namespace ps {
-int kernel_index_from_arguments(const int arguments[],
-                                const Parameters &params);
-}
-
-namespace bs {
-int kernel_index_from_arguments(const int arguments[],
-                                const Parameters &params);
-}
 
 #endif /* ifndef TABLES_HPP */

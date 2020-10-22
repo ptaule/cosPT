@@ -72,13 +72,13 @@ void partial_SPT_sum(
 {
     double partial_kernel_values[SPT_COMPONENTS] = {0};
 
-    int n_kernel_args = tables.params.n_kernel_args;
+    int n_kernel_args = tables.loop_params.get_n_kernel_args();
     int args_l[N_KERNEL_ARGS_MAX] = {0};
     int args_r[N_KERNEL_ARGS_MAX] = {0};
 
     // Initialize args_l and args_r
-    std::fill(&args_l[0], &args_l[n_kernel_args], tables.params.zero_label);
-    std::fill(&args_r[0], &args_r[n_kernel_args], tables.params.zero_label);
+    std::fill(&args_l[0], &args_l[n_kernel_args], tables.loop_params.get_zero_label());
+    std::fill(&args_r[0], &args_r[n_kernel_args], tables.loop_params.get_zero_label());
 
     /* Go through all ways to pick m (unordered) elements from group of n */
     Combinations comb(n, m);
@@ -132,16 +132,18 @@ int compute_SPT_kernels(
     // DEBUG: check that the number of non-zero arguments is in fact n, and
     // that kernel_index is in fact equivalent to arguments
 #if DEBUG >= 1
-    int argument_index = tables.kernel_index_from_arguments(arguments,
-            tables.params);
+    int argument_index =
+        tables.loop_params.arguments_2_kernel_index(arguments);
     if (kernel_index != -1 && argument_index != kernel_index) {
         throw(std::logic_error("Index computed from kernel arguments does not "
                                "equal kernel index."));
     }
 
     int n_args = 0;
-    for (int i = 0; i < tables.params.n_kernel_args; ++i) {
-        if (arguments[i] != tables.params.zero_label) n_args++;
+    for (int i = 0; i < tables.loop_params.get_n_kernel_args(); ++i) {
+        if (arguments[i] != tables.loop_params.get_zero_label()){
+            n_args++;
+        }
     }
     if (n_args != n) {
         throw(std::invalid_argument(
@@ -152,8 +154,7 @@ int compute_SPT_kernels(
 
     // If kernel_index is not known, -1 is sent as argument
     if (kernel_index == -1) {
-        kernel_index = tables.kernel_index_from_arguments(arguments,
-                tables.params);
+        kernel_index = tables.loop_params.arguments_2_kernel_index(arguments);
     }
 
     // Alias reference to kernel we are working with for convenience/readability
