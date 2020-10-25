@@ -20,7 +20,6 @@
 #define RESERVE_SIZE 200
 
 using std::size_t;
-using std::setw;
 
 /* Read file with n_columns number of columns, if there are lines that does not
  * have this number of columns, throw error. Skips empty lines and lines
@@ -139,64 +138,65 @@ void read_data_grid_from_file(
 }
 
 
+using std::setw;
 
 void write_results(
-        const std::string& output_file,
-        const std::string& input_ps_file,
-        const std::string& description,
-        int n_loops,
-        double cuba_epsabs,
-        double cuba_epsrel,
-        double cuba_maxevals,
-        double k,
-        double q_min,
-        double q_max,
-        const Results& results
+        const Config& cfg,
+        const Vec1D<double>& lin_ps,
+        const Vec1D<double>& non_lin_ps,
+        const Vec1D<double>& errors
         )
 {
-    std::ofstream out(output_file);
+    std::ofstream out(cfg.output_file());
 
     if (out.fail()){
-        throw(std::runtime_error("Could not open " + output_file +
+        throw(std::runtime_error("Could not open " + cfg.output_file() +
                                  " for writing."));
     }
 
-    out << "# Matter power spectrum P(k) at " << n_loops << "-loop for k = " <<
-        k << " (h/Mpc)\n";
-    out << "#\n# Description: " << description << "\n";
-    out <<    "# Git hash:    " << build_git_sha << "\n";
-    out <<    "# Build time:  " << build_git_time << "\n";
+    out << cfg;
 
-    out << "#\n# Correlations computed (zero-indexed components):\n# ";
-    for (auto& el : results.pair_correlations()) {
-        out << el <<  " ; ";
+    /* A column consists of 14 characters; 4 whitespaces in between each column */
+
+    if (cfg.spectrum() == POWERSPECTRUM) {
+        out << "#\n#" << setw(17) << "k (h/Mpc)";
+        for (auto& el : cfg.pair_correlations()) {
+            out << setw(13) << "P_lin " << el;
+            out << setw(7)  << "P_"     << cfg.n_loops() << "loop " << el;
+            out << setw(7)  << "err_"   << cfg.n_loops() << "loop " << el;
+        }
+    }
+    else {
+        out << "#\n#" << setw(17) << "k_a (h/Mpc)";
+        out << setw(18) << "k_b (h/Mpc)";
+        out << setw(18) << "cos_ab";
+
+        for (auto& el : cfg.triple_correlations()) {
+            out << setw(13) << "B_lin " << el;
+            out << setw(7)  << "B_"     << cfg.n_loops() << "loop " << el;
+            out << setw(7)  << "err_"   << cfg.n_loops() << "loop " << el;
+        }
     }
 
-    out << "\n#\n# Parameters used:\n";
-    out << "# Input power spectrum read from = " << input_ps_file <<
-        "\n#\n";
-
-    out << std::scientific;
-    out << "# Integration limits             = [" << q_min << "," << q_max << "]\n";
-    out << "# Monte Carlo abstol, reltol     = " << cuba_epsabs << ", " <<
-        cuba_epsrel << "\n";
-    out << "# Monte Carlo max num. of evals  = " << cuba_maxevals << "\n";
-
-    /* A column consists of 12 characters; 4 whitespaces in between each column */
-
-    out << "#\n#" << setw(15) << "k (h/Mpc)";
-    for (auto& el : results.pair_correlations()) {
-        out << setw(11) << "P_lin " << el;
-        out << setw(5) << "P_" << n_loops << "loop " << el;
-        out << setw(5) << "err_" << n_loops << "loop " << el;
-    }
     out << "\n";
+    out << std::setw(18) << cfg.k_a();
 
-    out << std::setw(16) << k;
-    for (size_t i = 0; i < results.pair_correlations().size(); ++i) {
-        out << setw(16) << results.lin_ps.at(i);
-        out << setw(16) << results.non_lin_ps.at(i);
-        out << setw(16) << results.errors.at(i);
+    if (cfg.spectrum() == POWERSPECTRUM) {
+        for (size_t i = 0; i < cfg.pair_correlations().size(); ++i) {
+            out << setw(18) << lin_ps.at(i);
+            out << setw(18) << non_lin_ps.at(i);
+            out << setw(18) << errors.at(i);
+        }
+    }
+    else {
+        out << setw(18) << cfg.k_b();
+        out << setw(18) << cfg.cos_ab();
+
+        for (size_t i = 0; i < cfg.triple_correlations().size(); ++i) {
+            out << setw(18) << lin_ps.at(i);
+            out << setw(18) << non_lin_ps.at(i);
+            out << setw(18) << errors.at(i);
+        }
     }
     out << std::endl;
 

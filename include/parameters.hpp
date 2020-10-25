@@ -8,11 +8,131 @@
 #ifndef PARAMETERS_HPP
 #define PARAMETERS_HPP
 
-#include <functional>
 #include <stdexcept>
+#include <string>
 
 #include "utilities.hpp"
 #include "interpolation.hpp"
+
+class Config {
+    private:
+        int n_loops_;
+        Dynamics dynamics_;
+        Spectrum spectrum_;
+
+        int k_a_idx = -1;
+        int k_b_idx = -1;
+
+        double k_a_;
+        double k_b_ = 0;
+        double cos_ab_ = 0;
+
+        double q_min_ = 1e-4;
+        double q_max_ = 65;
+
+        Vec1D<Pair<int>> pair_correlations_;     /* Power spectrum */
+        Vec1D<Triple<int>> triple_correlations_; /* Bispectrum */
+
+        double cuba_atol_           = 1e-12;
+        double cuba_rtol_           = 1e-4;
+        double cuba_maxevals_       = 1e6;
+        int cuba_verbose_           = 1;
+        int cuba_cores_             = 0;
+        bool cuba_retain_statefile_ = false;
+        std::string cuba_statefile_;
+
+        std::string description_;
+
+        double ode_atol_   = 1e-6;
+        double ode_rtol_   = 1e-4;
+        double ode_hstart_ = 1e-3;
+
+        std::string input_ps_file_;
+
+        std::string output_file_;
+
+        int time_steps_     = 0;
+        int pre_time_steps_ = 0;
+        double eta_asymp_   = 0;
+        double eta_ini_     = 0;
+        double eta_fin_     = 0;
+
+        double f_nu_ = 0;
+        double omega_m_0_ = 0;
+
+        std::string zeta_file_;
+        std::string redshift_file_;
+        std::string omega_eigenvalues_file_;
+        Vec1D<std::string> F1_ic_files_;
+        std::string effcs2_x_grid_;
+        std::string effcs2_y_grid_;
+        std::string effcs2_data_;
+
+    public:
+        Config(const std::string& ini_file,
+                int k_a_idx = -1,
+                int k_b_idx = -1
+                );
+        int n_loops() const {return n_loops_;}
+        Dynamics dynamics() const {return dynamics_;}
+        Spectrum spectrum() const {return spectrum_;}
+
+        double k_a() const {return k_a_;}
+        double k_b() const {return k_b_;}
+        double cos_ab() const {return cos_ab_;};
+
+        double q_min() const {return q_min_;}
+        double q_max() const {return q_max_;}
+
+        Vec1D<Pair<int>> pair_correlations() const {return pair_correlations_;}
+        Vec1D<Triple<int>> triple_correlations() const {return triple_correlations_;}
+
+        double cuba_atol() const {return cuba_atol_ ;}
+        double cuba_rtol() const {return cuba_rtol_;}
+        double cuba_maxevals() const {return cuba_maxevals_;}
+        int cuba_verbose() const {return cuba_verbose_;}
+        int cuba_cores() const {return cuba_cores_;}
+        bool cuba_retain_statefile() const {return cuba_retain_statefile_;}
+        std::string cuba_statefile() const {return cuba_statefile_;}
+
+        std::string description() const {return description_;}
+
+        double ode_atol() const {return ode_atol_ ;}
+        double ode_rtol() const {return ode_rtol_;}
+        double ode_hstart() const {return ode_hstart_;}
+
+        std::string input_ps_file() const {return input_ps_file_;}
+        std::string output_file() const {return output_file_;}
+
+        int time_steps() const {return time_steps_;}
+        int pre_time_steps() const {return pre_time_steps_;}
+        double eta_asymp() const {return eta_asymp_;}
+        double eta_ini() const {return eta_ini_;}
+        double eta_fin() const {return eta_fin_;}
+
+        double f_nu() const {return f_nu_;}
+        double omega_m_0() const {return omega_m_0_;}
+
+        std::string zeta_file() const {return zeta_file_;}
+        std::string redshift_file() const {return redshift_file_;}
+        std::string omega_eigenvalues_file() const {return omega_eigenvalues_file_;}
+        Vec1D<std::string> F1_ic_files() const {return F1_ic_files_;}
+        std::string effcs2_x_grid() const {return effcs2_x_grid_;}
+        std::string effcs2_y_grid() const {return effcs2_y_grid_;}
+        std::string effcs2_data() const {return effcs2_data_;}
+};
+
+std::ostream& operator<<(std::ostream& out, const Config& cfg);
+
+
+class ConfigException : std::exception {
+    private:
+        std::string ex;
+    public:
+        ConfigException (const std::string& ex) : ex(ex) {}
+        const char* what() const noexcept {return ex.c_str();}
+};
+
 
 class LoopParameters {
     private:
@@ -62,6 +182,7 @@ class LoopParameters {
 };
 
 
+enum SoundSpeed {EXACT, ADIABATIC};
 
 class EvolutionParameters {
     private:
@@ -79,16 +200,14 @@ class EvolutionParameters {
         Vec1D<Interpolation1D> F1_ic;
         Interpolation2D effcs2;
 
-        double eff_sound_speed(double eta, double k) const {
-            return cs2_factor * effcs2.eval(eta, k) / (1 + redshift.eval(eta));
-        }
-        double ad_sound_speed(double eta,
-                              __attribute__((unused)) double k) const {
-            return cg2_factor * (1 + redshift.eval(eta));
-        }
+        SoundSpeed sound_speed;
 
     public:
         EvolutionParameters() = default;
+        EvolutionParameters(const EvolutionParameters&) = delete;
+        EvolutionParameters& operator=(const EvolutionParameters&) = delete;
+        EvolutionParameters(EvolutionParameters&& other) noexcept;
+        EvolutionParameters& operator=(EvolutionParameters&& other);
 
         /* Effective sound speed constructors */
         EvolutionParameters(
@@ -163,7 +282,15 @@ class EvolutionParameters {
             return F1_ic[i].eval(k);
         }
 
-        std::function<double(double, double)> cs2;
+        double cs2(double eta, double k) const {
+            if (sound_speed == EXACT) {
+                return cs2_factor * effcs2.eval(eta, k) / (1 + redshift.eval(eta));
+            }
+            else {
+                return cg2_factor * (1 + redshift.eval(eta));
+            }
+        }
+
 };
 
 

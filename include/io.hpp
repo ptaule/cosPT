@@ -30,17 +30,10 @@ void read_data_grid_from_file(
         );
 
 void write_results(
-        const std::string& output_file,
-        const std::string& input_ps_file,
-        const std::string& description,
-        int n_loops,
-        double cuba_epsabs,
-        double cuba_epsrel,
-        double cuba_maxevals,
-        double k,
-        double q_min,
-        double q_max,
-        const Results& results
+        const Config& cfg,
+        const Vec1D<double>& lin_ps,
+        const Vec1D<double>& non_lin_ps,
+        const Vec1D<double>& errors
         );
 
 #endif /* ifndef IO_HPP */

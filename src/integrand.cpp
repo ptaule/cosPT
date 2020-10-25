@@ -108,7 +108,7 @@ void diagram_term(
     diagram.print_diagram_tags(std::cout);
     std::cout << std::endl;
 #endif
-    size_t n_correlations = input.pair_correlations->size();
+    size_t n_correlations = input.pair_correlations.size();
 
     // Loop over momentum rearrangement and sign flips
     for (size_t i = 0; i < diagram.n_rearrangements(); ++i) {
@@ -128,7 +128,7 @@ void diagram_term(
             }
 
             Vec1D<double> term_results(n_correlations, 0.0);
-            configuration_term(diagram, i, j, *input.pair_correlations, tables,
+            configuration_term(diagram, i, j, input.pair_correlations, tables,
                     term_results);
 
             for (auto& el : term_results) {
@@ -165,28 +165,28 @@ int integrand(
         const int *core
         )
 {
-    IntegrationInput* input = (IntegrationInput*)userdata;
+    IntegrationInput& input = *(IntegrationInput*)userdata;
 
     /*  For thread <*core + 1> (index 0 is reserved for master), we use the */
     /*  IntegrandTables number *core+1 */
-    IntegrandTables& tables = input->tables_vec.at(*core + 1);
+    IntegrandTables& tables = input.tables_vec.at(*core + 1);
 
     int n_loops = tables.loop_params.n_loops();
     IntegrationVariables& vars = tables.vars;
 
-    double ratio = input->q_max/input->q_min;
+    double ratio = input.q_max/input.q_min;
     double log_ratio = std::log(ratio);
     double jacobian = 0.0;
 
     switch (n_loops) {
         case 1:
-            vars.magnitudes.at(0) = input->q_min * pow(ratio,xx[0]);
+            vars.magnitudes.at(0) = input.q_min * pow(ratio,xx[0]);
             vars.cos_theta.at(0) = xx[1];
             jacobian = log(ratio) * CUBE(vars.magnitudes[0]);
             break;
         case 2:
-            vars.magnitudes.at(0) = input->q_min * pow(ratio,xx[0]);
-            vars.magnitudes.at(1) = input->q_min * pow(ratio,xx[0] * xx[1]);
+            vars.magnitudes.at(0) = input.q_min * pow(ratio,xx[0]);
+            vars.magnitudes.at(1) = input.q_min * pow(ratio,xx[0] * xx[1]);
             vars.cos_theta.at(0) = xx[2];
             vars.cos_theta.at(1) = xx[3];
             /* We may fix the coordinate system s.t. vars.phi[0] = 0 */
@@ -200,7 +200,7 @@ int integrand(
             throw(std::invalid_argument("ps::integrand(): n_loops is not 1 or 2."));
     }
 
-    size_t n_correlations = input->pair_correlations->size();
+    size_t n_correlations = input.pair_correlations.size();
     Vec1D<double> results(n_correlations, 0.0);
     Vec1D<double> diagram_results(n_correlations, 0.0);
     try {
@@ -210,8 +210,8 @@ int integrand(
         tables.compute_tables();
 
         // Loop over all diagrams
-        for (auto& diagram : *input->ps_diagrams) {
-            diagram_term(diagram, *input, tables, diagram_results);
+        for (auto& diagram : input.ps_diagrams) {
+            diagram_term(diagram, input, tables, diagram_results);
 
             /* Add diagram results to results and reset diagram results */
             for (size_t j = 0; j < n_correlations; ++j) {
@@ -221,7 +221,7 @@ int integrand(
         }
         for (int i = 0; i < tables.loop_params.n_loops(); ++i) {
             for (auto& el : results) {
-                el *= input->input_ps.eval(tables.vars.magnitudes[i]);
+                el *= input.input_ps.eval(tables.vars.magnitudes[i]);
             }
         }
     }
@@ -320,7 +320,7 @@ void diagram_term(
     diagram.print_diagram_tags(std::cout);
     std::cout << std::endl;
 #endif
-    size_t n_correlations = input.triple_correlations->size();
+    size_t n_correlations = input.triple_correlations.size();
 
     /* Loop over momentum rearrangement, sign flips and overall loop assosiations */
     int overall_loop_assosiations = diagram.overall_loop() ? 3 : 1;
@@ -344,7 +344,7 @@ void diagram_term(
 
                 Vec1D<double> term_results(n_correlations, 0.0);
                 configuration_term(diagram, i, j, k,
-                        *input.triple_correlations, tables, term_results);
+                        input.triple_correlations, tables, term_results);
 
                 if (diagram.n_ab > 0) {
                     for (auto& el : term_results) {
@@ -396,21 +396,21 @@ int integrand(
         const int *core
         )
 {
-    IntegrationInput* input = (IntegrationInput*)userdata;
+    IntegrationInput& input = *(IntegrationInput*)userdata;
 
     /*  For thread <*core + 1> (index 0 is reserved for master), we use the */
     /*  IntegrandTables number *core+1 */
-    IntegrandTables& tables = input->tables_vec.at(*core + 1);
+    IntegrandTables& tables = input.tables_vec.at(*core + 1);
 
     int n_loops = tables.loop_params.n_loops();
     IntegrationVariables& vars = tables.vars;
 
-    double ratio = input->q_max/input->q_min;
+    double ratio = input.q_max/input.q_min;
     double jacobian = 0.0;
 
     switch (n_loops) {
         case 1:
-            vars.magnitudes.at(0) = input->q_min * pow(ratio,xx[0]);
+            vars.magnitudes.at(0) = input.q_min * pow(ratio,xx[0]);
             vars.cos_theta.at(0) = xx[1];
             vars.phi.at(0) = xx[2];
             jacobian = TWOPI * log(ratio) * CUBE(vars.magnitudes[0]);
@@ -419,7 +419,7 @@ int integrand(
             throw(std::invalid_argument("bs::integrand(): n_loops is not 1."));
     }
 
-    size_t n_correlations = input->triple_correlations->size();
+    size_t n_correlations = input.triple_correlations.size();
     Vec1D<double> results(n_correlations, 0.0);
     Vec1D<double> diagram_results(n_correlations, 0.0);
     try {
@@ -429,8 +429,8 @@ int integrand(
         tables.compute_tables();
 
         // Loop over all diagrams
-        for (auto& diagram : *input->bs_diagrams) {
-            diagram_term(diagram, *input, tables, diagram_results);
+        for (auto& diagram : input.bs_diagrams) {
+            diagram_term(diagram, input, tables, diagram_results);
 
             /* Add diagram results to results and reset diagram results */
             for (size_t j = 0; j < n_correlations; ++j) {
@@ -440,7 +440,7 @@ int integrand(
         }
         for (int i = 0; i < tables.loop_params.n_loops(); ++i) {
             for (auto& el : results) {
-                el *= input->input_ps.eval(tables.vars.magnitudes[i]);
+                el *= input.input_ps.eval(tables.vars.magnitudes[i]);
             }
         }
     }

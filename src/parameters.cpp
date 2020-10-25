@@ -5,15 +5,426 @@
    Copyright (c) 2020 Petter Taule. All rights reserved.
 */
 
+#include <iostream>
+#include <iomanip>
 #include <cmath>
 #include <vector>
+#include <string>
 #include <stdexcept>
-#include <functional>
+#include <algorithm>
+#include <utility>
+
+#include <libconfig.h++>
 
 #include "../include/utilities.hpp"
+#include "../include/version.hpp"
+#include "../include/wavenumbers.hpp"
 #include "../include/parameters.hpp"
 
 using std::size_t;
+
+
+Config::Config(const std::string& ini_file, int k_a_idx, int k_b_idx)
+    : k_a_idx(k_a_idx), k_b_idx(k_b_idx)
+{
+    libconfig::Config cfg;
+
+    /* Read config file */
+    try {
+        cfg.readFile(ini_file.c_str());
+    }
+    catch (const libconfig::FileIOException& ioex) {
+        throw ConfigException("Unable to read " + ini_file + ".");
+    }
+    catch (const libconfig::ParseException& pex) {
+        throw ConfigException("Parse error at " + std::string(pex.getFile()) +
+                              ":" + std::to_string(pex.getLine()) + " - " +
+                              std::string(pex.getError()));
+    }
+
+    /* Number of loops */
+    try {
+        n_loops_ = cfg.lookup("loops");
+    }
+    catch (const libconfig::SettingNotFoundException& nfex) {
+        throw ConfigException("No loops setting in configuration file.");
+    }
+    catch (const libconfig::SettingTypeException& tex) {
+        throw ConfigException("Encountered type exception for loops setting.");
+    }
+    /* Dynamics */
+    try {
+        std::string dynamics_str = cfg.lookup("dynamics");
+        std::transform(dynamics_str.begin(), dynamics_str.end(),
+                dynamics_str.begin(), [](unsigned char c) {return
+                tolower(c);});
+
+        if (dynamics_str == "eds-spt") {
+            dynamics_ = EDS_SPT;
+        }
+        else if (dynamics_str == "evolve-asymp-ic") {
+            dynamics_ = EVOLVE_ASYMP_IC;
+        }
+        else if (dynamics_str == "eolve-eds-ic") {
+            throw ConfigException("eolve-eds-ic not implemented.");
+        }
+        else {
+            throw ConfigException("Unknown dynamics in configuration file.");
+        }
+    }
+    catch (const libconfig::SettingNotFoundException& nfex){
+        throw ConfigException("No dynamics setting in configuration file.");
+    }
+    catch (const libconfig::SettingTypeException& tex) {
+        throw ConfigException("Encountered type exception for dynamics setting.");
+    }
+    catch (const ConfigException& e) {
+        throw e;
+    }
+
+    /* Spectrum */
+    try {
+        std::string spetrcum_str = cfg.lookup("spectrum");
+        std::transform(spetrcum_str.begin(), spetrcum_str.end(),
+                spetrcum_str.begin(), [](unsigned char c) {return
+                tolower(c);});
+
+        if (spetrcum_str == "powerspectrum") {
+            spectrum_ = POWERSPECTRUM;
+        }
+        else if (spetrcum_str == "bispectrum") {
+            spectrum_ = BISPECTRUM;
+        }
+        else {
+            throw ConfigException("Unknown spectrum in configuration file.");
+        }
+    }
+    catch (const libconfig::SettingNotFoundException& nfex){
+        throw ConfigException("No spectrum setting in configuration file.");
+    }
+    catch (const libconfig::SettingTypeException& tex) {
+        throw ConfigException("Encountered type exception for spectrum setting.");
+    }
+    catch (const ConfigException& e) {
+        throw e;
+    }
+
+    /* First wavenumber */
+    if (k_a_idx != -1) {
+        k_a_ = wavenumbers[k_a_idx];
+    }
+    else if (cfg.lookupValue("k_a_idx", k_a_idx)) {
+        k_a_ = wavenumbers[k_a_idx];
+    }
+    else if (cfg.lookupValue("k_a", k_a_)) {}
+    else {
+        throw ConfigException("Neither k_a nor k_a_idx in configuration file, "
+                              "and no k_a index given as command line argument.");
+    }
+
+    /* For power spectrum, two-point correlations */
+    if (spectrum_ == POWERSPECTRUM) {
+        try {
+            const libconfig::Setting& correlation = cfg.lookup("correlations");
+            int count = correlation.getLength();
+            if (count == 0) {
+                throw ConfigException("No correlations in configuration file.");
+            }
+            for (int i = 0; i < count; ++i) {
+                if (correlation[i].getLength() != 2) {
+                    throw ConfigException(
+                        "Correlation must be two indices (powerspectrum)");
+                }
+                int a = correlation[i][0];
+                int b = correlation[i][1];
+                if (a < 0 || a >= COMPONENTS || b < 0 || b >= COMPONENTS) {
+                    throw ConfigException("a and b must be element in [0," +
+                            std::to_string(COMPONENTS) + "]");
+                }
+                pair_correlations_.push_back({a,b});
+            }
+        }
+        catch (const libconfig::SettingNotFoundException& nfex) {
+            throw ConfigException("No correlations in configuration file.");
+        }
+        catch (const ConfigException& e) {
+            throw e;
+        }
+        catch (const libconfig::SettingTypeException& tex) {
+            throw ConfigException("Encountered type exception for correlations setting.");
+        }
+
+        if (k_b_idx != -1 || cfg.exists("k_b_idx") || cfg.exists("k_b") ||
+            cfg.exists("cos_ab")) {
+            std::cerr << "For powerspectrum, k_b/cos_ab settings are ignored."
+                    << std::endl;
+        }
+    }
+    /* For bispectrum: k_b, cos_ab and three-point correlations */
+    else {
+        try {
+            const libconfig::Setting& correlation = cfg.lookup("correlations");
+            int count = correlation.getLength();
+            if (count == 0) {
+                throw ConfigException("No correlations in configuration file.");
+            }
+            for (int i = 0; i < count; ++i) {
+                if (correlation[i].getLength() != 3) {
+                    throw ConfigException(
+                        "Correlation must be three indices (bispectrum)");
+                }
+                int a = correlation[i][0];
+                int b = correlation[i][1];
+                int c = correlation[i][2];
+                if (a < 0 || a >= COMPONENTS || b < 0 || b >= COMPONENTS ||
+                        c < 0 || c >= COMPONENTS) {
+                    throw ConfigException("a, b and c must be element in [0," +
+                            std::to_string(COMPONENTS) + "]");
+                }
+                triple_correlations_.push_back({a,b,c});
+            }
+        }
+        catch (const ConfigException& e) {
+            throw e;
+        }
+        catch (const libconfig::SettingNotFoundException& nfex) {
+            throw ConfigException("No correlations in configuration file.");
+        }
+        catch (const libconfig::SettingTypeException& tex) {
+            throw ConfigException("Encountered type exception for correlations setting.");
+        }
+
+        if (k_b_idx != -1) {
+            k_b_ = wavenumbers[k_b_idx];
+        }
+        else if (cfg.lookupValue("k_b_idx", k_b_idx)) {
+            k_b_ = wavenumbers[k_b_idx];
+        }
+        else if (cfg.lookupValue("k_b", k_b_)) {}
+        else {
+            throw ConfigException(
+                "Neither k_b nor k_b_idx in configuration file, "
+                "and no k_b index given as command line argument.");
+        }
+        try {
+            cos_ab_ = cfg.lookup("cos_ab");
+        }
+        catch (const libconfig::SettingNotFoundException& nfex) {
+            throw ConfigException(
+                "No value set for cos_ab (spectrum = BISPECTRUM).");
+        }
+        catch (const libconfig::SettingTypeException& tex) {
+            throw ConfigException("Encountered type exception for cos_ab setting.");
+        }
+    }
+
+    /* Integration ranges */
+    try {
+        q_min_ = static_cast<double>(cfg.lookup("q_min"));
+        q_max_ = static_cast<double>(cfg.lookup("q_max"));
+    }
+    catch (const libconfig::SettingNotFoundException& nfex) {
+        throw ConfigException("Missing q_min and/or q_max in configuration.");
+    }
+    catch (const libconfig::SettingTypeException& tex) {
+        throw ConfigException("Encountered type exception for q_min/q_max setting.");
+    }
+
+    /* Output file */
+    try {
+        output_file_ = static_cast<std::string>(cfg.lookup("output_file"));
+    }
+    catch (const libconfig::SettingNotFoundException& nfex) {
+        throw ConfigException("No setting for output file in configuration.");
+    }
+    catch (const libconfig::SettingTypeException& tex) {
+        throw ConfigException("Encountered type exception for output_file setting.");
+    }
+    /* CUBA settings */
+    if (cfg.exists("cuba_settings")) {
+        const libconfig::Setting& cuba_settings = cfg.lookup("cuba_settings");
+        cuba_settings.lookupValue("abs_tolerance", cuba_atol_);
+        cuba_settings.lookupValue("rel_tolerance", cuba_rtol_);
+        cuba_settings.lookupValue("max_evaluations", cuba_maxevals_);
+        cuba_settings.lookupValue("verbosity_level", cuba_verbose_);
+        cuba_settings.lookupValue("threads", cuba_cores_);
+        cuba_settings.lookupValue("statefile", cuba_statefile_);
+        cuba_settings.lookupValue("retain_statefile", cuba_retain_statefile_);
+    }
+
+    /* ODE settings */
+    if (cfg.exists("ODE settings")) {
+        const libconfig::Setting& ode_settings = cfg.lookup("cuba_settings");
+        ode_settings.lookupValue("abs_tolerance", ode_atol_);
+        ode_settings.lookupValue("rel_tolerance", ode_rtol_);
+        ode_settings.lookupValue("start_step", ode_hstart_);
+    }
+
+    /* Input power spectrum */
+    try {
+        input_ps_file_ = static_cast<std::string>(cfg.lookup("input_ps_file"));
+    }
+    catch (const libconfig::SettingNotFoundException& nfex) {
+        throw ConfigException("No input PS file in configuration.");
+    }
+    catch (const libconfig::SettingTypeException& tex) {
+        throw ConfigException("Encountered type exception for input_ps_file setting.");
+    }
+
+    /* Settings for evolution dynamics */
+    if (dynamics_ == EVOLVE_ASYMP_IC || dynamics_ == EVOLVE_EDS_IC) {
+        try {
+            time_steps_ = cfg.lookup("time_steps");
+            eta_ini_ = static_cast<double>(cfg.lookup("eta_ini"));
+            eta_fin_ = static_cast<double>(cfg.lookup("eta_fin"));
+        }
+        catch (const libconfig::SettingNotFoundException& nfex) {
+            throw ConfigException(
+                "Missing time grid settings in configuration file.");
+        }
+        catch (const libconfig::SettingTypeException& tex) {
+            throw ConfigException("Encountered type exception in time grid settings.");
+        }
+        if (dynamics_ == EVOLVE_ASYMP_IC) {
+            try {
+                pre_time_steps_ = cfg.lookup("pre_time_steps");
+                eta_asymp_ = static_cast<double>(cfg.lookup("eta_asymp"));
+            }
+            catch (const libconfig::SettingNotFoundException& nfex) {
+                throw ConfigException(
+                    "Missing time grid settings in configuration file.");
+            }
+            catch (const libconfig::SettingTypeException& tex) {
+                throw ConfigException("Encountered type exception in time grid settings.");
+            }
+        }
+        try {
+            zeta_file_ = static_cast<std::string>(cfg.lookup("zeta_file"));
+            redshift_file_ = static_cast<std::string>(cfg.lookup("redshift_file"));
+            omega_eigenvalues_file_ =
+                static_cast<std::string>(cfg.lookup("omega_eigenvalues_file"));
+
+            const libconfig::Setting& F1_ic_files_list = cfg.lookup("F1_ic_files");
+            int count = F1_ic_files_list.getLength();
+            if (count != COMPONENTS) {
+                throw ConfigException("There should be " +
+                                      std::to_string(COMPONENTS) +
+                                      " F1 ic files in the configuration");
+            }
+            for (int i = 0; i < count; ++i) {
+                F1_ic_files_.push_back(
+                    static_cast<std::string>(F1_ic_files_list[i]));
+            }
+
+            const libconfig::Setting& effcs2_files =
+                cfg.lookup("effective_cs2_files");
+            effcs2_x_grid_ = static_cast<std::string>(effcs2_files.lookup("x_grid"));
+            effcs2_y_grid_ = static_cast<std::string>(effcs2_files.lookup("y_grid"));
+            effcs2_data_   = static_cast<std::string>(effcs2_files.lookup("data"));
+        }
+        catch (const libconfig::SettingNotFoundException& nfex) {
+            throw ConfigException(
+                "Missing file for interpolation in configuration.");
+        }
+        catch (const libconfig::SettingTypeException& tex) {
+            throw ConfigException("Encountered type exception in settings for "
+                                  "interpolation files.");
+        }
+        try {
+            f_nu_ = static_cast<double>(cfg.lookup("f_nu"));
+            omega_m_0_ = static_cast<double>(cfg.lookup("omega_m_0"));
+        }
+        catch (const libconfig::SettingNotFoundException& nfex) {
+            throw ConfigException("Missing f_nu or omega_m_0 in configuration.");
+        }
+        catch (const libconfig::SettingTypeException& tex) {
+            throw ConfigException("Encountered type exception for f_nu or omega_m_0.");
+        }
+    }
+
+    /* Store potential description */
+    cfg.lookupValue("description", description_);
+}
+
+
+
+std::ostream& operator<<(std::ostream& out, const Config& cfg) {
+    if (cfg.spectrum() == POWERSPECTRUM) {
+        out << "# Matter power spectrum P(k) at " << cfg.n_loops()
+            << "-loop for k = " << cfg.k_a() << " (h/Mpc)" << "\n";
+    }
+    else {
+      out << "# Matter bispectrum B(k) at " << cfg.n_loops() << "-loop for\n"
+          << "#\n# k_a = " << cfg.k_a() << " (h/Mpc)"
+          << "\n# k_b = " << cfg.k_b() << " (h/Mpc)"
+          << "\n# cos_ab = " << cfg.cos_ab() << "\n";
+    }
+    out << "#\n# Description: " << cfg.description() << "\n";
+    out <<    "# Git hash:    " << build_git_sha << "\n";
+    out <<    "# Build time:  " << build_git_time << "\n";
+
+    out << "#\n# Correlations (zero-indexed components):\n# ";
+    if (cfg.spectrum() == POWERSPECTRUM) {
+        for (auto& el : cfg.pair_correlations()) {
+            out << " " << el <<  " ,";
+        }
+    }
+    else {
+        for (auto& el : cfg.triple_correlations()) {
+            out << " " << el <<  " ,";
+        }
+    }
+
+    out << "\n#\n# Input power spectrum read from " << cfg.input_ps_file() << "\n";
+    out << std::scientific;
+    out << "# Integration limits:\n";
+    out << "#\t q_min = " << cfg.q_min() << "\n";
+    out << "#\t q_max = " << cfg.q_max() << "\n";
+
+    out << "#\n# Cuba settings:\n";
+    out << "#\t abs tolerance = " << cfg.cuba_atol() << "\n";
+    out << "#\t rel tolerance = " << cfg.cuba_rtol() << "\n";
+    out << "#\t max. evals    = " << cfg.cuba_maxevals() << "\n";
+
+    if (!cfg.cuba_statefile().empty()) {
+        out << "#\t statefile     = " << cfg.cuba_statefile() << "\n";
+    }
+
+    if (cfg.dynamics() == EVOLVE_EDS_IC || cfg.dynamics() == EVOLVE_ASYMP_IC) {
+        out << "#\n# ODE settings:\n";
+        out << std::scientific;
+        out << "#\t abs tolerance = " << cfg.ode_atol() << "\n";
+        out << "#\t rel tolerance = " << cfg.ode_rtol() << "\n";
+        out << "#\t start step    = " << cfg.ode_hstart() << "\n";
+
+        out << "#\n# Time grid settings:\n";
+        out << "#\t time steps     = " << cfg.time_steps() << "\n";
+        if (cfg.dynamics() == EVOLVE_ASYMP_IC) {
+            out << "#\t pre time steps = " << cfg.pre_time_steps() << "\n";
+            out << "#\t eta asymp      = " << cfg.eta_asymp() << "\n";
+        }
+        out << "#\t eta ini        = " << cfg.eta_ini() << "\n";
+        out << "#\t eta fin        = " << cfg.eta_fin() << "\n";
+
+        out << "#\n# Dynamics settings:\n";
+        out << "# f_nu      = " << cfg.f_nu() << "\n";
+        out << "# omega_m_0 = " << cfg.omega_m_0() << "\n";
+
+        out << "#\n# zeta file              = " << cfg.zeta_file() << "\n";
+        out << "# redshift file          = " << cfg.redshift_file() << "\n";
+        out << "# omega eigenvalues file = " << cfg.omega_eigenvalues_file() << "\n";
+        for (int i = 0; i < COMPONENTS; ++i) {
+            out << "# F1 ic files[" << i << "]\t\t = " << cfg.F1_ic_files().at(i)
+                << "\n";
+        }
+        out << "# effective cs2 x grid   = " << cfg.effcs2_x_grid() << "\n";
+        out << "# effective cs2 y grid   = " << cfg.effcs2_y_grid() << "\n";
+        out << "# effective cs2 data     = " << cfg.effcs2_data() << "\n";
+    }
+
+    return out;
+}
+
 
 
 LoopParameters::LoopParameters(int n_loops, Spectrum spectrum, Dynamics dynamics)
@@ -214,6 +625,46 @@ found_single_loop: ;
 
 
 
+EvolutionParameters::EvolutionParameters(EvolutionParameters&& other) noexcept
+    : f_nu_(other.f_nu_), cs2_factor(other.cs2_factor),
+    cg2_factor(other.cg2_factor), ode_atol_(other.ode_atol_),
+    ode_rtol_(other.ode_rtol_), ode_hstart_(other.ode_hstart_),
+    zeta(std::move(other.zeta)), redshift(std::move(other.redshift)),
+    omega_eigenvalues(std::move(other.omega_eigenvalues)),
+    effcs2(std::move(other.effcs2))
+{
+    for (auto&& el : other.F1_ic) {
+        F1_ic.emplace_back(std::move(el));
+    }
+}
+
+
+
+EvolutionParameters& EvolutionParameters::operator=(EvolutionParameters&& other)
+{
+    if (this != &other) {
+        f_nu_       = other.f_nu_;
+        cs2_factor  = other.cs2_factor;
+        cg2_factor  = other.cg2_factor;
+        ode_atol_   = other.ode_atol_;
+        ode_rtol_   = other.ode_rtol_;
+        ode_hstart_ = other.ode_hstart_;
+        sound_speed = other.sound_speed;
+
+        zeta              = std::move(other.zeta);
+        redshift          = std::move(other.redshift);
+        omega_eigenvalues = std::move(other.omega_eigenvalues);
+        effcs2            = std::move(other.effcs2);
+
+        for (auto&& el : other.F1_ic) {
+            F1_ic.emplace_back(std::move(el));
+        }
+    }
+    return *this;
+}
+
+
+
 EvolutionParameters::EvolutionParameters(
         double f_nu,
         double omega_m_0,
@@ -236,11 +687,11 @@ EvolutionParameters::EvolutionParameters(
     for (auto& F1_ic_file : F1_ic_files) {
         F1_ic.emplace_back(F1_ic_file);
     }
+
+    sound_speed = EXACT;
+
     /* cs2_factor = 2/3 * 1/(omegaM a^2 H^2) */
     cs2_factor = 2.0/3.0 * SQUARE(3e3) / omega_m_0;
-
-    using namespace std::placeholders;
-    cs2 = std::bind(&EvolutionParameters::eff_sound_speed, this, _1, _2);
 }
 
 
@@ -282,6 +733,9 @@ EvolutionParameters::EvolutionParameters(
     for (auto& F1_ic_file : F1_ic_files) {
         F1_ic.emplace_back(F1_ic_file);
     }
+
+    sound_speed = ADIABATIC;
+
     /* cs2_factor = 2/3 * 1/(omegaM a^2 H^2) */
     cg2_factor = 2.0/3.0 * SQUARE(3e3) / omega_m_0;
 
@@ -290,9 +744,6 @@ EvolutionParameters::EvolutionParameters(
     /* 5/9 Zeta(5)/Zeta(3) = 7.188565369 */
     double a = 7.188565369;
     cg2_factor *= a * SQUARE(T_nu0) / SQUARE(m_nu);
-
-    using namespace std::placeholders;
-    cs2 = std::bind(&EvolutionParameters::ad_sound_speed, this, _1, _2);
 }
 
 

@@ -32,7 +32,7 @@ benchmark: LDLIBS   += -lbenchmark -pthread
 profile:   CXXFLAGS += -O3 -fno-omit-frame-pointer
 profile:   LDLIBS   += -lbenchmark -pthread
 
-LDLIBS  = -lcuba -lgsl -lgslcblas
+LDLIBS  = -lconfig++ -lcuba -lgsl -lgslcblas
 
 .PHONY: all clean run debug benchmark profile force
 
