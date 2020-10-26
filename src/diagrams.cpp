@@ -571,9 +571,9 @@ void BiSpectrumDiagram::kernel_arguments(
 #if DEBUG >= 1
     /* kernel_index_from_arguments() assumes that the length of arguments[] is
      * n_kernel_args. Checking this explicitly: */
-    if (args_a.size() != n_kernel_args ||
-        args_b.size() != n_kernel_args ||
-        args_c.size() != n_kernel_args
+    if (args_a.size() != static_cast<size_t>(n_kernel_args) ||
+        args_b.size() != static_cast<size_t>(n_kernel_args) ||
+        args_c.size() != static_cast<size_t>(n_kernel_args)
        ) {
         throw(std::logic_error(
             "BiSpectrumDiagram::kernel_arguments(): Size of left argument "

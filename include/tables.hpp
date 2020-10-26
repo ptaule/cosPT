@@ -21,9 +21,9 @@ class IntegrationVariables {
         Vec1D<double> phi;        /* Azimutal angles */
 
         IntegrationVariables(int n_loops) {
-            magnitudes.resize(n_loops);
-            cos_theta.resize(n_loops);
-            phi.resize(n_loops - 1);
+            magnitudes.assign(n_loops,0);
+            cos_theta.assign(n_loops,0);
+            phi.assign(n_loops,0);
         }
 };
 

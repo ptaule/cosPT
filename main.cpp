@@ -172,7 +172,8 @@ int cuba_integrand(
             vars.magnitudes.at(1) = input->q_min * pow(ratio,xx[0] * xx[1]);
             vars.cos_theta.at(0) = xx[2];
             vars.cos_theta.at(1) = xx[3];
-            vars.phi.at(0) = xx[4] * TWOPI;
+            /* We may fix the coordinate system s.t. vars.phi[0] = 0 */
+            vars.phi.at(1) = xx[4] * TWOPI;
             jacobian = TWOPI * xx[0]
                 * SQUARE(log_ratio)
                 * CUBE(vars.magnitudes[0])
