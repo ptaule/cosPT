@@ -18,7 +18,7 @@
 #define N_KERNEL_ARGS_MAX 5
 
 /* Number of components */
-#define SPT_COMPONENTS 2
+#define EDS_SPT_COMPONENTS 2
 #define COMPONENTS 4
 
 /* Constants: */
@@ -61,7 +61,7 @@ template <class T>
 using Vec3D = std::vector<std::vector<std::vector<T>>>;
 
 enum Spectrum {POWERSPECTRUM, BISPECTRUM};
-enum Dynamics {SPT, EVOLVE_SPT_IC, EVOLVE_ASYMP_IC};
+enum Dynamics {EDS_SPT, EVOLVE_EDS_IC, EVOLVE_ASYMP_IC};
 
 /* Utility functions */
 

@@ -56,7 +56,7 @@ int main () {
 
     cubacores(n_cores, 10000);
 
-    LoopParameters loop_params(n_loops, POWERSPECTRUM, SPT);
+    LoopParameters loop_params(n_loops, POWERSPECTRUM, EDS_SPT);
     SumTable sum_table(loop_params);
     EvolutionParameters ev_params;
     EtaGrid eta_grid;

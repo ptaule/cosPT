@@ -33,7 +33,7 @@ int cuba_integrand(
 static void BM_kernel_index(benchmark::State& state) {
     // Perform setup here
     Spectrum spectrum = POWERSPECTRUM;
-    Dynamics dynamics = SPT;
+    Dynamics dynamics = EDS_SPT;
     int n_loops = 2;
     LoopParameters loop_params(n_loops, spectrum, dynamics);
 
@@ -59,7 +59,7 @@ static void BM_integrand(benchmark::State& state) {
 
     Vec1D<Correlation> correlations = {{0,0}};
 
-    LoopParameters loop_params(n_loops, POWERSPECTRUM, SPT);
+    LoopParameters loop_params(n_loops, POWERSPECTRUM, EDS_SPT);
     SumTable sum_table(loop_params);
     EvolutionParameters ev_params;
     EtaGrid eta_grid;

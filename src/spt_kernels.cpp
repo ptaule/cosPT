@@ -70,7 +70,7 @@ void partial_SPT_sum(
         IntegrandTables& tables
         )
 {
-    double partial_kernel_values[SPT_COMPONENTS] = {0};
+    double partial_kernel_values[EDS_SPT_COMPONENTS] = {0};
 
     int n_kernel_args = tables.loop_params.get_n_kernel_args();
     int args_l[N_KERNEL_ARGS_MAX] = {0};
@@ -91,7 +91,7 @@ void partial_SPT_sum(
         int sum_l = tables.sum_table.sum_labels(args_l, n_kernel_args);
         int sum_r = tables.sum_table.sum_labels(args_r, n_kernel_args);
 
-        for (int i = 0; i < SPT_COMPONENTS; ++i) {
+        for (int i = 0; i < EDS_SPT_COMPONENTS; ++i) {
             partial_kernel_values[i] +=
                 spt_term(m, n-m, i, args_l, args_r, sum_l, sum_r, tables);
         }
@@ -100,7 +100,7 @@ void partial_SPT_sum(
         // swapping args_l, sum_l, m with args_r, sum_r and (n-m). Then
         // compute_SPT_kernels() only needs to sum up to (including) floor(n/2).
         if (m != n - m) {
-            for (int i = 0; i < SPT_COMPONENTS; ++i) {
+            for (int i = 0; i < EDS_SPT_COMPONENTS; ++i) {
                 partial_kernel_values[i] +=
                     spt_term(n-m, m, i, args_r, args_l, sum_r, sum_l, tables);
             }
@@ -109,12 +109,12 @@ void partial_SPT_sum(
 
     // Devide through by symmetrization factor (n choose m)
     int n_choose_m = gsl_sf_choose(n,m);
-    for (int i = 0; i < SPT_COMPONENTS; ++i) {
+    for (int i = 0; i < EDS_SPT_COMPONENTS; ++i) {
         partial_kernel_values[i] /= n_choose_m;
     }
 
     // Add calculated term for each component to kernel table
-    for (int i = 0; i < SPT_COMPONENTS; ++i) {
+    for (int i = 0; i < EDS_SPT_COMPONENTS; ++i) {
         tables.spt_kernels.at(kernel_index).values[i]
             += partial_kernel_values[i];
     }
@@ -165,7 +165,7 @@ int compute_SPT_kernels(
 
     // For SPT kernels, F_1 = G_1 = ... = 1
     if (n == 1) {
-        for (int i = 0; i < SPT_COMPONENTS; ++i) {
+        for (int i = 0; i < EDS_SPT_COMPONENTS; ++i) {
             kernel.values[i] = 1.0;
         }
         return kernel_index;
@@ -178,7 +178,7 @@ int compute_SPT_kernels(
     }
 
     // Divide by overall factor in SPT recursion relation
-    for (int i = 0; i < SPT_COMPONENTS; ++i) {
+    for (int i = 0; i < EDS_SPT_COMPONENTS; ++i) {
         kernel.values[i] /= (2*n + 3) * (n - 1);
     }
 

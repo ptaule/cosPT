@@ -44,7 +44,7 @@ class SumTable {
 
 class SPTKernel {
     public:
-        double values[SPT_COMPONENTS] = {0};
+        double values[EDS_SPT_COMPONENTS] = {0};
         bool computed = false;
 };
 

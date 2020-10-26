@@ -126,11 +126,11 @@ IntegrandTables::IntegrandTables(
         beta.at(i).resize(n_configs);
     }
 
-    if (loop_params.get_dynamics() == SPT ||
-        loop_params.get_dynamics() == EVOLVE_SPT_IC) {
+    if (loop_params.get_dynamics() == EDS_SPT ||
+        loop_params.get_dynamics() == EVOLVE_EDS_IC) {
         spt_kernels.resize(loop_params.get_n_kernels());
     }
-    if (loop_params.get_dynamics() == EVOLVE_SPT_IC ||
+    if (loop_params.get_dynamics() == EVOLVE_EDS_IC ||
         loop_params.get_dynamics() == EVOLVE_ASYMP_IC
         ) {
         spt_kernels.resize(n_kernels);
@@ -168,11 +168,11 @@ void IntegrandTables::reset()
     // bare_scalar_products, alpha, beta tables etc. are completely rewritten
     // by their respective compute-functions, hence no need to zero initialize
 
-    if (loop_params.get_dynamics() == SPT ||
-        loop_params.get_dynamics() == EVOLVE_SPT_IC) {
+    if (loop_params.get_dynamics() == EDS_SPT ||
+        loop_params.get_dynamics() == EVOLVE_EDS_IC) {
         reset_spt_kernels();
     }
-    if (loop_params.get_dynamics() == EVOLVE_SPT_IC ||
+    if (loop_params.get_dynamics() == EVOLVE_EDS_IC ||
         loop_params.get_dynamics() == EVOLVE_ASYMP_IC) {
         reset_kernels();
     }
