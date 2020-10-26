@@ -183,17 +183,26 @@ int cuba_integrand(
             throw(std::invalid_argument("n_loops is not 1 or 2."));
     }
 
-    /* Zero-initialize kernel tables */
-    tables.reset();
-    // Compute sum-, bare_scalar_products-, alpha- and beta-tables
-    tables.compute_tables();
-
     Vec1D<double> results(input->correlations.size(), 0.0);
-    integrand(*input, tables, results);
+    try {
+        /* Zero-initialize kernel tables */
+        tables.reset();
+        // Compute scalar_products-, alpha- and beta-tables
+        tables.compute_tables();
+
+        ps::integrand(*input, tables, results);
+    }
+    catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        /* Tell CUBA an error occured */
+        return -999;
+    }
 
     for (size_t i = 0; i < input->correlations.size(); ++i) {
         ff[i] = results.at(i) * jacobian;
     }
+
+    /* Return success */
     return 0;
 }
 #undef at
