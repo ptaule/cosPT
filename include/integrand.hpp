@@ -19,10 +19,11 @@ using Correlation = std::pair<int, int>;
 
 class IntegrationInput {
     public:
-        double q_min = 0;
-        double q_max = 0;
+        const double q_min = 0;
+        const double q_max = 0;
 
-        const Vec1D<PowerSpectrumDiagram>& diagrams;
+        const Vec1D<PowerSpectrumDiagram>* ps_diagrams;
+        const Vec1D<BiSpectrumDiagram>* bs_diagrams;
         const Vec1D<Correlation>& correlations;
         const Interpolation1D& input_ps;
 
@@ -31,22 +32,44 @@ class IntegrationInput {
         IntegrationInput(
                 double q_min,
                 double q_max,
-                const Vec1D<PowerSpectrumDiagram>& diagrams,
+                const Vec1D<PowerSpectrumDiagram>* ps_diagrams,
                 const Vec1D<Correlation>& correlations,
                 const Interpolation1D& input_ps,
                 Vec1D<IntegrandTables>& tables_vec
                 ) :
-            q_min(q_min), q_max(q_max), diagrams(diagrams),
-            correlations(correlations), input_ps(input_ps),
-            tables_vec(tables_vec) {}
+            q_min(q_min), q_max(q_max), ps_diagrams(ps_diagrams),
+            bs_diagrams(nullptr), correlations(correlations),
+            input_ps(input_ps), tables_vec(tables_vec) {}
+
+        IntegrationInput(
+                double q_min,
+                double q_max,
+                const Vec1D<BiSpectrumDiagram>* bs_diagrams,
+                const Vec1D<Correlation>& correlations,
+                const Interpolation1D& input_ps,
+                Vec1D<IntegrandTables>& tables_vec
+                ) :
+            q_min(q_min), q_max(q_max), ps_diagrams(nullptr),
+            bs_diagrams(bs_diagrams), correlations(correlations),
+            input_ps(input_ps), tables_vec(tables_vec) {}
 };
 
 
-void integrand(
-        const IntegrationInput& input,
-        IntegrandTables& tables,
-        Vec1D<double>& results
-        );
+namespace ps {
+    void integrand(
+            const IntegrationInput& input,
+            IntegrandTables& tables,
+            Vec1D<double>& results
+            );
+}
+
+namespace bs {
+    void integrand(
+            const IntegrationInput& input,
+            IntegrandTables& tables,
+            Vec1D<double>& results
+            );
+}
 
 
 class Results {

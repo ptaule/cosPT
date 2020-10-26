@@ -29,6 +29,7 @@
 using std::size_t;
 
 
+namespace ps {
 double compute_k1(
         int m,
         int n_coeffs,
@@ -88,7 +89,7 @@ inline int heaviside_theta(
 
 
 
-void evolve_integrand_term(
+void integrand_term(
         const PowerSpectrumDiagram& diagram,
         int a,
         int b,
@@ -103,83 +104,50 @@ void evolve_integrand_term(
     const int* arguments_l = diagram.arg_configs_l.at(a).at(b).args.data();
     const int* arguments_r = diagram.arg_configs_r.at(a).at(b).args.data();
 
-    /* Compute kernels */
-    kernel_evolution(arguments_l, kernel_index_l, 2 * diagram.l + diagram.m,
-                        tables);
-    kernel_evolution(arguments_r, kernel_index_r, 2 * diagram.r + diagram.m,
-                        tables);
+    /* Pointers to SPTKernel vector or last time step of Kernel vector */
+    double* values_l = nullptr;
+    double* values_r = nullptr;
 
-    int time_steps = tables.eta_grid.get_time_steps();
+    if (tables.loop_params.get_dynamics() == EDS_SPT) {
+        compute_SPT_kernels(arguments_l, kernel_index_l, 2 * diagram.l + diagram.m,
+                tables);
+        compute_SPT_kernels(arguments_r, kernel_index_r, 2 * diagram.r + diagram.m,
+                tables);
 
-    // Get values for two-point correlators
-    // If l != r, there are two diagrams corresponding to l <-> r
-    if (diagram.l == diagram.r) {
-        for (size_t i = 0; i < correlations.size(); ++i) {
-            term_results.at(i) =
-                tables.kernels.at(kernel_index_l)
-                    .values.at(time_steps - 1)[correlations.at(i).first] *
-                tables.kernels.at(kernel_index_r)
-                    .values.at(time_steps - 1)[correlations.at(i).second];
-        }
-    } else {
-        for (size_t i = 0; i < correlations.size(); ++i) {
-            term_results[i] =
-                tables.kernels.at(kernel_index_l)
-                        .values.at(time_steps - 1)[correlations.at(i).first] *
-                    tables.kernels.at(kernel_index_r)
-                        .values.at(time_steps - 1)[correlations.at(i).second]
-                        +
-                tables.kernels.at(kernel_index_l)
-                        .values.at(time_steps - 1)[correlations.at(i).second] *
-                    tables.kernels.at(kernel_index_r)
-                        .values.at(time_steps - 1)[correlations.at(i).first];
-        }
+        values_l = tables.spt_kernels.at(kernel_index_l).values;
+        values_r = tables.spt_kernels.at(kernel_index_r).values;
     }
-}
+    else if (tables.loop_params.get_dynamics() == EVOLVE_ASYMP_IC ||
+             tables.loop_params.get_dynamics() == EVOLVE_EDS_IC) {
+        kernel_evolution(arguments_l, kernel_index_l, 2 * diagram.l + diagram.m,
+                         tables);
+        kernel_evolution(arguments_r, kernel_index_r, 2 * diagram.r + diagram.m,
+                         tables);
 
-
-
-void spt_integrand_term(
-        const PowerSpectrumDiagram& diagram,
-        int a,
-        int b,
-        const Vec1D<Correlation>& correlations,
-        IntegrandTables& tables,
-        Vec1D<double>& term_results
-        )
-{
-    int kernel_index_l = diagram.arg_configs_l.at(a).at(b).kernel_index;
-    int kernel_index_r = diagram.arg_configs_r.at(a).at(b).kernel_index;
-
-    const int* arguments_l = diagram.arg_configs_l.at(a).at(b).args.data();
-    const int* arguments_r = diagram.arg_configs_r.at(a).at(b).args.data();
-
-    /* Compute kernels */
-    compute_SPT_kernels(arguments_l, kernel_index_l, 2 * diagram.l + diagram.m,
-                        tables);
-    compute_SPT_kernels(arguments_r, kernel_index_r, 2 * diagram.r + diagram.m,
-                        tables);
+        int time_steps = tables.eta_grid.get_time_steps();
+        values_l =
+            tables.kernels.at(kernel_index_l).values.at(time_steps - 1).data();
+        values_r =
+          tables.kernels.at(kernel_index_r).values.at(time_steps - 1).data();
+    }
+    else {
+        throw std::runtime_error("integrand_term(): Unknown dynamics.");
+    }
 
     // Get values for two-point correlators
     // If l != r, there are two diagrams corresponding to l <-> r
     if (diagram.l == diagram.r) {
         for (size_t i = 0; i < correlations.size(); ++i) {
-            term_results.at(i) = tables.spt_kernels.at(kernel_index_l)
-                                     .values[correlations.at(i).first] *
-                                 tables.spt_kernels.at(kernel_index_r)
-                                     .values[correlations.at(i).second];
+            term_results.at(i) = values_l[correlations.at(i).first] *
+                                 values_r[correlations.at(i).second];
         }
     } else {
         for (size_t i = 0; i < correlations.size(); ++i) {
-            term_results[i] = tables.spt_kernels.at(kernel_index_l)
-                                      .values[correlations.at(i).first] *
-                                  tables.spt_kernels.at(kernel_index_r)
-                                      .values[correlations.at(i).second]
+            term_results[i] = values_l[correlations.at(i).first] *
+                              values_r[correlations.at(i).second]
                                     +
-                              tables.spt_kernels.at(kernel_index_l)
-                                      .values[correlations.at(i).second] *
-                                  tables.spt_kernels.at(kernel_index_r)
-                                      .values[correlations.at(i).first];
+                              values_l[correlations.at(i).second] *
+                              values_r[correlations.at(i).first];
         }
     }
 }
@@ -194,7 +162,7 @@ void integrand(
 {
     size_t n_correlations = input.correlations.size();
     // Loop over all diagrams
-    for (auto& dg : input.diagrams) {
+    for (auto& dg : *input.ps_diagrams) {
 #if DEBUG >= 2
         dg.print_diagram_tags(std::cout);
         std::cout << std::endl;
@@ -221,7 +189,8 @@ void integrand(
                 }
 
                 Vec1D<double> term_results(n_correlations, 0.0);
-                spt_integrand_term(dg, a, b, input.correlations, tables, term_results);
+                integrand_term(dg, a, b, input.correlations, tables, term_results);
+
                 for (auto& el : term_results) {
                     el *= h_theta * input.input_ps.eval(k1);
                 }

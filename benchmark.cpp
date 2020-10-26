@@ -69,7 +69,7 @@ static void BM_integrand(benchmark::State& state) {
 
     Vec1D<PowerSpectrumDiagram> diagrams = ps::construct_diagrams(loop_params);
 
-    IntegrationInput input(q_min, q_max, diagrams, correlations, input_ps,
+    IntegrationInput input(q_min, q_max, &diagrams, correlations, input_ps,
             tables_vec);
 
     cubareal* xx = new cubareal[correlations.size()];
