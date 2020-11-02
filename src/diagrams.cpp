@@ -469,18 +469,16 @@ void BiSpectrumDiagram::kernel_arguments(
           config_ab[loop_idx]     = (signs_ab.at(n - 2)) ? -1 : 1;
           config_single[loop_idx] = (signs_ab.at(n - 2)) ? 1 : -1;
 
-          change_sign(config_ab, config_ab_sign_flip, n_coeffs);
-
-          args_b.at(args_b_idx++) = config2label(config_ab, n_coeffs);
           args_b.at(args_b_idx++) = config2label(config_single, n_coeffs);
-
           config_single[loop_idx] *= -1;
-
-          args_a.at(args_a_idx++) = config2label(config_ab_sign_flip, n_coeffs);
           args_a.at(args_a_idx++) = config2label(config_single, n_coeffs);
 
           std::fill(config_single, config_single + n_coeffs, 0);
        }
+
+       change_sign(config_ab, config_ab_sign_flip, n_coeffs);
+       args_b.at(args_b_idx++) = config2label(config_ab, n_coeffs);
+       args_a.at(args_a_idx++) = config2label(config_ab_sign_flip, n_coeffs);
     }
 
     if (n_bc == 1) {
@@ -496,18 +494,16 @@ void BiSpectrumDiagram::kernel_arguments(
           config_bc[loop_idx]     = (signs_bc.at(n - 2)) ? -1 : 1;
           config_single[loop_idx] = (signs_bc.at(n - 2)) ? 1 : -1;
 
-          change_sign(config_bc, config_bc_sign_flip, n_coeffs);
-
-          args_c.at(args_c_idx++) = config2label(config_bc, n_coeffs);
           args_c.at(args_c_idx++) = config2label(config_single, n_coeffs);
-
           config_single[loop_idx] *= -1;
-
-          args_b.at(args_b_idx++) = config2label(config_bc_sign_flip, n_coeffs);
           args_b.at(args_b_idx++) = config2label(config_single, n_coeffs);
 
           std::fill(config_single, config_single + n_coeffs, 0);
        }
+
+       change_sign(config_bc, config_bc_sign_flip, n_coeffs);
+       args_c.at(args_c_idx++) = config2label(config_bc, n_coeffs);
+       args_b.at(args_b_idx++) = config2label(config_bc_sign_flip, n_coeffs);
     }
 
     if (n_ca == 1) {
@@ -523,19 +519,24 @@ void BiSpectrumDiagram::kernel_arguments(
           config_ca[loop_idx]     = (signs_ca.at(n - 2)) ? -1 : 1;
           config_single[loop_idx] = (signs_ca.at(n - 2)) ? 1 : -1;
 
-          change_sign(config_ca, config_ca_sign_flip, n_coeffs);
-
-          args_a.at(args_a_idx++) = config2label(config_ca, n_coeffs);
           args_a.at(args_a_idx++) = config2label(config_single, n_coeffs);
-
           config_single[loop_idx] *= -1;
-
-          args_c.at(args_c_idx++) = config2label(config_ca_sign_flip, n_coeffs);
           args_c.at(args_c_idx++) = config2label(config_single, n_coeffs);
 
           std::fill(config_single, config_single + n_coeffs, 0);
        }
+
+       change_sign(config_ca, config_ca_sign_flip, n_coeffs);
+       args_a.at(args_a_idx++) = config2label(config_ca, n_coeffs);
+       args_c.at(args_c_idx++) = config2label(config_ca_sign_flip, n_coeffs);
     }
+
+    q_ab1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx) =
+        config2label(config_ab, n_coeffs);
+    q_bc1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx) =
+        config2label(config_bc, n_coeffs);
+    q_ca1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx) =
+        config2label(config_ca, n_coeffs);
 
     /* Add self loops */
     if (n_a > 0) {
@@ -656,21 +657,33 @@ BiSpectrumDiagram::BiSpectrumDiagram(
     sign_configs = compute_sign_flips(sign_configs_ab, sign_configs_bc,
             sign_configs_ca);
 
-    // Allocate memory
+    /* Allocate memory */
     arg_configs_a.resize(rearrangements.size());
     arg_configs_b.resize(rearrangements.size());
     arg_configs_c.resize(rearrangements.size());
+
+    q_ab1_labels.resize(rearrangements.size());
+    q_bc1_labels.resize(rearrangements.size());
+    q_ca1_labels.resize(rearrangements.size());
 
     for (size_t i = 0; i < rearrangements.size(); ++i) {
         arg_configs_a.at(i).resize(sign_configs.size());
         arg_configs_b.at(i).resize(sign_configs.size());
         arg_configs_c.at(i).resize(sign_configs.size());
 
+        q_ab1_labels.at(i).resize(sign_configs.size());
+        q_bc1_labels.at(i).resize(sign_configs.size());
+        q_ca1_labels.at(i).resize(sign_configs.size());
+
         for (size_t j = 0; j < sign_configs.size(); ++j) {
             int overall_loop_assosiations = overall_loop ? 3 : 1;
             arg_configs_a.at(i).at(j).resize(overall_loop_assosiations);
             arg_configs_b.at(i).at(j).resize(overall_loop_assosiations);
             arg_configs_c.at(i).at(j).resize(overall_loop_assosiations);
+
+            q_ab1_labels.at(i).at(j).resize(overall_loop_assosiations);
+            q_bc1_labels.at(i).at(j).resize(overall_loop_assosiations);
+            q_ca1_labels.at(i).at(j).resize(overall_loop_assosiations);
 
             for (int k = 0; k < overall_loop_assosiations; ++k) {
                 arg_configs_a.at(i).at(j).at(k).args.resize(n_kernel_args);
