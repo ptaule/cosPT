@@ -204,6 +204,38 @@ PowerSpectrumDiagram::PowerSpectrumDiagram(
 
 
 
+double PowerSpectrumDiagram::q_m1(
+        int rearr_idx,
+        int sign_idx,
+        const Vec2D<double>& bare_scalar_products
+        ) const
+{
+    const Vec1D<int>& rearr = rearrangements.at(rearr_idx);
+    const Vec1D<bool>& signs = sign_configs.at(sign_idx);
+    const int n_coeffs = loop_params.get_n_coeffs();
+
+    double q_m1 = bare_scalar_products.at(n_coeffs - 1).at(n_coeffs - 1);
+    for (int i = 2; i <= m; ++i) {
+        int loop_index = rearr.at(i-2);
+        q_m1 += bare_scalar_products.at(loop_index).at(loop_index);
+        /* Note that elements in the signs-array correspond to rearranged loop
+         * momenta, thus we use 'i-2', not 'index' as index here */
+        q_m1 -= 2 * (signs.at(i-2) ? 1 : -1)
+            * bare_scalar_products.at(n_coeffs - 1).at(loop_index);
+    }
+
+    /* Inner products between loop momenta */
+    for (int i = 3; i <= m; ++i) {
+        for (int j = 2; j < i; ++j) {
+            q_m1 += 2 * (signs.at(i - 2) ? 1 : -1) * (signs.at(j - 2) ? 1 : -1) *
+                  bare_scalar_products.at(rearr.at(i - 2)).at(rearr.at(j - 2));
+        }
+    }
+    return std::sqrt(q_m1);
+}
+
+
+
 void PowerSpectrumDiagram::print_diagram_tags(std::ostream& out) const
 {
     out << COLOR_MAGENTA
@@ -723,8 +755,8 @@ std::ostream& operator<<(std::ostream& out, const PowerSpectrumDiagram& diagram)
     diagram.print_diagram_tags(out);
     out << std::endl;
 
-    for (size_t a = 0; a < diagram.rearrangements.size(); ++a) {
-        for (size_t b = 0; b < diagram.sign_configs.size(); ++b) {
+    for (size_t a = 0; a < diagram.n_rearrangements(); ++a) {
+        for (size_t b = 0; b < diagram.n_sign_configs(); ++b) {
             out << "\t";
             diagram.print_argument_configuration(out, a, b);
             out << std::endl;
@@ -740,8 +772,8 @@ std::ostream& operator<<(std::ostream& out, const BiSpectrumDiagram& diagram)
     diagram.print_diagram_tags(out);
     out << std::endl;
 
-    for (size_t i = 0; i < diagram.rearrangements.size(); ++i) {
-        for (size_t j = 0; j < diagram.sign_configs.size(); ++j) {
+    for (size_t i = 0; i < diagram.n_rearrangements(); ++i) {
+        for (size_t j = 0; j < diagram.n_sign_configs(); ++j) {
             if (diagram.has_overall_loop()) {
                 for (size_t k = 0; k < 3; ++k) {
                     out << "\t";

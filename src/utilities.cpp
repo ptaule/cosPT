@@ -31,7 +31,7 @@ void label2config(
 
 int config2label(
         const int config[], // in, array of base 3 digits
-        size_t size         // in, size of coefficients
+        size_t size         // in, size of config[]
         )
 {
     int label = 0;

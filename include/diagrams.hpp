@@ -22,18 +22,9 @@ class ArgumentConfiguration {
 
 class PowerSpectrumDiagram {
     private:
-        const LoopParameters& loop_params;
-
-        void compute_rearrangements(int n_loops);
-        void compute_sign_flips();
-
-        /* Computes argument configurations if rearrangement and sign
-         * configurations are set */
-        void kernel_arguments(int n_coeffs, int a, int b);
-    public:
-        int m, l, r;
-
         int diagram_factor;     /* Topological multiplicative diagram factor */
+
+        const LoopParameters& loop_params;
 
         /* Table of rearrangements */
         Vec2D<int> rearrangements;
@@ -45,10 +36,71 @@ class PowerSpectrumDiagram {
         Vec2D<ArgumentConfiguration> arg_configs_l;
         Vec2D<ArgumentConfiguration> arg_configs_r;
 
+        void compute_rearrangements(int n_loops);
+        void compute_sign_flips();
+
+        /* Computes argument configurations if rearrangement and sign
+         * configurations are set */
+        void kernel_arguments(int n_coeffs, int a, int b);
+    public:
+        const int m, l, r;
+
         PowerSpectrumDiagram(
                 const LoopParameters& params,
                 int m, int l, int r
                 );
+
+        int get_diagram_factor() const {return diagram_factor;}
+        size_t n_rearrangements() const {return rearrangements.size();}
+        size_t n_sign_configs() const {return sign_configs.size();}
+
+        /* q_m1 is the momentum of the connecting line whose loop momentum is
+         * evaluated by the momentum conserving delta function */
+        double q_m1(
+                int rearr_idx,
+                int sign_idx,
+                const Vec2D<double>& bare_scalar_products
+                ) const;
+
+
+/* Turn off vector bounds check if not in debug-mode */
+#if DEBUG == 0
+#define at(x) operator[](x)
+#endif
+        ArgumentConfiguration get_arg_config_l(int rearr_idx, int sign_idx) const {
+            return arg_configs_l.at(rearr_idx).at(sign_idx);
+        }
+        ArgumentConfiguration get_arg_config_r(int rearr_idx, int sign_idx) const {
+            return arg_configs_r.at(rearr_idx).at(sign_idx);
+        }
+
+        /* Heaviside theta for q_m1 and first connecting loop */
+        double heaviside_theta(
+                double q_m1,
+                int rearr_idx,
+                const Vec1D<double>& Q_magnitudes
+                ) const
+        {
+            const Vec1D<int>& rearr = rearrangements.at(rearr_idx);
+            if (m == 1) return 1;
+            // Heaviside-theta (q_m1 - Q1(rearr))
+            if (q_m1 <= Q_magnitudes.at(rearr.at(0))) return 0;
+#if DEBUG >= 1
+            /* Check that the heaviside-theta (Q2(rearr) - Q3(rearr)) etc. are
+             * satisfied by (reparametrized) momenta from CUBA */
+            for (int i = 3; i <= m; ++i) {
+                if (Q_magnitudes.at(rearr.at(i - 3)) <
+                    Q_magnitudes.at(rearr.at(i - 2))
+                    ) {
+                    throw(std::logic_error(
+                        "Heaviside theta: Q" + std::to_string(rearr.at(i - 3) + 1) +
+                        " < Q" + std::to_string(rearr.at(i - 2) + 1) + "."));
+                }
+            }
+#endif
+            return m;
+        }
+#undef at
 
         void print_diagram_tags(std::ostream& out) const;
         void print_argument_configuration(
@@ -61,15 +113,29 @@ class PowerSpectrumDiagram {
 
 class BiSpectrumDiagram {
     private:
-        const LoopParameters& loop_params;
-
         /* Is diagram closed (n_ab, n_bc, n_ca > 0) */
         bool overall_loop;
+        /* Topological multiplicative diagram factor */
+        int diagram_factor;
 
-        /* Number of sign_flips for connecting lines */
+        /* Number of connecting loops */
         int n_connecting_loops_ab;
         int n_connecting_loops_bc;
         int n_connecting_loops_ca;
+
+        const LoopParameters& loop_params;
+
+        /* Table of rearrangements */
+        Vec2D<int> rearrangements;
+        /* Tables of sign flips, true <-> +1, false <-> -1 */
+        Vec2D<bool> sign_configs;
+
+        /* Argument configuration for each rearrangement, sign setup and
+         * (potential) overall loop assosiation
+         * (n_rearrangements x n_sign_configs x 3 possibilities) */
+        Vec3D<ArgumentConfiguration> arg_configs_a;
+        Vec3D<ArgumentConfiguration> arg_configs_b;
+        Vec3D<ArgumentConfiguration> arg_configs_c;
 
         void compute_rearrangements(int n_loops);
         Vec2D<bool> connecting_line_sign_flips(int n_connecting_loops) const;
@@ -89,22 +155,8 @@ class BiSpectrumDiagram {
               );
 
     public:
-        int n_ab, n_bc, n_ca;
-        int n_a, n_b, n_c;
-
-        int diagram_factor;     /* Topological multiplicative diagram factor */
-
-        /* Table of rearrangements */
-        Vec2D<int> rearrangements;
-        /* Tables of sign flips, true <-> +1, false <-> -1 */
-        Vec2D<bool> sign_configs;
-
-        /* Argument configuration for each rearrangement, sign setup and
-         * (potential) overall loop assosiation
-         * (n_rearrangements x n_sign_configs x 3 possibilities) */
-        Vec3D<ArgumentConfiguration> arg_configs_a;
-        Vec3D<ArgumentConfiguration> arg_configs_b;
-        Vec3D<ArgumentConfiguration> arg_configs_c;
+        const int n_ab, n_bc, n_ca;
+        const int n_a, n_b, n_c;
 
         BiSpectrumDiagram(
                 const LoopParameters& loop_params,
@@ -113,6 +165,28 @@ class BiSpectrumDiagram {
                 );
 
         bool has_overall_loop() const {return overall_loop;}
+        int get_diagram_factor() const {return diagram_factor;}
+        size_t n_rearrangements() const {return rearrangements.size();}
+        size_t n_sign_configs() const {return sign_configs.size();}
+
+/* Turn off vector bounds check if not in debug-mode */
+#if DEBUG == 0
+#define at(x) operator[](x)
+#endif
+        ArgumentConfiguration get_arg_config_a(int rearr_idx, int sign_idx, int
+                overall_loop_idx) const {
+            return arg_configs_a.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
+        }
+        ArgumentConfiguration get_arg_config_b(int rearr_idx, int sign_idx, int
+                overall_loop_idx) const {
+            return arg_configs_b.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
+        }
+        ArgumentConfiguration get_arg_config_c(int rearr_idx, int sign_idx, int
+                overall_loop_idx) const {
+            return arg_configs_c.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
+        }
+
+#undef at
 
         void print_diagram_tags(std::ostream& out) const;
         void print_argument_configuration(

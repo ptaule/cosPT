@@ -8,7 +8,6 @@
 #include <iostream>
 #include <stdexcept>
 #include <utility>
-#include <cmath>
 
 #include "../include/integrand.hpp"
 
@@ -30,105 +29,47 @@ using std::size_t;
 
 
 namespace ps {
-double compute_k1(
-        int m,
-        int n_coeffs,
-        const Vec1D<int>& rearrangement,
-        const Vec1D<bool>& signs,
-        const Vec2D<double>& bare_scalar_products
-        )
-{
-    double k1 = bare_scalar_products.at(n_coeffs - 1).at(n_coeffs - 1);
-    for (int i = 2; i <= m; ++i) {
-        int index = rearrangement.at(i-2);
-        k1 += bare_scalar_products.at(index).at(index);
-        // Note that elements in the signs-array correspond to rearranged loop
-        // momenta, thus we use 'i-2', not 'index' as index here
-        k1 -= 2 * (signs.at(i-2) ? 1 : -1)
-            * bare_scalar_products.at(n_coeffs - 1).at(index);
-    }
-
-    for (int i = 3; i <= m; ++i) {
-        for (int j = 2; j < i; ++j) {
-            k1 += 2 * (signs.at(i-2) ? 1 : -1) * (signs.at(j-2) ? 1 : -1) *
-                bare_scalar_products.at(rearrangement.at(i-2)).at(rearrangement.at(j-2));
-        }
-    }
-
-    return std::sqrt(k1);
-}
-
-
-
-inline int heaviside_theta(
-        int m,
-        double k1,
-        const Vec1D<int>& rearrangement,
-        const Vec1D<double>& Q_magnitudes
-        )
-{
-    if (m == 1) return 1;
-
-    // Heaviside-theta (k1 - k2)
-    if (k1 <= Q_magnitudes.at(rearrangement.at(0))) return 0;
-
-#if DEBUG >= 1
-    // Check that the heaviside-theta (k2 - k3) etc. are satisfied by
-    // (reparametrized) momenta from CUBA
-    for (int i = 3; i <= m; ++i) {
-        if ( Q_magnitudes.at(rearrangement.at(i-3))
-                < Q_magnitudes.at(rearrangement.at(i-2)))
-            throw(std::logic_error(
-                "Heaviside theta: Q" +
-                std::to_string(rearrangement.at(i - 3) + 1) + " < Q" +
-                std::to_string(rearrangement.at(i - 2) + 1) + "."));
-    }
-#endif
-    return m;
-}
-
-
-
 void integrand_term(
         const PowerSpectrumDiagram& diagram,
-        int a,
-        int b,
+        int rearr_idx,
+        int sign_idx,
         const Vec1D<Correlation>& correlations,
         IntegrandTables& tables,
         Vec1D<double>& term_results
         )
 {
-    int kernel_index_l = diagram.arg_configs_l.at(a).at(b).kernel_index;
-    int kernel_index_r = diagram.arg_configs_r.at(a).at(b).kernel_index;
-
-    const int* arguments_l = diagram.arg_configs_l.at(a).at(b).args.data();
-    const int* arguments_r = diagram.arg_configs_r.at(a).at(b).args.data();
+    const ArgumentConfiguration arg_config_l =
+        diagram.get_arg_config_l(rearr_idx, sign_idx);
+    const ArgumentConfiguration arg_config_r =
+        diagram.get_arg_config_r(rearr_idx, sign_idx);
 
     /* Pointers to SPTKernel vector or last time step of Kernel vector */
     double* values_l = nullptr;
     double* values_r = nullptr;
 
     if (tables.loop_params.get_dynamics() == EDS_SPT) {
-        compute_SPT_kernels(arguments_l, kernel_index_l, 2 * diagram.l + diagram.m,
-                tables);
-        compute_SPT_kernels(arguments_r, kernel_index_r, 2 * diagram.r + diagram.m,
-                tables);
+        compute_SPT_kernels(arg_config_l.args.data(),
+                arg_config_l.kernel_index, 2 * diagram.l + diagram.m, tables);
+        compute_SPT_kernels(arg_config_r.args.data(),
+                arg_config_r.kernel_index, 2 * diagram.r + diagram.m, tables);
 
-        values_l = tables.spt_kernels.at(kernel_index_l).values;
-        values_r = tables.spt_kernels.at(kernel_index_r).values;
+        values_l = tables.spt_kernels.at(arg_config_l.kernel_index).values;
+        values_r = tables.spt_kernels.at(arg_config_r.kernel_index).values;
     }
     else if (tables.loop_params.get_dynamics() == EVOLVE_ASYMP_IC ||
              tables.loop_params.get_dynamics() == EVOLVE_EDS_IC) {
-        kernel_evolution(arguments_l, kernel_index_l, 2 * diagram.l + diagram.m,
-                         tables);
-        kernel_evolution(arguments_r, kernel_index_r, 2 * diagram.r + diagram.m,
-                         tables);
+        kernel_evolution(arg_config_l.args.data(), arg_config_l.kernel_index,
+                2 * diagram.l + diagram.m, tables);
+        kernel_evolution(arg_config_r.args.data(), arg_config_r.kernel_index,
+                2 * diagram.r + diagram.m, tables);
 
         int time_steps = tables.eta_grid.get_time_steps();
-        values_l =
-            tables.kernels.at(kernel_index_l).values.at(time_steps - 1).data();
-        values_r =
-          tables.kernels.at(kernel_index_r).values.at(time_steps - 1).data();
+        values_l = tables.kernels.at(arg_config_l.kernel_index)
+                       .values.at(time_steps - 1)
+                       .data();
+        values_r = tables.kernels.at(arg_config_r.kernel_index)
+                       .values.at(time_steps - 1)
+                       .data();
     }
     else {
         throw std::runtime_error("integrand_term(): Unknown dynamics.");
@@ -170,18 +111,17 @@ void integrand(
         Vec1D<double> diagram_results(n_correlations, 0.0);
 
         // Loop over momentum rearrangement and sign flips
-        for (size_t a = 0; a < dg.rearrangements.size(); ++a) {
-            for (size_t b = 0; b < dg.sign_configs.size(); ++b) {
+        for (size_t rearr_idx = 0; rearr_idx < dg.n_rearrangements(); ++rearr_idx) {
+            for (size_t sign_idx = 0; sign_idx < dg.n_sign_configs(); ++sign_idx) {
 #if DEBUG >= 2
-                dg.print_argument_configuration(std::cout, a, b);
+                dg.print_argument_configuration(std::cout, rearr_idx, sign_idx);
 #endif
 
-                double k1 = compute_k1(dg.m, tables.loop_params.get_n_coeffs(),
-                        dg.rearrangements.at(a), dg.sign_configs.at(b),
+                double q_m1 = dg.q_m1(rearr_idx, sign_idx,
                         tables.bare_scalar_products);
-                int h_theta = heaviside_theta(dg.m, k1, dg.rearrangements.at(a),
+                int heaviside_theta = dg.heaviside_theta(q_m1, rearr_idx,
                         tables.vars.magnitudes);
-                if (h_theta == 0) {
+                if (heaviside_theta == 0) {
 #if DEBUG >= 2
                     std::cout << "\t" << 0 << std::endl;
 #endif
@@ -189,10 +129,11 @@ void integrand(
                 }
 
                 Vec1D<double> term_results(n_correlations, 0.0);
-                integrand_term(dg, a, b, input.correlations, tables, term_results);
+                integrand_term(dg, rearr_idx, sign_idx, input.correlations,
+                        tables, term_results);
 
                 for (auto& el : term_results) {
-                    el *= h_theta * input.input_ps.eval(k1);
+                    el *= heaviside_theta * input.input_ps.eval(q_m1);
                 }
                 for (size_t j = 0; j < n_correlations; ++j) {
                     diagram_results.at(j) += term_results.at(j);
@@ -207,8 +148,8 @@ void integrand(
         }
 
         for (size_t j = 0; j < n_correlations; ++j) {
-            diagram_results.at(j) *= dg.diagram_factor;
-            diagram_results.at(j) /= dg.rearrangements.size() * dg.sign_configs.size();
+            diagram_results.at(j) *= dg.get_diagram_factor();
+            diagram_results.at(j) /= dg.n_rearrangements() * dg.n_sign_configs();
             results.at(j) += diagram_results.at(j);
         }
     }
@@ -217,6 +158,7 @@ void integrand(
             el *= input.input_ps.eval(tables.vars.magnitudes[i]);
         }
     }
+}
 }
 
 
