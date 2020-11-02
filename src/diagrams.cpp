@@ -416,43 +416,25 @@ void BiSpectrumDiagram::kernel_arguments(
         config_ab[loop_idx] = 1;
         config_bc[loop_idx] = 1;
         config_ca[loop_idx] = 1;
-
-        switch (overall_loop_idx) {
-            case 0:
-                config_bc[k_b_idx] = -1; /* q_bc += -k_b */
-                config_ca[k_a_idx] = 1;  /* q_ca += +k_a */
-                break;
-            case 1:
-                config_ab[k_b_idx] = 1;  /* q_ab += k_b */
-                config_ca[k_a_idx] = 1;  /* q_ca += -k_c = k_a + k_b */
-                config_ca[k_b_idx] = 1;
-                break;
-            case 2:
-                config_ab[k_a_idx] = -1; /* q_ab += -k_a */
-                config_bc[k_a_idx] = -1; /* q_cb += k_c = - k_a - k_b */
-                config_bc[k_b_idx] = -1;
-                break;
-            default:
-                throw(
-                    std::invalid_argument("BiSpectrumDiagram::kernel_arguments("
-                                          "): got overall_loop_idx > 2."));
-            }
+    }
+    if (n_ab == 0 || (overall_loop && overall_loop_idx == 0)) {
+        config_bc[k_b_idx] = -1; /* q_bc += -k_b */
+        config_ca[k_a_idx] = 1;  /* q_bc += +k_a */
+    }
+    else if (n_bc == 0 || (overall_loop && overall_loop_idx == 1)) {
+        config_ab[k_b_idx] = 1;  /* q_ab += k_b */
+        config_ca[k_a_idx] = 1;  /* q_ca += -k_c = k_a + k_b */
+        config_ca[k_b_idx] = 1;
+    }
+    else if (n_ca == 0 || (overall_loop && overall_loop_idx == 2)) {
+        config_ab[k_a_idx] = -1;  /* q_ab += -k_a */
+        config_bc[k_a_idx] = -1;  /* q_ca += k_c = - k_a - k_b */
+        config_bc[k_b_idx] = -1;
     }
     else {
-        if (n_ab == 0) {
-            config_bc[k_b_idx] = -1; /* q_bc += -k_b */
-            config_ca[k_a_idx] = 1;  /* q_bc += +k_a */
-        }
-        else if (n_bc == 0) {
-            config_ab[k_b_idx] = 1;  /* q_ab += k_b */
-            config_ca[k_a_idx] = 1;  /* q_ca += -k_c = k_a + k_b */
-            config_ca[k_b_idx] = 1;
-        }
-        else {
-            config_ab[k_a_idx] = -1;  /* q_ab += -k_a */
-            config_bc[k_a_idx] = -1;  /* q_ca += k_c = - k_a - k_b */
-            config_bc[k_b_idx] = -1;
-        }
+        throw(std::logic_error(
+            "BiSpectrumDiagram::kernel_arguments(): Neither n_ab = 0, n_bc = 0, "
+            "n_ca = 0, nor valid overall_loop_idx."));
     }
 
     /* Add connecting loops */
