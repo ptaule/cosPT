@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <iosfwd>
+#include <cmath>
 
 #include "utilities.hpp"
 #include "parameters.hpp"
@@ -31,6 +32,9 @@ class PowerSpectrumDiagram {
         /* Table of sign flips, true <-> +1, false <-> -1 */
         Vec2D<bool> sign_configs;
 
+        /* Matrix of q_m1 labels, for each combination of rearr_idx and sign_idx */
+        Vec2D<int> q_m1_labels;
+
         /* Argument configuration for each rearrangement and sign setup
          * (n_rearrangements x n_sign_configs possibilities) */
         Vec2D<ArgumentConfiguration> arg_configs_l;
@@ -41,7 +45,7 @@ class PowerSpectrumDiagram {
 
         /* Computes argument configurations if rearrangement and sign
          * configurations are set */
-        void kernel_arguments(int n_coeffs, int a, int b);
+        void kernel_arguments(int rearr_idx, int sign_idx);
     public:
         const int m, l, r;
 
@@ -54,24 +58,20 @@ class PowerSpectrumDiagram {
         size_t n_rearrangements() const {return rearrangements.size();}
         size_t n_sign_configs() const {return sign_configs.size();}
 
+/* Turn off vector bounds check if not in debug-mode */
+#if DEBUG == 0
+#define at(x) operator[](x)
+#endif
         /* q_m1 is the momentum of the connecting line whose loop momentum is
          * evaluated by the momentum conserving delta function */
         double q_m1(
                 int rearr_idx,
                 int sign_idx,
-                const Vec2D<double>& bare_scalar_products
-                ) const;
-
-
-/* Turn off vector bounds check if not in debug-mode */
-#if DEBUG == 0
-#define at(x) operator[](x)
-#endif
-        ArgumentConfiguration get_arg_config_l(int rearr_idx, int sign_idx) const {
-            return arg_configs_l.at(rearr_idx).at(sign_idx);
-        }
-        ArgumentConfiguration get_arg_config_r(int rearr_idx, int sign_idx) const {
-            return arg_configs_r.at(rearr_idx).at(sign_idx);
+                const Vec2D<double>& scalar_products
+                ) const
+        {
+            int q_m1_label = q_m1_labels.at(rearr_idx).at(sign_idx);
+            return std::sqrt(scalar_products.at(q_m1_label).at(q_m1_label));
         }
 
         /* Heaviside theta for q_m1 and first connecting loop */
@@ -99,6 +99,13 @@ class PowerSpectrumDiagram {
             }
 #endif
             return m;
+        }
+
+        ArgumentConfiguration get_arg_config_l(int rearr_idx, int sign_idx) const {
+            return arg_configs_l.at(rearr_idx).at(sign_idx);
+        }
+        ArgumentConfiguration get_arg_config_r(int rearr_idx, int sign_idx) const {
+            return arg_configs_r.at(rearr_idx).at(sign_idx);
         }
 #undef at
 

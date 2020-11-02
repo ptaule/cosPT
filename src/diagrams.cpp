@@ -19,40 +19,40 @@
 #include "../include/tables.hpp"
 #include "../include/diagrams.hpp"
 
-void PowerSpectrumDiagram::kernel_arguments(
-        int n_coeffs,
-        int a,
-        int b
-        )
+void PowerSpectrumDiagram::kernel_arguments(int rearr_idx, int sign_idx)
 {
-    Vec1D<int>& rearrangement = rearrangements.at(a);
-    Vec1D<bool>& signs = sign_configs.at(b);
+    int n_coeffs = loop_params.get_n_coeffs();
 
-    Vec1D<int>& arguments_l = arg_configs_l.at(a).at(b).args;
-    Vec1D<int>& arguments_r = arg_configs_r.at(a).at(b).args;
+    Vec1D<int>& rearrangement = rearrangements.at(rearr_idx);
+    Vec1D<bool>& signs = sign_configs.at(sign_idx);
 
-    /* First argument : k1 - (±k2) - (±k3) - ... */
+    Vec1D<int>& arguments_l = arg_configs_l.at(rearr_idx).at(sign_idx).args;
+    Vec1D<int>& arguments_r = arg_configs_r.at(rearr_idx).at(sign_idx).args;
+
+    /* First argument : q_m1 = q_m - (±q_m2) - (±q_m3) - ... */
     int config[N_COEFFS_MAX] = {0};
     config[n_coeffs - 1] = 1;
 
     for (int i = 2; i <= m; ++i) {
-        // Note extra minus sign from kernel expression
+        /* Note extra minus sign from kernel expression */
         config[rearrangement.at(i-2)] = (signs.at(i-2) ? - 1 : 1);
     }
 
-    arguments_l.at(0) = config2label(config, n_coeffs);
-    arguments_r.at(0) = config2label(config, n_coeffs);
+    int label = config2label(config, n_coeffs);
+    arguments_l.at(0) = label;
+    arguments_r.at(0) = label;
+    q_m1_labels.at(rearr_idx).at(sign_idx) = label;
 
-    // Reset config
+    /* Reset config */
     std::fill(config, config + n_coeffs, 0);
 
-    // Argument indices
+    /* Argument indices */
     size_t index_l = 1;
     size_t index_r = 1;
 
-    // k2,k3,...,km arguments, the ordering of which is stored by the first
-    // (m-1) entries of rearrangement[]. Note that the signs are opposite of
-    // corresponding terms in the first argument
+    /* q_m2,q_m3,... arguments, the ordering of which is stored by the first
+     * (m-1) entries of rearrangement. Note that the signs are opposite of
+     * corresponding terms in the first argument */
     for (int i = 2; i <= m; ++i) {
         config[rearrangement.at(i-2)] = (signs.at(i-2) ? 1 : -1);
         arguments_l.at(index_l++) = config2label(config, n_coeffs);
@@ -60,7 +60,7 @@ void PowerSpectrumDiagram::kernel_arguments(
         std::fill(config, config + n_coeffs, 0);
     }
 
-    // l-loop arguments
+    /* l-loop arguments */
     for (int i = 0; i < l; ++i) {
         int loop_momentum_index = rearrangement.at(i + m - 1);
         config[loop_momentum_index] = 1;
@@ -70,7 +70,7 @@ void PowerSpectrumDiagram::kernel_arguments(
 
         std::fill(config, config + n_coeffs, 0);
     }
-    // r-loop arguments
+    /* r-loop arguments */
     for (int i = 0; i < r; ++i) {
         int loop_momentum_index = rearrangement.at(i + m - 1 + l);
         config[loop_momentum_index] = 1;
@@ -81,7 +81,7 @@ void PowerSpectrumDiagram::kernel_arguments(
         std::fill(config, config + n_coeffs, 0);
     }
 
-    // Fill remaining spots with zero-label
+    /* Fill remaining spots with zero-label */
     int zero_label = loop_params.get_zero_label();
     size_t n_kernel_args = static_cast<size_t>(loop_params.get_n_kernel_args());
     while (index_l < n_kernel_args) {
@@ -103,9 +103,9 @@ void PowerSpectrumDiagram::kernel_arguments(
     }
 #endif
 
-    arg_configs_l.at(a).at(b).kernel_index =
+    arg_configs_l.at(rearr_idx).at(sign_idx).kernel_index =
         loop_params.arguments_2_kernel_index(arguments_l.data());
-    arg_configs_r.at(a).at(b).kernel_index =
+    arg_configs_r.at(rearr_idx).at(sign_idx).kernel_index =
         loop_params.arguments_2_kernel_index(arguments_r.data());
 }
 
@@ -188,50 +188,23 @@ PowerSpectrumDiagram::PowerSpectrumDiagram(
     arg_configs_l.resize(rearrangements.size());
     arg_configs_r.resize(rearrangements.size());
 
+    /* q_m1_label values are set in kernel_arguments function */
+    q_m1_labels.resize(rearrangements.size());
+
     for (size_t a = 0; a < rearrangements.size(); ++a) {
         arg_configs_l.at(a).resize(sign_configs.size());
         arg_configs_r.at(a).resize(sign_configs.size());
+
+        q_m1_labels.at(a).resize(sign_configs.size());
 
         for (size_t b = 0; b < sign_configs.size(); ++b) {
             arg_configs_l.at(a).at(b).args.resize(n_kernel_args);
             arg_configs_r.at(a).at(b).args.resize(n_kernel_args);
 
             // Initialize arguments and kernel indices for this configuration
-            kernel_arguments(loop_params.get_n_coeffs(), a, b);
+            kernel_arguments(a, b);
         }
     }
-}
-
-
-
-double PowerSpectrumDiagram::q_m1(
-        int rearr_idx,
-        int sign_idx,
-        const Vec2D<double>& bare_scalar_products
-        ) const
-{
-    const Vec1D<int>& rearr = rearrangements.at(rearr_idx);
-    const Vec1D<bool>& signs = sign_configs.at(sign_idx);
-    const int n_coeffs = loop_params.get_n_coeffs();
-
-    double q_m1 = bare_scalar_products.at(n_coeffs - 1).at(n_coeffs - 1);
-    for (int i = 2; i <= m; ++i) {
-        int loop_index = rearr.at(i-2);
-        q_m1 += bare_scalar_products.at(loop_index).at(loop_index);
-        /* Note that elements in the signs-array correspond to rearranged loop
-         * momenta, thus we use 'i-2', not 'index' as index here */
-        q_m1 -= 2 * (signs.at(i-2) ? 1 : -1)
-            * bare_scalar_products.at(n_coeffs - 1).at(loop_index);
-    }
-
-    /* Inner products between loop momenta */
-    for (int i = 3; i <= m; ++i) {
-        for (int j = 2; j < i; ++j) {
-            q_m1 += 2 * (signs.at(i - 2) ? 1 : -1) * (signs.at(j - 2) ? 1 : -1) *
-                  bare_scalar_products.at(rearr.at(i - 2)).at(rearr.at(j - 2));
-        }
-    }
-    return std::sqrt(q_m1);
 }
 
 

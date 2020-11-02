@@ -118,7 +118,7 @@ void integrand(
 #endif
 
                 double q_m1 = dg.q_m1(rearr_idx, sign_idx,
-                        tables.bare_scalar_products);
+                        tables.scalar_products);
                 int heaviside_theta = dg.heaviside_theta(q_m1, rearr_idx,
                         tables.vars.magnitudes);
                 if (heaviside_theta == 0) {
