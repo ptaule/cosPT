@@ -138,12 +138,16 @@ class BiSpectrumDiagram {
         Vec2D<int> rearrangements;
         /* Tables of sign flips, true <-> +1, false <-> -1 */
         Vec2D<bool> sign_configs;
-
         /* Matrices of q_ab1, q_bc1 and q_ca1 labels, for each combination of
          * rearr_idx, sign_idx and overall_loop_idx */
         Vec3D<int> q_ab1_labels;
         Vec3D<int> q_bc1_labels;
         Vec3D<int> q_ca1_labels;
+        /* Vectors of q_ab, q_bc and q_ca (sum of connecting lines) labels, for
+         * each rearr_idx */
+        Vec1D<int> q_ab_labels;
+        Vec1D<int> q_bc_labels;
+        Vec1D<int> q_ca_labels;
 
         /* Argument configuration for each rearrangement, sign setup and
          * (potential) overall loop assosiation
@@ -179,49 +183,21 @@ class BiSpectrumDiagram {
         size_t n_rearrangements() const {return rearrangements.size();}
         size_t n_sign_configs() const {return sign_configs.size();}
 
+        void connecting_lines_factors(
+                int rearr_idx,
+                int sign_idx,
+                int overall_loop_idx,
+                const Vec2D<double>& scalar_products,
+                double& q_ab1,      /* out */
+                double& q_bc1,      /* out */
+                double& q_ca1,      /* out */
+                int heaviside_theta /* out */
+                ) const;
+
 /* Turn off vector bounds check if not in debug-mode */
 #if DEBUG == 0
 #define at(x) operator[](x)
 #endif
-        /* q_ab1 is the momentum of the connecting line ab whose loop momentum
-         * is evaluated by the momentum conserving delta function, similarly
-         * for q_bc1 and q_ca1 */
-        double q_ab1(
-                int rearr_idx,
-                int sign_idx,
-                int overall_loop_idx,
-                const Vec2D<double>& scalar_products
-                ) const
-        {
-            int q_ab1_label =
-                q_ab1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
-            return std::sqrt(scalar_products.at(q_ab1_label).at(q_ab1_label));
-        }
-
-        double q_bc1(
-                int rearr_idx,
-                int sign_idx,
-                int overall_loop_idx,
-                const Vec2D<double>& scalar_products
-                ) const
-        {
-            int q_bc1_label =
-                q_bc1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
-            return std::sqrt(scalar_products.at(q_bc1_label).at(q_bc1_label));
-        }
-
-        double q_ca1(
-                int rearr_idx,
-                int sign_idx,
-                int overall_loop_idx,
-                const Vec2D<double>& scalar_products
-                ) const
-        {
-            int q_ca1_label =
-                q_ca1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
-            return std::sqrt(scalar_products.at(q_ca1_label).at(q_ca1_label));
-        }
-
         const ArgumentConfiguration& get_arg_config_a(int rearr_idx, int
                 sign_idx, int overall_loop_idx) const {
             return arg_configs_a.at(rearr_idx).at(sign_idx).at(overall_loop_idx);

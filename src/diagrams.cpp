@@ -437,6 +437,12 @@ void BiSpectrumDiagram::kernel_arguments(
             "n_ca = 0, nor valid overall_loop_idx."));
     }
 
+    /* Cache labels corresponding to q_ab, q_bc and q_ca (i.e. total momentum
+     * of all connecting loops) for this rearrangement */
+    q_ab_labels.at(rearr_idx) = config2label(config_ab, n_coeffs);
+    q_bc_labels.at(rearr_idx) = config2label(config_bc, n_coeffs);
+    q_ca_labels.at(rearr_idx) = config2label(config_ca, n_coeffs);
+
     /* Add connecting loops */
     if (n_ab == 1) {
         change_sign(config_ab, config_ab_sign_flip, n_coeffs);
@@ -513,6 +519,8 @@ void BiSpectrumDiagram::kernel_arguments(
         args_c.at(args_c_idx++) = config2label(config_ca_sign_flip, n_coeffs);
     }
 
+    /* Cache labels corresponding to q_ab1, q_bc1 and q_ca1 for this
+     * rearrangement, sign config and overall_loop setup */
     q_ab1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx) =
         config2label(config_ab, n_coeffs);
     q_bc1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx) =
@@ -647,6 +655,10 @@ BiSpectrumDiagram::BiSpectrumDiagram(
     q_bc1_labels.resize(rearrangements.size());
     q_ca1_labels.resize(rearrangements.size());
 
+    q_ab_labels.resize(rearrangements.size());
+    q_bc_labels.resize(rearrangements.size());
+    q_ca_labels.resize(rearrangements.size());
+
     for (size_t i = 0; i < rearrangements.size(); ++i) {
         arg_configs_a.at(i).resize(sign_configs.size());
         arg_configs_b.at(i).resize(sign_configs.size());
@@ -676,6 +688,156 @@ BiSpectrumDiagram::BiSpectrumDiagram(
             }
         }
     }
+}
+
+
+
+void BiSpectrumDiagram::connecting_lines_factors(
+        int rearr_idx,
+        int sign_idx,
+        int overall_loop_idx,
+        const Vec2D<double>& scalar_products,
+        double& q_ab1,      /* out */
+        double& q_bc1,      /* out */
+        double& q_ca1,      /* out */
+        int heaviside_theta /* out */
+        ) const
+{
+    heaviside_theta = 1;
+
+    /* q_ab1 is the momentum of the connecting line ab whose loop momentum
+     * is evaluated by the momentum conserving delta function, similarly
+     * for q_bc1 and q_ca1.
+     * q_ab (or q_bc, q_ca) is the *total* momentum flowing in the connection
+     * ab (or bc or ca) between blobs */
+    int q_ab1_label =
+        q_ab1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
+    int q_bc1_label =
+        q_bc1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
+    int q_ca1_label =
+        q_ca1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
+
+    q_ab1 = std::sqrt(scalar_products.at(q_ab1_label).at(q_ab1_label));
+    q_bc1 = std::sqrt(scalar_products.at(q_bc1_label).at(q_bc1_label));
+    q_ca1 = std::sqrt(scalar_products.at(q_ca1_label).at(q_ca1_label));
+
+    /* How many loop momenta have already been assigned? */
+    int offset = 0;
+
+    if (overall_loop_) {
+        offset = 1;
+        /* If the total connecting line momentum with which the overall loop
+         * momentum is associated (according to overall_loop_idx) is larger
+         * than any of the other total connecting line momenta, the diagram
+         * configuration is skipped (heaviside_theta = 0) */
+        int q_ab_label = q_ab_labels.at(rearr_idx);
+        int q_bc_label = q_bc_labels.at(rearr_idx);
+        int q_ca_label = q_ca_labels.at(rearr_idx);
+
+        double q_ab = std::sqrt(scalar_products.at(q_ab_label).at(q_ab_label));
+        double q_bc = std::sqrt(scalar_products.at(q_bc_label).at(q_bc_label));
+        double q_ca = std::sqrt(scalar_products.at(q_ca_label).at(q_ca_label));
+
+        switch (overall_loop_idx) {
+            case 0:
+                if (q_ab >= q_bc || q_ab >= q_ca) {
+                    heaviside_theta = 0;
+                }
+                break;
+            case 1:
+                if (q_bc >= q_ab || q_bc >= q_ca) {
+                    heaviside_theta = 0;
+                }
+                break;
+            case 2:
+                if (q_ca >= q_ab || q_ca >= q_bc) {
+                    heaviside_theta = 0;
+                }
+                break;
+            default:
+                throw(std::logic_error(
+                    "BiSpectrumDiagram::connecting_lines_factors(): "
+                    "overall_loop_idx is not 0,1 or 2."));
+        }
+    }
+
+    const Vec1D<int>& rearr = rearrangements.at(rearr_idx);
+
+    /* Heaviside-theta (q_m1 - Q1(rearr(offset)) */
+    if (n_ab < 2) {
+        heaviside_theta *= 1;
+    }
+    else {
+        double q_ab2 =
+            std::sqrt(scalar_products.at(rearr.at(offset)).at(rearr.at(offset)));
+        heaviside_theta *= (q_ab1 > q_ab2 ? n_ab : 0);
+        offset += n_connecting_loops_ab;
+    }
+#if DEBUG >= 0
+    /* Check that the heaviside-theta (Q2(rearr) - Q3(rearr)) etc. are
+     * satisfied by (reparametrized) momenta from CUBA */
+    for (int i = 1; i < n_connecting_loops_ab; ++i) {
+      double q_ab_i = std::sqrt(
+          scalar_products.at(rearr.at(offset + i)).at(rearr.at(offset + i)));
+      double q_ab_j = std::sqrt(
+          scalar_products.at(rearr.at(offset + i + 1)).at(rearr.at(offset + i + 1)));
+      if (q_ab_i < q_ab_j) {
+          throw(std::logic_error("Heaviside theta: Q" +
+                      std::to_string(rearr.at(offset + i) + 1) + " < Q" +
+                      std::to_string(rearr.at(offset + i + 1) + 1) + "."));
+        }
+    }
+#endif
+
+    /* Same for n_bc */
+    if (n_bc < 2) {
+        heaviside_theta *= 1;
+    }
+    else {
+        double q_bc2 =
+            std::sqrt(scalar_products.at(rearr.at(offset)).at(rearr.at(offset)));
+        heaviside_theta *= (q_bc1 > q_bc2 ? n_bc : 0);
+        offset += n_connecting_loops_bc;
+    }
+#if DEBUG >= 0
+    for (int i = 1; i < n_connecting_loops_bc; ++i) {
+      double q_bc_i = std::sqrt(
+          scalar_products.at(rearr.at(offset + i)).at(rearr.at(offset + i)));
+      double q_bc_j = std::sqrt(
+          scalar_products.at(rearr.at(offset + i + 1)).at(rearr.at(offset + i + 1)));
+      if (q_bc_i < q_bc_j) {
+          throw(std::logic_error("Heaviside theta: Q" +
+                      std::to_string(rearr.at(offset + i) + 1) + " < Q" +
+                      std::to_string(rearr.at(offset + i + 1) + 1) + "."));
+        }
+    }
+#endif
+
+    /* Same for n_ca */
+    if (n_ca < 2) {
+        heaviside_theta *= 1;
+    }
+    else {
+        double q_ca2 =
+            std::sqrt(scalar_products.at(rearr.at(offset)).at(rearr.at(offset)));
+        heaviside_theta *= (q_ca1 > q_ca2 ? n_ca : 0);
+        offset += n_connecting_loops_ca;
+    }
+#if DEBUG >= 0
+    /* Check that the heaviside-theta (Q2(rearr) - Q3(rearr)) etc. are
+     * satisfied by (reparametrized) momenta from CUBA */
+    for (int i = 1; i < n_connecting_loops_ca; ++i) {
+      double q_ca_i = std::sqrt(
+          scalar_products.at(rearr.at(offset + i)).at(rearr.at(offset + i)));
+      double q_ca_j = std::sqrt(
+          scalar_products.at(rearr.at(offset + i + 1)).at(rearr.at(offset + i + 1)));
+      if (q_ca_i < q_ca_j) {
+          throw(std::logic_error("Heaviside theta: Q" +
+                      std::to_string(rearr.at(offset + i) + 1) + " < Q" +
+                      std::to_string(rearr.at(offset + i + 1) + 1) + "."));
+        }
+    }
+#endif
 }
 
 
