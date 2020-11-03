@@ -92,7 +92,7 @@ void PowerSpectrumDiagram::kernel_arguments(int rearr_idx, int sign_idx)
     }
 
 #if DEBUG >= 1
-    /* kernel_index_from_arguments() assumes that the length of arguments[] is
+    /* arguments_2_kernel_index() assumes that the length of arguments[] is
      * n_kernel_args. Checking this explicitly: */
     if (arguments_l.size() != n_kernel_args ||
         arguments_r.size() != n_kernel_args
@@ -172,7 +172,7 @@ PowerSpectrumDiagram::PowerSpectrumDiagram(
         throw(std::invalid_argument("m + l + r != n_loops + 1"));
     }
 
-    diagram_factor = (gsl_sf_fact(2*l + m) * gsl_sf_fact(2*r + m)) /
+    diagram_factor_ = (gsl_sf_fact(2*l + m) * gsl_sf_fact(2*r + m)) /
         (pow(2,l+r) * gsl_sf_fact(l) * gsl_sf_fact(r) * gsl_sf_fact(m));
 
     rearrangements.resize(
@@ -246,7 +246,7 @@ void BiSpectrumDiagram::compute_rearrangements(int n_loops) {
     Vec1D<int> group_sizes;
 
     /* Overall loops? */
-    if (overall_loop) {
+    if (overall_loop_) {
         group_sizes.push_back(1);
     }
     /* Connecting loops? */
@@ -365,12 +365,12 @@ Vec2D<bool> BiSpectrumDiagram::compute_sign_flips(
 
 
 void BiSpectrumDiagram::kernel_arguments(
-        int n_coeffs,
         int rearr_idx,       /* Rearrangement index            */
         int sign_idx,        /* Sign config index              */
         int overall_loop_idx /* Overall loop assosiation index */
         )
 {
+    int n_coeffs = loop_params.get_n_coeffs();
     Vec1D<int>& rearrangement = rearrangements.at(rearr_idx);
 
     int rearr_counter = 0; /* How many loop momenta have been assigned */
@@ -410,23 +410,23 @@ void BiSpectrumDiagram::kernel_arguments(
     /* Single loop config */
     int config_single[N_COEFFS_MAX] = {0};
 
-    if (overall_loop) {
+    if (overall_loop_) {
         /* Add (rearranged) first loop momenta to all connecting lines */
         int loop_idx = rearrangement.at(rearr_counter++);
         config_ab[loop_idx] = 1;
         config_bc[loop_idx] = 1;
         config_ca[loop_idx] = 1;
     }
-    if (n_ab == 0 || (overall_loop && overall_loop_idx == 0)) {
+    if (n_ab == 0 || (overall_loop_ && overall_loop_idx == 0)) {
         config_bc[k_b_idx] = -1; /* q_bc += -k_b */
         config_ca[k_a_idx] = 1;  /* q_bc += +k_a */
     }
-    else if (n_bc == 0 || (overall_loop && overall_loop_idx == 1)) {
+    else if (n_bc == 0 || (overall_loop_ && overall_loop_idx == 1)) {
         config_ab[k_b_idx] = 1;  /* q_ab += k_b */
         config_ca[k_a_idx] = 1;  /* q_ca += -k_c = k_a + k_b */
         config_ca[k_b_idx] = 1;
     }
-    else if (n_ca == 0 || (overall_loop && overall_loop_idx == 2)) {
+    else if (n_ca == 0 || (overall_loop_ && overall_loop_idx == 2)) {
         config_ab[k_a_idx] = -1;  /* q_ab += -k_a */
         config_bc[k_a_idx] = -1;  /* q_ca += k_c = - k_a - k_b */
         config_bc[k_b_idx] = -1;
@@ -557,7 +557,7 @@ void BiSpectrumDiagram::kernel_arguments(
     }
 
 #if DEBUG >= 1
-    /* kernel_index_from_arguments() assumes that the length of arguments[] is
+    /* arguments_2_kernel_index() assumes that the length of arguments[] is
      * n_kernel_args. Checking this explicitly: */
     if (args_a.size() != static_cast<size_t>(n_kernel_args) ||
         args_b.size() != static_cast<size_t>(n_kernel_args) ||
@@ -589,7 +589,6 @@ BiSpectrumDiagram::BiSpectrumDiagram(
     n_a(n_a), n_b(n_b), n_c(n_c)
 {
     int n_loops = loop_params.get_n_loops();
-    int n_coeffs = loop_params.get_n_coeffs();
     int n_kernel_args = loop_params.get_n_kernel_args();
 
     if (n_ab + n_bc + n_ca + n_a + n_b + n_c != n_loops + 2) {
@@ -602,12 +601,12 @@ BiSpectrumDiagram::BiSpectrumDiagram(
             "BiSpectrumDiagram::BiSpectrumDiagram(): More than one number out "
             "of {n_ab, n_bc, n_ca} is zero."));
     }
-    overall_loop = true;
+    overall_loop_ = true;
     if (n_ab == 0 || n_bc == 0 || n_ca == 0) {
-        overall_loop = false;
+        overall_loop_ = false;
     }
 
-    diagram_factor =
+    diagram_factor_ =
         gsl_sf_fact(2 * n_a + n_ab + n_ca) *
         gsl_sf_fact(2 * n_b + n_bc + n_ab) *
         gsl_sf_fact(2 * n_c + n_ca + n_bc) /
@@ -658,7 +657,7 @@ BiSpectrumDiagram::BiSpectrumDiagram(
         q_ca1_labels.at(i).resize(sign_configs.size());
 
         for (size_t j = 0; j < sign_configs.size(); ++j) {
-            int overall_loop_assosiations = overall_loop ? 3 : 1;
+            int overall_loop_assosiations = overall_loop_ ? 3 : 1;
             arg_configs_a.at(i).at(j).resize(overall_loop_assosiations);
             arg_configs_b.at(i).at(j).resize(overall_loop_assosiations);
             arg_configs_c.at(i).at(j).resize(overall_loop_assosiations);
@@ -673,7 +672,7 @@ BiSpectrumDiagram::BiSpectrumDiagram(
                 arg_configs_c.at(i).at(j).at(k).args.resize(n_kernel_args);
 
                 // Initialize arguments and kernel indices for this configuration
-                kernel_arguments(n_coeffs, i, j, k);
+                kernel_arguments(i, j, k);
             }
         }
     }
@@ -760,7 +759,7 @@ std::ostream& operator<<(std::ostream& out, const BiSpectrumDiagram& diagram)
 
     for (size_t i = 0; i < diagram.n_rearrangements(); ++i) {
         for (size_t j = 0; j < diagram.n_sign_configs(); ++j) {
-            if (diagram.has_overall_loop()) {
+            if (diagram.overall_loop()) {
                 for (size_t k = 0; k < 3; ++k) {
                     out << "\t";
                     diagram.print_argument_configuration(out, i, j, k);

@@ -23,7 +23,7 @@ class ArgumentConfiguration {
 
 class PowerSpectrumDiagram {
     private:
-        int diagram_factor;     /* Topological multiplicative diagram factor */
+        int diagram_factor_; /* Topological multiplicative diagram factor */
 
         const LoopParameters& loop_params;
 
@@ -54,7 +54,7 @@ class PowerSpectrumDiagram {
                 int m, int l, int r
                 );
 
-        int get_diagram_factor() const {return diagram_factor;}
+        int diagram_factor() const {return diagram_factor_;}
         size_t n_rearrangements() const {return rearrangements.size();}
         size_t n_sign_configs() const {return sign_configs.size();}
 
@@ -78,19 +78,19 @@ class PowerSpectrumDiagram {
         double heaviside_theta(
                 double q_m1,
                 int rearr_idx,
-                const Vec1D<double>& Q_magnitudes
+                const Vec1D<double>& loop_magnitudes
                 ) const
         {
             const Vec1D<int>& rearr = rearrangements.at(rearr_idx);
             if (m == 1) return 1;
             // Heaviside-theta (q_m1 - Q1(rearr))
-            if (q_m1 <= Q_magnitudes.at(rearr.at(0))) return 0;
+            if (q_m1 <= loop_magnitudes.at(rearr.at(0))) return 0;
 #if DEBUG >= 1
             /* Check that the heaviside-theta (Q2(rearr) - Q3(rearr)) etc. are
              * satisfied by (reparametrized) momenta from CUBA */
             for (int i = 3; i <= m; ++i) {
-                if (Q_magnitudes.at(rearr.at(i - 3)) <
-                    Q_magnitudes.at(rearr.at(i - 2))
+                if (loop_magnitudes.at(rearr.at(i - 3)) <
+                    loop_magnitudes.at(rearr.at(i - 2))
                     ) {
                     throw(std::logic_error(
                         "Heaviside theta: Q" + std::to_string(rearr.at(i - 3) + 1) +
@@ -101,10 +101,12 @@ class PowerSpectrumDiagram {
             return m;
         }
 
-        ArgumentConfiguration get_arg_config_l(int rearr_idx, int sign_idx) const {
+        const ArgumentConfiguration& get_arg_config_l(int rearr_idx, int
+                sign_idx) const {
             return arg_configs_l.at(rearr_idx).at(sign_idx);
         }
-        ArgumentConfiguration get_arg_config_r(int rearr_idx, int sign_idx) const {
+        const ArgumentConfiguration& get_arg_config_r(int rearr_idx, int
+                sign_idx) const {
             return arg_configs_r.at(rearr_idx).at(sign_idx);
         }
 #undef at
@@ -121,9 +123,9 @@ class PowerSpectrumDiagram {
 class BiSpectrumDiagram {
     private:
         /* Is diagram closed (n_ab, n_bc, n_ca > 0) */
-        bool overall_loop;
+        bool overall_loop_;
         /* Topological multiplicative diagram factor */
-        int diagram_factor;
+        int diagram_factor_;
 
         /* Number of connecting loops */
         int n_connecting_loops_ab;
@@ -160,12 +162,7 @@ class BiSpectrumDiagram {
 
         /* Computes argument configurations if rearrangement and sign
          * configurations are set */
-        void kernel_arguments(
-              int n_coeffs,
-              int rearr_idx,
-              int sign_idx,
-              int overall_loop_idx
-              );
+        void kernel_arguments(int rearr_idx, int sign_idx, int overall_loop_idx);
 
     public:
         const int n_ab, n_bc, n_ca;
@@ -177,8 +174,8 @@ class BiSpectrumDiagram {
                 int n_a, int n_b, int n_c
                 );
 
-        bool has_overall_loop() const {return overall_loop;}
-        int get_diagram_factor() const {return diagram_factor;}
+        bool overall_loop() const {return overall_loop_;}
+        int diagram_factor() const {return diagram_factor_;}
         size_t n_rearrangements() const {return rearrangements.size();}
         size_t n_sign_configs() const {return sign_configs.size();}
 
@@ -225,19 +222,18 @@ class BiSpectrumDiagram {
             return std::sqrt(scalar_products.at(q_ca1_label).at(q_ca1_label));
         }
 
-        ArgumentConfiguration get_arg_config_a(int rearr_idx, int sign_idx, int
-                overall_loop_idx) const {
+        const ArgumentConfiguration& get_arg_config_a(int rearr_idx, int
+                sign_idx, int overall_loop_idx) const {
             return arg_configs_a.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
         }
-        ArgumentConfiguration get_arg_config_b(int rearr_idx, int sign_idx, int
-                overall_loop_idx) const {
+        const ArgumentConfiguration& get_arg_config_b(int rearr_idx, int
+                sign_idx, int overall_loop_idx) const {
             return arg_configs_b.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
         }
-        ArgumentConfiguration get_arg_config_c(int rearr_idx, int sign_idx, int
-                overall_loop_idx) const {
+        const ArgumentConfiguration& get_arg_config_c(int rearr_idx, int
+                sign_idx, int overall_loop_idx) const {
             return arg_configs_c.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
         }
-
 #undef at
 
         void print_diagram_tags(std::ostream& out) const;

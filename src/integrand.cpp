@@ -38,9 +38,9 @@ void integrand_term(
         Vec1D<double>& term_results
         )
 {
-    const ArgumentConfiguration arg_config_l =
+    const ArgumentConfiguration& arg_config_l =
         diagram.get_arg_config_l(rearr_idx, sign_idx);
-    const ArgumentConfiguration arg_config_r =
+    const ArgumentConfiguration& arg_config_r =
         diagram.get_arg_config_r(rearr_idx, sign_idx);
 
     /* Pointers to SPTKernel vector or last time step of Kernel vector */
@@ -148,7 +148,7 @@ void integrand(
         }
 
         for (size_t j = 0; j < n_correlations; ++j) {
-            diagram_results.at(j) *= dg.get_diagram_factor();
+            diagram_results.at(j) *= dg.diagram_factor();
             diagram_results.at(j) /= dg.n_rearrangements() * dg.n_sign_configs();
             results.at(j) += diagram_results.at(j);
         }
