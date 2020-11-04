@@ -18,17 +18,6 @@
 #include "include/interpolation.hpp"
 #include "include/integrand.hpp"
 
-using cubareal = double;
-
-int cuba_integrand(
-        __attribute__((unused)) const int *ndim,
-        const cubareal xx[],
-        __attribute__((unused)) const int *ncomp,
-        cubareal ff[],
-        void *userdata,
-        __attribute__((unused)) const int *nvec,
-        const int *core
-        );
 
 static void BM_kernel_index(benchmark::State& state) {
     // Perform setup here
@@ -47,7 +36,7 @@ static void BM_kernel_index(benchmark::State& state) {
 
 
 
-static void BM_integrand(benchmark::State& state) {
+static void BM_ps_integrand(benchmark::State& state) {
     // Perform setup here
     int n_loops = 2;
 
@@ -57,7 +46,7 @@ static void BM_integrand(benchmark::State& state) {
 
     Interpolation1D input_ps("/home/pettertaule/repos/class_public/output/fiducial/newtonian/z1_pk.dat");
 
-    Vec1D<Correlation> correlations = {{0,0}};
+    Vec1D<PairCorrelation> pair_correlations = {{0,0}};
 
     LoopParameters loop_params(n_loops, POWERSPECTRUM, EDS_SPT);
     SumTable sum_table(loop_params);
@@ -69,13 +58,13 @@ static void BM_integrand(benchmark::State& state) {
 
     Vec1D<PowerSpectrumDiagram> diagrams = ps::construct_diagrams(loop_params);
 
-    IntegrationInput input(q_min, q_max, &diagrams, correlations, input_ps,
+    IntegrationInput input(q_min, q_max, &diagrams, &pair_correlations, input_ps,
             tables_vec);
 
-    cubareal* xx = new cubareal[correlations.size()];
-    cubareal* ff = new cubareal[correlations.size()];
+    double* xx = new double[pair_correlations.size()];
+    double* ff = new double[pair_correlations.size()];
 
-    for (size_t i = 0; i < correlations.size(); ++i) {
+    for (size_t i = 0; i < pair_correlations.size(); ++i) {
         xx[i] = 0.5;
         ff[i] = 0;
     }
@@ -83,10 +72,11 @@ static void BM_integrand(benchmark::State& state) {
     for (auto _ : state) {
         // This code gets timed
         int ndim = 3 * n_loops - 1;
-        int ncomp = correlations.size();
+        int ncomp = pair_correlations.size();
         int nvec = 1;
-        int core = 0;
-        cuba_integrand(&ndim, xx, &ncomp, ff, &input, &nvec, &core);
+        /* core = -1 in accordance with ps::integrand() or bs::integrand() */
+        int core = -1;
+        ps::integrand(&ndim, xx, &ncomp, ff, &input, &nvec, &core);
     }
 
     delete[] xx;
@@ -94,80 +84,8 @@ static void BM_integrand(benchmark::State& state) {
 }
 
 
-/* Turn off vector bounds check if not in debug-mode */
-#if DEBUG == 0
-#define at(x) operator[](x)
-#endif
-int cuba_integrand(
-        __attribute__((unused)) const int *ndim,
-        const cubareal xx[],
-        __attribute__((unused)) const int *ncomp,
-        cubareal ff[],
-        void *userdata,
-        __attribute__((unused)) const int *nvec,
-        __attribute__((unused)) const int *core
-        )
-{
-    IntegrationInput* input = (IntegrationInput*)userdata;
-
-    /*  For thread <*core + 1> (index 0 is reserved for master), we use the */
-    /*  IntegrandTables number *core+1 */
-    IntegrandTables& tables = input->tables_vec.at(0);
-
-    int n_loops = tables.loop_params.get_n_loops();
-    IntegrationVariables& vars = tables.vars;
-
-    double ratio = input->q_max/input->q_min;
-    double log_ratio = log(ratio);
-    double jacobian = 0.0;
-
-    switch (n_loops) {
-        case 1:
-            vars.magnitudes.at(0) = input->q_min * pow(ratio,xx[0]);
-            vars.cos_theta.at(0) = xx[1];
-            jacobian = log(ratio) * CUBE(vars.magnitudes[0]);
-            break;
-        case 2:
-            vars.magnitudes.at(0) = input->q_min * pow(ratio,xx[0]);
-            vars.magnitudes.at(1) = input->q_min * pow(ratio,xx[0] * xx[1]);
-            vars.cos_theta.at(0) = xx[2];
-            vars.cos_theta.at(1) = xx[3];
-            /* We may fix the coordinate system s.t. vars.phi[0] = 0 */
-            vars.phi.at(1) = xx[4] * TWOPI;
-            jacobian = TWOPI * xx[0]
-                * SQUARE(log_ratio)
-                * CUBE(vars.magnitudes[0])
-                * CUBE(vars.magnitudes[1]);
-            break;
-        default:
-            throw(std::invalid_argument("n_loops is not 1 or 2."));
-    }
-
-    Vec1D<double> results(input->correlations.size(), 0.0);
-    try {
-        /* Zero-initialize kernel tables */
-        tables.reset();
-        // Compute scalar_products-, alpha- and beta-tables
-        tables.compute_tables();
-
-        ps::integrand(*input, tables, results);
-
-    }
-    catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        return -999;
-    }
-
-    for (size_t i = 0; i < input->correlations.size(); ++i) {
-        ff[i] = results.at(i) * jacobian;
-    }
-    return 0;
-}
-#undef at
-
-
 // Register the functions as benchmarks
 /* BENCHMARK(BM_kernel_index); */
-BENCHMARK(BM_integrand);
+BENCHMARK(BM_ps_integrand);
 // Run the benchmark
 BENCHMARK_MAIN();

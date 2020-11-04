@@ -152,7 +152,7 @@ void write_results(
         double q_min,
         double q_max,
         const Results& results
-        ) 
+        )
 {
     std::ofstream out(output_file);
 
@@ -168,7 +168,7 @@ void write_results(
     out <<    "# Build time:  " << build_git_time << "\n";
 
     out << "#\n# Correlations computed (zero-indexed components):\n# ";
-    for (auto& el : results.get_correlations()) {
+    for (auto& el : results.pair_correlations()) {
         out << el <<  " ; ";
     }
 
@@ -183,9 +183,9 @@ void write_results(
     out << "# Monte Carlo max num. of evals  = " << cuba_maxevals << "\n";
 
     /* A column consists of 12 characters; 4 whitespaces in between each column */
-    
+
     out << "#\n#" << setw(15) << "k (h/Mpc)";
-    for (auto& el : results.get_correlations()) {
+    for (auto& el : results.pair_correlations()) {
         out << setw(11) << "P_lin " << el;
         out << setw(5) << "P_" << n_loops << "loop " << el;
         out << setw(5) << "err_" << n_loops << "loop " << el;
@@ -193,7 +193,7 @@ void write_results(
     out << "\n";
 
     out << std::setw(16) << k;
-    for (size_t i = 0; i < results.get_correlations().size(); ++i) {
+    for (size_t i = 0; i < results.pair_correlations().size(); ++i) {
         out << setw(16) << results.lin_ps.at(i);
         out << setw(16) << results.non_lin_ps.at(i);
         out << setw(16) << results.errors.at(i);

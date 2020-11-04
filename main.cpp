@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <vector>
+#include <array>
 #include <algorithm>
 #include <cmath>
 
@@ -23,15 +24,6 @@
 using std::pow;
 
 
-int cuba_integrand(
-        __attribute__((unused)) const int *ndim,
-        const cubareal xx[],
-        __attribute__((unused)) const int *ncomp,
-        cubareal ff[],
-        void *userdata,
-        __attribute__((unused)) const int *nvec,
-        const int *core
-        );
 
 
 
@@ -41,12 +33,13 @@ int main () {
     double q_max = 65;
 
     int n_loops = 1;
+    Spectrum spectrum = POWERSPECTRUM;
     const std::string input_ps_file = "/home/pettertaule/repos/class_public/output/fiducial/newtonian/z1_pk.dat";
     const std::string output_file = "test.dat";
 
     Interpolation1D input_ps(input_ps_file);
 
-    Vec1D<Correlation> correlations = {{0,0}};
+    Vec1D<PairCorrelation> pair_correlations = {{0,0}};
 
     double cuba_epsabs   = 1e-12;
     double cuba_epsrel   = 1e-4;
@@ -56,7 +49,7 @@ int main () {
 
     cubacores(n_cores, 10000);
 
-    LoopParameters loop_params(n_loops, POWERSPECTRUM, EDS_SPT);
+    LoopParameters loop_params(n_loops, spectrum, EDS_SPT);
     SumTable sum_table(loop_params);
     EvolutionParameters ev_params;
     EtaGrid eta_grid;
@@ -69,7 +62,7 @@ int main () {
 
     Vec1D<PowerSpectrumDiagram> diagrams = ps::construct_diagrams(loop_params);
 
-    IntegrationInput input(q_min, q_max, &diagrams, correlations, input_ps,
+    IntegrationInput input(q_min, q_max, &diagrams, &pair_correlations, input_ps,
             tables_vec);
 
     /* Non-linear evolution */
@@ -83,9 +76,9 @@ int main () {
         pow(2, n_loops) * gsl_sf_fact(n_loops) * pow(TWOPI, 1 - 3*n_loops);
 
     int nregions, neval, fail;
-    Vec1D<cubareal> integration_results(correlations.size(),0);
-    Vec1D<cubareal> integration_errors(correlations.size(),0);
-    Vec1D<cubareal> integration_probs(correlations.size(),0);
+    Vec1D<cubareal> integration_results(pair_correlations.size(),0);
+    Vec1D<cubareal> integration_errors(pair_correlations.size(),0);
+    Vec1D<cubareal> integration_probs(pair_correlations.size(),0);
 
     // CUBA settings
 #define CUBA_NVEC 1
@@ -97,7 +90,7 @@ int main () {
 #define CUBA_NNEW 1000
 #define CUBA_NMIN 2
 #define CUBA_FLATNESS 25.
-    Suave(3 * n_loops - 1, correlations.size(), (integrand_t)cuba_integrand,
+    Suave(3 * n_loops - 1, pair_correlations.size(), (integrand_t)ps::integrand,
             &input, CUBA_NVEC, cuba_epsrel, cuba_epsabs,
             (cuba_verbose | CUBA_LAST | CUBA_RETAIN_STATEFILE), CUBA_SEED,
             CUBA_MINEVAL, cuba_maxevals, CUBA_NNEW, CUBA_NMIN, CUBA_FLATNESS,
@@ -105,9 +98,9 @@ int main () {
             integration_results.data(), integration_errors.data(),
             integration_probs.data());
 
-    Results results(correlations);
+    Results results(spectrum, pair_correlations);
 
-    for (size_t i = 0; i < correlations.size(); ++i) {
+    for (size_t i = 0; i < pair_correlations.size(); ++i) {
         results.lin_ps.at(i) = input_ps.eval(k_a);
         results.non_lin_ps.at(i) =
             overall_factor * static_cast<double>(integration_results.at(i));
@@ -131,78 +124,3 @@ int main () {
 
     return 0;
 }
-
-
-
-/* Turn off vector bounds check if not in debug-mode */
-#if DEBUG == 0
-#define at(x) operator[](x)
-#endif
-int cuba_integrand(
-        __attribute__((unused)) const int *ndim,
-        const cubareal xx[],
-        __attribute__((unused)) const int *ncomp,
-        cubareal ff[],
-        void *userdata,
-        __attribute__((unused)) const int *nvec,
-        const int *core
-        )
-{
-    IntegrationInput* input = (IntegrationInput*)userdata;
-
-    /*  For thread <*core + 1> (index 0 is reserved for master), we use the */
-    /*  IntegrandTables number *core+1 */
-    IntegrandTables& tables = input->tables_vec.at(*core + 1);
-
-    int n_loops = tables.loop_params.get_n_loops();
-    IntegrationVariables& vars = tables.vars;
-
-    double ratio = input->q_max/input->q_min;
-    double log_ratio = std::log(ratio);
-    double jacobian = 0.0;
-
-    switch (n_loops) {
-        case 1:
-            vars.magnitudes.at(0) = input->q_min * pow(ratio,xx[0]);
-            vars.cos_theta.at(0) = xx[1];
-            jacobian = log(ratio) * CUBE(vars.magnitudes[0]);
-            break;
-        case 2:
-            vars.magnitudes.at(0) = input->q_min * pow(ratio,xx[0]);
-            vars.magnitudes.at(1) = input->q_min * pow(ratio,xx[0] * xx[1]);
-            vars.cos_theta.at(0) = xx[2];
-            vars.cos_theta.at(1) = xx[3];
-            /* We may fix the coordinate system s.t. vars.phi[0] = 0 */
-            vars.phi.at(1) = xx[4] * TWOPI;
-            jacobian = TWOPI * xx[0]
-                * SQUARE(log_ratio)
-                * CUBE(vars.magnitudes[0])
-                * CUBE(vars.magnitudes[1]);
-            break;
-        default:
-            throw(std::invalid_argument("n_loops is not 1 or 2."));
-    }
-
-    Vec1D<double> results(input->correlations.size(), 0.0);
-    try {
-        /* Zero-initialize kernel tables */
-        tables.reset();
-        // Compute scalar_products-, alpha- and beta-tables
-        tables.compute_tables();
-
-        ps::integrand(*input, tables, results);
-    }
-    catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        /* Tell CUBA an error occured */
-        return -999;
-    }
-
-    for (size_t i = 0; i < input->correlations.size(); ++i) {
-        ff[i] = results.at(i) * jacobian;
-    }
-
-    /* Return success */
-    return 0;
-}
-#undef at
