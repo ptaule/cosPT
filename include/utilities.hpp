@@ -79,7 +79,6 @@ void print_labels(
         const int labels[],
         size_t size,
         int n_coeffs,
-        int zero_label,
         Spectrum spectrum,
         std::ostream& out
         );

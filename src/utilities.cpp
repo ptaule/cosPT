@@ -103,14 +103,15 @@ void print_labels(
         const int labels[],
         size_t size,
         int n_coeffs,
-        int zero_label,
         Spectrum spectrum,
         std::ostream& out
         )
 {
     out << "(";
     for (size_t i = 0; i < size; ++i) {
-        if (labels[i] == zero_label) continue;
+        if (labels[i] == get_zero_label(n_coeffs)) {
+            continue;
+        }
         print_label(labels[i], n_coeffs, spectrum, out);
         out << ", ";
     }

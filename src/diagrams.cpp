@@ -227,11 +227,11 @@ void PowerSpectrumDiagram::print_argument_configuration(
     out << COLOR_BLUE;
     print_labels(arg_configs_l.at(a).at(b).args.data(),
             arg_configs_l.at(a).at(b).args.size(), loop_params.get_n_coeffs(),
-            loop_params.get_zero_label(), loop_params.get_spectrum(), out);
+            loop_params.get_spectrum(), out);
     out << " ";
     print_labels(arg_configs_r.at(a).at(b).args.data(),
             arg_configs_r.at(a).at(b).args.size(), loop_params.get_n_coeffs(),
-            loop_params.get_zero_label(), loop_params.get_spectrum(), out);
+            loop_params.get_spectrum(), out);
     out << COLOR_RESET;
 }
 
@@ -868,8 +868,7 @@ void BiSpectrumDiagram::print_argument_configuration(
             .at(sign_idx)
             .at(overall_loop_idx)
             .args.size(),
-            loop_params.get_n_coeffs(), loop_params.get_zero_label(),
-            loop_params.get_spectrum(), out);
+            loop_params.get_n_coeffs(), loop_params.get_spectrum(), out);
     out << " ";
     print_labels(arg_configs_b.at(rearr_idx)
             .at(sign_idx)
@@ -879,8 +878,7 @@ void BiSpectrumDiagram::print_argument_configuration(
             .at(sign_idx)
             .at(overall_loop_idx)
             .args.size(),
-            loop_params.get_n_coeffs(), loop_params.get_zero_label(),
-            loop_params.get_spectrum(), out);
+            loop_params.get_n_coeffs(), loop_params.get_spectrum(), out);
     out << " ";
     print_labels(arg_configs_c.at(rearr_idx)
             .at(sign_idx)
@@ -890,8 +888,7 @@ void BiSpectrumDiagram::print_argument_configuration(
             .at(sign_idx)
             .at(overall_loop_idx)
             .args.size(),
-            loop_params.get_n_coeffs(), loop_params.get_zero_label(),
-            loop_params.get_spectrum(), out);
+            loop_params.get_n_coeffs(), loop_params.get_spectrum(), out);
     out << COLOR_RESET;
 }
 
