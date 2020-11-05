@@ -444,12 +444,7 @@ void BiSpectrumDiagram::kernel_arguments(
     q_ca_labels.at(rearr_idx) = config2label(config_ca, n_coeffs);
 
     /* Add connecting loops */
-    if (n_ab == 1) {
-        change_sign(config_ab, config_ab_sign_flip, n_coeffs);
-        args_a.at(args_a_idx++) = config2label(config_ab_sign_flip, n_coeffs);
-        args_b.at(args_b_idx++) = config2label(config_ab, n_coeffs);
-    }
-    else {
+    if (n_ab > 0) {
         for (int n = 2; n <= n_ab; ++n) {
             int loop_idx = rearrangement.at(rearr_counter++);
 
@@ -469,12 +464,7 @@ void BiSpectrumDiagram::kernel_arguments(
         args_a.at(args_a_idx++) = config2label(config_ab_sign_flip, n_coeffs);
     }
 
-    if (n_bc == 1) {
-        change_sign(config_bc, config_bc_sign_flip, n_coeffs);
-        args_b.at(args_b_idx++) = config2label(config_bc_sign_flip, n_coeffs);
-        args_c.at(args_c_idx++) = config2label(config_bc, n_coeffs);
-    }
-    else {
+    if (n_bc > 0) {
         for (int n = 2; n <= n_bc; ++n) {
             int loop_idx = rearrangement.at(rearr_counter++);
 
@@ -494,12 +484,7 @@ void BiSpectrumDiagram::kernel_arguments(
         args_b.at(args_b_idx++) = config2label(config_bc_sign_flip, n_coeffs);
     }
 
-    if (n_ca == 1) {
-        change_sign(config_ca, config_ca_sign_flip, n_coeffs);
-        args_c.at(args_c_idx++) = config2label(config_ca_sign_flip, n_coeffs);
-        args_a.at(args_a_idx++) = config2label(config_ca, n_coeffs);
-    }
-    else {
+    if (n_ca > 0) {
         for (int n = 2; n <= n_ca; ++n) {
             int loop_idx = rearrangement.at(rearr_counter++);
 
