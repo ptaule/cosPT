@@ -24,7 +24,7 @@ cluster: CXXFLAGS += -O3
 cluster: LDFLAGS  += -L./Cuba-4.2/ -L./gsl-2.6/.libs/ -L./gsl-2.6/cblas/.libs/
 
 debug: CPPFLAGS   += -D_GLIBCXX_DEBUG -DDEBUG=2 -I/space/ge52sir/Cuba-4.2/ -I/space/ge52sir/gsl-2.6/
-debug: CXXFLAGS   += -g3 -Og
+debug: CXXFLAGS   += -g -O0
 debug: LDFLAGS    += -L/space/ge52sir/Cuba-4.2/ -L/space/ge52sir/gsl-2.6/.libs/ -L/space/ge52sir/gsl-2.6/cblas/.libs/
 
 benchmark: CXXFLAGS += -O3
