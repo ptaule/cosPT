@@ -12,8 +12,6 @@
 #include <vector>
 #include <iosfwd>
 
-/* Maximum coefficient c-array size (at 2-loop) */
-#define N_COEFFS_MAX 3
 /* Maximum number of kernel arguments at 2-loop */
 #define N_KERNEL_ARGS_MAX 5
 
@@ -65,8 +63,8 @@ enum Dynamics {EDS_SPT, EVOLVE_EDS_IC, EVOLVE_ASYMP_IC};
 
 /* Utility functions */
 
-void label2config(int label, int config[], std::size_t size);
-int config2label(const int config[], std::size_t size);
+void label2config(int label, Vec1D<int>& config);
+int config2label(const Vec1D<int>& config);
 
 void print_label(
         int label,
@@ -83,18 +81,24 @@ void print_labels(
         std::ostream& out
         );
 
+void print_labels(
+        const Vec1D<int>& labels,
+        int n_coeffs,
+        Spectrum spectrum,
+        std::ostream& out
+        );
+
+
 int get_zero_label(int n_coeffs);
 bool single_loop_label(int label, int n_coeffs, Spectrum spectrum);
 
 
-
 template <typename T>
-void change_sign(const T array[], T result[], std::size_t size) {
-    for (std::size_t i = 0; i < size; ++i) {
-        result[i] = -array[i];
+void flip_signs(const Vec1D<T>& input, Vec1D<T>& result) {
+    for (std::size_t i = 0; i < input.size(); ++i) {
+        result.at(i) = -input.at(i);
     }
 }
-
 
 
 template <typename T>

@@ -100,6 +100,10 @@ std::ostream& operator<<(std::ostream& out, const EtaGrid& eta_grid);
 /* Tables inside integration, one instance for each integration thread */
 class IntegrandTables {
     private:
+        /* Helper vectors for compute_scalar_products() */
+        Vec1D<int> a_coeffs;
+        Vec1D<int> b_coeffs;
+
         void reset_spt_kernels();
         void reset_kernels();
 

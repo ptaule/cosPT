@@ -64,19 +64,19 @@ LoopParameters::LoopParameters(int n_loops, Spectrum spectrum, Dynamics dynamics
     }
 
     /* List of single loop labels */
-    int coeffs[N_COEFFS_MAX] = {zero_label};
+    Vec1D<int> config(n_coeffs, 0);
     int label;
 
     for (int i = 0; i < n_loops; ++i) {
-        coeffs[i] = -1;
-        label = config2label(coeffs, n_coeffs);
+        config.at(i) = -1;
+        label = config2label(config);
         single_loops.push_back(label);
 
-        coeffs[i] = 1;
-        label = config2label(coeffs, n_coeffs);
+        config.at(i) = 1;
+        label = config2label(config);
         single_loops.push_back(label);
 
-        coeffs[i] = 0;
+        config.at(i) = 0;
     }
 }
 

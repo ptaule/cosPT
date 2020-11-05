@@ -23,17 +23,17 @@ using std::size_t;
 
 int SumTable::sum_two_labels(int a, int b)
 {
-    int a_coeffs[N_COEFFS_MAX]   = {0};
-    int b_coeffs[N_COEFFS_MAX]   = {0};
-    int res_coeffs[N_COEFFS_MAX] = {0};
+    Vec1D<int> a_coeffs(n_coeffs, 0);
+    Vec1D<int> b_coeffs(n_coeffs, 0);
+    Vec1D<int> res_coeffs(n_coeffs, 0);
 
-    label2config(a, a_coeffs, n_coeffs);
-    label2config(b, b_coeffs, n_coeffs);
+    label2config(a, a_coeffs);
+    label2config(b, b_coeffs);
 
     for (int i = 0; i < n_coeffs; ++i) {
         res_coeffs[i] = a_coeffs[i] + b_coeffs[i];
     }
-    return config2label(res_coeffs, n_coeffs);
+    return config2label(res_coeffs);
 }
 
 
@@ -75,14 +75,14 @@ int SumTable::sum_labels(const int labels[], size_t size) const
         result = sum_table[result][labels[i]];
     }
 
-    // If DEBUG>=1, check that sum is an appropriate vector configuration,
-    // i.e. that Q-coefficients are elements of (-1,0,1) and k-coefficient is
-    // an element of (0,1)
+    /* If DEBUG>=1, check that sum is an appropriate vector configuration, i.e.
+     * that Q-coefficients are elements of (-1,0,1) and k-coefficient is an
+     * element of (0,1) */
 #if DEBUG >= 1
-    int res_coeffs[N_COEFFS_MAX];
-    label2config(result, res_coeffs, n_coeffs);
+    Vec1D<int> res_coeffs(n_coeffs, 0);
+    label2config(result, res_coeffs);
     for (int i = 0; i < n_coeffs; ++i) {
-        int c = res_coeffs[i];
+        int c = res_coeffs.at(i);
         if (!(c == -1 || c == 0 || c == 1))
             throw(std::logic_error(
                 "SumTable::sum_labels(): Sum of labels does not correspond to "
@@ -125,6 +125,8 @@ IntegrandTables::IntegrandTables(
         alpha.at(i).resize(n_configs);
         beta.at(i).resize(n_configs);
     }
+    a_coeffs.resize(n_coeffs);
+    b_coeffs.resize(n_coeffs);
 
     if (loop_params.get_dynamics() == EDS_SPT ||
         loop_params.get_dynamics() == EVOLVE_EDS_IC) {
@@ -330,17 +332,14 @@ void IntegrandTables::compute_scalar_products()
     int n_coeffs = loop_params.get_n_coeffs();
     int n_configs = loop_params.get_n_configs();
 
-    int a_coeffs[N_COEFFS_MAX];
-    int b_coeffs[N_COEFFS_MAX];
-
     // Scalar product matrix is symmetric, hence compute indices [a,b] and
     // [b,a] simultaneously
     for (int a = 0; a < n_configs; ++a) {
         for (int b = 0; b <= a; ++b) {
             double product_value = 0;
 
-            label2config(a, a_coeffs, n_coeffs);
-            label2config(b, b_coeffs, n_coeffs);
+            label2config(a, a_coeffs);
+            label2config(b, b_coeffs);
             for (int i = 0; i < n_coeffs; ++i) {
                 for (int j = 0; j < n_coeffs; ++j) {
                     product_value += a_coeffs[i] * b_coeffs[j]
@@ -368,7 +367,7 @@ void IntegrandTables::compute_alpha_beta()
             // Special case when a == b
             if (a == b) {
                 alpha.at(a).at(b) = 2.0;
-                beta.at(a).at(b) = 2.0;
+                beta.at(a).at(b)  = 2.0;
                 continue;
             }
 
