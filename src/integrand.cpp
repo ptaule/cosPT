@@ -35,7 +35,7 @@ void configuration_term(
         const PowerSpectrumDiagram& diagram,
         int rearr_idx,
         int sign_idx,
-        const Vec1D<PairCorrelation>& pair_correlations,
+        const Vec1D<Pair<int>>& pair_correlations,
         IntegrandTables& tables,
         Vec1D<double>& term_results
         )
@@ -81,16 +81,16 @@ void configuration_term(
     // If l != r, there are two diagrams corresponding to l <-> r
     if (diagram.l == diagram.r) {
         for (size_t i = 0; i < pair_correlations.size(); ++i) {
-            term_results.at(i) = values_l[pair_correlations.at(i).first] *
-                                 values_r[pair_correlations.at(i).second];
+            term_results.at(i) = values_l[pair_correlations.at(i).first()] *
+                                 values_r[pair_correlations.at(i).second()];
         }
     } else {
         for (size_t i = 0; i < pair_correlations.size(); ++i) {
-            term_results[i] = values_l[pair_correlations.at(i).first] *
-                              values_r[pair_correlations.at(i).second]
+            term_results[i] = values_l[pair_correlations.at(i).first()] *
+                              values_r[pair_correlations.at(i).second()]
                                     +
-                              values_l[pair_correlations.at(i).second] *
-                              values_r[pair_correlations.at(i).first];
+                              values_l[pair_correlations.at(i).second()] *
+                              values_r[pair_correlations.at(i).first()];
         }
     }
 }
@@ -248,17 +248,13 @@ void configuration_term(
         int rearr_idx,
         int sign_idx,
         int overall_loop_idx,
-        const Vec1D<TripleCorrelation>& triple_correlations,
+        const Vec1D<Triple<int>>& triple_correlations,
         IntegrandTables& tables,
         Vec1D<double>& term_results
         )
 {
-    const ArgumentConfiguration& arg_config_a =
-        diagram.get_arg_config_a(rearr_idx, sign_idx, overall_loop_idx);
-    const ArgumentConfiguration& arg_config_b =
-        diagram.get_arg_config_b(rearr_idx, sign_idx, overall_loop_idx);
-    const ArgumentConfiguration& arg_config_c =
-        diagram.get_arg_config_c(rearr_idx, sign_idx, overall_loop_idx);
+    const Triple<ArgumentConfiguration>& arg_config =
+        diagram.get_arg_config(rearr_idx, sign_idx, overall_loop_idx);
 
     /* Pointers to SPTKernel vector or last time step of Kernel vector */
     double* values_a = nullptr;
@@ -266,38 +262,38 @@ void configuration_term(
     double* values_c = nullptr;
 
     if (tables.loop_params.get_dynamics() == EDS_SPT) {
-        compute_SPT_kernels(arg_config_a.args.data(),
-                arg_config_a.kernel_index, 2 * diagram.n_a + diagram.n_ab +
+        compute_SPT_kernels(arg_config.a().args.data(),
+                arg_config.a().kernel_index, 2 * diagram.n_a + diagram.n_ab +
                 diagram.n_ca, tables);
-        compute_SPT_kernels(arg_config_b.args.data(),
-                arg_config_b.kernel_index, 2 * diagram.n_b + diagram.n_ab +
+        compute_SPT_kernels(arg_config.b().args.data(),
+                arg_config.b().kernel_index, 2 * diagram.n_b + diagram.n_ab +
                 diagram.n_bc, tables);
-        compute_SPT_kernels(arg_config_c.args.data(),
-                arg_config_c.kernel_index, 2 * diagram.n_c + diagram.n_bc +
+        compute_SPT_kernels(arg_config.c().args.data(),
+                arg_config.c().kernel_index, 2 * diagram.n_c + diagram.n_bc +
                 diagram.n_ca, tables);
 
-        values_a = tables.spt_kernels.at(arg_config_a.kernel_index).values;
-        values_b = tables.spt_kernels.at(arg_config_b.kernel_index).values;
-        values_c = tables.spt_kernels.at(arg_config_c.kernel_index).values;
+        values_a = tables.spt_kernels.at(arg_config.a().kernel_index).values;
+        values_b = tables.spt_kernels.at(arg_config.b().kernel_index).values;
+        values_c = tables.spt_kernels.at(arg_config.c().kernel_index).values;
     }
     else if (tables.loop_params.get_dynamics() == EVOLVE_ASYMP_IC ||
              tables.loop_params.get_dynamics() == EVOLVE_EDS_IC) {
-        kernel_evolution(arg_config_a.args.data(),
-                arg_config_a.kernel_index, 2 * diagram.n_a + diagram.n_ab +
+        kernel_evolution(arg_config.a().args.data(),
+                arg_config.a().kernel_index, 2 * diagram.n_a + diagram.n_ab +
                 diagram.n_ca, tables);
-        kernel_evolution(arg_config_b.args.data(),
-                arg_config_b.kernel_index, 2 * diagram.n_b + diagram.n_ab +
+        kernel_evolution(arg_config.b().args.data(),
+                arg_config.b().kernel_index, 2 * diagram.n_b + diagram.n_ab +
                 diagram.n_bc, tables);
-        kernel_evolution(arg_config_c.args.data(),
-                arg_config_c.kernel_index, 2 * diagram.n_c + diagram.n_bc +
+        kernel_evolution(arg_config.c().args.data(),
+                arg_config.c().kernel_index, 2 * diagram.n_c + diagram.n_bc +
                 diagram.n_ca, tables);
 
         int time_steps = tables.eta_grid.get_time_steps();
-        values_a = tables.kernels.at(arg_config_a.kernel_index)
+        values_a = tables.kernels.at(arg_config.a().kernel_index)
                        .values.at(time_steps - 1).data();
-        values_b = tables.kernels.at(arg_config_b.kernel_index)
+        values_b = tables.kernels.at(arg_config.b().kernel_index)
                        .values.at(time_steps - 1).data();
-        values_c = tables.kernels.at(arg_config_c.kernel_index)
+        values_c = tables.kernels.at(arg_config.c().kernel_index)
                        .values.at(time_steps - 1).data();
     }
     else {
@@ -305,9 +301,9 @@ void configuration_term(
     }
 
     for (size_t i = 0; i < triple_correlations.size(); ++i) {
-        term_results[i] = values_a[triple_correlations.at(i).at(0)] *
-                          values_b[triple_correlations.at(i).at(1)] *
-                          values_c[triple_correlations.at(i).at(2)];
+        term_results[i] = values_a[triple_correlations.at(i).first()] *
+                          values_b[triple_correlations.at(i).second()] *
+                          values_c[triple_correlations.at(i).third()];
     }
 }
 
@@ -334,11 +330,10 @@ void diagram_term(
 #if DEBUG >= 2
                 diagram.print_argument_configuration(std::cout, i, j, k);
 #endif
-                double q_ab1, q_bc1, q_ca1;
+                Triple<double> q_xy1 = {0,0,0};
                 int heaviside_theta = 1;
                 diagram.connecting_lines_factors(i, j, k,
-                        tables.scalar_products, q_ab1, q_bc1, q_ca1,
-                        heaviside_theta);
+                        tables.scalar_products, q_xy1, heaviside_theta);
 
                 if (heaviside_theta == 0) {
 #if DEBUG >= 2
@@ -351,11 +346,23 @@ void diagram_term(
                 configuration_term(diagram, i, j, k,
                         *input.triple_correlations, tables, term_results);
 
+                if (diagram.n_ab > 0) {
+                    for (auto& el : term_results) {
+                        el *= input.input_ps.eval(q_xy1.a());
+                    }
+                }
+                if (diagram.n_bc > 0) {
+                    for (auto& el : term_results) {
+                        el *= input.input_ps.eval(q_xy1.b());
+                    }
+                }
+                if (diagram.n_ca > 0) {
+                    for (auto& el : term_results) {
+                        el *= input.input_ps.eval(q_xy1.c());
+                    }
+                }
                 for (auto& el : term_results) {
                     el *= heaviside_theta;
-                    el *= input.input_ps.eval(q_ab1);
-                    el *= input.input_ps.eval(q_bc1);
-                    el *= input.input_ps.eval(q_ca1);
                 }
                 for (size_t a = 0; a < n_correlations; ++a) {
                     diagram_results.at(a) += term_results.at(a);
@@ -450,21 +457,4 @@ int integrand(
     /* Return success */
     return 0;
 }
-}
-
-
-
-std::ostream& operator<<(std::ostream& out, const PairCorrelation& pair_correlation) {
-    out << "<" << pair_correlation.first << "," << pair_correlation.second << ">";
-    return out;
-}
-
-
-
-std::ostream& operator<<(std::ostream& out, const TripleCorrelation&
-        triple_correlation)
-{
-    out << "<" << triple_correlation.at(0) << "," << triple_correlation.at(1) << ","
-        << triple_correlation.at(2) << ">";
-    return out;
 }

@@ -15,9 +15,6 @@
 #include "diagrams.hpp"
 #include "tables.hpp"
 
-using PairCorrelation = std::pair<int, int>;
-using TripleCorrelation = std::array<int,3>;
-
 class IntegrationInput {
     public:
         const double q_min = 0;
@@ -25,8 +22,8 @@ class IntegrationInput {
 
         const Vec1D<PowerSpectrumDiagram>* ps_diagrams;
         const Vec1D<BiSpectrumDiagram>* bs_diagrams;
-        const Vec1D<PairCorrelation>* pair_correlations;
-        const Vec1D<TripleCorrelation>* triple_correlations;
+        const Vec1D<Pair<int>>* pair_correlations;
+        const Vec1D<Triple<int>>* triple_correlations;
 
         const Interpolation1D& input_ps;
         Vec1D<IntegrandTables>& tables_vec;
@@ -36,7 +33,7 @@ class IntegrationInput {
                 double q_min,
                 double q_max,
                 const Vec1D<PowerSpectrumDiagram>* ps_diagrams,
-                const Vec1D<PairCorrelation>* pair_correlations,
+                const Vec1D<Pair<int>>* pair_correlations,
                 const Interpolation1D& input_ps,
                 Vec1D<IntegrandTables>& tables_vec
                 ) :
@@ -49,7 +46,7 @@ class IntegrationInput {
                 double q_min,
                 double q_max,
                 const Vec1D<BiSpectrumDiagram>* bs_diagrams,
-                const Vec1D<TripleCorrelation>* triple_correlations,
+                const Vec1D<Triple<int>>* triple_correlations,
                 const Interpolation1D& input_ps,
                 Vec1D<IntegrandTables>& tables_vec
                 ) :
@@ -87,22 +84,22 @@ int integrand(
 class Results {
     private:
         Spectrum spectrum;
-        Vec1D<PairCorrelation> pair_correlations_;
-        Vec1D<TripleCorrelation> triple_correlations_;
+        Vec1D<Pair<int>> pair_correlations_;
+        Vec1D<Triple<int>> triple_correlations_;
     public:
         Vec1D<double> lin_ps;
         Vec1D<double> non_lin_ps;
         Vec1D<double> errors;
 
-        const Vec1D<PairCorrelation>& pair_correlations() const {
+        const Vec1D<Pair<int>>& pair_correlations() const {
             return pair_correlations_;
         }
-        const Vec1D<TripleCorrelation>& triple_correlations() const {
+        const Vec1D<Triple<int>>& triple_correlations() const {
             return triple_correlations_;
         }
 
         Results(Spectrum spectrum,
-                const Vec1D<PairCorrelation>& pair_correlations
+                const Vec1D<Pair<int>>& pair_correlations
                 ) : spectrum(spectrum), pair_correlations_(pair_correlations)
         {
             lin_ps.resize(pair_correlations_.size());
@@ -111,7 +108,7 @@ class Results {
         }
 
         Results(Spectrum spectrum,
-                const Vec1D<TripleCorrelation>& triple_correlations
+                const Vec1D<Triple<int>>& triple_correlations
                 ) : spectrum(spectrum), triple_correlations_(triple_correlations)
         {
             lin_ps.resize(triple_correlations_.size());
@@ -120,8 +117,5 @@ class Results {
         }
 };
 
-
-std::ostream& operator<<(std::ostream&, const PairCorrelation& pair_correlation);
-std::ostream& operator<<(std::ostream&, const TripleCorrelation& triple_correlation);
 
 #endif /* ifndef INTEGRAND_HPP */

@@ -46,7 +46,7 @@ static void BM_ps_integrand(benchmark::State& state) {
 
     Interpolation1D input_ps("/home/pettertaule/repos/class_public/output/fiducial/newtonian/z1_pk.dat");
 
-    Vec1D<PairCorrelation> pair_correlations = {{0,0}};
+    Vec1D<Pair<int>> pair_correlations = {{0,0}};
 
     LoopParameters loop_params(n_loops, POWERSPECTRUM, EDS_SPT);
     SumTable sum_table(loop_params);

@@ -39,7 +39,7 @@ int main () {
 
     Interpolation1D input_ps(input_ps_file);
 
-    Vec1D<PairCorrelation> pair_correlations = {{0,0}};
+    Vec1D<Pair<int>> pair_correlations = {{0,0}};
 
     double cuba_epsabs   = 1e-12;
     double cuba_epsrel   = 1e-4;
@@ -53,6 +53,7 @@ int main () {
     SumTable sum_table(loop_params);
     EvolutionParameters ev_params;
     EtaGrid eta_grid;
+
     Vec1D<IntegrandTables> tables_vec;
 
     /* (Master + n_cores) instances of IntegrandTables */

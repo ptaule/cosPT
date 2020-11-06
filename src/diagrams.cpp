@@ -308,23 +308,28 @@ Vec2D<bool> BiSpectrumDiagram::connecting_line_sign_flips(
 
 
 
+/* Alias functions for Triple<> */
+#define ab() a()
+#define bc() b()
+#define ca() c()
+
+
+
 Vec2D<bool> BiSpectrumDiagram::compute_sign_flips(
-        const Vec2D<bool>& sign_configs_ab,
-        const Vec2D<bool>& sign_configs_bc,
-        const Vec2D<bool>& sign_configs_ca
+        const Triple<Vec2D<bool>>& sign_configs_xy
         )
 {
-    int n_connecting_loops = n_connecting_loops_ab +
-        n_connecting_loops_bc + n_connecting_loops_ca;
+    int tot_connecting_loops = n_connecting_loops.ab() +
+        n_connecting_loops.bc() + n_connecting_loops.ca();
 
-    int n_sign_configs = pow(2, n_connecting_loops);
+    int n_sign_configs = pow(2, tot_connecting_loops);
 
     Vec2D<bool> sign_configs;
 
     /* Allocate memory for sign configurations */
     sign_configs.resize(n_sign_configs);
     for (int i = 0; i < n_sign_configs; ++i) {
-        sign_configs.at(i).resize(n_connecting_loops);
+        sign_configs.at(i).resize(tot_connecting_loops);
     }
 
     /* Combine sign_configs_ab,... into sign_configs */
@@ -335,27 +340,28 @@ Vec2D<bool> BiSpectrumDiagram::compute_sign_flips(
         do {
             size_t k = 0;
             do {
-                if (!sign_configs_ab.empty()) {
-                    std::copy(sign_configs_ab.at(i).begin(),
-                            sign_configs_ab.at(i).end(),
+                if (!sign_configs_xy.ab().empty()) {
+                    std::copy(sign_configs_xy.ab().at(i).begin(),
+                            sign_configs_xy.ab().at(i).end(),
                             sign_configs.at(idx).begin());
                 }
-                if (!sign_configs_bc.empty()) {
-                    size_t shift = n_connecting_loops_ab;
-                    std::copy(sign_configs_bc.at(j).begin(),
-                            sign_configs_bc.at(j).end(),
+                if (!sign_configs_xy.bc().empty()) {
+                    size_t shift = n_connecting_loops.ab();
+                    std::copy(sign_configs_xy.bc().at(j).begin(),
+                            sign_configs_xy.bc().at(j).end(),
                             sign_configs.at(idx).begin() + shift);
                 }
-                if (!sign_configs_ca.empty()) {
-                    size_t shift = n_connecting_loops_ab + n_connecting_loops_bc;
-                    std::copy(sign_configs_ca.at(k).begin(),
-                            sign_configs_ca.at(k).end(),
+                if (!sign_configs_xy.ca().empty()) {
+                    size_t shift = n_connecting_loops.ab() +
+                        n_connecting_loops.bc();
+                    std::copy(sign_configs_xy.ca().at(k).begin(),
+                            sign_configs_xy.ca().at(k).end(),
                             sign_configs.at(idx).begin() + shift);
                 }
                 idx++;
-            } while (++k < sign_configs_ca.size());
-        } while (++j < sign_configs_bc.size());
-    } while (++i < sign_configs_ab.size());
+            } while (++k < sign_configs_xy.ca().size());
+        } while (++j < sign_configs_xy.bc().size());
+    } while (++i < sign_configs_xy.ab().size());
 
     return sign_configs;
 }
@@ -375,35 +381,30 @@ void BiSpectrumDiagram::kernel_arguments(
     int k_a_idx = n_coeffs - 1;
     int k_b_idx = n_coeffs - 2;
 
-    Vec1D<bool> signs = sign_configs.at(sign_idx);
-    Vec1D<bool> signs_ab(signs.begin(), signs.begin() + n_connecting_loops_ab);
-    Vec1D<bool> signs_bc(signs.begin() + n_connecting_loops_ab,
-            signs.begin() + n_connecting_loops_ab + n_connecting_loops_bc);
-    Vec1D<bool> signs_ca(signs.begin() + n_connecting_loops_ab
-            + n_connecting_loops_bc, signs.end());
+    Vec1D<bool> sign_config = sign_configs.at(sign_idx);
+    Triple<Vec1D<bool>> signs = {
+        {sign_config.begin(), sign_config.begin() + n_connecting_loops.ab()},
+        {sign_config.begin() + n_connecting_loops.ab(),
+         sign_config.begin() + n_connecting_loops.ab() + n_connecting_loops.bc()},
+        {sign_config.begin() + n_connecting_loops.ab() +
+             n_connecting_loops.bc(), sign_config.end()}
+    };
 
-    Vec1D<int>& args_a =
-        arg_configs_a.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args;
-    Vec1D<int>& args_b =
-        arg_configs_b.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args;
-    Vec1D<int> &args_c =
-        arg_configs_c.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args;
+    Triple<Vec1D<int>&> args = {
+        {arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).a().args},
+        {arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).b().args},
+        {arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).c().args}
+    };
 
     /* How many arguments have been assigned to the kernels a,b,c? */
-    int args_a_idx = 0;
-    int args_b_idx = 0;
-    int args_c_idx = 0;
+    Triple<int> args_idx = {0,0,0};
 
     /* Determine labels of "main" connecting lines (with external/overall loop
-     * momenta) */
-    Vec1D<int> config_ab(n_coeffs,0);
-    Vec1D<int> config_bc(n_coeffs,0);
-    Vec1D<int> config_ca(n_coeffs,0);
-
-    /* Need arguments with opposite sign */
-    Vec1D<int> config_ab_sign_flip(n_coeffs,0);
-    Vec1D<int> config_bc_sign_flip(n_coeffs,0);
-    Vec1D<int> config_ca_sign_flip(n_coeffs,0);
+     * momenta), and their complementary with oppisite signs */
+    Triple<Vec1D<int>> config_xy = {
+        {n_coeffs, 0}, {n_coeffs, 0}, {n_coeffs, 0}};
+    Triple<Vec1D<int>> config_xy_sign_flip = {
+        {n_coeffs, 0}, {n_coeffs, 0}, {n_coeffs, 0}};
 
     /* Single loop config */
     Vec1D<int> config_single(n_coeffs, 0);
@@ -411,23 +412,23 @@ void BiSpectrumDiagram::kernel_arguments(
     if (overall_loop_) {
         /* Add (rearranged) first loop momenta to all connecting lines */
         int loop_idx = rearrangement.at(rearr_counter++);
-        config_ab.at(loop_idx) = 1;
-        config_bc.at(loop_idx) = 1;
-        config_ca.at(loop_idx) = 1;
+        config_xy.ab().at(loop_idx) = 1;
+        config_xy.bc().at(loop_idx) = 1;
+        config_xy.ca().at(loop_idx) = 1;
     }
     if (n_ab == 0 || (overall_loop_ && overall_loop_idx == 0)) {
-        config_bc.at(k_b_idx) = -1; /* q_bc += -k_b */
-        config_ca.at(k_a_idx) = 1;  /* q_bc += +k_a */
+        config_xy.bc().at(k_b_idx) = -1; /* q_bc += -k_b */
+        config_xy.ca().at(k_a_idx) = 1;  /* q_bc += +k_a */
     }
     else if (n_bc == 0 || (overall_loop_ && overall_loop_idx == 1)) {
-        config_ab.at(k_b_idx) = 1;  /* q_ab += k_b */
-        config_ca.at(k_a_idx) = 1;  /* q_ca += -k_c = k_a + k_b */
-        config_ca.at(k_b_idx) = 1;
+        config_xy.ab().at(k_b_idx) = 1;  /* q_ab += k_b */
+        config_xy.ca().at(k_a_idx) = 1;  /* q_ca += -k_c = k_a + k_b */
+        config_xy.ca().at(k_b_idx) = 1;
     }
     else if (n_ca == 0 || (overall_loop_ && overall_loop_idx == 2)) {
-        config_ab.at(k_a_idx) = -1;  /* q_ab += -k_a */
-        config_bc.at(k_a_idx) = -1;  /* q_ca += k_c = - k_a - k_b */
-        config_bc.at(k_b_idx) = -1;
+        config_xy.ab().at(k_a_idx) = -1;  /* q_ab += -k_a */
+        config_xy.bc().at(k_a_idx) = -1;  /* q_ca += k_c = - k_a - k_b */
+        config_xy.bc().at(k_b_idx) = -1;
     }
     else {
         throw(std::logic_error(
@@ -437,9 +438,9 @@ void BiSpectrumDiagram::kernel_arguments(
 
     /* Cache labels corresponding to q_ab, q_bc and q_ca (i.e. total momentum
      * of all connecting loops) for this rearrangement */
-    q_ab_labels.at(rearr_idx) = config2label(config_ab);
-    q_bc_labels.at(rearr_idx) = config2label(config_bc);
-    q_ca_labels.at(rearr_idx) = config2label(config_ca);
+    q_xy_labels.at(rearr_idx).ab() = config2label(config_xy.ab());
+    q_xy_labels.at(rearr_idx).bc() = config2label(config_xy.bc());
+    q_xy_labels.at(rearr_idx).ca() = config2label(config_xy.ca());
 
     /* Add connecting loops */
     if (n_ab > 0) {
@@ -447,19 +448,19 @@ void BiSpectrumDiagram::kernel_arguments(
             int loop_idx = rearrangement.at(rearr_counter++);
 
             /* Opposite sign for main connecting loop */
-            config_ab.at(loop_idx)     = (signs_ab.at(n - 2)) ? -1 : 1;
-            config_single.at(loop_idx) = (signs_ab.at(n - 2)) ? 1 : -1;
+            config_xy.ab().at(loop_idx) = (signs.ab().at(n - 2)) ? -1 : 1;
+            config_single.at(loop_idx)  = (signs.ab().at(n - 2)) ? 1 : -1;
 
-            args_b.at(args_b_idx++) = config2label(config_single);
+            args.b().at(args_idx.b()++) = config2label(config_single);
             config_single.at(loop_idx) *= -1;
-            args_a.at(args_a_idx++) = config2label(config_single);
+            args.a().at(args_idx.a()++) = config2label(config_single);
 
             std::fill(config_single.begin(), config_single.end(), 0);
         }
 
-        flip_signs(config_ab, config_ab_sign_flip);
-        args_b.at(args_b_idx++) = config2label(config_ab);
-        args_a.at(args_a_idx++) = config2label(config_ab_sign_flip);
+        flip_signs(config_xy.ab(), config_xy_sign_flip.ab());
+        args.b().at(args_idx.b()++) = config2label(config_xy.ab());
+        args.a().at(args_idx.a()++) = config2label(config_xy_sign_flip.ab());
     }
 
     if (n_bc > 0) {
@@ -467,19 +468,19 @@ void BiSpectrumDiagram::kernel_arguments(
             int loop_idx = rearrangement.at(rearr_counter++);
 
             /* Opposite sign for main connecting loop */
-            config_bc.at(loop_idx)     = (signs_bc.at(n - 2)) ? -1 : 1;
-            config_single.at(loop_idx) = (signs_bc.at(n - 2)) ? 1 : -1;
+            config_xy.bc()[loop_idx] = (signs.bc().at(n - 2)) ? -1 : 1;
+            config_single[loop_idx]  = (signs.bc().at(n - 2)) ? 1 : -1;
 
-            args_c.at(args_c_idx++) = config2label(config_single);
-            config_single.at(loop_idx) *= -1;
-            args_b.at(args_b_idx++) = config2label(config_single);
+            args.c().at(args_idx.c()++) = config2label(config_single);
+            config_single[loop_idx] *= -1;
+            args.b().at(args_idx.b()++) = config2label(config_single);
 
             std::fill(config_single.begin(), config_single.end(), 0);
         }
 
-        flip_signs(config_bc, config_bc_sign_flip);
-        args_c.at(args_c_idx++) = config2label(config_bc);
-        args_b.at(args_b_idx++) = config2label(config_bc_sign_flip);
+        flip_signs(config_xy.bc(), config_xy_sign_flip.bc());
+        args.c().at(args_idx.c()++) = config2label(config_xy.bc());
+        args.b().at(args_idx.b()++) = config2label(config_xy_sign_flip.bc());
     }
 
     if (n_ca > 0) {
@@ -487,72 +488,72 @@ void BiSpectrumDiagram::kernel_arguments(
             int loop_idx = rearrangement.at(rearr_counter++);
 
             /* Opposite sign for main connecting loop */
-            config_ca.at(loop_idx)     = (signs_ca.at(n - 2)) ? -1 : 1;
-            config_single.at(loop_idx) = (signs_ca.at(n - 2)) ? 1 : -1;
+            config_xy.ca()[loop_idx] = (signs.ca().at(n - 2)) ? -1 : 1;
+            config_single[loop_idx]  = (signs.ca().at(n - 2)) ? 1 : -1;
 
-            args_a.at(args_a_idx++) = config2label(config_single);
+            args.a().at(args_idx.a()++) = config2label(config_single);
             config_single.at(loop_idx) *= -1;
-            args_c.at(args_c_idx++) = config2label(config_single);
+            args.c().at(args_idx.c()++) = config2label(config_single);
 
             std::fill(config_single.begin(), config_single.end(), 0);
         }
 
-        flip_signs(config_ca, config_ca_sign_flip);
-        args_a.at(args_a_idx++) = config2label(config_ca);
-        args_c.at(args_c_idx++) = config2label(config_ca_sign_flip);
+        flip_signs(config_xy.ca(), config_xy_sign_flip.ca());
+        args.a().at(args_idx.a()++) = config2label(config_xy.ca());
+        args.c().at(args_idx.c()++) = config2label(config_xy_sign_flip.ca());
     }
 
     /* Cache labels corresponding to q_ab1, q_bc1 and q_ca1 for this
      * rearrangement, sign config and overall_loop setup */
-    q_ab1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx) =
-        config2label(config_ab);
-    q_bc1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx) =
-        config2label(config_bc);
-    q_ca1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx) =
-        config2label(config_ca);
+    q_xy1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx).ab() =
+        config2label(config_xy.ab());
+    q_xy1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx).bc() =
+        config2label(config_xy.bc());
+    q_xy1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx).ca() =
+        config2label(config_xy.ca());
 
     /* Add self loops */
     if (n_a > 0) {
         int loop_idx = rearrangement.at(rearr_counter);
         config_single[loop_idx] = 1;
-        args_a.at(args_a_idx++) = config2label(config_single);
+        args.a().at(args_idx.a()++) = config2label(config_single);
         config_single[loop_idx] = -1;
-        args_a.at(args_a_idx++) = config2label(config_single);
+        args.a().at(args_idx.a()++) = config2label(config_single);
     }
     if (n_b > 0) {
         int loop_idx = rearrangement.at(rearr_counter);
         config_single[loop_idx] = 1;
-        args_b.at(args_b_idx++) = config2label(config_single);
+        args.b().at(args_idx.b()++) = config2label(config_single);
         config_single[loop_idx] = -1;
-        args_b.at(args_b_idx++) = config2label(config_single);
+        args.b().at(args_idx.b()++) = config2label(config_single);
     }
     if (n_c > 0) {
         int loop_idx = rearrangement.at(rearr_counter);
         config_single[loop_idx] = 1;
-        args_c.at(args_c_idx++) = config2label(config_single);
+        args.c().at(args_idx.c()++) = config2label(config_single);
         config_single[loop_idx] = -1;
-        args_c.at(args_c_idx++) = config2label(config_single);
+        args.c().at(args_idx.c()++) = config2label(config_single);
     }
 
     // Fill remaining spots with zero-label
     int zero_label = loop_params.get_zero_label();
     int n_kernel_args = loop_params.get_n_kernel_args();
-    while (args_a_idx < n_kernel_args) {
-        args_a.at(args_a_idx++) = zero_label;
+    while (args_idx.a() < n_kernel_args) {
+        args.a().at(args_idx.a()++) = zero_label;
     }
-    while (args_b_idx < n_kernel_args) {
-        args_b.at(args_b_idx++) = zero_label;
+    while (args_idx.b() < n_kernel_args) {
+        args.b().at(args_idx.b()++) = zero_label;
     }
-    while (args_c_idx < n_kernel_args) {
-        args_c.at(args_c_idx++) = zero_label;
+    while (args_idx.c() < n_kernel_args) {
+        args.c().at(args_idx.c()++) = zero_label;
     }
 
 #if DEBUG >= 1
     /* arguments_2_kernel_index() assumes that the length of arguments[] is
      * n_kernel_args. Checking this explicitly: */
-    if (args_a.size() != static_cast<size_t>(n_kernel_args) ||
-        args_b.size() != static_cast<size_t>(n_kernel_args) ||
-        args_c.size() != static_cast<size_t>(n_kernel_args)
+    if (args.a().size() != static_cast<size_t>(n_kernel_args) ||
+        args.b().size() != static_cast<size_t>(n_kernel_args) ||
+        args.c().size() != static_cast<size_t>(n_kernel_args)
        ) {
         throw(std::logic_error(
             "BiSpectrumDiagram::kernel_arguments(): Size of left argument "
@@ -560,12 +561,12 @@ void BiSpectrumDiagram::kernel_arguments(
     }
 #endif
 
-    arg_configs_a.at(rearr_idx).at(sign_idx).at(overall_loop_idx).kernel_index =
-        loop_params.arguments_2_kernel_index(args_a.data());
-    arg_configs_b.at(rearr_idx).at(sign_idx).at(overall_loop_idx).kernel_index =
-        loop_params.arguments_2_kernel_index(args_b.data());
-    arg_configs_c.at(rearr_idx).at(sign_idx).at(overall_loop_idx).kernel_index =
-        loop_params.arguments_2_kernel_index(args_c.data());
+    arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).a().kernel_index
+        = loop_params.arguments_2_kernel_index(args.a().data());
+    arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).b().kernel_index
+        = loop_params.arguments_2_kernel_index(args.b().data());
+    arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).c().kernel_index
+        = loop_params.arguments_2_kernel_index(args.c().data());
 }
 
 
@@ -618,55 +619,38 @@ BiSpectrumDiagram::BiSpectrumDiagram(
 
     compute_rearrangements(n_loops);
 
-    n_connecting_loops_ab = n_ab > 1 ? n_ab - 1 : 0;
-    n_connecting_loops_bc = n_bc > 1 ? n_bc - 1 : 0;
-    n_connecting_loops_ca = n_ca > 1 ? n_ca - 1 : 0;
+    n_connecting_loops.ab() = n_ab > 1 ? n_ab - 1 : 0;
+    n_connecting_loops.bc() = n_bc > 1 ? n_bc - 1 : 0;
+    n_connecting_loops.ca() = n_ca > 1 ? n_ca - 1 : 0;
 
-    Vec2D<bool> sign_configs_ab = connecting_line_sign_flips(n_connecting_loops_ab);
-    Vec2D<bool> sign_configs_bc = connecting_line_sign_flips(n_connecting_loops_bc);
-    Vec2D<bool> sign_configs_ca = connecting_line_sign_flips(n_connecting_loops_ca);
+    Triple<Vec2D<bool>> sign_configs_xy = {
+        connecting_line_sign_flips(n_connecting_loops.ab()),
+        connecting_line_sign_flips(n_connecting_loops.bc()),
+        connecting_line_sign_flips(n_connecting_loops.ca())
+    };
 
-    sign_configs = compute_sign_flips(sign_configs_ab, sign_configs_bc,
-            sign_configs_ca);
+    sign_configs = compute_sign_flips(sign_configs_xy);
 
     /* Allocate memory */
-    arg_configs_a.resize(rearrangements.size());
-    arg_configs_b.resize(rearrangements.size());
-    arg_configs_c.resize(rearrangements.size());
-
-    q_ab1_labels.resize(rearrangements.size());
-    q_bc1_labels.resize(rearrangements.size());
-    q_ca1_labels.resize(rearrangements.size());
-
-    q_ab_labels.resize(rearrangements.size());
-    q_bc_labels.resize(rearrangements.size());
-    q_ca_labels.resize(rearrangements.size());
+    arg_configs.resize(rearrangements.size());
+    q_xy1_labels.resize(rearrangements.size());
+    q_xy_labels.resize(rearrangements.size());
 
     for (size_t i = 0; i < rearrangements.size(); ++i) {
-        arg_configs_a.at(i).resize(sign_configs.size());
-        arg_configs_b.at(i).resize(sign_configs.size());
-        arg_configs_c.at(i).resize(sign_configs.size());
-
-        q_ab1_labels.at(i).resize(sign_configs.size());
-        q_bc1_labels.at(i).resize(sign_configs.size());
-        q_ca1_labels.at(i).resize(sign_configs.size());
+        arg_configs.at(i).resize(sign_configs.size());
+        q_xy1_labels.at(i).resize(sign_configs.size());
 
         for (size_t j = 0; j < sign_configs.size(); ++j) {
             int overall_loop_assosiations = overall_loop_ ? 3 : 1;
-            arg_configs_a.at(i).at(j).resize(overall_loop_assosiations);
-            arg_configs_b.at(i).at(j).resize(overall_loop_assosiations);
-            arg_configs_c.at(i).at(j).resize(overall_loop_assosiations);
-
-            q_ab1_labels.at(i).at(j).resize(overall_loop_assosiations);
-            q_bc1_labels.at(i).at(j).resize(overall_loop_assosiations);
-            q_ca1_labels.at(i).at(j).resize(overall_loop_assosiations);
+            arg_configs.at(i).at(j).resize(overall_loop_assosiations);
+            q_xy1_labels.at(i).at(j).resize(overall_loop_assosiations);
 
             for (int k = 0; k < overall_loop_assosiations; ++k) {
-                arg_configs_a.at(i).at(j).at(k).args.resize(n_kernel_args);
-                arg_configs_b.at(i).at(j).at(k).args.resize(n_kernel_args);
-                arg_configs_c.at(i).at(j).at(k).args.resize(n_kernel_args);
-
-                // Initialize arguments and kernel indices for this configuration
+                arg_configs.at(i).at(j).at(k).a().args.resize(n_kernel_args);
+                arg_configs.at(i).at(j).at(k).b().args.resize(n_kernel_args);
+                arg_configs.at(i).at(j).at(k).c().args.resize(n_kernel_args);
+                /* Initialize arguments and kernel indices for this
+                 * configuration */
                 kernel_arguments(i, j, k);
             }
         }
@@ -680,10 +664,8 @@ void BiSpectrumDiagram::connecting_lines_factors(
         int sign_idx,
         int overall_loop_idx,
         const Vec2D<double>& scalar_products,
-        double& q_ab1,      /* out */
-        double& q_bc1,      /* out */
-        double& q_ca1,      /* out */
-        int heaviside_theta /* out */
+        Triple<double>& q_xy1, /* out */
+        int heaviside_theta    /* out */
         ) const
 {
     heaviside_theta = 1;
@@ -693,16 +675,17 @@ void BiSpectrumDiagram::connecting_lines_factors(
      * for q_bc1 and q_ca1.
      * q_ab (or q_bc, q_ca) is the *total* momentum flowing in the connection
      * ab (or bc or ca) between blobs */
-    int q_ab1_label =
-        q_ab1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
-    int q_bc1_label =
-        q_bc1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
-    int q_ca1_label =
-        q_ca1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
+    Triple<int> q_xy1_label = {
+        q_xy1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx).ab(),
+        q_xy1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx).bc(),
+        q_xy1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx).ca()
+    };
 
-    q_ab1 = std::sqrt(scalar_products.at(q_ab1_label).at(q_ab1_label));
-    q_bc1 = std::sqrt(scalar_products.at(q_bc1_label).at(q_bc1_label));
-    q_ca1 = std::sqrt(scalar_products.at(q_ca1_label).at(q_ca1_label));
+    q_xy1 = {
+        std::sqrt(scalar_products.at(q_xy1_label.ab()).at(q_xy1_label.ab())),
+        std::sqrt(scalar_products.at(q_xy1_label.bc()).at(q_xy1_label.bc())),
+        std::sqrt(scalar_products.at(q_xy1_label.ca()).at(q_xy1_label.ca()))
+    };
 
     /* How many loop momenta have already been assigned? */
     int offset = 0;
@@ -713,27 +696,30 @@ void BiSpectrumDiagram::connecting_lines_factors(
          * momentum is associated (according to overall_loop_idx) is larger
          * than any of the other total connecting line momenta, the diagram
          * configuration is skipped (heaviside_theta = 0) */
-        int q_ab_label = q_ab_labels.at(rearr_idx);
-        int q_bc_label = q_bc_labels.at(rearr_idx);
-        int q_ca_label = q_ca_labels.at(rearr_idx);
-
-        double q_ab = std::sqrt(scalar_products.at(q_ab_label).at(q_ab_label));
-        double q_bc = std::sqrt(scalar_products.at(q_bc_label).at(q_bc_label));
-        double q_ca = std::sqrt(scalar_products.at(q_ca_label).at(q_ca_label));
+        Triple<int> q_xy_label = {
+            q_xy_labels.at(rearr_idx).ab(),
+            q_xy_labels.at(rearr_idx).bc(),
+            q_xy_labels.at(rearr_idx).ca()
+        };
+        Triple<double> q_xy = {
+            std::sqrt(scalar_products.at(q_xy_label.ab()).at(q_xy_label.ab())),
+            std::sqrt(scalar_products.at(q_xy_label.bc()).at(q_xy_label.bc())),
+            std::sqrt(scalar_products.at(q_xy_label.ca()).at(q_xy_label.ca()))
+        };
 
         switch (overall_loop_idx) {
             case 0:
-                if (q_ab >= q_bc || q_ab >= q_ca) {
+                if (q_xy.ab() >= q_xy.bc() || q_xy.ab() >= q_xy.ca()) {
                     heaviside_theta = 0;
                 }
                 break;
             case 1:
-                if (q_bc >= q_ab || q_bc >= q_ca) {
+                if (q_xy.bc() >= q_xy.ab() || q_xy.bc() >= q_xy.ca()) {
                     heaviside_theta = 0;
                 }
                 break;
             case 2:
-                if (q_ca >= q_ab || q_ca >= q_bc) {
+                if (q_xy.ca() >= q_xy.ab() || q_xy.ca() >= q_xy.bc()) {
                     heaviside_theta = 0;
                 }
                 break;
@@ -753,13 +739,13 @@ void BiSpectrumDiagram::connecting_lines_factors(
     else {
         double q_ab2 =
             std::sqrt(scalar_products.at(rearr.at(offset)).at(rearr.at(offset)));
-        heaviside_theta *= (q_ab1 > q_ab2 ? n_ab : 0);
-        offset += n_connecting_loops_ab;
+        heaviside_theta *= (q_xy1.ab() > q_ab2 ? n_ab : 0);
+        offset += n_connecting_loops.ab();
     }
-#if DEBUG >= 0
+#if DEBUG >= 1
     /* Check that the heaviside-theta (Q2(rearr) - Q3(rearr)) etc. are
      * satisfied by (reparametrized) momenta from CUBA */
-    for (int i = 1; i < n_connecting_loops_ab; ++i) {
+    for (int i = 1; i < n_connecting_loops.ab(); ++i) {
       double q_ab_i = std::sqrt(
           scalar_products.at(rearr.at(offset + i)).at(rearr.at(offset + i)));
       double q_ab_j = std::sqrt(
@@ -779,11 +765,11 @@ void BiSpectrumDiagram::connecting_lines_factors(
     else {
         double q_bc2 =
             std::sqrt(scalar_products.at(rearr.at(offset)).at(rearr.at(offset)));
-        heaviside_theta *= (q_bc1 > q_bc2 ? n_bc : 0);
-        offset += n_connecting_loops_bc;
+        heaviside_theta *= (q_xy1.bc() > q_bc2 ? n_bc : 0);
+        offset += n_connecting_loops.bc();
     }
-#if DEBUG >= 0
-    for (int i = 1; i < n_connecting_loops_bc; ++i) {
+#if DEBUG >= 1
+    for (int i = 1; i < n_connecting_loops.bc(); ++i) {
       double q_bc_i = std::sqrt(
           scalar_products.at(rearr.at(offset + i)).at(rearr.at(offset + i)));
       double q_bc_j = std::sqrt(
@@ -803,13 +789,13 @@ void BiSpectrumDiagram::connecting_lines_factors(
     else {
         double q_ca2 =
             std::sqrt(scalar_products.at(rearr.at(offset)).at(rearr.at(offset)));
-        heaviside_theta *= (q_ca1 > q_ca2 ? n_ca : 0);
-        offset += n_connecting_loops_ca;
+        heaviside_theta *= (q_xy1.ca() > q_ca2 ? n_ca : 0);
+        offset += n_connecting_loops.ca();
     }
-#if DEBUG >= 0
+#if DEBUG >= 1
     /* Check that the heaviside-theta (Q2(rearr) - Q3(rearr)) etc. are
      * satisfied by (reparametrized) momenta from CUBA */
-    for (int i = 1; i < n_connecting_loops_ca; ++i) {
+    for (int i = 1; i < n_connecting_loops.ca(); ++i) {
       double q_ca_i = std::sqrt(
           scalar_products.at(rearr.at(offset + i)).at(rearr.at(offset + i)));
       double q_ca_j = std::sqrt(
@@ -844,15 +830,15 @@ void BiSpectrumDiagram::print_argument_configuration(
 {
     out << COLOR_BLUE;
     print_labels(
-        arg_configs_a.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args,
+        arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).a().args,
         loop_params.get_n_coeffs(), loop_params.get_spectrum(), out);
     out << " ";
     print_labels(
-        arg_configs_b.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args,
+        arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).b().args,
         loop_params.get_n_coeffs(), loop_params.get_spectrum(), out);
     out << " ";
     print_labels(
-        arg_configs_c.at(rearr_idx).at(sign_idx).at(overall_loop_idx).args,
+        arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).c().args,
         loop_params.get_n_coeffs(), loop_params.get_spectrum(), out);
     out << COLOR_RESET;
 }

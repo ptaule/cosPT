@@ -128,9 +128,7 @@ class BiSpectrumDiagram {
         int diagram_factor_;
 
         /* Number of connecting loops */
-        int n_connecting_loops_ab;
-        int n_connecting_loops_bc;
-        int n_connecting_loops_ca;
+        Triple<int> n_connecting_loops;
 
         const LoopParameters& loop_params;
 
@@ -138,31 +136,21 @@ class BiSpectrumDiagram {
         Vec2D<int> rearrangements;
         /* Tables of sign flips, true <-> +1, false <-> -1 */
         Vec2D<bool> sign_configs;
-        /* Matrices of q_ab1, q_bc1 and q_ca1 labels, for each combination of
+        /* Matrices of q_xy1 = (q_ab1, q_bc1, q_ca1) labels, for each combination of
          * rearr_idx, sign_idx and overall_loop_idx */
-        Vec3D<int> q_ab1_labels;
-        Vec3D<int> q_bc1_labels;
-        Vec3D<int> q_ca1_labels;
-        /* Vectors of q_ab, q_bc and q_ca (sum of connecting lines) labels, for
-         * each rearr_idx */
-        Vec1D<int> q_ab_labels;
-        Vec1D<int> q_bc_labels;
-        Vec1D<int> q_ca_labels;
+        Vec3D<Triple<int>> q_xy1_labels;
+        /* Vectors of q_xy = (q_ab, q_bc, q_ca) (sum of connecting lines)
+         * labels, for each rearr_idx */
+        Vec1D<Triple<int>> q_xy_labels;
 
         /* Argument configuration for each rearrangement, sign setup and
          * (potential) overall loop assosiation
          * (n_rearrangements x n_sign_configs x 3 possibilities) */
-        Vec3D<ArgumentConfiguration> arg_configs_a;
-        Vec3D<ArgumentConfiguration> arg_configs_b;
-        Vec3D<ArgumentConfiguration> arg_configs_c;
+        Vec3D<Triple<ArgumentConfiguration>> arg_configs;
 
         void compute_rearrangements(int n_loops);
         Vec2D<bool> connecting_line_sign_flips(int n_connecting_loops) const;
-        Vec2D<bool> compute_sign_flips(
-                const Vec2D<bool>& sign_configs_ab,
-                const Vec2D<bool>& sign_configs_bc,
-                const Vec2D<bool>& sign_configs_ca
-                );
+        Vec2D<bool> compute_sign_flips(const Triple<Vec2D<bool>>& sign_configs_xy);
 
         /* Computes argument configurations if rearrangement and sign
          * configurations are set */
@@ -188,27 +176,17 @@ class BiSpectrumDiagram {
                 int sign_idx,
                 int overall_loop_idx,
                 const Vec2D<double>& scalar_products,
-                double& q_ab1,      /* out */
-                double& q_bc1,      /* out */
-                double& q_ca1,      /* out */
-                int heaviside_theta /* out */
+                Triple<double>& q_xy1, /* out */
+                int heaviside_theta    /* out */
                 ) const;
 
 /* Turn off vector bounds check if not in debug-mode */
 #if DEBUG == 0
 #define at(x) operator[](x)
 #endif
-        const ArgumentConfiguration& get_arg_config_a(int rearr_idx, int
+        const Triple<ArgumentConfiguration>& get_arg_config(int rearr_idx, int
                 sign_idx, int overall_loop_idx) const {
-            return arg_configs_a.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
-        }
-        const ArgumentConfiguration& get_arg_config_b(int rearr_idx, int
-                sign_idx, int overall_loop_idx) const {
-            return arg_configs_b.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
-        }
-        const ArgumentConfiguration& get_arg_config_c(int rearr_idx, int
-                sign_idx, int overall_loop_idx) const {
-            return arg_configs_c.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
+            return arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
         }
 #undef at
 
@@ -225,13 +203,11 @@ std::ostream& operator<<(std::ostream& out, const PowerSpectrumDiagram& diagram)
 std::ostream& operator<<(std::ostream& out, const BiSpectrumDiagram& diagram);
 
 namespace ps {
-    Vec1D<PowerSpectrumDiagram> construct_diagrams(const LoopParameters&
-            loop_params);
+Vec1D<PowerSpectrumDiagram> construct_diagrams(const LoopParameters& loop_params);
 }
 
 namespace bs {
-    Vec1D<BiSpectrumDiagram> construct_diagrams(const LoopParameters&
-            loop_params);
+Vec1D<BiSpectrumDiagram> construct_diagrams(const LoopParameters& loop_params);
 }
 
 #endif /* ifndef DIAGRAMS_HPP */

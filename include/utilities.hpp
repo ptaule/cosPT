@@ -61,6 +61,62 @@ using Vec3D = std::vector<std::vector<std::vector<T>>>;
 enum Spectrum {POWERSPECTRUM, BISPECTRUM};
 enum Dynamics {EDS_SPT, EVOLVE_EDS_IC, EVOLVE_ASYMP_IC};
 
+/* Pair and triple classes */
+template <typename T>
+class Pair {
+    private:
+        T a_;
+        T b_;
+    public:
+        Pair() = default;
+        Pair(const Pair&) = default;
+        Pair(T a, T b) : a_(a), b_(b) {}
+
+        const T& a() const {return a_;}
+        const T& b() const {return b_;}
+
+        T& a() {return a_;}
+        T& b() {return b_;}
+
+        const T& first() const {return a_;}
+        const T& second() const {return b_;}
+
+        T& first() {return a_;}
+        T& second() {return b_;}
+};
+
+
+template <typename T>
+class Triple {
+    private:
+        T a_;
+        T b_;
+        T c_;
+    public:
+        Triple() = default;
+        Triple(const Triple&) = default;
+        Triple(T a, T b, T c) : a_(a), b_(b), c_(c) {}
+
+        const T& a() const {return a_;}
+        const T& b() const {return b_;}
+        const T& c() const {return c_;}
+
+        T& a() {return a_;}
+        T& b() {return b_;}
+        T& c() {return c_;}
+
+        const T& first() const {return a_;}
+        const T& second() const {return b_;}
+        const T& third() const {return c_;}
+
+        T& first() {return a_;}
+        T& second() {return b_;}
+        T& third() {return c_;}
+};
+
+std::ostream& operator<<(std::ostream& out, const Pair<int>& pair);
+std::ostream& operator<<(std::ostream& out, const Triple<int>& pair);
+
 /* Utility functions */
 
 void label2config(int label, Vec1D<int>& config);
