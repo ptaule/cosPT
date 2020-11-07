@@ -47,9 +47,6 @@
 #define COLOR_CYAN    "\x1b[36m"
 #define COLOR_RESET   "\x1b[0m"
 
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
-
 /* Vector aliases */
 template <class T>
 using Vec1D = std::vector<T>;
