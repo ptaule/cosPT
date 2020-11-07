@@ -381,13 +381,16 @@ void BiSpectrumDiagram::kernel_arguments(
     int k_a_idx = n_coeffs - 1;
     int k_b_idx = n_coeffs - 2;
 
-    Vec1D<bool> sign_config = sign_configs.at(sign_idx);
+    Vec1D<bool>& sign_config = sign_configs.at(sign_idx);
     Triple<Vec1D<bool>> signs = {
-        {sign_config.begin(), sign_config.begin() + n_connecting_loops.ab()},
-        {sign_config.begin() + n_connecting_loops.ab(),
-         sign_config.begin() + n_connecting_loops.ab() + n_connecting_loops.bc()},
-        {sign_config.begin() + n_connecting_loops.ab() +
-             n_connecting_loops.bc(), sign_config.end()}
+        Vec1D<bool>(sign_config.begin(),
+                    sign_config.begin() + n_connecting_loops.ab()),
+        Vec1D<bool>(sign_config.begin() + n_connecting_loops.ab(),
+                    sign_config.begin() + n_connecting_loops.ab() +
+                        n_connecting_loops.bc()),
+        Vec1D<bool>(sign_config.begin() + n_connecting_loops.ab() +
+                        n_connecting_loops.bc(),
+                    sign_config.end())
     };
 
     Triple<Vec1D<int>&> args = {
@@ -402,9 +405,11 @@ void BiSpectrumDiagram::kernel_arguments(
     /* Determine labels of "main" connecting lines (with external/overall loop
      * momenta), and their complementary with oppisite signs */
     Triple<Vec1D<int>> config_xy = {
-        {n_coeffs, 0}, {n_coeffs, 0}, {n_coeffs, 0}};
-    Triple<Vec1D<int>> config_xy_sign_flip = {
-        {n_coeffs, 0}, {n_coeffs, 0}, {n_coeffs, 0}};
+        Vec1D<int>(n_coeffs, 0),
+        Vec1D<int>(n_coeffs, 0),
+        Vec1D<int>(n_coeffs, 0)
+    };
+    Triple<Vec1D<int>> config_xy_sign_flip = config_xy;
 
     /* Single loop config */
     Vec1D<int> config_single(n_coeffs, 0);
