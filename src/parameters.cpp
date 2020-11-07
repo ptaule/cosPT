@@ -46,7 +46,7 @@ LoopParameters::LoopParameters(int n_loops, Spectrum spectrum, Dynamics dynamics
     else if (spectrum_ == BISPECTRUM) {
         n_coeffs_      = n_loops_ + 2;
         n_configs_     = pow(3, n_coeffs_);
-        n_kernels_     = pow(n_configs_ - pow(3, n_loops_), 2) * pow(4, n_loops_);
+        n_kernels_     = pow(n_configs_ + 1, 2) * pow(4, n_loops_);
         n_kernel_args_ = 2 * n_loops_ + 2;
         zero_label_    = get_zero_label(n_coeffs_);
 
@@ -56,7 +56,7 @@ LoopParameters::LoopParameters(int n_loops, Spectrum spectrum, Dynamics dynamics
         single_loop_label_max = 5 * n_configs_ / 9 - 1;
         /* Composite label has either k_a, k_b, or multiple loop momenta
          * (applicable for overall loop diagram) */
-        first_composite_block_size = 26 * n_configs_/27 * single_loop_block_size;
+        first_composite_block_size = (n_configs_ + 1) * single_loop_block_size;
     }
     else {
         throw(std::invalid_argument(
@@ -99,12 +99,12 @@ int LoopParameters::ps_arguments_2_kernel_index(const int arguments[]) const
     int index = 0;
 
     for (int i = 0; i < n_kernel_args_; ++i) {
-        // First, check if argument is a zero vector
+        /* First, check if argument is a zero vector */
         if (arguments[i] == zero_label_) continue;
 
-        // Argument is a k-type vector (i.e. on the form k + c_i Q_i) if k is
-        // present. In our vector-label convention, k is the last coefficient,
-        // hence +k is present if label > single_loop_label_max
+        /* Argument is a k-type vector (i.e. on the form k + c_i Q_i) if k is
+         * present. In our vector-label convention, k is the last coefficient,
+         * hence +k is present if label > single_loop_label_max */
         if (arguments[i] > single_loop_label_max) {
             index += (arguments[i] - single_loop_label_max) * single_loop_block_size;
 #if DEBUG >= 1
@@ -152,7 +152,7 @@ int LoopParameters::bs_arguments_2_kernel_index(const int arguments[]) const
    /* Precompute powers of two for speedup */
     int pow2[] = {1,2,4,8,16,32,64,128};
 
-    // In DEBUG-mode, check that non-zero arguments (zero_label) are unique
+    /* In DEBUG-mode, check that non-zero_label arguments are unique */
 #if DEBUG >= 1
     if (!unique_elements(arguments, n_kernel_args_, zero_label_))
         throw(std::logic_error(
@@ -169,19 +169,19 @@ int LoopParameters::bs_arguments_2_kernel_index(const int arguments[]) const
         // First, check if argument is a zero vector
         if (arguments[i] == zero_label_) continue;
 
-        // Argument is not single loop if label < single_loop_label_min or
-        // label > single_loop_label_max */
+        /* Argument is not single loop if label < single_loop_label_min or
+         * label > single_loop_label_max */
         if (arguments[i] < single_loop_label_min) {
-            index += (arguments[i] + 1) *
-                (n_composite > 0 ? single_loop_block_size :
-                 first_composite_block_size);
-
-            ++n_composite;
+          index += (arguments[i] + 1) * (n_composite > 0
+                                             ? single_loop_block_size
+                                             : first_composite_block_size);
+          ++n_composite;
         }
         else if (arguments[i] > single_loop_label_max) {
             int block = n_composite > 0 ? single_loop_block_size
                                         : first_composite_block_size;
-            index += (arguments[i] - n_configs_ / 9 + 1) * block;
+            /* #  */
+            index += (arguments[i] + 1) * block;
 
             ++n_composite;
         }
@@ -193,13 +193,12 @@ int LoopParameters::bs_arguments_2_kernel_index(const int arguments[]) const
                     goto found_single_loop;
                 }
             }
-            /* Went through loop, which means that argument is composite, hence
-             * connecting line with overall loop */
-            index += (arguments[i] - single_loop_label_min + 1) *
-                (n_composite > 0 ? single_loop_block_size :
-                 first_composite_block_size);
+            /* Went through for loop, which means that argument is composite,
+             * hence this corresponds to a connecting line with overall loop */
+            index += (arguments[i] + 1) * (n_composite > 0
+                                               ? single_loop_block_size
+                                               : first_composite_block_size);
             ++n_composite;
-
 found_single_loop: ;
         }
     }
