@@ -61,18 +61,18 @@ static void BM_ps_integrand(benchmark::State& state) {
     IntegrationInput input(q_min, q_max, &diagrams, &pair_correlations, input_ps,
             tables_vec);
 
-    double* xx = new double[pair_correlations.size()];
-    double* ff = new double[pair_correlations.size()];
+    int ndim = 3 * n_loops - 1;
+    int ncomp = pair_correlations.size();
 
-    for (size_t i = 0; i < pair_correlations.size(); ++i) {
+    double* xx = new double[ndim];
+    double* ff = new double[ncomp];
+
+    for (int i = 0; i < ndim; ++i) {
         xx[i] = 0.5;
-        ff[i] = 0;
     }
 
     for (auto _ : state) {
         // This code gets timed
-        int ndim = 3 * n_loops - 1;
-        int ncomp = pair_correlations.size();
         int nvec = 1;
         /* core = -1 in accordance with ps::integrand() or bs::integrand() */
         int core = -1;
