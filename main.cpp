@@ -24,22 +24,22 @@
 using std::pow;
 
 
-
-
-
 int main () {
     double k_a = 1.047129e-01;
+    /* double k_b = 1.047129e-02; */
+    /* double cos_ab = 1; */
     double q_min = 1e-4;
     double q_max = 65;
 
     int n_loops = 1;
     Spectrum spectrum = POWERSPECTRUM;
-    const std::string input_ps_file = "/home/pettertaule/repos/class_public/output/fiducial/newtonian/z1_pk.dat";
+    const std::string input_ps_file =
+        "/home/pettertaule/repos/class_public/output/fiducial/newtonian/z1_pk.dat";
     const std::string output_file = "test.dat";
 
     Interpolation1D input_ps(input_ps_file);
 
-    Vec1D<Pair<int>> pair_correlations = {{0,0}};
+    Vec1D<Pair<int>> correlations = {{0,0}};
 
     double cuba_epsabs   = 1e-12;
     double cuba_epsrel   = 1e-4;
@@ -63,7 +63,7 @@ int main () {
 
     Vec1D<PowerSpectrumDiagram> diagrams = ps::construct_diagrams(loop_params);
 
-    IntegrationInput input(q_min, q_max, &diagrams, &pair_correlations, input_ps,
+    IntegrationInput input(q_min, q_max, &diagrams, &correlations, input_ps,
             tables_vec);
 
     /* Non-linear evolution */
@@ -77,31 +77,45 @@ int main () {
         pow(2, n_loops) * gsl_sf_fact(n_loops) * pow(TWOPI, 1 - 3*n_loops);
 
     int nregions, neval, fail;
-    Vec1D<cubareal> integration_results(pair_correlations.size(),0);
-    Vec1D<cubareal> integration_errors(pair_correlations.size(),0);
-    Vec1D<cubareal> integration_probs(pair_correlations.size(),0);
+    Vec1D<cubareal> integration_results(correlations.size(),0);
+    Vec1D<cubareal> integration_errors(correlations.size(),0);
+    Vec1D<cubareal> integration_probs(correlations.size(),0);
 
-    // CUBA settings
+    /* CUBA settings */
+    int n_dims = 0;
+    integrand_t integrand;
+    if (spectrum == POWERSPECTRUM) {
+        n_dims = 3 * n_loops - 1;
+        integrand = (integrand_t)ps::integrand;
+    }
+    else if (spectrum == BISPECTRUM) {
+        n_dims = 3 * n_loops;
+        integrand = (integrand_t)bs::integrand;
+    }
+    else {
+        std::cerr << "main(): unknown spectrum." << std::endl;
+        return EXIT_FAILURE;
+    }
 #define CUBA_NVEC 1
 #define CUBA_LAST 4
 #define CUBA_RETAIN_STATEFILE 16
 #define CUBA_SEED 0
 #define CUBA_MINEVAL 0
-#define CUBA_SPIN NULL
+#define CUBA_SPIN nullptr
 #define CUBA_NNEW 1000
 #define CUBA_NMIN 2
 #define CUBA_FLATNESS 25.
-    Suave(3 * n_loops - 1, pair_correlations.size(), (integrand_t)ps::integrand,
-            &input, CUBA_NVEC, cuba_epsrel, cuba_epsabs,
-            (cuba_verbose | CUBA_LAST | CUBA_RETAIN_STATEFILE), CUBA_SEED,
-            CUBA_MINEVAL, cuba_maxevals, CUBA_NNEW, CUBA_NMIN, CUBA_FLATNESS,
-            nullptr, CUBA_SPIN, &nregions, &neval, &fail,
-            integration_results.data(), integration_errors.data(),
-            integration_probs.data());
+    Suave(n_dims, correlations.size(), integrand, &input, CUBA_NVEC,
+          cuba_epsrel, cuba_epsabs,
+          (cuba_verbose | CUBA_LAST | CUBA_RETAIN_STATEFILE), CUBA_SEED,
+          CUBA_MINEVAL, cuba_maxevals, CUBA_NNEW, CUBA_NMIN, CUBA_FLATNESS,
+          nullptr, CUBA_SPIN, &nregions, &neval, &fail,
+          integration_results.data(), integration_errors.data(),
+          integration_probs.data());
 
-    Results results(spectrum, pair_correlations);
+    Results results(spectrum, correlations);
 
-    for (size_t i = 0; i < pair_correlations.size(); ++i) {
+    for (size_t i = 0; i < correlations.size(); ++i) {
         results.lin_ps.at(i) = input_ps.eval(k_a);
         results.non_lin_ps.at(i) =
             overall_factor * static_cast<double>(integration_results.at(i));
