@@ -13,8 +13,8 @@
 
 class Combinations {
     private:
-        int n;
-        int k;
+        int n_;
+        int k_;
 
 #if DEBUG >= 1
         /* Check that we get (n choose k) when we have gone through all
@@ -30,8 +30,8 @@ class Combinations {
     public:
         Combinations(int n, int k);
 
-        int get_n() const {return n;}
-        int get_k() const {return k;}
+        int n() const {return n_;}
+        int k() const {return k_;}
 
         bool next();
         void reset();
@@ -60,12 +60,13 @@ class Combinations {
 
 class Orderings {
     private:
-        int n;
+        int n_;
 
         std::vector<Combinations> combinations_vec;
         std::vector<int> normal_ordering;
     public:
         Orderings(int n, const std::vector<int>& group_sizes);
+        int n() const {return n_;}
 
         bool next();
         void reset();

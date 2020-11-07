@@ -16,16 +16,16 @@
 
 class LoopParameters {
     private:
-        const Dynamics dynamics;
-        const Spectrum spectrum;
+        const Dynamics dynamics_;
+        const Spectrum spectrum_;
 
-        const int n_loops;
+        const int n_loops_;
 
-        int n_coeffs;
-        int n_configs;
-        int n_kernels;
-        int n_kernel_args;
-        int zero_label;
+        int n_coeffs_;
+        int n_configs_;
+        int n_kernels_;
+        int n_kernel_args_;
+        int zero_label_;
         int single_loop_label_min;
         int single_loop_label_max;
         int single_loop_block_size;
@@ -40,20 +40,20 @@ class LoopParameters {
     public:
         LoopParameters(int n_loops, Spectrum spectrum, Dynamics dynamics);
 
-        Dynamics get_dynamics() const { return dynamics; }
-        Spectrum get_spectrum() const { return spectrum; }
+        Dynamics dynamics() const { return dynamics_; }
+        Spectrum spectrum() const { return spectrum_; }
 
-        int get_n_loops() const { return n_loops; }
-        int get_n_coeffs() const { return n_coeffs; }
-        int get_n_configs() const { return n_configs; }
-        int get_n_kernels() const { return n_kernels; }
-        int get_n_kernel_args() const { return n_kernel_args; }
-        int get_zero_label() const { return zero_label; }
+        int n_loops() const { return n_loops_; }
+        int n_coeffs() const { return n_coeffs_; }
+        int n_configs() const { return n_configs_; }
+        int n_kernels() const { return n_kernels_; }
+        int n_kernel_args() const { return n_kernel_args_; }
+        int zero_label() const { return zero_label_; }
 
         int arguments_2_kernel_index(const int arguments[]) const {
-            if (spectrum == POWERSPECTRUM)
+            if (spectrum_ == POWERSPECTRUM)
                 return ps_arguments_2_kernel_index(arguments);
-            else if (spectrum == BISPECTRUM)
+            else if (spectrum_ == BISPECTRUM)
                 return bs_arguments_2_kernel_index(arguments);
             else
                 throw(std::logic_error(
@@ -65,13 +65,13 @@ class LoopParameters {
 
 class EvolutionParameters {
     private:
-        double f_nu       = 0.0;
-        double cs2_factor = 0.0;
-        double cg2_factor = 0.0;
+        double f_nu_       = 0.0;
+        double cs2_factor  = 0.0;
+        double cg2_factor  = 0.0;
 
-        double ode_atol   = 0.0;
-        double ode_rtol   = 0.0;
-        double ode_hstart = 0.0;
+        double ode_atol_   = 0.0;
+        double ode_rtol_   = 0.0;
+        double ode_hstart_ = 0.0;
 
         Interpolation1D zeta;
         Interpolation1D redshift;
@@ -149,10 +149,10 @@ class EvolutionParameters {
                 );
         EvolutionParameters(const std::string& zeta_file);
 
-        double get_f_nu() const {return f_nu;}
-        double get_ode_atol() const {return ode_atol;}
-        double get_ode_rtol() const {return ode_rtol;}
-        double get_ode_hstart() const {return ode_hstart;}
+        double f_nu() const {return f_nu_;}
+        double ode_atol() const {return ode_atol_;}
+        double ode_rtol() const {return ode_rtol_;}
+        double ode_hstart() const {return ode_hstart_;}
 
         double zeta_at_eta(double eta) const {return zeta.eval(eta);}
         double omega_eigenvalues_at_k(double k) const {

@@ -21,7 +21,7 @@
 
 void PowerSpectrumDiagram::kernel_arguments(int rearr_idx, int sign_idx)
 {
-    int n_coeffs = loop_params.get_n_coeffs();
+    int n_coeffs = loop_params.n_coeffs();
 
     Vec1D<int>& rearrangement = rearrangements.at(rearr_idx);
     Vec1D<bool>& signs = sign_configs.at(sign_idx);
@@ -82,8 +82,8 @@ void PowerSpectrumDiagram::kernel_arguments(int rearr_idx, int sign_idx)
     }
 
     /* Fill remaining spots with zero-label */
-    int zero_label = loop_params.get_zero_label();
-    size_t n_kernel_args = static_cast<size_t>(loop_params.get_n_kernel_args());
+    int zero_label = loop_params.zero_label();
+    size_t n_kernel_args = static_cast<size_t>(loop_params.n_kernel_args());
     while (index_l < n_kernel_args) {
         arguments_l.at(index_l++) = zero_label;
     }
@@ -165,8 +165,8 @@ PowerSpectrumDiagram::PowerSpectrumDiagram(
         int m, int l, int r
         ) : loop_params(loop_params), m(m), l(l), r(r)
 {
-    int n_loops = loop_params.get_n_loops();
-    int n_kernel_args = loop_params.get_n_kernel_args();
+    int n_loops = loop_params.n_loops();
+    int n_kernel_args = loop_params.n_kernel_args();
 
     if (m + l + r != n_loops + 1) {
         throw(std::invalid_argument("m + l + r != n_loops + 1"));
@@ -225,11 +225,11 @@ void PowerSpectrumDiagram::print_argument_configuration(
         ) const
 {
     out << COLOR_BLUE;
-    print_labels(arg_configs_l.at(a).at(b).args, loop_params.get_n_coeffs(),
-                 loop_params.get_spectrum(), out);
+    print_labels(arg_configs_l.at(a).at(b).args, loop_params.n_coeffs(),
+                 loop_params.spectrum(), out);
     out << " ";
-    print_labels(arg_configs_r.at(a).at(b).args, loop_params.get_n_coeffs(),
-                 loop_params.get_spectrum(), out);
+    print_labels(arg_configs_r.at(a).at(b).args, loop_params.n_coeffs(),
+                 loop_params.spectrum(), out);
     out << COLOR_RESET;
 }
 
@@ -374,7 +374,7 @@ void BiSpectrumDiagram::kernel_arguments(
         int overall_loop_idx /* Overall loop assosiation index */
         )
 {
-    int n_coeffs = loop_params.get_n_coeffs();
+    int n_coeffs = loop_params.n_coeffs();
     Vec1D<int>& rearrangement = rearrangements.at(rearr_idx);
 
     int rearr_counter = 0; /* How many loop momenta have been assigned */
@@ -536,8 +536,8 @@ void BiSpectrumDiagram::kernel_arguments(
     }
 
     // Fill remaining spots with zero-label
-    int zero_label = loop_params.get_zero_label();
-    int n_kernel_args = loop_params.get_n_kernel_args();
+    int zero_label = loop_params.zero_label();
+    int n_kernel_args = loop_params.n_kernel_args();
     while (args_idx.a() < n_kernel_args) {
         args.a().at(args_idx.a()++) = zero_label;
     }
@@ -580,8 +580,8 @@ BiSpectrumDiagram::BiSpectrumDiagram(
     n_ab(n_ab), n_bc(n_bc), n_ca(n_ca),
     n_a(n_a), n_b(n_b), n_c(n_c)
 {
-    int n_loops = loop_params.get_n_loops();
-    int n_kernel_args = loop_params.get_n_kernel_args();
+    int n_loops = loop_params.n_loops();
+    int n_kernel_args = loop_params.n_kernel_args();
 
     if (n_ab + n_bc + n_ca + n_a + n_b + n_c != n_loops + 2) {
         throw(std::invalid_argument(
@@ -831,15 +831,15 @@ void BiSpectrumDiagram::print_argument_configuration(
     out << COLOR_BLUE;
     print_labels(
         arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).a().args,
-        loop_params.get_n_coeffs(), loop_params.get_spectrum(), out);
+        loop_params.n_coeffs(), loop_params.spectrum(), out);
     out << " ";
     print_labels(
         arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).b().args,
-        loop_params.get_n_coeffs(), loop_params.get_spectrum(), out);
+        loop_params.n_coeffs(), loop_params.spectrum(), out);
     out << " ";
     print_labels(
         arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).c().args,
-        loop_params.get_n_coeffs(), loop_params.get_spectrum(), out);
+        loop_params.n_coeffs(), loop_params.spectrum(), out);
     out << COLOR_RESET;
 }
 
@@ -891,7 +891,7 @@ std::ostream& operator<<(std::ostream& out, const BiSpectrumDiagram& diagram)
 Vec1D<PowerSpectrumDiagram> ps::construct_diagrams(const LoopParameters& params) {
     Vec1D<PowerSpectrumDiagram> diagrams;
 
-    int n_loops = params.get_n_loops();
+    int n_loops = params.n_loops();
     int m = 0;
     int index = 0;
 
@@ -922,7 +922,7 @@ Vec1D<BiSpectrumDiagram> bs::construct_diagrams(
 {
     Vec1D<BiSpectrumDiagram> diagrams;
 
-    int n_loops = loop_params.get_n_loops();
+    int n_loops = loop_params.n_loops();
 
     /* Need to place L + 2 lines */
     /* First, consider diagram where a connecting line is zero, e.g. n_ab = 0 */

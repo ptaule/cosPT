@@ -49,7 +49,7 @@ void configuration_term(
     double* values_l = nullptr;
     double* values_r = nullptr;
 
-    if (tables.loop_params.get_dynamics() == EDS_SPT) {
+    if (tables.loop_params.dynamics() == EDS_SPT) {
         compute_SPT_kernels(arg_config_l.args.data(),
                 arg_config_l.kernel_index, 2 * diagram.l + diagram.m, tables);
         compute_SPT_kernels(arg_config_r.args.data(),
@@ -58,14 +58,14 @@ void configuration_term(
         values_l = tables.spt_kernels.at(arg_config_l.kernel_index).values;
         values_r = tables.spt_kernels.at(arg_config_r.kernel_index).values;
     }
-    else if (tables.loop_params.get_dynamics() == EVOLVE_ASYMP_IC ||
-             tables.loop_params.get_dynamics() == EVOLVE_EDS_IC) {
+    else if (tables.loop_params.dynamics() == EVOLVE_ASYMP_IC ||
+             tables.loop_params.dynamics() == EVOLVE_EDS_IC) {
         kernel_evolution(arg_config_l.args.data(), arg_config_l.kernel_index,
                 2 * diagram.l + diagram.m, tables);
         kernel_evolution(arg_config_r.args.data(), arg_config_r.kernel_index,
                 2 * diagram.r + diagram.m, tables);
 
-        int time_steps = tables.eta_grid.get_time_steps();
+        int time_steps = tables.eta_grid.time_steps();
         values_l = tables.kernels.at(arg_config_l.kernel_index)
                        .values.at(time_steps - 1)
                        .data();
@@ -117,7 +117,7 @@ void diagram_term(
             diagram.print_argument_configuration(std::cout, i, j);
 #endif
 
-            double q_m1 = diagram.q_m1(i, j, tables.scalar_products);
+            double q_m1 = diagram.q_m1(i, j, tables.scalar_products());
             int heaviside_theta = diagram.heaviside_theta(q_m1, i,
                     tables.vars.magnitudes);
             if (heaviside_theta == 0) {
@@ -171,7 +171,7 @@ int integrand(
     /*  IntegrandTables number *core+1 */
     IntegrandTables& tables = input->tables_vec.at(*core + 1);
 
-    int n_loops = tables.loop_params.get_n_loops();
+    int n_loops = tables.loop_params.n_loops();
     IntegrationVariables& vars = tables.vars;
 
     double ratio = input->q_max/input->q_min;
@@ -219,7 +219,7 @@ int integrand(
             }
             std::fill(diagram_results.begin(), diagram_results.end(), 0.0);
         }
-        for (int i = 0; i < tables.loop_params.get_n_loops(); ++i) {
+        for (int i = 0; i < tables.loop_params.n_loops(); ++i) {
             for (auto& el : results) {
                 el *= input->input_ps.eval(tables.vars.magnitudes[i]);
             }
@@ -261,7 +261,7 @@ void configuration_term(
     double* values_b = nullptr;
     double* values_c = nullptr;
 
-    if (tables.loop_params.get_dynamics() == EDS_SPT) {
+    if (tables.loop_params.dynamics() == EDS_SPT) {
         compute_SPT_kernels(arg_config.a().args.data(),
                 arg_config.a().kernel_index, 2 * diagram.n_a + diagram.n_ab +
                 diagram.n_ca, tables);
@@ -276,8 +276,8 @@ void configuration_term(
         values_b = tables.spt_kernels.at(arg_config.b().kernel_index).values;
         values_c = tables.spt_kernels.at(arg_config.c().kernel_index).values;
     }
-    else if (tables.loop_params.get_dynamics() == EVOLVE_ASYMP_IC ||
-             tables.loop_params.get_dynamics() == EVOLVE_EDS_IC) {
+    else if (tables.loop_params.dynamics() == EVOLVE_ASYMP_IC ||
+             tables.loop_params.dynamics() == EVOLVE_EDS_IC) {
         kernel_evolution(arg_config.a().args.data(),
                 arg_config.a().kernel_index, 2 * diagram.n_a + diagram.n_ab +
                 diagram.n_ca, tables);
@@ -288,7 +288,7 @@ void configuration_term(
                 arg_config.c().kernel_index, 2 * diagram.n_c + diagram.n_bc +
                 diagram.n_ca, tables);
 
-        int time_steps = tables.eta_grid.get_time_steps();
+        int time_steps = tables.eta_grid.time_steps();
         values_a = tables.kernels.at(arg_config.a().kernel_index)
                        .values.at(time_steps - 1).data();
         values_b = tables.kernels.at(arg_config.b().kernel_index)
@@ -333,7 +333,7 @@ void diagram_term(
                 Triple<double> q_xy1 = {0,0,0};
                 int heaviside_theta = 1;
                 diagram.connecting_lines_factors(i, j, k,
-                        tables.scalar_products, q_xy1, heaviside_theta);
+                        tables.scalar_products(), q_xy1, heaviside_theta);
 
                 if (heaviside_theta == 0) {
 #if DEBUG >= 2
@@ -402,7 +402,7 @@ int integrand(
     /*  IntegrandTables number *core+1 */
     IntegrandTables& tables = input->tables_vec.at(*core + 1);
 
-    int n_loops = tables.loop_params.get_n_loops();
+    int n_loops = tables.loop_params.n_loops();
     IntegrationVariables& vars = tables.vars;
 
     double ratio = input->q_max/input->q_min;
@@ -438,7 +438,7 @@ int integrand(
             }
             std::fill(diagram_results.begin(), diagram_results.end(), 0.0);
         }
-        for (int i = 0; i < tables.loop_params.get_n_loops(); ++i) {
+        for (int i = 0; i < tables.loop_params.n_loops(); ++i) {
             for (auto& el : results) {
                 el *= input->input_ps.eval(tables.vars.magnitudes[i]);
             }

@@ -58,13 +58,13 @@ class Kernel {
 
 class EtaGrid {
     private:
-        int pre_time_steps = 0;
-        int time_steps     = 0;
-        double eta_ini     = 0;
-        double eta_fin     = 0;
-        double eta_asymp   = 0;
+        int pre_time_steps_ = 0;
+        int time_steps_     = 0;
+        double eta_ini_     = 0;
+        double eta_fin_     = 0;
+        double eta_asymp_   = 0;
 
-        Vec1D<double> grid;
+        Vec1D<double> grid_;
     public:
         EtaGrid() = default;
         EtaGrid(
@@ -81,16 +81,16 @@ class EtaGrid {
                 const double eta_fin
                 );
 
-        int get_pre_time_steps() const {return pre_time_steps;}
-        int get_time_steps() const {return time_steps;}
-        double get_eta_ini() const {return eta_ini;}
-        double get_eta_fin() const {return eta_fin;}
-        double get_eta_asymp() const {return eta_asymp;}
+        int pre_time_steps() const {return pre_time_steps_;}
+        int time_steps() const {return time_steps_;}
+        double eta_ini() const {return eta_ini_;}
+        double eta_fin() const {return eta_fin_;}
+        double eta_asymp() const {return eta_asymp_;}
 
-        const Vec1D<double>& get_grid() const {return grid;}
+        const Vec1D<double>& grid() const {return grid_;}
 
-        const double& operator[](int i) const {return grid[i];}
-        const double& at(int i) const {return grid.at(i);}
+        const double& operator[](int i) const {return grid_[i];}
+        const double& at(int i) const {return grid_.at(i);}
 };
 
 
@@ -100,9 +100,18 @@ std::ostream& operator<<(std::ostream& out, const EtaGrid& eta_grid);
 /* Tables inside integration, one instance for each integration thread */
 class IntegrandTables {
     private:
+        double k_a    = 0.0;
+        double k_b    = 0.0; // For bispectrum
+        double cos_ab = 0.0; // For bispectrum
+
         /* Helper vectors for compute_scalar_products() */
         Vec1D<int> a_coeffs;
         Vec1D<int> b_coeffs;
+
+        Vec2D<double> bare_scalar_products; /* N_COEFFS x N_COEFFS   */
+        Vec2D<double> scalar_products_;     /* N_CONFIGS x N_CONFIGS */
+        Vec2D<double> alpha_;               /* N_CONFIGS x N_CONFIGS */
+        Vec2D<double> beta_;                /* N_CONFIGS x N_CONFIGS */
 
         void reset_spt_kernels();
         void reset_kernels();
@@ -113,10 +122,6 @@ class IntegrandTables {
         void compute_scalar_products();
         void compute_alpha_beta();
     public:
-        double k_a    = 0.0;
-        double k_b    = 0.0; // For bispectrum
-        double cos_ab = 0.0; // For bispectrum
-
         const LoopParameters& loop_params;
         const SumTable& sum_table;
 
@@ -124,11 +129,6 @@ class IntegrandTables {
         const EtaGrid& eta_grid;
 
         IntegrationVariables vars;
-
-        Vec2D<double> bare_scalar_products; /* N_COEFFS x N_COEFFS   */
-        Vec2D<double> scalar_products;      /* N_CONFIGS x N_CONFIGS */
-        Vec2D<double> alpha;                /* N_CONFIGS x N_CONFIGS */
-        Vec2D<double> beta;                 /* N_CONFIGS x N_CONFIGS */
 
         Vec1D<SPTKernel> spt_kernels;
         Vec1D<Kernel> kernels;
@@ -149,6 +149,10 @@ class IntegrandTables {
                 const EvolutionParameters& ev_params,
                 const EtaGrid& eta_grid
                 );
+
+        const Vec2D<double>& scalar_products() const {return scalar_products_;}
+        const Vec2D<double>& alpha() const {return alpha_;}
+        const Vec2D<double>& beta() const {return beta_;}
 
         void reset();
         void compute_tables();

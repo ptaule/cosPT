@@ -25,16 +25,16 @@ using Vec1D = std::vector<T>;
 using std::size_t;
 
 Combinations::Combinations(int n, int k)
-    : n(n), k(k)
+    : n_(n), k_(k)
 {
-    if (k < 0 || k > n) {
+    if (k_ < 0 || k_ > n) {
         throw(std::invalid_argument(
             "Combinations::Combinations(): k >= 0 && k <= n is required."));
     }
-    combination.resize(k);
-    complement.resize(n - k);
+    combination.resize(k_);
+    complement.resize(n_ - k_);
     std::iota(combination.begin(), combination.end(), 0);
-    std::iota(complement.begin(), complement.end(), k);
+    std::iota(complement.begin(), complement.end(), k_);
 }
 
 
@@ -45,14 +45,14 @@ bool Combinations::next_combination() {
     }
 
     /* Last element */
-    if (combination.back() < (n - 1)) {
+    if (combination.back() < (n_ - 1)) {
         ++combination.back();
         return true;
     }
     /* Go through the rest */
-    for (int i = k - 2; i >= 0; --i) {
+    for (int i = k_ - 2; i >= 0; --i) {
         /* Element i cannot be greater than (n - (k - i)) */
-        if (combination.at(i) < (n - k + i)) {
+        if (combination.at(i) < (n_ - k_ + i)) {
             /* Increment this element, elements right of this is set in
              * increasing order */
             std::iota(combination.begin() + i, combination.end(), ++combination.at(i));
@@ -77,14 +77,14 @@ bool Combinations::next_complement() {
             /* Decrement this element, elements right of this is set to their
              * maximal value */
             --complement.at(i);
-            std::iota(complement.begin() + i + 1, complement.end(), k + i + 1);
+            std::iota(complement.begin() + i + 1, complement.end(), k_ + i + 1);
             return true;
         }
     }
     /* First element */
     if (complement.at(0) > 0) {
         --complement.at(0);
-        std::iota(complement.begin() + 1, complement.end(), k + 1);
+        std::iota(complement.begin() + 1, complement.end(), k_ + 1);
         return true;
     }
     /* We have gone through all complements */
@@ -107,7 +107,7 @@ bool Combinations::next() {
         ++counter;
     }
     else {
-        if (counter != gsl_sf_choose(n,k)) {
+        if (counter != gsl_sf_choose(n_,k_)) {
             throw(std::logic_error("Combinations::next(): Did not create (n "
                                    "choose k) combinations."));
         }
@@ -121,7 +121,7 @@ bool Combinations::next() {
 void Combinations::reset()
 {
     std::iota(combination.begin(), combination.end(), 0);
-    std::iota(complement.begin(), complement.end(), k);
+    std::iota(complement.begin(), complement.end(), k_);
 }
 
 
@@ -137,16 +137,16 @@ void Combinations::rearrange_from_current(
     }
     Vec1D<int> copy(first, last);
 
-    if (copy.size() != static_cast<size_t>(n)) {
+    if (copy.size() != static_cast<size_t>(n_)) {
         throw(std::logic_error("Combinations::rearrange_from_current(): size "
                                "of subvector from first,last is not n."));
     }
 
-    for (int i = 0; i < k; ++i) {
+    for (int i = 0; i < k_; ++i) {
         *(first + i) = copy.at(combination.at(i));
     }
-    for (int i = k; i < n; ++i) {
-        *(first + i) = copy.at(complement.at(i-k));
+    for (int i = k_; i < n_; ++i) {
+        *(first + i) = copy.at(complement.at(i - k_));
     }
 }
 
@@ -158,11 +158,11 @@ void Combinations::rearrange_from_current_combination(
         size_t size
         ) const
 {
-    if (size != static_cast<size_t>(k)) {
+    if (size != static_cast<size_t>(k_)) {
         throw(std::invalid_argument(
             "Combinations::rearrange_from_current_combination(): size != k."));
     }
-    for (int i = 0; i < k; ++i) {
+    for (int i = 0; i < k_; ++i) {
         rearranged[i] = original[combination.at(i)];
     }
 }
@@ -175,11 +175,11 @@ void Combinations::rearrange_from_current_complement(
         size_t size
         ) const
 {
-    if (size != static_cast<size_t>(n - k)) {
+    if (size != static_cast<size_t>(n_ - k_)) {
         throw(std::invalid_argument(
             "Combinations::rearrange_from_current_complement(): size != k."));
     }
-    for (int i = 0; i < n - k; ++i) {
+    for (int i = 0; i < n_ - k_; ++i) {
         rearranged[i] = original[complement.at(i)];
     }
 }
@@ -192,7 +192,7 @@ void Combinations::rearrange_from_current_complement(
 
 
 Orderings::Orderings(int n, const Vec1D<int>& group_sizes)
-    : n(n)
+    : n_(n)
 {
     if (n < 1) {
         throw(std::invalid_argument(
@@ -270,7 +270,7 @@ std::vector<int> Orderings::get_current() const
     for (size_t i = 0; i < combinations_vec.size(); ++i) {
         combinations_vec.at(i).rearrange_from_current(
                 ordering.begin() + cursor, ordering.end());
-        cursor += combinations_vec.at(i).get_k();
+        cursor += combinations_vec.at(i).k();
     }
     return ordering;
 }

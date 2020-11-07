@@ -23,61 +23,6 @@
 #include "../include/kernel_evolution.hpp"
 
 
-EtaGrid::EtaGrid(
-        const int pre_time_steps,
-        const int time_steps,
-        const double eta_ini,
-        const double eta_fin,
-        const double eta_asymp
-       ) :
-    pre_time_steps(pre_time_steps), time_steps(time_steps),
-    eta_ini(eta_ini), eta_fin(eta_fin), eta_asymp(eta_asymp)
-{
-    grid.resize(time_steps);
-
-    // Linear time step (including endpoints)
-    // Between eta_asymp and eta_ini
-    double d_eta = std::abs(eta_ini - eta_asymp)/(pre_time_steps);
-    for (int i = 0; i < pre_time_steps; ++i) {
-        grid.at(i) = eta_asymp + i*d_eta;
-    }
-    // Between eta_ini and eta_f
-    d_eta = std::abs(eta_fin - eta_ini)/(time_steps - pre_time_steps - 1);
-    for (int i = pre_time_steps; i < time_steps; ++i) {
-        grid.at(i) = eta_ini + (i - pre_time_steps) * d_eta;
-    }
-}
-
-
-
-EtaGrid::EtaGrid(
-        const int time_steps,
-        const double eta_ini,
-        const double eta_fin
-       ) :
-    pre_time_steps(0), time_steps(time_steps),
-    eta_ini(eta_ini), eta_fin(eta_fin), eta_asymp(0.0)
-{
-    grid.resize(time_steps);
-
-    // Linear time step (including endpoints)
-    double d_eta = std::abs(eta_fin - eta_ini)/(time_steps - 1);
-    for (int i = 0; i < time_steps; ++i) {
-        grid.at(i) = eta_ini + i * d_eta;
-    }
-}
-
-
-
-std::ostream& operator<<(std::ostream& out, const EtaGrid& eta_grid) {
-    for (int i = 0; i < eta_grid.get_time_steps(); ++i) {
-        out << eta_grid[i] << std::endl;
-    }
-    return out;
-}
-
-
-
 /* Turn off vector bounds check if not in debug-mode */
 #if DEBUG == 0
 #define at(x) operator[](x)
@@ -96,8 +41,8 @@ void vertex(
         IntegrandTables& tables
         )
 {
-    double alpha_lr = tables.alpha.at(sum_l).at(sum_r);
-    double beta = tables.beta.at(sum_l).at(sum_r);
+    double alpha_lr = tables.alpha().at(sum_l).at(sum_r);
+    double beta = tables.beta().at(sum_l).at(sum_r);
 
     int index_l = kernel_evolution(args_l, -1, m_l, tables);
     int index_r = kernel_evolution(args_r, -1, m_r, tables);
@@ -166,8 +111,8 @@ void compute_RHS_sum(
         std::array<Interpolation1D, COMPONENTS>& rhs /* out */
         )
 {
-    int time_steps    = tables.eta_grid.get_time_steps();
-    int n_kernel_args = tables.loop_params.get_n_kernel_args();
+    int time_steps    = tables.eta_grid.time_steps();
+    int n_kernel_args = tables.loop_params.n_kernel_args();
 
     Vec2D<double> rhs_sum;
     Vec2D<double> partial_rhs_sum;
@@ -189,9 +134,9 @@ void compute_RHS_sum(
 
         /* Initialize args_l and args_r */
         std::fill(&args_l[0], &args_l[n_kernel_args],
-                tables.loop_params.get_zero_label());
+                tables.loop_params.zero_label());
         std::fill(&args_r[0], &args_r[n_kernel_args],
-                tables.loop_params.get_zero_label());
+                tables.loop_params.zero_label());
 
         /* Go through all ways to pick m (unordered) elements from group of n */
         Combinations comb(n, m);
@@ -226,7 +171,7 @@ void compute_RHS_sum(
     }
 
     for (int i = 0; i < COMPONENTS; ++i) {
-        rhs.at(i) = Interpolation1D(tables.eta_grid.get_grid(), rhs_sum.at(i));
+        rhs.at(i) = Interpolation1D(tables.eta_grid.grid(), rhs_sum.at(i));
     }
 }
 
@@ -256,9 +201,9 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
     ODEInput input = *(ODEInput*)ode_input;
 
     const EvolutionParameters& ev_params = input.ev_params;
-    int n          = input.n;
-    double f_nu    = ev_params.get_f_nu();
-    double k       = input.k;
+    int n       = input.n;
+    double f_nu = ev_params.f_nu();
+    double k    = input.k;
 
     // Between eta_asymp and eta_i, set eta = eta_i
     if (eta < input.eta_ini) {
@@ -300,13 +245,13 @@ void solve_kernel_ODE(
         )
 {
     const EvolutionParameters& ev_params = input.ev_params;
-    int time_steps     = eta_grid.get_time_steps();
-    int pre_time_steps = eta_grid.get_pre_time_steps();
+    int time_steps     = eta_grid.time_steps();
+    int pre_time_steps = eta_grid.pre_time_steps();
 
     gsl_odeiv2_system sys = {kernel_gradient, nullptr, COMPONENTS, &input};
     gsl_odeiv2_driver *driver = gsl_odeiv2_driver_alloc_y_new(
-        &sys, gsl_odeiv2_step_rkf45, ev_params.get_ode_hstart(),
-        ev_params.get_ode_rtol(), ev_params.get_ode_atol());
+        &sys, gsl_odeiv2_step_rkf45, ev_params.ode_hstart(),
+        ev_params.ode_rtol(), ev_params.ode_atol());
 
     // For kernels with n > 1 use ODE SOLVER
     if (input.n > 1) {
@@ -340,7 +285,7 @@ void solve_kernel_ODE(
             }
         }
 
-        double eta_current = eta_grid[pre_time_steps];
+        double eta_current = eta_grid.at(pre_time_steps);
 
         for (int i = pre_time_steps + 1; i < time_steps; i++) {
             /* For calculation of kernels.at(i), the initial condition is
@@ -404,8 +349,8 @@ int kernel_evolution(
     }
 
     int n_args = 0;
-    for (int i = 0; i < tables.loop_params.get_n_kernel_args(); ++i) {
-        if (arguments[i] != tables.loop_params.get_zero_label()){
+    for (int i = 0; i < tables.loop_params.n_kernel_args(); ++i) {
+        if (arguments[i] != tables.loop_params.zero_label()){
             n_args++;
         }
     }
@@ -429,8 +374,8 @@ int kernel_evolution(
 
     // Compute k (sum of kernel arguments)
     int sum = tables.sum_table.sum_labels(arguments,
-            tables.loop_params.get_n_kernel_args());
-    double k = std::sqrt(tables.scalar_products[sum][sum]);
+            tables.loop_params.n_kernel_args());
+    double k = std::sqrt(tables.scalar_products().at(sum).at(sum));
 
     // Set initial conditions
     kernel_initial_conditions(kernel_index, n, k, tables);
@@ -445,7 +390,7 @@ int kernel_evolution(
     }
 
     // Set up ODE input and system
-    ODEInput input(n, k, tables.eta_grid.get_eta_ini(), tables.ev_params, rhs);
+    ODEInput input(n, k, tables.eta_grid.eta_ini(), tables.ev_params, rhs);
 
     solve_kernel_ODE(input, tables.eta_grid,
                      tables.kernels.at(kernel_index).values);
@@ -464,11 +409,11 @@ void compute_F1(
         Vec1D<double>& F1_eta_fin  /* out */
         )
 {
-    int time_steps = eta_grid.get_time_steps();
-    int pre_time_steps = eta_grid.get_pre_time_steps();
+    int time_steps = eta_grid.time_steps();
+    int pre_time_steps = eta_grid.pre_time_steps();
 
     Vec2D<double> values;
-    values.assign(eta_grid.get_time_steps(), Vec1D<double>(COMPONENTS, 0.0));
+    values.assign(eta_grid.time_steps(), Vec1D<double>(COMPONENTS, 0.0));
 
     for (int i = 0; i < COMPONENTS; ++i) {
         values.at(0).at(i) = ev_params.F1_ic_at_k(i, k);
@@ -477,7 +422,7 @@ void compute_F1(
     /* Empty rhs */
     std::array<Interpolation1D, COMPONENTS> rhs;
 
-    ODEInput input(1, k, eta_grid.get_eta_ini(), ev_params, rhs);
+    ODEInput input(1, k, eta_grid.eta_ini(), ev_params, rhs);
 
     solve_kernel_ODE(input, eta_grid, values);
 

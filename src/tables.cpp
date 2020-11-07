@@ -39,11 +39,11 @@ int SumTable::sum_two_labels(int a, int b)
 
 
 SumTable::SumTable(const LoopParameters& loop_params) :
-    zero_label(loop_params.get_zero_label()),
-    n_coeffs(loop_params.get_n_coeffs())
+    zero_label(loop_params.zero_label()),
+    n_coeffs(loop_params.n_coeffs())
 {
-    int n_configs = loop_params.get_n_configs();
-    int zero_label = loop_params.get_zero_label();
+    int n_configs = loop_params.n_configs();
+    int zero_label = loop_params.zero_label();
 
     sum_table.resize(n_configs);
     for (int a = 0; a < n_configs; ++a) {
@@ -95,6 +95,61 @@ int SumTable::sum_labels(const int labels[], size_t size) const
 
 
 
+EtaGrid::EtaGrid(
+        const int pre_time_steps,
+        const int time_steps,
+        const double eta_ini,
+        const double eta_fin,
+        const double eta_asymp
+       ) :
+    pre_time_steps_(pre_time_steps), time_steps_(time_steps),
+    eta_ini_(eta_ini), eta_fin_(eta_fin), eta_asymp_(eta_asymp)
+{
+    grid_.resize(time_steps_);
+
+    // Linear time step (including endpoints)
+    // Between eta_asymp and eta_ini
+    double d_eta = std::abs(eta_ini_ - eta_asymp_)/(pre_time_steps_);
+    for (int i = 0; i < pre_time_steps_; ++i) {
+        grid_.at(i) = eta_asymp_ + i*d_eta;
+    }
+    // Between eta_ini and eta_f
+    d_eta = std::abs(eta_fin_ - eta_ini_)/(time_steps_ - pre_time_steps_ - 1);
+    for (int i = pre_time_steps_; i < time_steps_; ++i) {
+        grid_.at(i) = eta_ini_ + (i - pre_time_steps_) * d_eta;
+    }
+}
+
+
+
+EtaGrid::EtaGrid(
+        const int time_steps,
+        const double eta_ini,
+        const double eta_fin
+       ) :
+    pre_time_steps_(0), time_steps_(time_steps),
+    eta_ini_(eta_ini), eta_fin_(eta_fin), eta_asymp_(0.0)
+{
+    grid_.resize(time_steps_);
+
+    // Linear time step (including endpoints)
+    double d_eta = std::abs(eta_fin_ - eta_ini_)/(time_steps_ - 1);
+    for (int i = 0; i < time_steps_; ++i) {
+        grid_.at(i) = eta_ini_ + i * d_eta;
+    }
+}
+
+
+
+std::ostream& operator<<(std::ostream& out, const EtaGrid& eta_grid) {
+    for (int i = 0; i < eta_grid.time_steps(); ++i) {
+        out << eta_grid[i] << std::endl;
+    }
+    return out;
+}
+
+
+
 IntegrandTables::IntegrandTables(
         double k_a,
         double k_b,
@@ -106,40 +161,40 @@ IntegrandTables::IntegrandTables(
         ) :
     k_a(k_a), k_b(k_b), cos_ab(cos_ab), loop_params(loop_params),
     sum_table(sum_table), ev_params(ev_params), eta_grid(eta_grid),
-    vars(IntegrationVariables(loop_params.get_n_loops()))
+    vars(IntegrationVariables(loop_params.n_loops()))
 {
-    int n_coeffs = loop_params.get_n_coeffs();
-    int n_configs = loop_params.get_n_configs();
-    int n_kernels = loop_params.get_n_kernels();
+    int n_coeffs = loop_params.n_coeffs();
+    int n_configs = loop_params.n_configs();
+    int n_kernels = loop_params.n_kernels();
 
     bare_scalar_products.resize(n_coeffs);
     for (int i = 0; i < n_coeffs; ++i) {
         bare_scalar_products.at(i).resize(n_coeffs);
     }
 
-    scalar_products.resize(n_configs);
-    alpha.resize(n_configs);
-    beta.resize(n_configs);
+    scalar_products_.resize(n_configs);
+    alpha_.resize(n_configs);
+    beta_.resize(n_configs);
     for (int i = 0; i < n_configs; ++i) {
-        scalar_products.at(i).resize(n_configs);
-        alpha.at(i).resize(n_configs);
-        beta.at(i).resize(n_configs);
+        scalar_products_.at(i).resize(n_configs);
+        alpha_.at(i).resize(n_configs);
+        beta_.at(i).resize(n_configs);
     }
     a_coeffs.resize(n_coeffs);
     b_coeffs.resize(n_coeffs);
 
-    if (loop_params.get_dynamics() == EDS_SPT ||
-        loop_params.get_dynamics() == EVOLVE_EDS_IC) {
-        spt_kernels.resize(loop_params.get_n_kernels());
+    if (loop_params.dynamics() == EDS_SPT ||
+        loop_params.dynamics() == EVOLVE_EDS_IC) {
+        spt_kernels.resize(loop_params.n_kernels());
     }
-    if (loop_params.get_dynamics() == EVOLVE_EDS_IC ||
-        loop_params.get_dynamics() == EVOLVE_ASYMP_IC
+    if (loop_params.dynamics() == EVOLVE_EDS_IC ||
+        loop_params.dynamics() == EVOLVE_ASYMP_IC
         ) {
         spt_kernels.resize(n_kernels);
         kernels.resize(n_kernels);
 
         for (int i = 0; i < n_kernels; ++i) {
-            kernels.at(i).values.assign(eta_grid.get_time_steps(),
+            kernels.at(i).values.assign(eta_grid.time_steps(),
                                         Vec1D<double>(COMPONENTS));
         }
     }
@@ -156,7 +211,7 @@ IntegrandTables::IntegrandTables(
         ) :
     IntegrandTables(k_a, 0, 0, loop_params, sum_table, ev_params, eta_grid)
 {
-    if (loop_params.get_spectrum() == BISPECTRUM) {
+    if (loop_params.spectrum() == BISPECTRUM) {
         throw(std::invalid_argument(
             "IntegrandTables::IntegrandTables(): this constructor can only be "
             "used for spetrum = POWERSPECTRUM."));
@@ -170,12 +225,12 @@ void IntegrandTables::reset()
     // bare_scalar_products, alpha, beta tables etc. are completely rewritten
     // by their respective compute-functions, hence no need to zero initialize
 
-    if (loop_params.get_dynamics() == EDS_SPT ||
-        loop_params.get_dynamics() == EVOLVE_EDS_IC) {
+    if (loop_params.dynamics() == EDS_SPT ||
+        loop_params.dynamics() == EVOLVE_EDS_IC) {
         reset_spt_kernels();
     }
-    if (loop_params.get_dynamics() == EVOLVE_EDS_IC ||
-        loop_params.get_dynamics() == EVOLVE_ASYMP_IC) {
+    if (loop_params.dynamics() == EVOLVE_EDS_IC ||
+        loop_params.dynamics() == EVOLVE_ASYMP_IC) {
         reset_kernels();
     }
 }
@@ -184,7 +239,7 @@ void IntegrandTables::reset()
 
 void IntegrandTables::reset_spt_kernels()
 {
-    for (int i = 0; i < loop_params.get_n_kernels(); ++i) {
+    for (int i = 0; i < loop_params.n_kernels(); ++i) {
         spt_kernels.at(i).computed = false;
         spt_kernels.at(i).values[0] = 0;
         spt_kernels.at(i).values[1] = 0;
@@ -195,10 +250,10 @@ void IntegrandTables::reset_spt_kernels()
 
 void IntegrandTables::reset_kernels()
 {
-    for (int i = 0; i < loop_params.get_n_kernels(); ++i) {
+    for (int i = 0; i < loop_params.n_kernels(); ++i) {
         kernels.at(i).computed = false;
 
-        for (int j = 0; j < eta_grid.get_time_steps(); ++j) {
+        for (int j = 0; j < eta_grid.time_steps(); ++j) {
           std::fill(kernels.at(i).values.at(j).begin(),
                     kernels.at(i).values.at(j).end(), 0);
         }
@@ -209,8 +264,8 @@ void IntegrandTables::reset_kernels()
 
 void IntegrandTables::ps_compute_bare_scalar_products()
 {
-    int n_loops = loop_params.get_n_loops();
-    int n_coeffs = loop_params.get_n_coeffs();
+    int n_loops = loop_params.n_loops();
+    int n_coeffs = loop_params.n_coeffs();
 
     int k_a_idx = n_coeffs - 1;
 
@@ -267,8 +322,8 @@ void IntegrandTables::ps_compute_bare_scalar_products()
 
 void IntegrandTables::bs_compute_bare_scalar_products()
 {
-    int n_loops = loop_params.get_n_loops();
-    int n_coeffs = loop_params.get_n_coeffs();
+    int n_loops = loop_params.n_loops();
+    int n_coeffs = loop_params.n_coeffs();
 
     int k_a_idx = n_coeffs - 1;
     int k_b_idx = n_coeffs - 2;
@@ -329,8 +384,8 @@ void IntegrandTables::bs_compute_bare_scalar_products()
 /* Computes table of scalar_products given bare_scalar_products table */
 void IntegrandTables::compute_scalar_products()
 {
-    int n_coeffs = loop_params.get_n_coeffs();
-    int n_configs = loop_params.get_n_configs();
+    int n_coeffs = loop_params.n_coeffs();
+    int n_configs = loop_params.n_configs();
 
     // Scalar product matrix is symmetric, hence compute indices [a,b] and
     // [b,a] simultaneously
@@ -347,11 +402,11 @@ void IntegrandTables::compute_scalar_products()
                 }
             }
             if (a == b) {
-                scalar_products.at(a).at(a) = product_value;
+                scalar_products_.at(a).at(a) = product_value;
             }
             else {
-                scalar_products.at(a).at(b) = product_value;
-                scalar_products.at(b).at(a) = product_value;
+                scalar_products_.at(a).at(b) = product_value;
+                scalar_products_.at(b).at(a) = product_value;
             }
         }
     }
@@ -361,13 +416,13 @@ void IntegrandTables::compute_scalar_products()
 
 void IntegrandTables::compute_alpha_beta()
 {
-    int n_configs = loop_params.get_n_configs();
+    int n_configs = loop_params.n_configs();
     for (int a = 0; a < n_configs; ++a) {
         for (int b = 0; b < n_configs; ++b) {
             // Special case when a == b
             if (a == b) {
-                alpha.at(a).at(b) = 2.0;
-                beta.at(a).at(b)  = 2.0;
+                alpha_.at(a).at(b) = 2.0;
+                beta_.at(a).at(b)  = 2.0;
                 continue;
             }
 
@@ -376,14 +431,14 @@ void IntegrandTables::compute_alpha_beta()
 
             // If the first argument is the zero-vector, alpha and beta remains 0
             // If the second argument is the zero-vector, beta remains 0
-            if (a != loop_params.get_zero_label()) {
-                double product_ab = scalar_products.at(a).at(b);
-                double product_aa = scalar_products.at(a).at(a);
+            if (a != loop_params.zero_label()) {
+                double product_ab = scalar_products_.at(a).at(b);
+                double product_aa = scalar_products_.at(a).at(a);
 
                 alpha_val = 1 + product_ab/product_aa;
 
-                if (b != loop_params.get_zero_label()) {
-                    double product_bb = scalar_products.at(b).at(b);
+                if (b != loop_params.zero_label()) {
+                    double product_bb = scalar_products_.at(b).at(b);
 
                     beta_val = product_ab / 2.0
                         * ( 1.0 / product_aa + 1.0 / product_bb
@@ -391,8 +446,8 @@ void IntegrandTables::compute_alpha_beta()
                           );
                 }
             }
-            alpha.at(a).at(b) = alpha_val;
-            beta.at(a).at(b) = beta_val;
+            alpha_.at(a).at(b) = alpha_val;
+            beta_.at(a).at(b) = beta_val;
         }
     }
 }
@@ -401,10 +456,10 @@ void IntegrandTables::compute_alpha_beta()
 
 void IntegrandTables::compute_tables()
 {
-    if (loop_params.get_spectrum() == POWERSPECTRUM) {
+    if (loop_params.spectrum() == POWERSPECTRUM) {
         ps_compute_bare_scalar_products ();
     }
-    else if (loop_params.get_spectrum() == BISPECTRUM) {
+    else if (loop_params.spectrum() == BISPECTRUM) {
         bs_compute_bare_scalar_products();
     }
     compute_scalar_products();

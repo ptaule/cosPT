@@ -52,11 +52,11 @@ double spt_term(
                 "not equal 0 or 1."));
         }
 
-    return tables.spt_kernels[index_l].values[1] *
-        (    a * tables.alpha[sum_l][sum_r]
-           * tables.spt_kernels[index_r].values[0]
-           + b * tables.beta[sum_l][sum_r]
-           * tables.spt_kernels[index_r].values[1]
+    return tables.spt_kernels.at(index_l).values[1] *
+        (    a * tables.alpha().at(sum_l).at(sum_r)
+           * tables.spt_kernels.at(index_r).values[0]
+           + b * tables.beta().at(sum_l).at(sum_r)
+           * tables.spt_kernels.at(index_r).values[1]
         );
 }
 
@@ -72,13 +72,13 @@ void partial_SPT_sum(
 {
     double partial_kernel_values[EDS_SPT_COMPONENTS] = {0};
 
-    int n_kernel_args = tables.loop_params.get_n_kernel_args();
+    int n_kernel_args = tables.loop_params.n_kernel_args();
     int args_l[N_KERNEL_ARGS_MAX] = {0};
     int args_r[N_KERNEL_ARGS_MAX] = {0};
 
     // Initialize args_l and args_r
-    std::fill(&args_l[0], &args_l[n_kernel_args], tables.loop_params.get_zero_label());
-    std::fill(&args_r[0], &args_r[n_kernel_args], tables.loop_params.get_zero_label());
+    std::fill(&args_l[0], &args_l[n_kernel_args], tables.loop_params.zero_label());
+    std::fill(&args_r[0], &args_r[n_kernel_args], tables.loop_params.zero_label());
 
     /* Go through all ways to pick m (unordered) elements from group of n */
     Combinations comb(n, m);
@@ -140,8 +140,8 @@ int compute_SPT_kernels(
     }
 
     int n_args = 0;
-    for (int i = 0; i < tables.loop_params.get_n_kernel_args(); ++i) {
-        if (arguments[i] != tables.loop_params.get_zero_label()){
+    for (int i = 0; i < tables.loop_params.n_kernel_args(); ++i) {
+        if (arguments[i] != tables.loop_params.zero_label()){
             n_args++;
         }
     }

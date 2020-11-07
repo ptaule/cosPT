@@ -17,46 +17,46 @@ using std::size_t;
 
 
 LoopParameters::LoopParameters(int n_loops, Spectrum spectrum, Dynamics dynamics)
-    : dynamics(dynamics), spectrum(spectrum), n_loops(n_loops)
+    : dynamics_(dynamics), spectrum_(spectrum), n_loops_(n_loops)
 {
-    if (spectrum == POWERSPECTRUM && (n_loops < 1 || n_loops > 2)) {
+    if (spectrum_ == POWERSPECTRUM && (n_loops_ < 1 || n_loops_ > 2)) {
         throw(std::invalid_argument(
             "LoopParameters::LoopParameters(): POWERSPECTRUM only "
             "implemented for n_loops = 1,2."));
     }
-    if (spectrum == BISPECTRUM && (n_loops != 1)) {
+    if (spectrum_ == BISPECTRUM && (n_loops_ != 1)) {
         throw(std::invalid_argument(
             "LoopParameters::LoopParameters(): BISPECTRUM only "
             "implemented for n_loops = 1."));
     }
-    if (spectrum == POWERSPECTRUM) {
-        n_coeffs = n_loops + 1;
-        n_configs = pow(3, n_coeffs);
-        n_kernels = (n_configs/3 + 1) * pow(4,n_loops);
-        n_kernel_args = 2 * n_loops + 1;
-        zero_label = ::get_zero_label(n_coeffs);
+    if (spectrum_ == POWERSPECTRUM) {
+        n_coeffs_      = n_loops_ + 1;
+        n_configs_     = pow(3, n_coeffs_);
+        n_kernels_     = (n_configs_/3 + 1) * pow(4,n_loops_);
+        n_kernel_args_ = 2 * n_loops_ + 1;
+        zero_label_    = get_zero_label(n_coeffs_);
 
         /* Define block size for kernel indexing. A block consists of all */
         /* single loop label argument combinations. */
-        single_loop_block_size = pow(4, n_loops);
+        single_loop_block_size = pow(4, n_loops_);
         /* Max/min single_loops labels */
-        single_loop_label_min = n_configs / 3;
-        single_loop_label_max = 2 * n_configs / 3 - 1;
+        single_loop_label_min = n_configs_ / 3;
+        single_loop_label_max = 2 * n_configs_ / 3 - 1;
     }
-    else if (spectrum == BISPECTRUM) {
-        n_coeffs = n_loops + 2;
-        n_configs = pow(3, n_coeffs);
-        n_kernels = pow(n_configs - pow(3, n_loops), 2) * pow(4, n_loops);
-        n_kernel_args = 2 * n_loops + 2;
-        zero_label = ::get_zero_label(n_coeffs);
+    else if (spectrum_ == BISPECTRUM) {
+        n_coeffs_      = n_loops_ + 2;
+        n_configs_     = pow(3, n_coeffs_);
+        n_kernels_     = pow(n_configs_ - pow(3, n_loops_), 2) * pow(4, n_loops_);
+        n_kernel_args_ = 2 * n_loops_ + 2;
+        zero_label_    = get_zero_label(n_coeffs_);
 
-        single_loop_block_size = pow(4, n_loops);
+        single_loop_block_size = pow(4, n_loops_);
         /* Max/min single_loops labels */
-        single_loop_label_min = 4 * n_configs / 9;
-        single_loop_label_max = 5 * n_configs / 9 - 1;
+        single_loop_label_min = 4 * n_configs_ / 9;
+        single_loop_label_max = 5 * n_configs_ / 9 - 1;
         /* Composite label has either k_a, k_b, or multiple loop momenta
          * (applicable for overall loop diagram) */
-        first_composite_block_size = 26 * n_configs/27 * single_loop_block_size;
+        first_composite_block_size = 26 * n_configs_/27 * single_loop_block_size;
     }
     else {
         throw(std::invalid_argument(
@@ -64,10 +64,10 @@ LoopParameters::LoopParameters(int n_loops, Spectrum spectrum, Dynamics dynamics
     }
 
     /* List of single loop labels */
-    Vec1D<int> config(n_coeffs, 0);
+    Vec1D<int> config(n_coeffs_, 0);
     int label;
 
-    for (int i = 0; i < n_loops; ++i) {
+    for (int i = 0; i < n_loops_; ++i) {
         config.at(i) = -1;
         label = config2label(config);
         single_loops.push_back(label);
@@ -89,7 +89,7 @@ int LoopParameters::ps_arguments_2_kernel_index(const int arguments[]) const
 
     // In DEBUG-mode, check that non-zero arguments (zero_label) are unique
 #if DEBUG >= 1
-    if (!unique_elements(arguments, n_kernel_args, zero_label))
+    if (!unique_elements(arguments, n_kernel_args_, zero_label_))
         throw(std::logic_error(
             "LoopParameters::ps_arguments_2_kernel_index(): duplicate "
             "vector arguments passed."));
@@ -98,9 +98,9 @@ int LoopParameters::ps_arguments_2_kernel_index(const int arguments[]) const
 
     int index = 0;
 
-    for (int i = 0; i < n_kernel_args; ++i) {
+    for (int i = 0; i < n_kernel_args_; ++i) {
         // First, check if argument is a zero vector
-        if (arguments[i] == zero_label) continue;
+        if (arguments[i] == zero_label_) continue;
 
         // Argument is a k-type vector (i.e. on the form k + c_i Q_i) if k is
         // present. In our vector-label convention, k is the last coefficient,
@@ -129,7 +129,7 @@ int LoopParameters::ps_arguments_2_kernel_index(const int arguments[]) const
             }
 #if DEBUG >= 1
             /* Check that this is in fact a single loop vector */
-            if(!single_loop_label(arguments[i], n_coeffs, spectrum))
+            if(!single_loop_label(arguments[i], n_coeffs_, spectrum_))
                 throw(std::logic_error(
                     "LoopParameters::ps_arguments_2_kernel_index(): argument is "
                     "neither 0, composite type, or single loop."));
@@ -154,7 +154,7 @@ int LoopParameters::bs_arguments_2_kernel_index(const int arguments[]) const
 
     // In DEBUG-mode, check that non-zero arguments (zero_label) are unique
 #if DEBUG >= 1
-    if (!unique_elements(arguments, n_kernel_args, zero_label))
+    if (!unique_elements(arguments, n_kernel_args_, zero_label_))
         throw(std::logic_error(
             "LoopParameters::bs_arguments_2_kernel_index(): duplicate "
             "vector arguments passed."));
@@ -165,9 +165,9 @@ int LoopParameters::bs_arguments_2_kernel_index(const int arguments[]) const
     /* Counter of composite arguments, i.e. not single loop momenta */
     int n_composite = 0;
 
-    for (int i = 0; i < n_kernel_args; ++i) {
+    for (int i = 0; i < n_kernel_args_; ++i) {
         // First, check if argument is a zero vector
-        if (arguments[i] == zero_label) continue;
+        if (arguments[i] == zero_label_) continue;
 
         // Argument is not single loop if label < single_loop_label_min or
         // label > single_loop_label_max */
@@ -179,8 +179,9 @@ int LoopParameters::bs_arguments_2_kernel_index(const int arguments[]) const
             ++n_composite;
         }
         else if (arguments[i] > single_loop_label_max) {
-            int block = n_composite > 0 ? single_loop_block_size : first_composite_block_size;
-            index += (arguments[i] - n_configs/9 + 1) * block;
+            int block = n_composite > 0 ? single_loop_block_size
+                                        : first_composite_block_size;
+            index += (arguments[i] - n_configs_ / 9 + 1) * block;
 
             ++n_composite;
         }
@@ -228,8 +229,8 @@ EvolutionParameters::EvolutionParameters(
         const std::string& effcs2_y_file,
         const std::string& effcs2_data_file
         ) :
-    f_nu(f_nu), ode_atol(ode_atol), ode_rtol(ode_rtol), ode_hstart(ode_hstart),
-    zeta(zeta_file), redshift(redshift_file),
+    f_nu_(f_nu), ode_atol_(ode_atol), ode_rtol_(ode_rtol),
+    ode_hstart_(ode_hstart), zeta(zeta_file), redshift(redshift_file),
     omega_eigenvalues(omega_eigenvalues_file), effcs2(effcs2_x_file,
             effcs2_y_file, effcs2_data_file)
 {
@@ -275,8 +276,8 @@ EvolutionParameters::EvolutionParameters(
         const std::string& omega_eigenvalues_file,
         const Vec1D<std::string>& F1_ic_files
         ) :
-    f_nu(f_nu), ode_atol(ode_atol), ode_rtol(ode_rtol), ode_hstart(ode_hstart),
-    zeta(zeta_file), redshift(redshift_file),
+    f_nu_(f_nu), ode_atol_(ode_atol), ode_rtol_(ode_rtol),
+    ode_hstart_(ode_hstart), zeta(zeta_file), redshift(redshift_file),
     omega_eigenvalues(omega_eigenvalues_file)
 {
     for (auto& F1_ic_file : F1_ic_files) {
@@ -318,7 +319,8 @@ EvolutionParameters::EvolutionParameters(
         double ode_hstart,
         const std::string& zeta_file
         ) :
-    ode_atol(ode_atol), ode_rtol(ode_rtol), ode_hstart(ode_hstart), zeta(zeta_file)
+    ode_atol_(ode_atol), ode_rtol_(ode_rtol), ode_hstart_(ode_hstart),
+    zeta(zeta_file)
 {}
 
 
