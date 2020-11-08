@@ -18,8 +18,12 @@ std::ostream& operator<<(std::ostream& out, const Pair<int>& pair) {
     out << "<" << pair.first() << "," << pair.second() << ">";
     return out;
 }
+
+
+
 std::ostream& operator<<(std::ostream& out, const Triple<int>& pair) {
-    out << "<" << pair.first() << "," << pair.second() << ">";
+    out << "<" << pair.first() << "," << pair.second() << "," << pair.third()
+        << ">";
     return out;
 }
 
