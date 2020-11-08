@@ -21,6 +21,9 @@ void Interpolation1D::initialize(const Vec1D<double>& x, const Vec1D<double>& y)
             "Dimensions of x and y vectors are not equal."));
     }
 
+    x_min = x.front();
+    x_max = x.back();
+
     acc = gsl_interp_accel_alloc();
     spline = gsl_spline_alloc(type, x.size());
     gsl_spline_init(spline, x.data(), y.data(), x.size());
@@ -63,28 +66,24 @@ Interpolation1D::Interpolation1D(const std::string& filename)
 
 
 
-Interpolation1D::Interpolation1D(Interpolation1D&& other) {
-    spline = other.spline;
-    acc    = other.acc;
-    type   = other.type;
-
-    other.spline = nullptr;
-    other.acc    = nullptr;
-    other.type   = nullptr;
-}
+Interpolation1D::Interpolation1D(Interpolation1D&& other)
+    : x_min (std::exchange(other.x_min, 0)),
+    x_max(std::exchange(other.x_max, 0)),
+    spline(std::exchange(other.spline, nullptr)),
+    acc(std::exchange(other.acc, nullptr)),
+    type(std::exchange(other.type, nullptr))
+{}
 
 
 
 Interpolation1D& Interpolation1D::operator=(Interpolation1D&& other)
 {
     if (this != &other) {
-        spline = other.spline;
-        acc = other.acc;
-        type = other.type;
-
-        other.spline = nullptr;
-        other.acc    = nullptr;
-        other.type   = nullptr;
+        x_min  = std::exchange(other.x_min, 0);
+        x_max  = std::exchange(other.x_max, 0);
+        acc    = std::exchange(other.acc, nullptr);
+        spline = std::exchange(other.spline, nullptr);
+        type   = std::exchange(other.type, nullptr);
     }
     return *this;
 }
@@ -101,6 +100,11 @@ void Interpolation2D::initialize(
         throw(std::invalid_argument(
             "Length of z vector does not equal x.size() * y.size()."));
     }
+
+    x_min = x.front();
+    x_max = x.back();
+    y_min = y.front();
+    y_max = y.back();
 
     x_acc = gsl_interp_accel_alloc();
     y_acc = gsl_interp_accel_alloc();
@@ -162,33 +166,31 @@ Interpolation2D::Interpolation2D(
 
 
 
-Interpolation2D::Interpolation2D(Interpolation2D&& other)
-{
-    x_acc = other.x_acc;
-    y_acc = other.y_acc;
-    spline = other.spline;
-    type = other.type;
-
-    other.x_acc = nullptr;
-    other.y_acc = nullptr;
-    other.spline = nullptr;
-    other.type = nullptr;
-}
+Interpolation2D::Interpolation2D(Interpolation2D&& other) noexcept
+    : x_min (std::exchange(other.x_min, 0)),
+    x_max(std::exchange(other.x_max, 0)),
+    y_min(std::exchange(other.y_min, 0)),
+    y_max(std::exchange(other.y_max, 0)),
+    spline(std::exchange(other.spline, nullptr)),
+    x_acc(std::exchange(other.x_acc, nullptr)),
+    y_acc(std::exchange(other.y_acc, nullptr)),
+    type(std::exchange(other.type, nullptr))
+{}
 
 
 
 Interpolation2D& Interpolation2D::operator=(Interpolation2D&& other)
 {
     if (this != &other) {
-        spline = other.spline;
-        x_acc = other.x_acc;
-        y_acc = other.y_acc;
-        type = other.type;
+        x_min  = std::exchange(other.x_min, 0);
+        x_max  = std::exchange(other.x_max, 0);
+        y_min  = std::exchange(other.y_min, 0);
+        y_max  = std::exchange(other.y_max, 0);
 
-        other.spline = nullptr;
-        other.x_acc  = nullptr;
-        other.y_acc  = nullptr;
-        other.type   = nullptr;
+        x_acc  = std::exchange(other.x_acc, nullptr);
+        y_acc  = std::exchange(other.y_acc, nullptr);
+        spline = std::exchange(other.spline, nullptr);
+        type   = std::exchange(other.type, nullptr);
     }
     return *this;
 }

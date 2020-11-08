@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <string>
+#include <stdexcept>
 
 #include <gsl/gsl_spline.h>
 #include <gsl/gsl_spline2d.h>
@@ -21,6 +22,9 @@
 
 class Interpolation1D {
     private:
+        double x_min = 0;
+        double x_max = 0;
+
         gsl_spline* spline;
         gsl_interp_accel* acc;
         const gsl_interp_type* type;
@@ -46,7 +50,18 @@ class Interpolation1D {
 
 
         double eval(double x) const {
+#if DEBUG == 0
             return gsl_spline_eval(spline, x, acc);
+#else
+            /* Check limits of interpolation region */
+            if (x < x_min || x > x_max) {
+                throw std::runtime_error(
+                    "Interpolation1D::eval(): x = " + std::to_string(x) +
+                    " is outside interpolation area (" + std::to_string(x_min) +
+                    ", " + std::to_string(x_max) + ").");
+            }
+            return gsl_spline_eval(spline, x, acc);
+#endif
         }
 
         ~Interpolation1D() {
@@ -58,6 +73,11 @@ class Interpolation1D {
 
 class Interpolation2D {
     private:
+        double x_min = 0;
+        double x_max = 0;
+        double y_min = 0;
+        double y_max = 0;
+
         gsl_spline2d* spline;
         gsl_interp_accel* x_acc;
         gsl_interp_accel* y_acc;
@@ -95,12 +115,29 @@ class Interpolation2D {
                 );
         Interpolation2D(const Interpolation2D&) = delete;
         Interpolation2D& operator=(const Interpolation2D&) = delete;
-        Interpolation2D(Interpolation2D&&);
+        Interpolation2D(Interpolation2D&&) noexcept;
         Interpolation2D& operator=(Interpolation2D&&);
 
 
         double eval(double x, double y) const {
+#if DEBUG == 0
             return gsl_spline2d_eval(spline, x, y, x_acc, y_acc);
+#else
+            /* Check limits of interpolation region */
+            if (x < x_min || x > x_max) {
+                throw std::runtime_error(
+                    "Interpolation2D::eval():x = " + std::to_string(x) +
+                    " is outside interpolation area (" + std::to_string(x_min) +
+                    ", " + std::to_string(x_max) + ").");
+            }
+            if (y < y_min || y > y_max) {
+                throw std::runtime_error(
+                    "Interpolation2D::eval():y = " + std::to_string(y) +
+                    " is outside interpolation area (" + std::to_string(y_min) +
+                    ", " + std::to_string(y_max) + ").");
+            }
+            return gsl_spline2d_eval(spline, x, y, x_acc, y_acc);
+#endif
         }
 
         ~Interpolation2D() {
