@@ -161,7 +161,7 @@ int main(int argc, char* argv[]) {
          * - Phi integration of first loop momenta gives a factor 2pi
          *   (powerspectrum) */
         double overall_factor =
-            pow(2, n_loops) * gsl_sf_fact(n_loops) * pow(TWOPI, 3*n_loops)
+            pow(2, n_loops) * gsl_sf_fact(n_loops) * pow(TWOPI, - 3*n_loops)
             * (cfg.spectrum() == POWERSPECTRUM ? TWOPI : 1);
 
 
