@@ -22,10 +22,10 @@ int kernel_evolution(
 
 void compute_F1(
         double k,
-        const EvolutionParameters& params,
-        const EtaGrid& eta,
-        Vec1D<double> F1_eta_i, /* out */
-        Vec1D<double> F1_eta_f  /* out */
+        const EvolutionParameters& ev_params,
+        const EtaGrid& eta_grid,
+        Vec1D<double>& F1_eta_ini, /* out */
+        Vec1D<double>& F1_eta_fin  /* out */
         );
 
 
