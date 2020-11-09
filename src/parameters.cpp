@@ -10,6 +10,7 @@
 #include <cmath>
 #include <vector>
 #include <string>
+#include <sstream>
 #include <stdexcept>
 #include <algorithm>
 #include <utility>
@@ -385,23 +386,28 @@ void Config::set_output_file(const libconfig::Config& cfg)
                 throw ConfigException("Output directory " + output_path +
                                       " does not exist.");
             }
-            output_file_ = output_path;
+
+            std::stringstream ss;
+            ss << output_path;
+            ss << "/";
             /* Add k_a_idx (& k_b_idx) to end of file */
             if (k_a_idx != -1) {
-                output_file_ += "/" + std::to_string(k_a_idx);
+                ss << std::setfill('0') << std::setw(2) << k_a_idx;
             }
             else {
-                output_file_ += "/" + std::to_string(k_a_);
+                ss << std::scientific << std::setprecision(6) << k_a_;
             }
             if (spectrum_ == BISPECTRUM) {
+                ss << "_";
                 if (k_b_idx != -1) {
-                    output_file_ += "_" + std::to_string(k_b_idx);
+                    ss << std::setfill('0') << std::setw(2) << k_b_idx;
                 }
                 else {
-                    output_file_ += "_" + std::to_string(k_b_);
+                    ss << std::scientific << std::setprecision(6) << k_b_;
                 }
             }
-            output_file_ += ".dat";
+            ss << ".dat";
+            output_file_ = ss.str();
         }
         else {
             throw ConfigException("No output path/file given in configuration.");
