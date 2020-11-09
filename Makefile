@@ -15,17 +15,17 @@ CXX ?= g++
 
 CXXFLAGS += -Wall -Wextra -Wpedantic -std=c++17 #-Wconversion
 
-all: CPPFLAGS += -DDEBUG=0 -I/space/ge52sir/Cuba-4.2/ -I/space/ge52sir/gsl-2.6/
+all: CPPFLAGS += -DDEBUG=0 -I/space/ge52sir/local/include/
 all: CXXFLAGS += -O3
-all: LDFLAGS  += -L/space/ge52sir/Cuba-4.2/ -L/space/ge52sir/gsl-2.6/.libs/ -L/space/ge52sir/gsl-2.6/cblas/.libs/
+all: LDFLAGS  += -L/space/ge52sir/local/lib/
 
-cluster: CPPFLAGS += -DDEBUG=0 -I./Cuba-4.2/ -I./gsl-2.6/
+cluster: CPPFLAGS += -DDEBUG=0 -I./local/include/
 cluster: CXXFLAGS += -O3
-cluster: LDFLAGS  += -L./Cuba-4.2/ -L./gsl-2.6/.libs/ -L./gsl-2.6/cblas/.libs/
+cluster: LDFLAGS  += -L./local/lib/
 
-debug: CPPFLAGS   += -D_GLIBCXX_DEBUG -DDEBUG=2 -I/space/ge52sir/Cuba-4.2/ -I/space/ge52sir/gsl-2.6/
+debug: CPPFLAGS   += -D_GLIBCXX_DEBUG -DDEBUG=2 -I/space/ge52sir/local/include/
 debug: CXXFLAGS   += -g -O0
-debug: LDFLAGS    += -L/space/ge52sir/Cuba-4.2/ -L/space/ge52sir/gsl-2.6/.libs/ -L/space/ge52sir/gsl-2.6/cblas/.libs/
+debug: LDFLAGS    += -L/space/ge52sir/local/lib/
 
 benchmark: CXXFLAGS += -O3
 benchmark: LDLIBS   += -lbenchmark -pthread
