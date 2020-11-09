@@ -111,10 +111,10 @@ Config::Config(const std::string& ini_file, int k_a_idx, int k_b_idx)
 
     /* First wavenumber */
     if (k_a_idx != -1) {
-        k_a_ = wavenumbers[k_a_idx];
+        k_a_ = Wavenumbers::grid[k_a_idx];
     }
     else if (cfg.lookupValue("k_a_idx", k_a_idx)) {
-        k_a_ = wavenumbers[k_a_idx];
+        k_a_ = Wavenumbers::grid[k_a_idx];
     }
     else if (cfg.lookupValue("k_a", k_a_)) {}
     else {
@@ -195,10 +195,10 @@ Config::Config(const std::string& ini_file, int k_a_idx, int k_b_idx)
         }
 
         if (k_b_idx != -1) {
-            k_b_ = wavenumbers[k_b_idx];
+            k_b_ = Wavenumbers::grid[k_b_idx];
         }
         else if (cfg.lookupValue("k_b_idx", k_b_idx)) {
-            k_b_ = wavenumbers[k_b_idx];
+            k_b_ = Wavenumbers::grid[k_b_idx];
         }
         else if (cfg.lookupValue("k_b", k_b_)) {}
         else {
