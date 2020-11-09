@@ -14,6 +14,11 @@
 #include "utilities.hpp"
 #include "interpolation.hpp"
 
+namespace libconfig {
+class Config;
+class Setting;
+}
+
 class Config {
     private:
         int n_loops_;
@@ -40,6 +45,7 @@ class Config {
         int cuba_cores_             = 0;
         bool cuba_retain_statefile_ = false;
         std::string cuba_statefile_;
+        std::string cuba_statefile_path;
 
         std::string description_;
 
@@ -49,6 +55,7 @@ class Config {
 
         std::string input_ps_file_;
 
+        std::string output_path;
         std::string output_file_;
 
         int time_steps_     = 0;
@@ -68,6 +75,10 @@ class Config {
         std::string effcs2_y_grid_;
         std::string effcs2_data_;
 
+        void set_spectrum(const libconfig::Config& cfg);
+        void set_dynamics(const libconfig::Config& cfg);
+        void set_output_file(const libconfig::Config& cfg);
+        void set_cuba_statefile(const libconfig::Setting& cuba_settings);
     public:
         Config(const std::string& ini_file,
                 int k_a_idx = -1,

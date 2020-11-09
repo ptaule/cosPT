@@ -13,6 +13,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <utility>
+#include <filesystem>
 
 #include <libconfig.h++>
 
@@ -22,6 +23,7 @@
 #include "../include/parameters.hpp"
 
 using std::size_t;
+namespace fs = std::filesystem;
 
 
 Config::Config(const std::string& ini_file, int k_a_idx, int k_b_idx)
@@ -52,37 +54,74 @@ Config::Config(const std::string& ini_file, int k_a_idx, int k_b_idx)
     catch (const libconfig::SettingTypeException& tex) {
         throw ConfigException("Encountered type exception for loops setting.");
     }
-    /* Dynamics */
-    try {
-        std::string dynamics_str = cfg.lookup("dynamics");
-        std::transform(dynamics_str.begin(), dynamics_str.end(),
-                dynamics_str.begin(), [](unsigned char c) {return
-                tolower(c);});
 
-        if (dynamics_str == "eds-spt") {
-            dynamics_ = EDS_SPT;
-        }
-        else if (dynamics_str == "evolve-asymp-ic") {
-            dynamics_ = EVOLVE_ASYMP_IC;
-        }
-        else if (dynamics_str == "eolve-eds-ic") {
-            throw ConfigException("eolve-eds-ic not implemented.");
-        }
-        else {
-            throw ConfigException("Unknown dynamics in configuration file.");
-        }
+    /* First wavenumber */
+    if (k_a_idx != -1) {
+        k_a_ = Wavenumbers::grid[k_a_idx];
     }
-    catch (const libconfig::SettingNotFoundException& nfex){
-        throw ConfigException("No dynamics setting in configuration file.");
+    else if (cfg.lookupValue("k_a_idx", k_a_idx)) {
+        k_a_ = Wavenumbers::grid[k_a_idx];
+    }
+    else if (cfg.lookupValue("k_a", k_a_)) {}
+    else {
+        throw ConfigException("Neither k_a nor k_a_idx in configuration file, "
+                              "and no k_a index given as command line argument.");
+    }
+
+    /* Integration ranges */
+    try {
+        q_min_ = static_cast<double>(cfg.lookup("q_min"));
+        q_max_ = static_cast<double>(cfg.lookup("q_max"));
+    }
+    catch (const libconfig::SettingNotFoundException& nfex) {
+        throw ConfigException("Missing q_min and/or q_max in configuration.");
     }
     catch (const libconfig::SettingTypeException& tex) {
-        throw ConfigException("Encountered type exception for dynamics setting.");
-    }
-    catch (const ConfigException& e) {
-        throw e;
+        throw ConfigException("Encountered type exception for q_min/q_max setting.");
     }
 
-    /* Spectrum */
+    set_spectrum(cfg);
+    set_dynamics(cfg);
+
+    /* CUBA settings */
+    try {
+        if (cfg.exists("cuba_settings")) {
+            const libconfig::Setting& cuba_settings = cfg.lookup("cuba_settings");
+            cuba_settings.lookupValue("abs_tolerance", cuba_atol_);
+            cuba_settings.lookupValue("rel_tolerance", cuba_rtol_);
+            cuba_settings.lookupValue("max_evaluations", cuba_maxevals_);
+            cuba_settings.lookupValue("verbosity_level", cuba_verbose_);
+            cuba_settings.lookupValue("threads", cuba_cores_);
+            cuba_settings.lookupValue("retain_statefile", cuba_retain_statefile_);
+            set_cuba_statefile(cuba_settings);
+        }
+    }
+    catch (const libconfig::SettingTypeException& tex) {
+        throw ConfigException("Encountered type exception for cuba_settings.");
+    }
+
+    /* Input power spectrum */
+    try {
+        input_ps_file_ = static_cast<std::string>(cfg.lookup("input_ps_file"));
+    }
+    catch (const libconfig::SettingNotFoundException& nfex) {
+        throw ConfigException("No input PS file in configuration.");
+    }
+    catch (const libconfig::SettingTypeException& tex) {
+        throw ConfigException(
+            "Encountered type exception for input_ps_file setting.");
+    }
+
+    /* Store potential description */
+    cfg.lookupValue("description", description_);
+
+    set_output_file(cfg);
+}
+
+
+
+void Config::set_spectrum(const libconfig::Config& cfg)
+{
     try {
         std::string spetrcum_str = cfg.lookup("spectrum");
         std::transform(spetrcum_str.begin(), spetrcum_str.end(),
@@ -107,19 +146,6 @@ Config::Config(const std::string& ini_file, int k_a_idx, int k_b_idx)
     }
     catch (const ConfigException& e) {
         throw e;
-    }
-
-    /* First wavenumber */
-    if (k_a_idx != -1) {
-        k_a_ = Wavenumbers::grid[k_a_idx];
-    }
-    else if (cfg.lookupValue("k_a_idx", k_a_idx)) {
-        k_a_ = Wavenumbers::grid[k_a_idx];
-    }
-    else if (cfg.lookupValue("k_a", k_a_)) {}
-    else {
-        throw ConfigException("Neither k_a nor k_a_idx in configuration file, "
-                              "and no k_a index given as command line argument.");
     }
 
     /* For power spectrum, two-point correlations */
@@ -191,7 +217,8 @@ Config::Config(const std::string& ini_file, int k_a_idx, int k_b_idx)
             throw ConfigException("No correlations in configuration file.");
         }
         catch (const libconfig::SettingTypeException& tex) {
-            throw ConfigException("Encountered type exception for correlations setting.");
+            throw ConfigException(
+                "Encountered type exception for correlations setting.");
         }
 
         if (k_b_idx != -1) {
@@ -217,62 +244,57 @@ Config::Config(const std::string& ini_file, int k_a_idx, int k_b_idx)
             throw ConfigException("Encountered type exception for cos_ab setting.");
         }
     }
+}
 
-    /* Integration ranges */
+
+
+void Config::set_dynamics(const libconfig::Config& cfg)
+{
     try {
-        q_min_ = static_cast<double>(cfg.lookup("q_min"));
-        q_max_ = static_cast<double>(cfg.lookup("q_max"));
+        std::string dynamics_str = cfg.lookup("dynamics");
+        std::transform(dynamics_str.begin(), dynamics_str.end(),
+                dynamics_str.begin(), [](unsigned char c) {return
+                tolower(c);});
+
+        if (dynamics_str == "eds-spt") {
+            dynamics_ = EDS_SPT;
+        }
+        else if (dynamics_str == "evolve-asymp-ic") {
+            dynamics_ = EVOLVE_ASYMP_IC;
+        }
+        else if (dynamics_str == "eolve-eds-ic") {
+            throw ConfigException("eolve-eds-ic not implemented.");
+        }
+        else {
+            throw ConfigException("Unknown dynamics in configuration file.");
+        }
     }
-    catch (const libconfig::SettingNotFoundException& nfex) {
-        throw ConfigException("Missing q_min and/or q_max in configuration.");
+    catch (const libconfig::SettingNotFoundException& nfex){
+        throw ConfigException("No dynamics setting in configuration file.");
     }
     catch (const libconfig::SettingTypeException& tex) {
-        throw ConfigException("Encountered type exception for q_min/q_max setting.");
+        throw ConfigException("Encountered type exception for dynamics setting.");
     }
-
-    /* Output file */
-    try {
-        output_file_ = static_cast<std::string>(cfg.lookup("output_file"));
-    }
-    catch (const libconfig::SettingNotFoundException& nfex) {
-        throw ConfigException("No setting for output file in configuration.");
-    }
-    catch (const libconfig::SettingTypeException& tex) {
-        throw ConfigException("Encountered type exception for output_file setting.");
-    }
-    /* CUBA settings */
-    if (cfg.exists("cuba_settings")) {
-        const libconfig::Setting& cuba_settings = cfg.lookup("cuba_settings");
-        cuba_settings.lookupValue("abs_tolerance", cuba_atol_);
-        cuba_settings.lookupValue("rel_tolerance", cuba_rtol_);
-        cuba_settings.lookupValue("max_evaluations", cuba_maxevals_);
-        cuba_settings.lookupValue("verbosity_level", cuba_verbose_);
-        cuba_settings.lookupValue("threads", cuba_cores_);
-        cuba_settings.lookupValue("statefile", cuba_statefile_);
-        cuba_settings.lookupValue("retain_statefile", cuba_retain_statefile_);
-    }
-
-    /* ODE settings */
-    if (cfg.exists("ODE settings")) {
-        const libconfig::Setting& ode_settings = cfg.lookup("cuba_settings");
-        ode_settings.lookupValue("abs_tolerance", ode_atol_);
-        ode_settings.lookupValue("rel_tolerance", ode_rtol_);
-        ode_settings.lookupValue("start_step", ode_hstart_);
-    }
-
-    /* Input power spectrum */
-    try {
-        input_ps_file_ = static_cast<std::string>(cfg.lookup("input_ps_file"));
-    }
-    catch (const libconfig::SettingNotFoundException& nfex) {
-        throw ConfigException("No input PS file in configuration.");
-    }
-    catch (const libconfig::SettingTypeException& tex) {
-        throw ConfigException("Encountered type exception for input_ps_file setting.");
+    catch (const ConfigException& e) {
+        throw e;
     }
 
     /* Settings for evolution dynamics */
     if (dynamics_ == EVOLVE_ASYMP_IC || dynamics_ == EVOLVE_EDS_IC) {
+
+        /* ODE settings */
+        try {
+            if (cfg.exists("ODE settings")) {
+                const libconfig::Setting& ode_settings = cfg.lookup("cuba_settings");
+                ode_settings.lookupValue("abs_tolerance", ode_atol_);
+                ode_settings.lookupValue("rel_tolerance", ode_rtol_);
+                ode_settings.lookupValue("start_step", ode_hstart_);
+            }
+        }
+        catch (const libconfig::SettingTypeException& tex) {
+            throw ConfigException("Encountered type exception in ODE settings.");
+        }
+
         try {
             time_steps_ = cfg.lookup("time_steps");
             eta_ini_ = static_cast<double>(cfg.lookup("eta_ini"));
@@ -341,9 +363,112 @@ Config::Config(const std::string& ini_file, int k_a_idx, int k_b_idx)
             throw ConfigException("Encountered type exception for f_nu or omega_m_0.");
         }
     }
+}
 
-    /* Store potential description */
-    cfg.lookupValue("description", description_);
+
+
+void Config::set_output_file(const libconfig::Config& cfg)
+{
+    try {
+        if (cfg.lookupValue("output_file", output_file_)) {
+            /* Check that directory exists */
+            fs::path p(output_file_);
+            if (!fs::exists(p.parent_path())) {
+                throw ConfigException("Output file directory " +
+                                      std::string(p.parent_path()) +
+                                      " does not exist.");
+            }
+        }
+        else if (cfg.lookupValue("output_path", output_path)) {
+            /* Check that directory exists */
+            if (!fs::exists(fs::path(output_path))) {
+                throw ConfigException("Output directory " + output_path +
+                                      " does not exist.");
+            }
+            output_file_ = output_path;
+            /* Add k_a_idx (& k_b_idx) to end of file */
+            if (k_a_idx != -1) {
+                output_file_ += "/" + std::to_string(k_a_idx);
+            }
+            else {
+                output_file_ += "/" + std::to_string(k_a_);
+            }
+            if (spectrum_ == BISPECTRUM) {
+                if (k_b_idx != -1) {
+                    output_file_ += "_" + std::to_string(k_b_idx);
+                }
+                else {
+                    output_file_ += "_" + std::to_string(k_b_);
+                }
+            }
+            output_file_ += ".dat";
+        }
+        else {
+            throw ConfigException("No output path/file given in configuration.");
+        }
+    }
+    catch (const libconfig::SettingNotFoundException& nfex) {
+        throw ConfigException("No setting for output file or path in configuration.");
+    }
+    catch (const libconfig::SettingTypeException& tex) {
+        throw ConfigException("Encountered type exception for output_file setting.");
+    }
+    catch (const ConfigException& ex) {
+        throw ex;
+    }
+}
+
+
+
+void Config::set_cuba_statefile(const libconfig::Setting& cuba_settings)
+{
+    try {
+        if (cuba_settings.lookupValue("statefile", cuba_statefile_)) {
+            /* Check that directory exists */
+            fs::path p(cuba_statefile_);
+            if (!fs::exists(p.parent_path())) {
+                throw ConfigException("CUBA statefile file directory " +
+                                      std::string(p.parent_path()) +
+                                      " does not exist.");
+            }
+        }
+        else if (cuba_settings.lookupValue("statefile_path",
+                                           cuba_statefile_path)) {
+            /* Check that directory exists */
+            if (!fs::exists(fs::path(cuba_statefile_path))) {
+                throw ConfigException("CUBA statefile directory " +
+                                      cuba_statefile_path + " does not exist.");
+            }
+            cuba_statefile_ = cuba_statefile_path;
+            /* Add k_a_idx (& k_b_idx) to end of file */
+            if (k_a_idx != -1) {
+                cuba_statefile_ += "/" + std::to_string(k_a_idx);
+            }
+            else {
+                cuba_statefile_ += "/" + std::to_string(k_a_);
+            }
+            if (spectrum_ == BISPECTRUM) {
+                if (k_b_idx != -1) {
+                    cuba_statefile_ += "_" + std::to_string(k_b_idx);
+                }
+                else {
+                    cuba_statefile_ += "_" + std::to_string(k_b_);
+                }
+            }
+            cuba_statefile_ += ".state";
+        }
+    }
+    catch (const libconfig::SettingNotFoundException& nfex) {
+        throw ConfigException(
+            "No setting for CUBA statefile or path in configuration.");
+    }
+    catch (const libconfig::SettingTypeException& tex) {
+        throw ConfigException(
+            "Encountered type exception for CUBA statefile setting.");
+    }
+    catch (const ConfigException& ex) {
+        throw ex;
+    }
 }
 
 
