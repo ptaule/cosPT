@@ -140,6 +140,21 @@ int main(int argc, char* argv[]) {
             throw ConfigException("Unknown spectrum.");
         }
 
+        double q1 = 10;
+        if (n_loops == 1) {
+            n_dims -= 1;
+            for (auto& el : input.tables_vec) {
+                el.vars.magnitudes.at(0) = q1;
+            }
+        }
+        else if (n_loops == 2) {
+            n_dims -= 2;
+            for (auto& el : input.tables_vec) {
+                el.vars.magnitudes.at(0) = q1;
+                el.vars.magnitudes.at(1) = q1 * 0.9;
+            }
+        }
+
         Vec1D<double> lin_ps(n_correlations, 0);
         Vec1D<double> non_lin_ps(n_correlations, 0);
         Vec1D<double> errors(n_correlations, 0);
@@ -205,6 +220,13 @@ int main(int argc, char* argv[]) {
                 overall_factor * static_cast<double>(integration_results.at(i));
             errors.at(i) =
                 overall_factor * static_cast<double>(integration_errors.at(i));
+        }
+        for (size_t i = 0; i < static_cast<size_t>(n_correlations); ++i) {
+            non_lin_ps.at(i) *= SQUARE(q1);
+            non_lin_ps.at(i) /= SQUARE(cfg.k_a()) * lin_ps.at(i);
+
+            errors.at(i) *= SQUARE(q1);
+            errors.at(i) /= SQUARE(cfg.k_a()) * lin_ps.at(i);
         }
 
         std::cout << "Integration probability/probabilities: ";

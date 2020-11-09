@@ -174,27 +174,18 @@ int integrand(
     int n_loops = tables.loop_params.n_loops();
     IntegrationVariables& vars = tables.vars;
 
-    double ratio = input.q_max/input.q_min;
-    double log_ratio = std::log(ratio);
     double jacobian = 1.0;
 
     switch (n_loops) {
         case 1:
-            vars.magnitudes.at(0) = input.q_min * pow(ratio,xx[0]);
-            vars.cos_theta.at(0) = xx[1];
-            jacobian = log(ratio) * CUBE(vars.magnitudes[0]);
+            vars.cos_theta.at(0) = xx[0];
             break;
         case 2:
-            vars.magnitudes.at(0) = input.q_min * pow(ratio,xx[0]);
-            vars.magnitudes.at(1) = input.q_min * pow(ratio,xx[0] * xx[1]);
-            vars.cos_theta.at(0) = xx[2];
-            vars.cos_theta.at(1) = xx[3];
+            vars.cos_theta.at(0) = xx[0];
+            vars.cos_theta.at(1) = xx[1];
             /* We may fix the coordinate system s.t. vars.phi[0] = 0 */
-            vars.phi.at(1) = xx[4] * TWOPI;
-            jacobian = TWOPI * xx[0]
-                * SQUARE(log_ratio)
-                * CUBE(vars.magnitudes[0])
-                * CUBE(vars.magnitudes[1]);
+            vars.phi.at(1) = xx[2] * TWOPI;
+            jacobian = TWOPI;
             break;
         default:
             throw(std::invalid_argument("ps::integrand(): n_loops is not 1 or 2."));
@@ -218,11 +209,6 @@ int integrand(
                 results.at(j) += diagram_results.at(j);
             }
             std::fill(diagram_results.begin(), diagram_results.end(), 0.0);
-        }
-        for (int i = 0; i < tables.loop_params.n_loops(); ++i) {
-            for (auto& el : results) {
-                el *= input.input_ps.eval(tables.vars.magnitudes[i]);
-            }
         }
     }
     catch (const std::exception& e) {
