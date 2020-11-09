@@ -373,7 +373,7 @@ void Config::set_output_file(const libconfig::Config& cfg)
         if (cfg.lookupValue("output_file", output_file_)) {
             /* Check that directory exists */
             fs::path p(output_file_);
-            if (!fs::exists(p.parent_path())) {
+            if (p.has_parent_path() && !fs::exists(p.parent_path())) {
                 throw ConfigException("Output file directory " +
                                       std::string(p.parent_path()) +
                                       " does not exist.");
