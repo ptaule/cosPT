@@ -37,12 +37,10 @@ LDLIBS  = -lconfig++ -lcuba -lgsl -lgslcblas
 .PHONY: all clean run debug benchmark profile force
 
 all: $(EXE)
+cluster: $(EXE)
 debug: $(DEBUG_EXE)
 benchmark: $(BENCHMARK_EXE)
 profile: $(BENCHMARK_EXE)
-
-run: all
-	./$(EXE)
 
 $(EXE): main.o $(OBJ)
 	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
