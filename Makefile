@@ -1,5 +1,6 @@
-EXE=cosPT
-BENCHMARK_EXE=bench
+EXE=build/cosPT
+DEBUG_EXE=build/debug
+BENCHMARK_EXE=build/bench
 
 SRC_DIR = src
 OBJ_DIR = obj
@@ -12,26 +13,20 @@ HEADERS = $(wildcard $(INC_DIR)/*.h)
 GIT = git
 
 CFLAGS += -Wall -Wextra -Wpedantic
-CPPFLAGS += -I/scratch/Cuba-4.2/ -I/scratch/gsl-2.5/ $(OPTIONS)
+CPPFLAGS += $(OPTIONS)
 
-LDFLAGS_GSL  = -L/scratch/gsl-2.5/.libs/ -L/scratch/gsl-2.5/cblas/.libs
-LDLIBS_GSL   = -lgsl -lgslcblas
-LDFLAGS_CUBA = -L/scratch/Cuba-4.2/
-LDLIBS_CUBA  = -lcuba
+all: CPPFLAGS += -DDEBUG=0 -I/space/ge52sir/local/include/
+all: CFLAGS += -O3
+all: LDFLAGS  += -L/space/ge52sir/local/lib/
 
-LDFLAGS += $(LDFLAGS_GSL) $(LDFLAGS_CUBA)
-LDLIBS += $(LDLIBS_GSL) $(LDLIBS_CUBA) -lm
+debug: CPPFLAGS += -DDEBUG=2 -DN_CORES=0 -I/space/ge52sir/local/include/
+debug: CFLAGS   += -g -O0
+debug: LDFLAGS  += -L/space/ge52sir/local/lib/
 
-all:   CFLAGS   += -O3
-1loop: CPPFLAGS += -DDEBUG=0 -DLOOPS=1
-1loop: CFLAGS   += -O3
-2loop: CPPFLAGS += -DDEBUG=0 -DLOOPS=2
-2loop: CFLAGS   += -O3
-debug: CPPFLAGS += -DDEBUG=2 -DN_CORES=0
-debug: CFLAGS   += -O0 -g
-benchmark: CPPFLAGS += -DLOOPS=2
-benchmark: CXXFLAGS += -O0 -g
+benchmark: CXXFLAGS += -O3
 benchmark: LDLIBS   += -lbenchmark -pthread
+
+LDLIBS  += -lcuba -lgsl -lgslcblas -lm
 
 .PHONY: all clean run 1loop 2loop benchmark force
 
