@@ -1,4 +1,5 @@
-EXE=cosPT
+EXE=build/cosPT
+DEBUG_EXE=build/debug
 
 SRC_DIR = src
 OBJ_DIR = obj
@@ -10,36 +11,34 @@ HEADERS = $(wildcard $(INC_DIR)/*.h)
 
 GIT = git
 
-CFLAGS += -Wall -Wextra -Wpedantic
-CPPFLAGS += -I/scratch/Cuba-4.2/ -I/scratch/gsl-2.5/ $(OPTIONS)
+CFLAGS += -Wall -Wextra -Wpedantic #-Wconversion
 
-LDFLAGS_GSL  = -L/scratch/gsl-2.5/.libs/ -L/scratch/gsl-2.5/cblas/.libs
-LDLIBS_GSL   = -lgsl -lgslcblas
-LDFLAGS_CUBA = -L/scratch/Cuba-4.2/
-LDLIBS_CUBA  = -lcuba
+all: CPPFLAGS += -DDEBUG=0 -I/space/ge52sir/local/include/
+all: CFLAGS   += -O3
+all: LDFLAGS  += -L/space/ge52sir/local/lib/
 
-LDFLAGS += $(LDFLAGS_GSL) $(LDFLAGS_CUBA)
-LDLIBS += $(LDLIBS_GSL) $(LDLIBS_CUBA) -lm
+cluster: CPPFLAGS += -DDEBUG=0 -I./local/include/
+cluster: CFLAGS   += -O3
+cluster: LDFLAGS  += -L./local/lib/
 
-all:   CFLAGS   += -O3
-1loop: CPPFLAGS += -DDEBUG=0 -DLOOPS=1
-1loop: CFLAGS   += -O3
-2loop: CPPFLAGS += -DDEBUG=0 -DLOOPS=2
-2loop: CFLAGS   += -O3
-debug: CPPFLAGS += -DDEBUG=2
-debug: CFLAGS   += -O0 -g
+debug: CPPFLAGS += -DDEBUG=2 -I/space/ge52sir/local/include/
+debug: CFLAGS   += -g -O0
+debug: LDFLAGS  += -L/space/ge52sir/local/lib/
 
-.PHONY: all clean run 1loop 2loop force
+CPPFLAGS += $(OPTIONS)
+
+LDLIBS  += -lcuba -lgsl -lgslcblas -lm
+
+.PHONY: all clean run debug force
 
 all: $(EXE)
-1loop: $(EXE)
-2loop: $(EXE)
-debug: $(EXE)
-
-run: all
-	./$(EXE)
+cluster: $(EXE)
+debug: $(DEBUG_EXE)
 
 $(EXE): main.o $(OBJ)
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+$(DEBUG_EXE): main.o $(OBJ)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 main.o: main.c $(HEADERS) compiler_flags
@@ -56,4 +55,4 @@ compiler_flags: force
 	echo '$(CPPFLAGS) $(CFLAGS)' | cmp -s - $@ || echo '$(CPPFLAGS) $(CFLAGS)' > $@
 
 clean:
-	$(RM) $(OBJ) main.o
+	$(RM) $(OBJ) main.o $(EXE) $(DEBUG_EXE)
