@@ -460,7 +460,8 @@ void BiSpectrumDiagram::kernel_arguments(
             config_single.at(loop_idx) *= -1;
             args.a().at(args_idx.a()++) = config2label(config_single);
 
-            std::fill(config_single.begin(), config_single.end(), 0);
+            /* Reset config_single */
+            config_single.at(loop_idx) *= 0;
         }
 
         flip_signs(config_xy.ab(), config_xy_sign_flip.ab());
@@ -480,7 +481,8 @@ void BiSpectrumDiagram::kernel_arguments(
             config_single[loop_idx] *= -1;
             args.b().at(args_idx.b()++) = config2label(config_single);
 
-            std::fill(config_single.begin(), config_single.end(), 0);
+            /* Reset config_single */
+            config_single.at(loop_idx) *= 0;
         }
 
         flip_signs(config_xy.bc(), config_xy_sign_flip.bc());
@@ -500,7 +502,8 @@ void BiSpectrumDiagram::kernel_arguments(
             config_single.at(loop_idx) *= -1;
             args.c().at(args_idx.c()++) = config2label(config_single);
 
-            std::fill(config_single.begin(), config_single.end(), 0);
+            /* Reset config_single */
+            config_single.at(loop_idx) *= 0;
         }
 
         flip_signs(config_xy.ca(), config_xy_sign_flip.ca());
@@ -518,26 +521,29 @@ void BiSpectrumDiagram::kernel_arguments(
         config2label(config_xy.ca());
 
     /* Add self loops */
-    if (n_a > 0) {
-        int loop_idx = rearrangement.at(rearr_counter);
-        config_single[loop_idx] = 1;
+    for (int i = 0; i < n_a; ++i) {
+        int loop_idx = rearrangement.at(rearr_counter++);
+        config_single.at(loop_idx) = 1;
         args.a().at(args_idx.a()++) = config2label(config_single);
-        config_single[loop_idx] = -1;
+        config_single.at(loop_idx) = -1;
         args.a().at(args_idx.a()++) = config2label(config_single);
+        config_single.at(loop_idx) = 0;
     }
-    if (n_b > 0) {
-        int loop_idx = rearrangement.at(rearr_counter);
-        config_single[loop_idx] = 1;
+    for (int i = 0; i < n_b; ++i) {
+        int loop_idx = rearrangement.at(rearr_counter++);
+        config_single.at(loop_idx) = 1;
         args.b().at(args_idx.b()++) = config2label(config_single);
-        config_single[loop_idx] = -1;
+        config_single.at(loop_idx) = -1;
         args.b().at(args_idx.b()++) = config2label(config_single);
+        config_single.at(loop_idx) = 0;
     }
-    if (n_c > 0) {
-        int loop_idx = rearrangement.at(rearr_counter);
-        config_single[loop_idx] = 1;
+    for (int i = 0; i < n_c; ++i) {
+        int loop_idx = rearrangement.at(rearr_counter++);
+        config_single.at(loop_idx) = 1;
         args.c().at(args_idx.c()++) = config2label(config_single);
-        config_single[loop_idx] = -1;
+        config_single.at(loop_idx) = -1;
         args.c().at(args_idx.c()++) = config2label(config_single);
+        config_single.at(loop_idx) = 0;
     }
 
     // Fill remaining spots with zero-label
