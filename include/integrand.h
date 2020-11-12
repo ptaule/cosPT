@@ -16,6 +16,7 @@
 // Struct for storing overall data to be used in integration
 typedef struct {
     vfloat k;
+    vfloat q;
     gsl_interp_accel* ps_acc;
     gsl_spline* ps_spline;
     const diagram_t* const diagrams;

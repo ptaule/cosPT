@@ -38,9 +38,9 @@
 #define PRE_TIME_STEPS 25
 
 // Two-point functions to compute:
-#define INTEGRAND_COMPONENTS 3
+#define INTEGRAND_COMPONENTS 2
 #define COMPONENT_A 0 // delta_cb
-#define COMPONENT_B 2 // delta_nu
+#define COMPONENT_B 0 // delta_nu
 
 // Integration limits
 #define Q_MIN 1e-4
@@ -49,8 +49,8 @@
 // Adiabatic sound speed or effective?
 #define CG2 1
 #define EFFCS2 2
-#define SOUND_SPEED CG2
-/* #define SOUND_SPEED EFFCS2 */
+/* #define SOUND_SPEED CG2 */
+#define SOUND_SPEED EFFCS2
 
 // Which GSL interpolation routine to use
 #define INTERPOL_TYPE gsl_interp_cspline
@@ -95,7 +95,7 @@ typedef struct {
 
 // Constants defined depending on number of loops
 #define N_COEFFS LOOPS+1
-#define N_DIMS   3*LOOPS-1
+/* #define N_DIMS   3*LOOPS-1 */
 
 #if LOOPS==1
 #define N_CONFIGS      6

@@ -22,6 +22,7 @@
 #include "include/io.h"
 #include "include/diagrams.h"
 #include "include/integrand.h"
+#include "include/spt_kernels.h"
 #include "include/evolve_kernels.h"
 
 int max_n_threads;
@@ -49,7 +50,6 @@ int main (int argc, char* argv[]) {
     const char* input_ps_file        = CLASS_PATH "z10_pk_cb.dat";
     const char* zeta_file            = CLASS_PATH "zeta_of_etaD.dat";
     const char* redshift_file        = CLASS_PATH "redshift_of_etaD.dat";
-    const char* wavenumber_grid_file = "input/wavenumbers_bao_zoom.dat";
 
 #if SOUND_SPEED == CG2
     const char* effcs2_etaD_grid_file = "";
@@ -82,91 +82,22 @@ int main (int argc, char* argv[]) {
     // Constants fixed by command line options (and default values)
     max_n_threads        = 100;
     double cuba_epsabs   = 1e-12;
-    double cuba_epsrel   = 1e-3;
-    double cuba_maxevals = 1e6;
-    int cuba_verbose     = 1;
+    double cuba_epsrel   = 1e-4;
+    double cuba_maxevals = 1e5;
+    int cuba_verbose     = 0;
 
-    char description[100] = "";
-    char output_path[200] = "/space/ge52sir/non_linear_PS/output/";
-    char cuba_statefile_path[200] =
-        "/space/ge52sir/non_linear_PS/output/CUBA_statefiles/";
-
-    int c = 0;
-    while ((c = getopt(argc, argv, "a:c:C:d:ho:N:r:s:v:")) != -1) {
-        switch (c) {
-        case 'a':
-            cuba_epsabs = atof(optarg);
-            break;
-        case 'c': {
-                      int n_threads = atoi(optarg);
-                      printf("Using %d cores.\n", n_threads);
-                      cubacores(n_threads, 10000);
-                      max_n_threads = n_threads + 1;
-                      break;
-                  }
-        case 'C':
-            max_n_threads = atoi(optarg);
-            break;
-        case 'd':
-            strcpy(description, optarg);
-            break;
-        case 'h':
-            print_help();
-            return 0;
-        case 'o':
-            strcpy(output_path, optarg);
-            break;
-        case 'N':
-            cuba_maxevals = atof(optarg);
-            break;
-        case 'r':
-            cuba_epsrel = atof(optarg);
-            break;
-        case 's':
-            strcpy(cuba_statefile_path, optarg);
-            break;
-        case 'v':
-            cuba_verbose = atoi(optarg);
-            break;
-        case '?':
-            if (optopt == 'a' || optopt == 'c' ||
-                    optopt == 'C' || optopt == 'd' ||
-                    optopt == 'o' || optopt == 'N' ||
-                    optopt == 'r' || optopt == 's' ||
-                    optopt == 'v')
-            {
-                error_verbose("Option %c requires a keyword as argument, see manual "
-                        "(-h) for more information.", optopt);
-            }
-            else {
-                error("Unknown option.");
-            }
-        default:
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    int argOffset = optind;
-    if (argc != argOffset + 1) {
-        error("The number of options and arguments given is not correct. Please "
-                "see manual (-h) for more information.");
-    }
-    // Get wavenumber from wavenumber index
-    int wavenumber_index = atoi(argv[argOffset]);
-    double k = get_wavenumber(wavenumber_grid_file, wavenumber_index);
-
-    char output_ps_file[200];
-    char cuba_statefile[200];
-    set_output_filepaths(output_ps_file, cuba_statefile, description,
-            output_path, cuba_statefile_path, wavenumber_index);
+    char output_ps_file[] = "old_m_nu_0.07ev.dat";
+    char* cuba_statefile = NULL;
+    /* set_output_filepaths(output_ps_file, cuba_statefile, description, */
+    /*         output_path, cuba_statefile_path, wavenumber_index); */
 
     printf("Compilation settings:\n");
     print_compilation_settings();
     printf("\nRuntime settings:\n");
     printf("Monte Carlo max evals = %.2e\n", cuba_maxevals);
     printf("Input power spectrum  = %s.\n", input_ps_file);
-    printf("Output file           = %s.\n", output_ps_file);
-    printf("Cuba_statefile        = %s.\n", cuba_statefile);
+    /* printf("Output file           = %s.\n", output_ps_file); */
+    /* printf("Cuba_statefile        = %s.\n", cuba_statefile); */
 
     // Array of table_ptrs, one for each worker (thread)
     tables_t* worker_mem = (tables_t*)malloc(max_n_threads * sizeof(tables_t));
@@ -187,10 +118,6 @@ int main (int argc, char* argv[]) {
         worker_mem[i].eta = eta;
     }
 
-    // Initialize diagrams to compute at this order in PT
-    diagram_t diagrams[N_DIAGRAMS];
-    initialize_diagrams(diagrams);
-
     evolution_params_t params = {
         .zeta_acc             = NULL,
         .zeta_spline          = NULL,
@@ -206,10 +133,11 @@ int main (int argc, char* argv[]) {
     };
 
     integration_input_t input = {
-        .k           = k,
+        .k           = 0.0,
+        .q           = 0.0,
         .ps_acc      = NULL,
         .ps_spline   = NULL,
-        .diagrams    = diagrams,
+        .diagrams    = NULL,
         .params      = &params,
         .worker_mem  = worker_mem
     };
@@ -233,92 +161,72 @@ int main (int argc, char* argv[]) {
                 &params.ic_F1_splines[i]);
     }
 
-    output_t output = {
-        .input_ps_file      = input_ps_file,
-        .zeta_file          = zeta_file,
-        .redshift_file      = redshift_file,
-        .effcs2_file        = effcs2_file,
-        .omega_eigvals_file = omega_eigvals_file,
-        .ic_F1_files        = ic_F1_files,
-        .description        = description,
-        .cuba_epsrel        = cuba_epsrel,
-        .cuba_epsabs        = cuba_epsabs,
-        .cuba_maxevals      = cuba_maxevals,
-        .k                  = k,
-        .lin_ps             = {0.0},
-        .non_lin_ps         = {0.0},
-        .error              = {0.0},
-        .F1_eta_i           = {0.0}
-    };
+    vfloat k_min = 1e-3;
+    vfloat k_max = 1e1;
+#define n_points 25
 
-    /* Linear evolution */
-    double F1_eta_f[COMPONENTS];
-    compute_F1(k, input.params, eta, output.F1_eta_i, F1_eta_f);
+    vfloat k = 0;
+    vfloat q = 0;
 
-    output.lin_ps[0] = gsl_spline_eval(input.ps_spline, k, input.ps_acc)
-        * F1_eta_f[COMPONENT_A] * F1_eta_f[COMPONENT_A];
-    output.lin_ps[1] = gsl_spline_eval(input.ps_spline, k, input.ps_acc)
-        * F1_eta_f[COMPONENT_A] * F1_eta_f[COMPONENT_B];
-    output.lin_ps[2] = gsl_spline_eval(input.ps_spline, k, input.ps_acc)
-        * F1_eta_f[COMPONENT_B] * F1_eta_f[COMPONENT_B];
+    vfloat F2s[n_points][n_points] = {0};
+    vfloat G2s[n_points][n_points] = {0};
 
-    /* Non-linear evolution */
-    // Overall factors:
-    // - Only integrating over cos_theta_i between 0 and 1, multiply by 2 to
-    //   obtain [-1,1] (for each loop momenta)
-    // - Assuming Q1 > Q2 > ..., hence multiply result by LOOPS factorial
-    // - Phi integration of first loop momenta gives a factor 2pi
-    // - Conventionally divide by ((2pi)^3)^(LOOPS)
-    vfloat overall_factor =
-        pow(2,LOOPS) * gsl_sf_fact(LOOPS) * pow(TWOPI, 1 - 3*LOOPS);
+    cubacores(4,10000);
 
-    int nregions, neval, fail;
-    cubareal result[INTEGRAND_COMPONENTS];
-    cubareal error[INTEGRAND_COMPONENTS];
-    cubareal prob[INTEGRAND_COMPONENTS];
+    for (int i = 0; i < n_points; ++i) {
+        printf("i = %i\n",i);
+        k = k_min * pow(k_max/k_min, i/(vfloat)(n_points - 1));
+        input.k = k;
+        for (int j = 0; j < n_points; ++j) {
+            q = k_min * pow(k_max/k_min, j/(vfloat)(n_points - 1));
+            input.q = q;
 
-    // Timing
-    time_t beginning, end;
-    time(&beginning);
-
+            int nregions, neval, fail;
+            cubareal result[INTEGRAND_COMPONENTS] = {0};
+            cubareal error[INTEGRAND_COMPONENTS] = {0};
+            cubareal prob[INTEGRAND_COMPONENTS] = {0};
     // CUBA settings
 #define CUBA_NVEC 1
 #define CUBA_LAST 4
-#define CUBA_RETAIN_STATEFILE 16
+#define CUBA_RETAIN_STATEFILE 0
 #define CUBA_SEED 0
 #define CUBA_MINEVAL 0
 #define CUBA_SPIN NULL
 #define CUBA_NNEW 1000
 #define CUBA_NMIN 2
 #define CUBA_FLATNESS 25.
-    Suave(N_DIMS, INTEGRAND_COMPONENTS, (integrand_t)cuba_integrand, &input,
-            CUBA_NVEC, cuba_epsrel, cuba_epsabs,
-            (cuba_verbose | CUBA_LAST | CUBA_RETAIN_STATEFILE), CUBA_SEED,
-            CUBA_MINEVAL, cuba_maxevals, CUBA_NNEW, CUBA_NMIN, CUBA_FLATNESS,
-            cuba_statefile, CUBA_SPIN, &nregions, &neval, &fail, result, error,
-            prob);
 
-    time(&end);
+#define N_DIMS 1
+            Suave(N_DIMS, INTEGRAND_COMPONENTS, (integrand_t)cuba_integrand, &input,
+                    CUBA_NVEC, cuba_epsrel, cuba_epsabs,
+                    (cuba_verbose | CUBA_LAST | CUBA_RETAIN_STATEFILE), CUBA_SEED,
+                    CUBA_MINEVAL, cuba_maxevals, CUBA_NNEW, CUBA_NMIN, CUBA_FLATNESS,
+                    cuba_statefile, CUBA_SPIN, &nregions, &neval, &fail, result, error,
+                    prob);
 
-    for (int i = 0; i < INTEGRAND_COMPONENTS; ++i) {
-        output.non_lin_ps[i] = (double)result[i] * overall_factor;
-        output.error[i]      = (double)error[i]  * overall_factor;
+            vfloat overall_factor = 1;
+
+            F2s[i][j] = overall_factor * result[0];
+            G2s[i][j] = overall_factor * result[1];
+        }
     }
-
-    printf("\nElapsed time: %.0fs\n", difftime(end, beginning));
-    printf("k = %e\n", k);
-
-    char* corr_strings[INTEGRAND_COMPONENTS] = {"<AA>","<AB>","<BB>"};
-    for (int i = 0; i < INTEGRAND_COMPONENTS; ++i) {
-        printf("%s:\tP_lin = % .6e, P_%d-loop = % .6e, err_%d-loop = % .6e, "
-                "prob = %f\n", corr_strings[i], output.lin_ps[i], LOOPS,
-                output.non_lin_ps[i], LOOPS, output.error[i], (double)prob[i]);
+    printf("F2:\n");
+    printf("===================================================\n");
+    for (int i = 0; i < n_points; ++i) {
+        for (int j = 0; j < n_points; ++j) {
+            printf("%Le\t", F2s[i][j]);
+        }
+        printf("\n");
     }
-
-    write_PS(output_ps_file, &output);
-
-    /* Free allocated memory */
-    diagrams_gc(diagrams);
+    printf("===================================================\n");
+    printf("G2:\n");
+    printf("===================================================\n");
+    for (int i = 0; i < n_points; ++i) {
+        for (int j = 0; j < n_points; ++j) {
+            printf("%Le\t", G2s[i][j]);
+        }
+        printf("\n");
+    }
 
     free(worker_mem);
 
@@ -382,26 +290,8 @@ int cuba_integrand(
     integration_input_t* input = (integration_input_t*)userdata;
     integration_variables_t vars;
 
-    vfloat ratio = (vfloat)Q_MAX/Q_MIN;
-
-    vfloat jacobian = 0.0;
-#if LOOPS == 1
-    vars.magnitudes[0] = Q_MIN * pow(ratio,xx[0]);
-    vars.cos_theta[0] = xx[1];
-    jacobian = log(ratio) * pow(vars.magnitudes[0],3);
-#elif LOOPS == 2
-    vars.magnitudes[0] = Q_MIN * pow(ratio,xx[0]);
-    vars.magnitudes[1] = Q_MIN * pow(ratio,xx[0] * xx[1]);
-    vars.cos_theta[0] = xx[2];
-    vars.cos_theta[1] = xx[3];
-    vars.phi[0] = xx[4] * TWOPI;
-    jacobian = TWOPI * xx[0]
-        * pow(log(ratio),2)
-        * pow(vars.magnitudes[0],3)
-        * pow(vars.magnitudes[1],3);
-#else
-    warning_verbose("Monte-carlo integration not implemented for LOOPS = %d.",LOOPS);
-#endif
+    vars.magnitudes[0] = input->q;
+    vars.cos_theta[0] = 2.0 * xx[0] - 1.0;
 
     // tables points to memory allocated for worker number <*core + 1>
     // (index 0 is reserved for master(
@@ -419,12 +309,11 @@ int cuba_integrand(
     compute_alpha_beta_tables((const vfloat (*)[])tables->scalar_products,
             tables->alpha, tables->beta);
 
-    double* results = ff;
-    for (int i = 0; i < INTEGRAND_COMPONENTS; ++i) results[i] = 0;
+    short int args[] = {4, 2, ZERO_LABEL};
+    short int kernel_index = kernel_evolution(args, -1, 2, input->params, tables);
 
-    integrand(input, tables, results);
-
-    for (int i = 0; i < INTEGRAND_COMPONENTS; ++i) results[i] *= jacobian;
+    ff[0] = vars.cos_theta[0] * tables->kernels[kernel_index].values[TIME_STEPS - 1][0];
+    ff[1] = vars.cos_theta[0] * tables->kernels[kernel_index].values[TIME_STEPS - 1][1];
 
     return 0;
 }
