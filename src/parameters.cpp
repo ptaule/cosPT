@@ -27,8 +27,14 @@ using std::size_t;
 namespace fs = std::filesystem;
 
 
-Config::Config(const std::string& ini_file, int k_a_idx, int k_b_idx)
-    : k_a_idx(k_a_idx), k_b_idx(k_b_idx)
+Config::Config(const std::string& ini_file,
+        int k_a_idx,
+        int k_b_idx,
+        int k_c_idx,
+        int cuba_maxevals
+        )
+    : k_a_idx(k_a_idx), k_b_idx(k_b_idx), k_c_idx(k_c_idx),
+    cuba_maxevals_(cuba_maxevals)
 {
     libconfig::Config cfg;
 
@@ -66,7 +72,7 @@ Config::Config(const std::string& ini_file, int k_a_idx, int k_b_idx)
     else if (cfg.lookupValue("k_a", k_a_)) {}
     else {
         throw ConfigException("Neither k_a nor k_a_idx in configuration file, "
-                              "and no k_a index given as command line argument.");
+                              "and no k_a index given as command line option.");
     }
 
     /* Integration ranges */
@@ -90,7 +96,16 @@ Config::Config(const std::string& ini_file, int k_a_idx, int k_b_idx)
             const libconfig::Setting& cuba_settings = cfg.lookup("cuba_settings");
             cuba_settings.lookupValue("abs_tolerance", cuba_atol_);
             cuba_settings.lookupValue("rel_tolerance", cuba_rtol_);
-            cuba_settings.lookupValue("max_evaluations", cuba_maxevals_);
+
+            /* If cuba_maxevals is not already set, look up value */
+            if (cuba_maxevals_ == 0) {
+                if (!cuba_settings.lookupValue("max_evaluations", cuba_maxevals_)) {
+                    /* Default value */
+                    std::cerr << "No cuba max. evaluations given. Using "
+                                 "default value: 1e6." << std::endl;
+                    cuba_maxevals_ = 1e6;
+                }
+            }
             cuba_settings.lookupValue("verbosity_level", cuba_verbose_);
             cuba_settings.lookupValue("threads", cuba_cores_);
             cuba_settings.lookupValue("retain_statefile", cuba_retain_statefile_);
@@ -182,12 +197,14 @@ void Config::set_spectrum(const libconfig::Config& cfg)
         }
 
         if (k_b_idx != -1 || cfg.exists("k_b_idx") || cfg.exists("k_b") ||
-            cfg.exists("cos_ab")) {
-            std::cerr << "For powerspectrum, k_b/cos_ab settings are ignored."
+            k_c_idx != -1 || cfg.exists("k_c_idx") || cfg.exists("k_c") ||
+            cfg.exists("cos_ab"))
+        {
+            std::cerr << "For powerspectrum, k_b/k_c/cos_ab settings are ignored."
                     << std::endl;
         }
     }
-    /* For bispectrum: k_b, cos_ab and three-point correlations */
+    /* For bispectrum: k_b, k_c/cos_ab and three-point correlations */
     else {
         try {
             const libconfig::Setting& correlation = cfg.lookup("correlations");
@@ -232,17 +249,53 @@ void Config::set_spectrum(const libconfig::Config& cfg)
         else {
             throw ConfigException(
                 "Neither k_b nor k_b_idx in configuration file, "
-                "and no k_b index given as command line argument.");
+                "and no k_b index given as command line option.");
         }
+
+        bool k_c_given = false;
         try {
-            cos_ab_ = cfg.lookup("cos_ab");
+            if (k_c_idx != -1) {
+                k_c_ = Wavenumbers::grid[k_c_idx];
+                k_c_given = true;
+            }
+            else if (cfg.lookupValue("k_c_idx", k_c_idx)) {
+                k_c_ = Wavenumbers::grid[k_c_idx];
+                k_c_given = true;
+            }
+            else if (cfg.lookupValue("k_c", k_c_)) {
+                k_c_given = true;
+            }
         }
-        catch (const libconfig::SettingNotFoundException& nfex) {
-            throw ConfigException(
-                "No value set for cos_ab (spectrum = BISPECTRUM).");
+        catch (const libconfig::SettingTypeException& tex) {
+            throw ConfigException("Encountered type exception for k_c setting.");
+        }
+
+        bool cos_ab_given = false;
+        try {
+            if (cfg.lookupValue("cos_ab", cos_ab_)) {
+                cos_ab_given = true;
+            }
         }
         catch (const libconfig::SettingTypeException& tex) {
             throw ConfigException("Encountered type exception for cos_ab setting.");
+        }
+
+        /* If neither/both k_c and cos_ab was given, throw exception */
+        if ((!k_c_given) && (!cos_ab_given)) {
+            throw ConfigException("Neither k_c nor cos_ab given.");
+        }
+        if (k_c_given && cos_ab_given) {
+            throw ConfigException("Both k_c and cos_ab given.");
+        }
+
+        /* Law of cosines */
+        if (k_c_given) {
+            cos_ab_ = 0.5 * (k_a_/k_b_ + k_b_/k_a_ + SQUARE(k_c_)/(k_a_*k_b_));
+        }
+        else {
+            /* cos_ab given */
+            k_c_ = std::sqrt(SQUARE(k_a_) + SQUARE(k_b_) -
+                             2 * k_a_ * k_b_ * cos_ab_);
         }
     }
 }
@@ -486,9 +539,10 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
     }
     else {
       out << "# Matter bispectrum B(k) at " << cfg.n_loops() << "-loop for\n"
-          << "#\n# k_a = " << cfg.k_a() << " (h/Mpc)"
-          << "\n# k_b = " << cfg.k_b() << " (h/Mpc)"
-          << "\n# cos_ab = " << cfg.cos_ab() << "\n";
+          << "#\n# k_a    = " << cfg.k_a() << " (h/Mpc)\n"
+          << "# k_b    = " << cfg.k_b() << " (h/Mpc)\n"
+          << "# k_c    = " << cfg.k_c() << " (h/Mpc)\n"
+          << "# cos_ab = " << cfg.cos_ab() << "\n";
     }
     out << "#\n# Description: " << cfg.description() << "\n";
     out <<    "# Git hash:    " << build_git_sha << "\n";

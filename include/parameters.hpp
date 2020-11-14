@@ -27,9 +27,11 @@ class Config {
 
         int k_a_idx = -1;
         int k_b_idx = -1;
+        int k_c_idx = -1;
 
         double k_a_;
         double k_b_ = 0;
+        double k_c_ = 0;
         double cos_ab_ = 0;
 
         double q_min_ = 1e-4;
@@ -40,7 +42,7 @@ class Config {
 
         double cuba_atol_           = 1e-12;
         double cuba_rtol_           = 1e-4;
-        double cuba_maxevals_       = 1e6;
+        double cuba_maxevals_       = 0;
         int cuba_verbose_           = 1;
         int cuba_cores_             = 0;
         bool cuba_retain_statefile_ = false;
@@ -82,7 +84,9 @@ class Config {
     public:
         Config(const std::string& ini_file,
                 int k_a_idx = -1,
-                int k_b_idx = -1
+                int k_b_idx = -1,
+                int k_c_idx = -1,
+                int cuba_maxevals = 0
                 );
         int n_loops() const {return n_loops_;}
         Dynamics dynamics() const {return dynamics_;}
@@ -90,6 +94,7 @@ class Config {
 
         double k_a() const {return k_a_;}
         double k_b() const {return k_b_;}
+        double k_c() const {return k_c_;}
         double cos_ab() const {return cos_ab_;};
 
         double q_min() const {return q_min_;}

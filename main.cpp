@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include <getopt.h>
 #include <gsl/gsl_sf.h>
 #include <cuba.h>
 
@@ -28,34 +29,56 @@ using std::pow;
 int main(int argc, char* argv[]) {
     int k_a_idx = -1;
     int k_b_idx = -1;
+    int k_c_idx = -1;
+    int cuba_maxevals = 0;
     std::string config_file;
 
-    if (argc == 1) {
-        std::cerr
-            << "No arguments given. Configuration file required as argument."
-            << std::endl;
+    static struct option long_options[] = {
+          {"k_a",     required_argument, 0, 'a'},
+          {"k_b",     required_argument, 0, 'b'},
+          {"k_c",     required_argument, 0, 'c'},
+          {"help",    no_argument,       0, 'h'},
+          {"n_evals", required_argument, 0, 'n'},
+          {NULL, 0, NULL, 0}
+        };
+
+    int option_index = 0;
+    int c = 0;
+    while ((c = getopt_long(argc, argv, "a:b:c:hn:", long_options, &option_index))
+            != -1)
+    {
+        switch (c) {
+            case 'a':
+                k_a_idx = atoi(optarg);
+                break;
+            case 'b':
+                k_b_idx = atoi(optarg);
+                break;
+            case 'c':
+                k_c_idx = atoi(optarg);
+                break;
+            case 'h':
+            case 'n':
+                cuba_maxevals = static_cast<int>(atof(optarg));
+                break;
+            case '?':
+            default:
+                std::cerr << "Unknown option given." << std::endl;
+                return EXIT_FAILURE;
+        }
+    }
+
+    if (argc != optind + 1) {
+        std::cerr << "Configuration file required as argument." << std::endl;
         return EXIT_FAILURE;
-    }
-    if (argc == 2) {
-        config_file = std::string(argv[1]);
-    }
-    else if (argc == 3) {
-        config_file = std::string(argv[1]);
-        k_a_idx = atoi(argv[2]);
-    }
-    else if (argc == 4) {
-        config_file = std::string(argv[1]);
-        k_a_idx = atoi(argv[2]);
-        k_b_idx = atoi(argv[3]);
     }
     else {
-        std::cerr << "Too many arguments given." << std::endl;
-        return EXIT_FAILURE;
+        config_file = std::string(argv[optind]);
     }
 
     try {
         std::cout << "Reading configuration file " << config_file << std::endl;
-        Config cfg(config_file, k_a_idx, k_b_idx);
+        Config cfg(config_file, k_a_idx, k_b_idx, k_c_idx, cuba_maxevals);
 
         int n_loops = cfg.n_loops();
         int n_dims = 0; /* Dimension of integral measure */

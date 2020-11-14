@@ -169,7 +169,7 @@ void write_results(
     else {
         out << "#\n#" << setw(17) << "k_a (h/Mpc)";
         out << setw(18) << "k_b (h/Mpc)";
-        out << setw(18) << "cos_ab";
+        out << setw(18) << "k_c (h/Mpc)";
 
         for (auto& el : cfg.triple_correlations()) {
             out << setw(13) << "B_lin " << el;
@@ -190,7 +190,7 @@ void write_results(
     }
     else {
         out << setw(18) << cfg.k_b();
-        out << setw(18) << cfg.cos_ab();
+        out << setw(18) << cfg.k_c();
 
         for (size_t i = 0; i < cfg.triple_correlations().size(); ++i) {
             out << setw(18) << lin_ps.at(i);
