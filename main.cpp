@@ -18,6 +18,7 @@
 #include "include/tables.hpp"
 #include "include/diagrams.hpp"
 #include "include/interpolation.hpp"
+#include "include/kernel_evolution.hpp"
 #include "include/integrand.hpp"
 #include "include/io.hpp"
 
@@ -42,8 +43,8 @@ int main(int argc, char* argv[]) {
         config_file = std::string(argv[1]);
         k_a_idx = atoi(argv[2]);
     }
-        else if (argc == 4) {
-            config_file = std::string(argv[1]);
+    else if (argc == 4) {
+        config_file = std::string(argv[1]);
         k_a_idx = atoi(argv[2]);
         k_b_idx = atoi(argv[3]);
     }
@@ -123,7 +124,19 @@ int main(int argc, char* argv[]) {
             for (auto& el : lin_ps) {
                 el = input.input_ps.eval(cfg.k_a());
             }
+            if (cfg.dynamics() == EVOLVE_ASYMP_IC) {
+                Vec1D<double> F1_eta_ini(COMPONENTS, 0);
+                Vec1D<double> F1_eta_fin(COMPONENTS, 0);
+                compute_F1(cfg.k_a(), ev_params, eta_grid, F1_eta_ini, F1_eta_fin);
+
+                for (int i = 0; i < n_correlations; ++i) {
+                  lin_ps.at(i) *=
+                      F1_eta_fin.at(input.pair_correlations.at(i).first()) *
+                      F1_eta_fin.at(input.pair_correlations.at(i).second());
+                }
+            }
         }
+
 
         cubacores(cfg.cuba_cores(), 10000);
         int cuba_retain_statefile = 0;
