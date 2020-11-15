@@ -412,7 +412,7 @@ int integrand(
         case 1:
             vars.magnitudes.at(0) = input.q_min * pow(ratio,xx[0]);
             vars.cos_theta.at(0) = xx[1];
-            vars.phi.at(0) = xx[2];
+            vars.phi.at(0) = xx[2] * TWOPI;
             jacobian = TWOPI * log(ratio) * CUBE(vars.magnitudes[0]);
             break;
         default:
