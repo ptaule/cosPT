@@ -220,10 +220,8 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
         }
     }
 
-    /* zeta always enters with prefactor 1.5, hence we redefine and multiply
-     * once */
-    double zeta = 1.5 * ev_params.zeta_at_eta(eta);
-    double cs2 = ev_params.cs2(eta, k);
+    double zeta = ev_params.zeta_at_eta(eta);
+    double cs2  = ev_params.cs2(eta, k);
 
     /* etaD parametrization */
     f[0] = rhs[0] - n * y[0] + y[1];

@@ -848,22 +848,26 @@ EvolutionParameters& EvolutionParameters::operator=(EvolutionParameters&& other)
 EvolutionParameters::EvolutionParameters(
         double f_nu,
         double omega_m_0,
-        double ode_atol,
-        double ode_rtol,
-        double ode_hstart,
         const std::string& zeta_file,
         const std::string& redshift_file,
         const std::string& omega_eigenvalues_file,
         const Vec1D<std::string>& F1_ic_files,
         const std::string& effcs2_x_file,
         const std::string& effcs2_y_file,
-        const std::string& effcs2_data_file
+        const std::string& effcs2_data_file,
+        double ode_atol,
+        double ode_rtol,
+        double ode_hstart
         ) :
     f_nu_(f_nu), ode_atol_(ode_atol), ode_rtol_(ode_rtol),
-    ode_hstart_(ode_hstart), zeta(zeta_file), redshift(redshift_file),
+    ode_hstart_(ode_hstart), redshift(redshift_file),
     omega_eigenvalues(omega_eigenvalues_file), effcs2(effcs2_x_file,
             effcs2_y_file, effcs2_data_file)
 {
+    /* zeta always enters with prefactor 1.5, hence we redefine and multiply
+     * here once */
+    zeta = Interpolation1D(zeta_file, 1.5);
+
     for (auto& F1_ic_file : F1_ic_files) {
         F1_ic.emplace_back(F1_ic_file);
     }
@@ -877,39 +881,25 @@ EvolutionParameters::EvolutionParameters(
 
 
 EvolutionParameters::EvolutionParameters(
+        double m_nu,
         double f_nu,
         double omega_m_0,
         const std::string& zeta_file,
         const std::string& redshift_file,
         const std::string& omega_eigenvalues_file,
         const Vec1D<std::string>& F1_ic_files,
-        const std::string& effcs2_x_file,
-        const std::string& effcs2_y_file,
-        const std::string& effcs2_data_file
-        ) :
-    EvolutionParameters(f_nu, omega_m_0, 1e-6, 1e-4, 1e-3, zeta_file,
-            redshift_file, omega_eigenvalues_file, F1_ic_files, effcs2_x_file,
-            effcs2_y_file, effcs2_data_file)
-{}
-
-
-
-EvolutionParameters::EvolutionParameters(
-        double m_nu,
-        double f_nu,
-        double omega_m_0,
         double ode_atol,
         double ode_rtol,
-        double ode_hstart,
-        const std::string& zeta_file,
-        const std::string& redshift_file,
-        const std::string& omega_eigenvalues_file,
-        const Vec1D<std::string>& F1_ic_files
+        double ode_hstart
         ) :
     f_nu_(f_nu), ode_atol_(ode_atol), ode_rtol_(ode_rtol),
-    ode_hstart_(ode_hstart), zeta(zeta_file), redshift(redshift_file),
+    ode_hstart_(ode_hstart), redshift(redshift_file),
     omega_eigenvalues(omega_eigenvalues_file)
 {
+    /* zeta always enters with prefactor 1.5, hence we redefine and multiply
+     * here once */
+    zeta = Interpolation1D(zeta_file, 1.5);
+
     for (auto& F1_ic_file : F1_ic_files) {
         F1_ic.emplace_back(F1_ic_file);
     }
@@ -929,32 +919,15 @@ EvolutionParameters::EvolutionParameters(
 
 
 EvolutionParameters::EvolutionParameters(
-        double m_nu,
-        double f_nu,
-        double omega_m_0,
         const std::string& zeta_file,
-        const std::string& redshift_file,
-        const std::string& omega_eigenvalues_file,
-        const Vec1D<std::string>& F1_ic_files
-        ) :
-    EvolutionParameters(m_nu, f_nu, omega_m_0, 1e-6, 1e-4, 1e-3, zeta_file,
-            redshift_file, omega_eigenvalues_file, F1_ic_files)
-{}
-
-
-
-EvolutionParameters::EvolutionParameters(
         double ode_atol,
         double ode_rtol,
-        double ode_hstart,
-        const std::string& zeta_file
+        double ode_hstart
         ) :
     ode_atol_(ode_atol), ode_rtol_(ode_rtol), ode_hstart_(ode_hstart),
     zeta(zeta_file)
-{}
-
-
-
-EvolutionParameters::EvolutionParameters(const std::string& zeta_file)
-    : EvolutionParameters(1e-6, 1e-4, 1e-3, zeta_file)
-{}
+{
+    /* zeta always enters with prefactor 1.5, hence we redefine and multiply
+     * here once */
+    zeta = Interpolation1D(zeta_file, 1.5);
+}

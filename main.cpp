@@ -96,11 +96,11 @@ int main(int argc, char* argv[]) {
 
         if (cfg.dynamics() == EVOLVE_EDS_IC || cfg.dynamics() == EVOLVE_ASYMP_IC) {
             ev_params = EvolutionParameters(cfg.f_nu(), cfg.omega_m_0(),
-                    cfg.ode_atol(), cfg.ode_rtol(), cfg.ode_hstart(),
                     cfg.zeta_file(), cfg.redshift_file(),
                     cfg.omega_eigenvalues_file(), cfg.F1_ic_files(),
                     cfg.effcs2_x_grid(), cfg.effcs2_y_grid(),
-                    cfg.effcs2_data());
+                    cfg.effcs2_data(), cfg.ode_atol(), cfg.ode_rtol(),
+                    cfg.ode_hstart());
             eta_grid = EtaGrid(cfg.pre_time_steps(), cfg.time_steps(), cfg.eta_ini(),
                     cfg.eta_fin(), cfg.eta_asymp());
         }

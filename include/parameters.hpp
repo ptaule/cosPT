@@ -229,27 +229,16 @@ class EvolutionParameters {
         EvolutionParameters(
                 double f_nu,
                 double omega_m_0,
-                double ode_atol,
-                double ode_rtol,
-                double ode_hstart,
                 const std::string& zeta_file,
                 const std::string& redshift_file,
                 const std::string& omega_eigenvalues_file,
                 const Vec1D<std::string>& F1_ic_files,
                 const std::string& effcs2_x_file,
                 const std::string& effcs2_y_file,
-                const std::string& effcs2_data_file
-                );
-        EvolutionParameters(
-                double f_nu,
-                double omega_m_0,
-                const std::string& zeta_file,
-                const std::string& redshift_file,
-                const std::string& omega_eigenvalues_file,
-                const Vec1D<std::string>& F1_ic_files,
-                const std::string& effcs2_x_file,
-                const std::string& effcs2_y_file,
-                const std::string& effcs2_data_file
+                const std::string& effcs2_data_file,
+                double ode_atol = 1e-6,
+                double ode_rtol = 1e-4,
+                double ode_hstart = 1e-3
                 );
 
         /* Adiabatic sound speed constructors */
@@ -257,32 +246,22 @@ class EvolutionParameters {
                 double m_nu,
                 double f_nu,
                 double omega_m_0,
-                double ode_atol,
-                double ode_rtol,
-                double ode_hstart,
                 const std::string& zeta_file,
                 const std::string& redshift_file,
                 const std::string& omega_eigenvalues_file,
-                const Vec1D<std::string>& F1_ic_files
-                );
-        EvolutionParameters(
-                double m_nu,
-                double f_nu,
-                double omega_m_0,
-                const std::string& zeta_file,
-                const std::string& redshift_file,
-                const std::string& omega_eigenvalues_file,
-                const Vec1D<std::string>& F1_ic_files
+                const Vec1D<std::string>& F1_ic_files,
+                double ode_atol = 1e-6,
+                double ode_rtol = 1e-4,
+                double ode_hstart = 1e-3
                 );
 
         /* No sound speed constructors */
         EvolutionParameters(
-                double ode_atol,
-                double ode_rtol,
-                double ode_hstart,
-                const std::string& zeta_file
+                const std::string& zeta_file,
+                double ode_atol = 1e-6,
+                double ode_rtol = 1e-4,
+                double ode_hstart = 1e-3
                 );
-        EvolutionParameters(const std::string& zeta_file);
 
         double f_nu() const {return f_nu_;}
         double ode_atol() const {return ode_atol_;}
@@ -306,7 +285,6 @@ class EvolutionParameters {
                 return cg2_factor * (1 + redshift.eval(eta));
             }
         }
-
 };
 
 
