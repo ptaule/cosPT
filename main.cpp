@@ -92,7 +92,9 @@ int main(int argc, char* argv[]) {
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
 
-        input.input_ps = Interpolation1D(cfg.input_ps_file());
+        /* Conventionally divide input PS by (2pi)^3 */
+        double twopi_factor = pow(TWOPI, -3);
+        input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor);
 
         if (cfg.dynamics() == EVOLVE_EDS_IC || cfg.dynamics() == EVOLVE_ASYMP_IC) {
             ev_params = EvolutionParameters(cfg.f_nu(), cfg.omega_m_0(),
@@ -193,13 +195,10 @@ int main(int argc, char* argv[]) {
          * - Only integrating over cos_theta_i between 0 and
          *   1, multiply by 2 to obtain [-1,1] (for each loop momenta)
          * - Assuming Q1 > Q2 > ..., hence multiply result by LOOPS factorial
-         * - Conventionally divide by ((2pi)^3)^(LOOPS)
          * - Phi integration of first loop momenta gives a factor 2pi
          *   (powerspectrum) */
-        double overall_factor =
-            pow(2, n_loops) * gsl_sf_fact(n_loops) * pow(TWOPI, - 3*n_loops)
-            * (cfg.spectrum() == POWERSPECTRUM ? TWOPI : 1);
-
+        double overall_factor = pow(2, n_loops) * gsl_sf_fact(n_loops) *
+                                (cfg.spectrum() == POWERSPECTRUM ? TWOPI : 1);
 
         for (size_t i = 0; i < static_cast<size_t>(n_correlations); ++i) {
             non_lin_ps.at(i) =
