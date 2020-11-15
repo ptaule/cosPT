@@ -290,7 +290,7 @@ void Config::set_spectrum(const libconfig::Config& cfg)
 
         /* Law of cosines */
         if (k_c_given) {
-            cos_ab_ = 0.5 * (k_a_/k_b_ + k_b_/k_a_ + SQUARE(k_c_)/(k_a_*k_b_));
+            cos_ab_ = 0.5 * (k_a_/k_b_ + k_b_/k_a_ - SQUARE(k_c_)/(k_a_*k_b_));
         }
         else {
             /* cos_ab given */
