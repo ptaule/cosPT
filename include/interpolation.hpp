@@ -29,20 +29,25 @@ class Interpolation1D {
         gsl_interp_accel* acc;
         const gsl_interp_type* type;
 
-        void initialize(const Vec1D<double>& x, const Vec1D<double>& y);
+        void initialize(
+                const Vec1D<double>& x,
+                Vec1D<double> y,
+                double factor
+                );
     public:
         Interpolation1D() : spline(nullptr), acc(nullptr), type(nullptr) {}
+        /* factor multiplies y-values before interpolation */
         Interpolation1D(
                 const Vec1D<double>& x,
                 const Vec1D<double>& y,
-                const gsl_interp_type* type
+                double factor = 1,
+                const gsl_interp_type* type = gsl_interp_cspline
                 );
         Interpolation1D(
-                const Vec1D<double>& x,
-                const Vec1D<double>& y
+                const std::string& filename,
+                double factor = 1,
+                const gsl_interp_type* type = gsl_interp_cspline
                 );
-        Interpolation1D(const std::string& filename, const gsl_interp_type* type);
-        Interpolation1D(const std::string& filename);
         Interpolation1D(const Interpolation1D&) = delete;
         Interpolation1D& operator=(const Interpolation1D&) = delete;
         Interpolation1D(Interpolation1D&& other);
@@ -86,7 +91,8 @@ class Interpolation2D {
         void initialize(
                 const Vec1D<double>& x,
                 const Vec1D<double>& y,
-                const Vec1D<double>& z
+                Vec1D<double> z,
+                double factor
                 );
     public:
         Interpolation2D() :
@@ -95,23 +101,15 @@ class Interpolation2D {
                 const Vec1D<double>& x,
                 const Vec1D<double>& y,
                 const Vec1D<double>& z,
-                const gsl_interp2d_type* type
-                );
-        Interpolation2D(
-                const Vec1D<double>& x,
-                const Vec1D<double>& y,
-                const Vec1D<double>& z
+                double factor = 1,
+                const gsl_interp2d_type* type = gsl_interp2d_bicubic
                 );
         Interpolation2D(
                 const std::string& x_grid_file,
                 const std::string& y_grid_file,
                 const std::string& data_file,
-                const gsl_interp2d_type* type
-                );
-        Interpolation2D(
-                const std::string& x_grid_file,
-                const std::string& y_grid_file,
-                const std::string& data_file
+                double factor = 1,
+                const gsl_interp2d_type* type = gsl_interp2d_bicubic
                 );
         Interpolation2D(const Interpolation2D&) = delete;
         Interpolation2D& operator=(const Interpolation2D&) = delete;

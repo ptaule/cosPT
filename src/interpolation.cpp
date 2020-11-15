@@ -6,6 +6,7 @@
 */
 
 #include <vector>
+#include <algorithm>
 #include <stdexcept>
 
 #include <gsl/gsl_spline.h>
@@ -14,11 +15,21 @@
 #include "../include/io.hpp"
 #include "../include/interpolation.hpp"
 
-void Interpolation1D::initialize(const Vec1D<double>& x, const Vec1D<double>& y)
+void Interpolation1D::initialize(
+        const Vec1D<double>& x,
+        Vec1D<double> y,
+        double factor
+        )
 {
     if (x.size() != y.size()) {
         throw(std::invalid_argument(
             "Dimensions of x and y vectors are not equal."));
+    }
+
+    /* If factor != 1, multiply y-values by factor */
+    if (factor != 1) {
+        std::transform(y.begin(), y.end(), y.begin(),
+                [factor](double& d) -> double {return factor * d;});
     }
 
     x_min = x.front();
@@ -34,35 +45,25 @@ void Interpolation1D::initialize(const Vec1D<double>& x, const Vec1D<double>& y)
 Interpolation1D::Interpolation1D(
         const Vec1D<double>& x,
         const Vec1D<double>& y,
+        double factor,
         const gsl_interp_type* type
         ) : type(type)
 {
-    initialize(x,y);
+    initialize(x, y, factor);
 }
-
-Interpolation1D::Interpolation1D(
-        const Vec1D<double>& x,
-        const Vec1D<double>& y
-        ) : Interpolation1D(x, y, gsl_interp_cspline)
-{}
 
 
 
 Interpolation1D::Interpolation1D(
         const std::string& filename,
+        double factor,
         const gsl_interp_type* type
         ) : type(type)
 {
     Vec2D<double> columns;
     read_columns_from_file(filename, 2, columns);
-    initialize(columns.at(0), columns.at(1));
+    initialize(columns.at(0), columns.at(1), factor);
 }
-
-
-
-Interpolation1D::Interpolation1D(const std::string& filename)
-    : Interpolation1D(filename, gsl_interp_cspline)
-{}
 
 
 
@@ -93,12 +94,19 @@ Interpolation1D& Interpolation1D::operator=(Interpolation1D&& other)
 void Interpolation2D::initialize(
         const Vec1D<double>& x,
         const Vec1D<double>& y,
-        const Vec1D<double>& z
-        ) 
+        Vec1D<double> z,
+        double factor
+        )
 {
     if (x.size() * y.size() != z.size()) {
         throw(std::invalid_argument(
             "Length of z vector does not equal x.size() * y.size()."));
+    }
+
+    /* If factor != 1, multiply y-values by factor */
+    if (factor != 1) {
+        std::transform(z.begin(), z.end(), z.begin(),
+                [factor](double& d) -> double {return factor * d;});
     }
 
     x_min = x.front();
@@ -119,20 +127,12 @@ Interpolation2D::Interpolation2D(
         const Vec1D<double>& x,
         const Vec1D<double>& y,
         const Vec1D<double>& z,
+        double factor,
         const gsl_interp2d_type* type
         ) : type(type)
 {
-    initialize(x, y, z);
+    initialize(x, y, z, factor);
 }
-
-
-
-Interpolation2D::Interpolation2D(
-        const Vec1D<double>& x,
-        const Vec1D<double>& y,
-        const Vec1D<double>& z
-        ) : Interpolation2D(x, y, z, gsl_interp2d_bicubic)
-{}
 
 
 
@@ -140,6 +140,7 @@ Interpolation2D::Interpolation2D(
         const std::string& x_grid_file,
         const std::string& y_grid_file,
         const std::string& data_file,
+        double factor,
         const gsl_interp2d_type* type
         ) : type(type)
 {
@@ -151,18 +152,8 @@ Interpolation2D::Interpolation2D(
 
     read_data_grid_from_file(data_file, z, x.at(0).size(), y.at(0).size());
 
-    initialize(x.at(0), y.at(0), z);
+    initialize(x.at(0), y.at(0), z, factor);
 }
-
-
-
-Interpolation2D::Interpolation2D(
-        const std::string& x_grid_file,
-        const std::string& y_grid_file,
-        const std::string& data_file
-        ) : Interpolation2D(x_grid_file, y_grid_file, data_file,
-            gsl_interp2d_bicubic)
-{}
 
 
 
