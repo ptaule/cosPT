@@ -288,14 +288,13 @@ void Config::set_spectrum(const libconfig::Config& cfg)
             throw ConfigException("Both k_c and cos_ab given.");
         }
 
-        /* Law of cosines */
+        /* k_c = - k_a - k_b */
         if (k_c_given) {
-            cos_ab_ = 0.5 * (k_a_/k_b_ + k_b_/k_a_ - SQUARE(k_c_)/(k_a_*k_b_));
+            cos_ab_ = 0.5 * (SQUARE(k_c_)/(k_a_*k_b_) - k_a_/k_b_ - k_b_/k_a_);
         }
         else {
             /* cos_ab given */
-            k_c_ = std::sqrt(SQUARE(k_a_) + SQUARE(k_b_) -
-                             2 * k_a_ * k_b_ * cos_ab_);
+            k_c_ = std::sqrt(SQUARE(k_a_) + SQUARE(k_b_) + 2*k_a_*k_b_*cos_ab_);
         }
     }
 }
