@@ -605,6 +605,21 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
         out << "# effective cs2 y grid   = " << cfg.effcs2_y_grid() << "\n";
         out << "# effective cs2 data     = " << cfg.effcs2_data() << "\n";
     }
+    out << "#\n# Information from Cuba integration:\n";
+    if (cfg.cuba_fail() == 0) {
+        out << "#\t Accuracy reached.\n";
+    }
+    else if (cfg.cuba_fail() > 0) {
+        out << "#\t Accuracy not reached.\n";
+    }
+    else if (cfg.cuba_fail() == -1) {
+        out << "#\t Error: dimension out of range.\n";
+    }
+    else {
+        out << "#\t Unknown error status from CUBA.\n";
+    }
+    out << "#\t Num. evaluations = " << cfg.cuba_evals() << "\n";
+    out << "#\t Num. subregions  = " << cfg.cuba_subregions() << "\n";
 
     return out;
 }

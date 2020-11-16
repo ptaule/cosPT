@@ -42,12 +42,17 @@ class Config {
 
         double cuba_atol_           = 1e-12;
         double cuba_rtol_           = 1e-4;
-        double cuba_maxevals_       = 0;
+        int cuba_maxevals_          = 0;
         int cuba_verbose_           = 1;
         int cuba_cores_             = 0;
         bool cuba_retain_statefile_ = false;
         std::string cuba_statefile_;
         std::string cuba_statefile_path;
+
+        /* Information from MC integration */
+        int cuba_evals_      = 0;
+        int cuba_fail_       = 0;
+        int cuba_subregions_ = 0;
 
         std::string description_;
 
@@ -105,11 +110,20 @@ class Config {
 
         double cuba_atol() const {return cuba_atol_ ;}
         double cuba_rtol() const {return cuba_rtol_;}
-        double cuba_maxevals() const {return cuba_maxevals_;}
+        int cuba_maxevals() const {return cuba_maxevals_;}
         int cuba_verbose() const {return cuba_verbose_;}
         int cuba_cores() const {return cuba_cores_;}
         bool cuba_retain_statefile() const {return cuba_retain_statefile_;}
         std::string cuba_statefile() const {return cuba_statefile_;}
+
+        int cuba_subregions() const {return cuba_subregions_;}
+        int cuba_evals() const {return cuba_evals_;}
+        int cuba_fail() const {return cuba_fail_;}
+
+        /* Functions to write MC integration info */
+        int& cuba_subregions() {return cuba_subregions_;}
+        int& cuba_evals() {return cuba_evals_;}
+        int& cuba_fail() {return cuba_fail_;}
 
         std::string description() const {return description_;}
 

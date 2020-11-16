@@ -170,7 +170,6 @@ int main(int argc, char* argv[]) {
             cuba_retain_statefile = 16;
         }
 
-        int nregions, neval, fail;
         Vec1D<cubareal> integration_results(n_correlations, 0);
         Vec1D<cubareal> integration_errors(n_correlations, 0);
         Vec1D<cubareal> integration_probs(n_correlations, 0);
@@ -187,9 +186,9 @@ int main(int argc, char* argv[]) {
                 (cfg.cuba_verbose() | CUBA_LAST | cuba_retain_statefile), CUBA_SEED,
                 CUBA_MINEVAL, cfg.cuba_maxevals(), CUBA_NNEW, CUBA_NMIN, CUBA_FLATNESS,
                 (cuba_statefile.empty() ? nullptr : cuba_statefile.c_str()),
-                CUBA_SPIN, &nregions, &neval, &fail,
-                integration_results.data(), integration_errors.data(),
-                integration_probs.data());
+                CUBA_SPIN, &cfg.cuba_subregions(), &cfg.cuba_evals(),
+                &cfg.cuba_fail(), integration_results.data(),
+                integration_errors.data(), integration_probs.data());
 
         /* Overall factors:
          * - Only integrating over cos_theta_i between 0 and
