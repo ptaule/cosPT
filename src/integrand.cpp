@@ -406,6 +406,7 @@ int integrand(
     IntegrationVariables& vars = tables.vars;
 
     double ratio = input.q_max/input.q_min;
+    double log_ratio = std::log(ratio);
     double jacobian = 0.0;
 
     switch (n_loops) {
@@ -414,6 +415,19 @@ int integrand(
             vars.cos_theta.at(0) = xx[1];
             vars.phi.at(0) = xx[2] * TWOPI;
             jacobian = TWOPI * log(ratio) * CUBE(vars.magnitudes[0]);
+            break;
+        case 2:
+            vars.magnitudes.at(0) = input.q_min * pow(ratio,xx[0]);
+            vars.magnitudes.at(1) = input.q_min * pow(ratio,xx[0] * xx[1]);
+            vars.cos_theta.at(0) = xx[2];
+            vars.cos_theta.at(1) = xx[3];
+            /* We may fix the coordinate system s.t. vars.phi[0] = 0 */
+            vars.phi.at(0) = xx[4] * TWOPI;
+            vars.phi.at(1) = xx[5] * TWOPI;
+            jacobian = SQUARE(TWOPI) * xx[0]
+                * SQUARE(log_ratio)
+                * CUBE(vars.magnitudes[0])
+                * CUBE(vars.magnitudes[1]);
             break;
         default:
             throw(std::invalid_argument("bs::integrand(): n_loops is not 1."));
