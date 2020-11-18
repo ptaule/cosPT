@@ -27,10 +27,13 @@ using std::pow;
 
 
 int main(int argc, char* argv[]) {
+    /* Default values for k_a_idx etc. indicate that they should be set
+     * in ini_file */
     int k_a_idx = -1;
     int k_b_idx = -1;
     int k_c_idx = -1;
     int cuba_maxevals = 0;
+    int cuba_cores = -1;
     std::string config_file;
 
     static struct option long_options[] = {
@@ -39,12 +42,13 @@ int main(int argc, char* argv[]) {
           {"k_c",     required_argument, 0, 'c'},
           {"help",    no_argument,       0, 'h'},
           {"n_evals", required_argument, 0, 'n'},
+          {"n_cores", required_argument, 0, 'p'},
           {NULL, 0, NULL, 0}
         };
 
     int option_index = 0;
     int c = 0;
-    while ((c = getopt_long(argc, argv, "a:b:c:hn:", long_options, &option_index))
+    while ((c = getopt_long(argc, argv, "a:b:c:hn:p:", long_options, &option_index))
             != -1)
     {
         switch (c) {
@@ -58,8 +62,12 @@ int main(int argc, char* argv[]) {
                 k_c_idx = atoi(optarg);
                 break;
             case 'h':
+                break;
             case 'n':
                 cuba_maxevals = static_cast<int>(atof(optarg));
+                break;
+            case 'p':
+                cuba_cores = atoi(optarg);
                 break;
             case '?':
             default:
@@ -78,7 +86,7 @@ int main(int argc, char* argv[]) {
 
     try {
         std::cout << "Reading configuration file " << config_file << std::endl;
-        Config cfg(config_file, k_a_idx, k_b_idx, k_c_idx, cuba_maxevals);
+        Config cfg(config_file, k_a_idx, k_b_idx, k_c_idx, cuba_maxevals, cuba_cores);
 
         int n_loops = cfg.n_loops();
         int n_dims = 0; /* Dimension of integral measure */

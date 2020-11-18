@@ -31,10 +31,11 @@ Config::Config(const std::string& ini_file,
         int k_a_idx,
         int k_b_idx,
         int k_c_idx,
-        int cuba_maxevals
+        int cuba_maxevals,
+        int cuba_cores
         )
     : k_a_idx(k_a_idx), k_b_idx(k_b_idx), k_c_idx(k_c_idx),
-    cuba_maxevals_(cuba_maxevals)
+    cuba_maxevals_(cuba_maxevals), cuba_cores_(cuba_cores)
 {
     libconfig::Config cfg;
 
@@ -96,6 +97,8 @@ Config::Config(const std::string& ini_file,
             const libconfig::Setting& cuba_settings = cfg.lookup("cuba_settings");
             cuba_settings.lookupValue("abs_tolerance", cuba_atol_);
             cuba_settings.lookupValue("rel_tolerance", cuba_rtol_);
+            cuba_settings.lookupValue("verbosity_level", cuba_verbose_);
+            cuba_settings.lookupValue("retain_statefile", cuba_retain_statefile_);
 
             /* If cuba_maxevals is not already set, look up value */
             if (cuba_maxevals_ == 0) {
@@ -106,9 +109,15 @@ Config::Config(const std::string& ini_file,
                     cuba_maxevals_ = 1e6;
                 }
             }
-            cuba_settings.lookupValue("verbosity_level", cuba_verbose_);
-            cuba_settings.lookupValue("threads", cuba_cores_);
-            cuba_settings.lookupValue("retain_statefile", cuba_retain_statefile_);
+
+            /* If cuba_cores_ is not already set, look up value */
+            if (cuba_cores_ == -1) {
+                if (!cuba_settings.lookupValue("n_cores", cuba_cores_)) {
+                    std::cerr << "No n_cores value given. Using default value: 4"
+                              << std::endl;
+                    cuba_cores_ = 4;
+                }
+            }
             set_cuba_statefile(cuba_settings);
         }
     }

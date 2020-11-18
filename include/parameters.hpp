@@ -91,7 +91,8 @@ class Config {
                 int k_a_idx = -1,
                 int k_b_idx = -1,
                 int k_c_idx = -1,
-                int cuba_maxevals = 0
+                int cuba_maxevals = 0,
+                int cuba_cores = -1
                 );
         int n_loops() const {return n_loops_;}
         Dynamics dynamics() const {return dynamics_;}
