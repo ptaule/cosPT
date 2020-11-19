@@ -30,22 +30,31 @@ class Interpolation1D {
         const gsl_interp_type* type;
 
         void initialize(
-                const Vec1D<double>& x,
+                Vec1D<double> x,
                 Vec1D<double> y,
-                double factor
+                double factor,
+                bool padding_zeros
                 );
     public:
         Interpolation1D() : spline(nullptr), acc(nullptr), type(nullptr) {}
-        /* factor multiplies y-values before interpolation */
+
+        /* Optional arguments:
+         * - factor which multiplies y-values before interpolation
+         * - padding_zeros: add zeros at ends of y-vector, for x = 0 and x =
+         *   2*x_max. O(n) performance!
+         * - gsl_interp_type: GSL interpolation type */
+
         Interpolation1D(
                 const Vec1D<double>& x,
                 const Vec1D<double>& y,
                 double factor = 1,
+                bool padding_zeros = false,
                 const gsl_interp_type* type = gsl_interp_cspline
                 );
         Interpolation1D(
                 const std::string& filename,
                 double factor = 1,
+                bool padding_zeros = false,
                 const gsl_interp_type* type = gsl_interp_cspline
                 );
         Interpolation1D(const Interpolation1D&) = delete;

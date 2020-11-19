@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
 
         /* Conventionally divide input PS by (2pi)^3 */
         double twopi_factor = pow(TWOPI, -3);
-        input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor);
+        input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor, true);
 
         if (cfg.dynamics() == EVOLVE_EDS_IC || cfg.dynamics() == EVOLVE_ASYMP_IC) {
             ev_params = EvolutionParameters(cfg.f_nu(), cfg.omega_m_0(),

@@ -16,14 +16,25 @@
 #include "../include/interpolation.hpp"
 
 void Interpolation1D::initialize(
-        const Vec1D<double>& x,
+        Vec1D<double> x,
         Vec1D<double> y,
-        double factor
+        double factor,
+        bool padding_zeros
         )
 {
     if (x.size() != y.size()) {
         throw(std::invalid_argument(
             "Dimensions of x and y vectors are not equal."));
+    }
+
+    if (padding_zeros) {
+        /* y(x = 0) = 0 */
+        x.insert(x.begin(), 0);
+        y.insert(y.begin(), 0);
+
+        /* y(2 * x_max) = 0 */
+        x.push_back(2 * x.back());
+        y.push_back(0);
     }
 
     /* If factor != 1, multiply y-values by factor */
@@ -46,10 +57,11 @@ Interpolation1D::Interpolation1D(
         const Vec1D<double>& x,
         const Vec1D<double>& y,
         double factor,
+        bool padding_zeros,
         const gsl_interp_type* type
         ) : type(type)
 {
-    initialize(x, y, factor);
+    initialize(x, y, factor, padding_zeros);
 }
 
 
@@ -57,12 +69,13 @@ Interpolation1D::Interpolation1D(
 Interpolation1D::Interpolation1D(
         const std::string& filename,
         double factor,
+        bool padding_zeros,
         const gsl_interp_type* type
         ) : type(type)
 {
     Vec2D<double> columns;
     read_columns_from_file(filename, 2, columns);
-    initialize(columns.at(0), columns.at(1), factor);
+    initialize(columns.at(0), columns.at(1), factor, padding_zeros);
 }
 
 
