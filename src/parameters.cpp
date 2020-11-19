@@ -102,11 +102,17 @@ Config::Config(const std::string& ini_file,
 
             /* If cuba_maxevals is not already set, look up value */
             if (cuba_maxevals_ == 0) {
-                if (!cuba_settings.lookupValue("max_evaluations", cuba_maxevals_)) {
+                if (!cuba_settings.exists("max_evaluations")) {
                     /* Default value */
                     std::cerr << "No cuba max. evaluations given. Using "
                                  "default value: 1e6." << std::endl;
                     cuba_maxevals_ = 1e6;
+                }
+                else {
+                    /* Casting first to double, so that libconfig recognizes
+                     * input such as 1e6, then cast to int */
+                    cuba_maxevals_ = static_cast<int>(static_cast<double>(
+                        cuba_settings.lookup("max_evaluations")));
                 }
             }
 
