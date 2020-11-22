@@ -323,7 +323,7 @@ void diagram_term(
     size_t n_correlations = input.triple_correlations.size();
 
     /* Loop over momentum rearrangement, sign flips and overall loop assosiations */
-    int overall_loop_assosiations = diagram.overall_loop() ? 3 : 1;
+    int overall_loop_assosiations = diagram.overall_loop() ? 6 : 1;
     for (size_t i = 0; i < diagram.n_rearrangements(); ++i) {
         for (size_t j = 0; j < diagram.n_sign_configs(); ++j) {
             for (int k = 0; k < overall_loop_assosiations; ++k) {
@@ -346,17 +346,20 @@ void diagram_term(
                 configuration_term(diagram, i, j, k,
                         input.triple_correlations, tables, term_results);
 
-                if (diagram.n_ab > 0) {
+                /* Multiply by P_lin(q_xy1) if xy connecting line is present
+                 * and the loop momentum is *not* associated with this line (we
+                 * multiply all diagram results by P_lin(Q) later*/
+                if (diagram.n_ab > 0 && !(diagram.overall_loop() && k % 3 == 0)) {
                     for (auto& el : term_results) {
                         el *= input.input_ps.eval(q_xy1.a());
                     }
                 }
-                if (diagram.n_bc > 0) {
+                if (diagram.n_bc > 0 && !(diagram.overall_loop() && k % 3 == 1)) {
                     for (auto& el : term_results) {
                         el *= input.input_ps.eval(q_xy1.b());
                     }
                 }
-                if (diagram.n_ca > 0) {
+                if (diagram.n_ca > 0 && !(diagram.overall_loop() && k % 3 == 2)) {
                     for (auto& el : term_results) {
                         el *= input.input_ps.eval(q_xy1.c());
                     }
@@ -379,8 +382,11 @@ void diagram_term(
 
     for (size_t i = 0; i < n_correlations; ++i) {
         diagram_results.at(i) *= diagram.diagram_factor();
+        /* Divide by # rearrangments, sign configurations for connecting lines
+         * and divide by 2 for switching sign of overall loop (if present) */
         diagram_results.at(i) /= diagram.n_rearrangements() *
-            diagram.n_sign_configs();
+                                 diagram.n_sign_configs() *
+                                 (diagram.overall_loop() ? 2 : 1);
     }
 }
 

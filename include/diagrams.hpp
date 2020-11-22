@@ -140,8 +140,8 @@ class BiSpectrumDiagram {
          * rearr_idx, sign_idx and overall_loop_idx */
         Vec3D<Triple<int>> q_xy1_labels;
         /* Vectors of q_xy = (q_ab, q_bc, q_ca) (sum of connecting lines)
-         * labels, for each rearr_idx */
-        Vec1D<Triple<int>> q_xy_labels;
+         * labels, for each rearr_idx and overall_loop_idx */
+        Vec2D<Triple<int>> q_xy_labels;
 
         /* Argument configuration for each rearrangement, sign setup and
          * (potential) overall loop assosiation
@@ -177,7 +177,7 @@ class BiSpectrumDiagram {
                 int overall_loop_idx,
                 const Vec2D<double>& scalar_products,
                 Triple<double>& q_xy1, /* out */
-                int heaviside_theta    /* out */
+                int& heaviside_theta   /* out */
                 ) const;
 
 /* Turn off vector bounds check if not in debug-mode */

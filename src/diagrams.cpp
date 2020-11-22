@@ -415,22 +415,31 @@ void BiSpectrumDiagram::kernel_arguments(
     Vec1D<int> config_single(n_coeffs, 0);
 
     if (overall_loop_) {
-        /* Add (rearranged) first loop momenta to all connecting lines */
+        /* Add (rearranged) first loop momenta to all connecting lines. If
+         * overall_loop_idx = 0,1,2 add +Q, and if overall_loop_idx = 3,4,5 add
+         * -Q */
         int loop_idx = rearrangement.at(rearr_counter++);
-        config_xy.ab().at(loop_idx) = 1;
-        config_xy.bc().at(loop_idx) = 1;
-        config_xy.ca().at(loop_idx) = 1;
+        if (overall_loop_idx < 3) {
+            config_xy.ab().at(loop_idx) = 1;
+            config_xy.bc().at(loop_idx) = 1;
+            config_xy.ca().at(loop_idx) = 1;
+        }
+        else {
+            config_xy.ab().at(loop_idx) = -1;
+            config_xy.bc().at(loop_idx) = -1;
+            config_xy.ca().at(loop_idx) = -1;
+        }
     }
-    if (n_ab == 0 || (overall_loop_ && overall_loop_idx == 0)) {
+    if (n_ab == 0 || (overall_loop_ && (overall_loop_idx % 3 == 0))) {
         config_xy.bc().at(k_b_idx) = -1; /* q_bc += -k_b */
         config_xy.ca().at(k_a_idx) = 1;  /* q_bc += +k_a */
     }
-    else if (n_bc == 0 || (overall_loop_ && overall_loop_idx == 1)) {
+    else if (n_bc == 0 || (overall_loop_ && (overall_loop_idx % 3 == 1))) {
         config_xy.ab().at(k_b_idx) = 1;  /* q_ab += k_b */
         config_xy.ca().at(k_a_idx) = 1;  /* q_ca += -k_c = k_a + k_b */
         config_xy.ca().at(k_b_idx) = 1;
     }
-    else if (n_ca == 0 || (overall_loop_ && overall_loop_idx == 2)) {
+    else if (n_ca == 0 || (overall_loop_ && (overall_loop_idx % 3 == 2))) {
         config_xy.ab().at(k_a_idx) = -1;  /* q_ab += -k_a */
         config_xy.bc().at(k_a_idx) = -1;  /* q_ca += k_c = - k_a - k_b */
         config_xy.bc().at(k_b_idx) = -1;
@@ -443,9 +452,12 @@ void BiSpectrumDiagram::kernel_arguments(
 
     /* Cache labels corresponding to q_ab, q_bc and q_ca (i.e. total momentum
      * of all connecting loops) for this rearrangement */
-    q_xy_labels.at(rearr_idx).ab() = config2label(config_xy.ab());
-    q_xy_labels.at(rearr_idx).bc() = config2label(config_xy.bc());
-    q_xy_labels.at(rearr_idx).ca() = config2label(config_xy.ca());
+    q_xy_labels.at(rearr_idx).at(overall_loop_idx).ab() =
+        config2label(config_xy.ab());
+    q_xy_labels.at(rearr_idx).at(overall_loop_idx).bc() =
+        config2label(config_xy.bc());
+    q_xy_labels.at(rearr_idx).at(overall_loop_idx).ca() =
+        config2label(config_xy.ca());
 
     /* Add connecting loops */
     if (n_ab > 0) {
@@ -652,9 +664,13 @@ BiSpectrumDiagram::BiSpectrumDiagram(
         q_xy1_labels.at(i).resize(sign_configs.size());
 
         for (size_t j = 0; j < sign_configs.size(); ++j) {
-            int overall_loop_assosiations = overall_loop_ ? 3 : 1;
+            /* There are three ways to associate the loop momenta to each
+             * connecting lines, and 2 sign flips for each, hence 6 total */
+            int overall_loop_assosiations = overall_loop_ ? 6 : 1;
             arg_configs.at(i).at(j).resize(overall_loop_assosiations);
             q_xy1_labels.at(i).at(j).resize(overall_loop_assosiations);
+
+            q_xy_labels.at(i).resize(overall_loop_assosiations);
 
             for (int k = 0; k < overall_loop_assosiations; ++k) {
                 arg_configs.at(i).at(j).at(k).a().args.resize(n_kernel_args);
@@ -676,7 +692,7 @@ void BiSpectrumDiagram::connecting_lines_factors(
         int overall_loop_idx,
         const Vec2D<double>& scalar_products,
         Triple<double>& q_xy1, /* out */
-        int heaviside_theta    /* out */
+        int& heaviside_theta   /* out */
         ) const
 {
     heaviside_theta = 1;
@@ -708,9 +724,9 @@ void BiSpectrumDiagram::connecting_lines_factors(
          * than any of the other total connecting line momenta, the diagram
          * configuration is skipped (heaviside_theta = 0) */
         Triple<int> q_xy_label = {
-            q_xy_labels.at(rearr_idx).ab(),
-            q_xy_labels.at(rearr_idx).bc(),
-            q_xy_labels.at(rearr_idx).ca()
+            q_xy_labels.at(rearr_idx).at(overall_loop_idx).ab(),
+            q_xy_labels.at(rearr_idx).at(overall_loop_idx).bc(),
+            q_xy_labels.at(rearr_idx).at(overall_loop_idx).ca()
         };
         Triple<double> q_xy = {
             std::sqrt(scalar_products.at(q_xy_label.ab()).at(q_xy_label.ab())),
@@ -718,26 +734,25 @@ void BiSpectrumDiagram::connecting_lines_factors(
             std::sqrt(scalar_products.at(q_xy_label.ca()).at(q_xy_label.ca()))
         };
 
-        switch (overall_loop_idx) {
+        switch (overall_loop_idx % 3) {
             case 0:
                 if (q_xy.ab() >= q_xy.bc() || q_xy.ab() >= q_xy.ca()) {
                     heaviside_theta = 0;
+                    return;
                 }
                 break;
             case 1:
                 if (q_xy.bc() >= q_xy.ab() || q_xy.bc() >= q_xy.ca()) {
                     heaviside_theta = 0;
+                    return;
                 }
                 break;
             case 2:
                 if (q_xy.ca() >= q_xy.ab() || q_xy.ca() >= q_xy.bc()) {
                     heaviside_theta = 0;
+                    return;
                 }
                 break;
-            default:
-                throw(std::logic_error(
-                    "BiSpectrumDiagram::connecting_lines_factors(): "
-                    "overall_loop_idx is not 0,1 or 2."));
         }
     }
 
@@ -881,7 +896,7 @@ std::ostream& operator<<(std::ostream& out, const BiSpectrumDiagram& diagram)
     for (size_t i = 0; i < diagram.n_rearrangements(); ++i) {
         for (size_t j = 0; j < diagram.n_sign_configs(); ++j) {
             if (diagram.overall_loop()) {
-                for (size_t k = 0; k < 3; ++k) {
+                for (size_t k = 0; k < 6; ++k) {
                     out << "\t";
                     diagram.print_argument_configuration(out, i, j, k);
                     out << std::endl;
