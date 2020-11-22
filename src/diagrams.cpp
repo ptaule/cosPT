@@ -690,6 +690,7 @@ void BiSpectrumDiagram::connecting_lines_factors(
         int rearr_idx,
         int sign_idx,
         int overall_loop_idx,
+        const Vec1D<double>& loop_magnitudes,
         const Vec2D<double>& scalar_products,
         Triple<double>& q_xy1, /* out */
         int& heaviside_theta   /* out */
@@ -758,26 +759,20 @@ void BiSpectrumDiagram::connecting_lines_factors(
 
     const Vec1D<int>& rearr = rearrangements.at(rearr_idx);
 
-    /* Heaviside-theta (q_m1 - Q1(rearr(offset)) */
-    if (n_ab < 2) {
-        heaviside_theta *= 1;
-    }
-    else {
-        double q_ab2 =
-            std::sqrt(scalar_products.at(rearr.at(offset)).at(rearr.at(offset)));
-        heaviside_theta *= (q_xy1.ab() > q_ab2 ? n_ab : 0);
+    /* Heaviside-theta (q_ab1 - Q(rearr(offset)) */
+    if (n_ab > 1) {
+        double q = loop_magnitudes.at(rearr.at(offset));
+        heaviside_theta *= (q_xy1.ab() > q ? n_ab : 0);
         offset += n_connecting_loops.ab();
     }
 #if DEBUG >= 1
     /* Check that the heaviside-theta (Q2(rearr) - Q3(rearr)) etc. are
      * satisfied by (reparametrized) momenta from CUBA */
     for (int i = 1; i < n_connecting_loops.ab(); ++i) {
-      double q_ab_i = std::sqrt(
-          scalar_products.at(rearr.at(offset + i)).at(rearr.at(offset + i)));
-      double q_ab_j = std::sqrt(
-          scalar_products.at(rearr.at(offset + i + 1)).at(rearr.at(offset + i + 1)));
+      double q_ab_i = loop_magnitudes.at(rearr.at(offset + i));
+      double q_ab_j = loop_magnitudes.at(rearr.at(offset + i + 1));
       if (q_ab_i < q_ab_j) {
-          throw(std::logic_error("Heaviside theta: Q" +
+          throw(std::logic_error("Heaviside theta(ab): Q" +
                       std::to_string(rearr.at(offset + i) + 1) + " < Q" +
                       std::to_string(rearr.at(offset + i + 1) + 1) + "."));
         }
@@ -785,23 +780,19 @@ void BiSpectrumDiagram::connecting_lines_factors(
 #endif
 
     /* Same for n_bc */
-    if (n_bc < 2) {
-        heaviside_theta *= 1;
-    }
-    else {
-        double q_bc2 =
-            std::sqrt(scalar_products.at(rearr.at(offset)).at(rearr.at(offset)));
-        heaviside_theta *= (q_xy1.bc() > q_bc2 ? n_bc : 0);
+    if (n_bc > 1) {
+        double q = loop_magnitudes.at(rearr.at(offset));
+        heaviside_theta *= (q_xy1.bc() > q ? n_bc : 0);
         offset += n_connecting_loops.bc();
     }
 #if DEBUG >= 1
+    /* Check that the heaviside-theta (Q2(rearr) - Q3(rearr)) etc. are
+     * satisfied by (reparametrized) momenta from CUBA */
     for (int i = 1; i < n_connecting_loops.bc(); ++i) {
-      double q_bc_i = std::sqrt(
-          scalar_products.at(rearr.at(offset + i)).at(rearr.at(offset + i)));
-      double q_bc_j = std::sqrt(
-          scalar_products.at(rearr.at(offset + i + 1)).at(rearr.at(offset + i + 1)));
+      double q_bc_i = loop_magnitudes.at(rearr.at(offset + i));
+      double q_bc_j = loop_magnitudes.at(rearr.at(offset + i + 1));
       if (q_bc_i < q_bc_j) {
-          throw(std::logic_error("Heaviside theta: Q" +
+          throw(std::logic_error("Heaviside theta(bc): Q" +
                       std::to_string(rearr.at(offset + i) + 1) + " < Q" +
                       std::to_string(rearr.at(offset + i + 1) + 1) + "."));
         }
@@ -809,25 +800,19 @@ void BiSpectrumDiagram::connecting_lines_factors(
 #endif
 
     /* Same for n_ca */
-    if (n_ca < 2) {
-        heaviside_theta *= 1;
-    }
-    else {
-        double q_ca2 =
-            std::sqrt(scalar_products.at(rearr.at(offset)).at(rearr.at(offset)));
-        heaviside_theta *= (q_xy1.ca() > q_ca2 ? n_ca : 0);
+    if (n_ca > 1) {
+        double q = loop_magnitudes.at(rearr.at(offset));
+        heaviside_theta *= (q_xy1.ca() > q ? n_ca : 0);
         offset += n_connecting_loops.ca();
     }
 #if DEBUG >= 1
     /* Check that the heaviside-theta (Q2(rearr) - Q3(rearr)) etc. are
      * satisfied by (reparametrized) momenta from CUBA */
     for (int i = 1; i < n_connecting_loops.ca(); ++i) {
-      double q_ca_i = std::sqrt(
-          scalar_products.at(rearr.at(offset + i)).at(rearr.at(offset + i)));
-      double q_ca_j = std::sqrt(
-          scalar_products.at(rearr.at(offset + i + 1)).at(rearr.at(offset + i + 1)));
+      double q_ca_i = loop_magnitudes.at(rearr.at(offset + i));
+      double q_ca_j = loop_magnitudes.at(rearr.at(offset + i + 1));
       if (q_ca_i < q_ca_j) {
-          throw(std::logic_error("Heaviside theta: Q" +
+          throw(std::logic_error("Heaviside theta(ca): Q" +
                       std::to_string(rearr.at(offset + i) + 1) + " < Q" +
                       std::to_string(rearr.at(offset + i + 1) + 1) + "."));
         }

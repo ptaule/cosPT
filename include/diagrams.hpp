@@ -175,6 +175,7 @@ class BiSpectrumDiagram {
                 int rearr_idx,
                 int sign_idx,
                 int overall_loop_idx,
+                const Vec1D<double>& loop_magnitudes,
                 const Vec2D<double>& scalar_products,
                 Triple<double>& q_xy1, /* out */
                 int& heaviside_theta   /* out */

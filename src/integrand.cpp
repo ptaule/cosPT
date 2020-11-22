@@ -333,7 +333,8 @@ void diagram_term(
                 Triple<double> q_xy1 = {0,0,0};
                 int heaviside_theta = 1;
                 diagram.connecting_lines_factors(i, j, k,
-                        tables.scalar_products(), q_xy1, heaviside_theta);
+                        tables.vars.magnitudes, tables.scalar_products(),
+                        q_xy1, heaviside_theta);
 
                 if (heaviside_theta == 0) {
 #if DEBUG >= 2
