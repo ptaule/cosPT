@@ -171,7 +171,9 @@ int main(int argc, char* argv[]) {
         }
 
 
-        cubacores(cfg.cuba_cores(), 10000);
+        int cuba_cores = cfg.cuba_cores();
+        int cuba_points = 10000;
+        cubacores(&cuba_cores, &cuba_points);
         int cuba_retain_statefile = 0;
         std::string cuba_statefile = cfg.cuba_statefile();
         if (cfg.cuba_retain_statefile()) {
