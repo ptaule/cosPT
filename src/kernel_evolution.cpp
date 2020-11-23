@@ -197,6 +197,85 @@ class ODEInput {
 
 
 
+namespace EvolveICEdS {
+int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
+    ODEInput input = *(ODEInput*)ode_input;
+    int n = input.n;
+
+    /* Interpolate RHS */
+    double rhs[COMPONENTS] = {0.0};
+
+    // If n == 1, rhs = 0
+    if (input.n > 1) {
+        for (int i = 0; i < COMPONENTS; ++i) {
+            rhs[i] = input.rhs.at(i).eval(eta);
+        }
+    }
+
+    double zeta = input.ev_params.zeta_at_eta(eta);
+
+    /* etaD parametrization */
+    f[0] = rhs[0] - n * y[0] + y[1];
+    f[1] = rhs[1] + zeta * y[0] + (-zeta + 1 - n) * y[1];
+
+    return GSL_SUCCESS;
+}
+
+
+
+void solve_kernel_ODE(
+        ODEInput& input,
+        const EtaGrid& eta_grid,
+        Vec2D<double>& kernels /* time_steps*components table of kernels */
+        )
+{
+    const EvolutionParameters& ev_params = input.ev_params;
+    int time_steps     = eta_grid.time_steps();
+
+    gsl_odeiv2_system sys = {kernel_gradient, nullptr, COMPONENTS, &input};
+    gsl_odeiv2_driver *driver = gsl_odeiv2_driver_alloc_y_new(
+        &sys, gsl_odeiv2_step_rkf45, ev_params.ode_hstart(),
+        ev_params.ode_rtol(), ev_params.ode_atol());
+
+    double eta_current = eta_grid.at(0);
+
+    // Evolve system
+    for (int i = 1; i < time_steps; i++) {
+        /* For calculation of kernels.at(i), the initial condition is
+         * kernels.at(i-1). Hence we copy kernels.at(i-1) to kernels.at(i) */
+        std::copy(kernels.at(i - 1).begin(), kernels.at(i - 1).end(),
+                kernels.at(i).begin());
+        /* Then evolve to index i */
+        int status = gsl_odeiv2_driver_apply(
+                driver, &eta_current, eta_grid.at(i), kernels.at(i).data());
+
+        if (status != GSL_SUCCESS) {
+            throw(std::runtime_error("GLS ODE driver gave error value = " +
+                        std::to_string(status)));
+        }
+    }
+
+    // Free GSL ODE driver
+    gsl_odeiv2_driver_free(driver);
+}
+
+
+
+static void kernel_initial_conditions(
+        int kernel_index,
+        IntegrandTables& tables
+        )
+{
+    for (int i = 0; i < COMPONENTS; ++i) {
+        tables.kernels.at(kernel_index).values.at(0).at(i) =
+            tables.spt_kernels.at(kernel_index).values[i];
+    }
+}
+}
+
+
+
+namespace EvolveICAsymp {
 int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
     ODEInput input = *(ODEInput*)ode_input;
 
@@ -328,6 +407,7 @@ static void kernel_initial_conditions(
         }
     }
 }
+}
 
 
 
@@ -359,39 +439,49 @@ int kernel_evolution(
     }
 #endif
 
-    // If kernel_index is not known, -1 is sent as argument
+    /* If kernel_index is not known, -1 is sent as argument */
     if (kernel_index == -1) {
         kernel_index = tables.loop_params.arguments_2_kernel_index(arguments);
     }
 
-    // Alias reference to kernel we are working with for convenience/readability
+    /* Alias reference to kernel we are working with for convenience/readability */
     Kernel& kernel = tables.kernels.at(kernel_index);
 
-    // Check if the SPT kernels are already computed
+    /* Check if the SPT kernels are already computed */
     if (kernel.computed) return kernel_index;
 
-    // Compute k (sum of kernel arguments)
-    int sum = tables.sum_table.sum_labels(arguments,
-            tables.loop_params.n_kernel_args());
-    double k = std::sqrt(tables.scalar_products().at(sum).at(sum));
-
-    // Set initial conditions
-    kernel_initial_conditions(kernel_index, n, k, tables);
-
-    // Interpolation variables for interpolated RHS
+    /* Interpolation variables for interpolated RHS */
     std::array<Interpolation1D, COMPONENTS> rhs;
 
-    // Compute RHS sum in evolution equation if n > 1. If n == 1, the RHS
-    // equals 0, which is implemented in solve_kernel_ODE().
+    /* Compute RHS sum in evolution equation if n > 1. If n == 1, the RHS
+     * equals 0, which is implemented in solve_kernel_ODE(). */
     if (n > 1) {
         compute_RHS_sum(arguments, n, tables, rhs);
     }
 
-    // Set up ODE input and system
-    ODEInput input(n, k, tables.eta_grid.eta_ini(), tables.ev_params, rhs);
-
-    solve_kernel_ODE(input, tables.eta_grid,
-                     tables.kernels.at(kernel_index).values);
+    if (tables.loop_params.dynamics() == EVOLVE_IC_EDS) {
+        /* Set up ODE input and system */
+        ODEInput input(n, 0, tables.eta_grid.eta_ini(), tables.ev_params, rhs);
+        /* Set initial conditions */
+        EvolveICEdS::kernel_initial_conditions(kernel_index, tables);
+        /* Solve ODE */
+        EvolveICEdS::solve_kernel_ODE(input, tables.eta_grid,
+                tables.kernels.at(kernel_index).values);
+    }
+    else {
+        /* tables.loop_params.dynamics() == EVOLVE_ASYMP_IC */
+        /* Compute k (sum of kernel arguments) */
+        int sum = tables.sum_table.sum_labels(arguments,
+                tables.loop_params.n_kernel_args());
+        double k = std::sqrt(tables.scalar_products().at(sum).at(sum));
+        /* Set up ODE input and system */
+        ODEInput input(n, k, tables.eta_grid.eta_ini(), tables.ev_params, rhs);
+        /* Set initial conditions */
+        EvolveICAsymp::kernel_initial_conditions(kernel_index, n, k, tables);
+        /* Solve ODE */
+        EvolveICAsymp::solve_kernel_ODE(input, tables.eta_grid,
+                tables.kernels.at(kernel_index).values);
+    }
 
     tables.kernels.at(kernel_index).computed = true;
     return kernel_index;
@@ -399,6 +489,7 @@ int kernel_evolution(
 
 
 
+/* Only used for EVOLVE_ASYMP_IC */
 void compute_F1(
         double k,
         const EvolutionParameters& ev_params,
@@ -422,7 +513,7 @@ void compute_F1(
 
     ODEInput input(1, k, eta_grid.eta_ini(), ev_params, rhs);
 
-    solve_kernel_ODE(input, eta_grid, values);
+    EvolveICAsymp::solve_kernel_ODE(input, eta_grid, values);
 
     std::copy(values.at(pre_time_steps).begin(),
               values.at(pre_time_steps).end(), F1_eta_ini.begin());

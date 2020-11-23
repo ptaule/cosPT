@@ -327,11 +327,11 @@ void Config::set_dynamics(const libconfig::Config& cfg)
         if (dynamics_str == "eds-spt") {
             dynamics_ = EDS_SPT;
         }
-        else if (dynamics_str == "evolve-asymp-ic") {
-            dynamics_ = EVOLVE_ASYMP_IC;
+        else if (dynamics_str == "evolve-ic-asymp") {
+            dynamics_ = EVOLVE_IC_ASYMP;
         }
-        else if (dynamics_str == "eolve-eds-ic") {
-            throw ConfigException("eolve-eds-ic not implemented.");
+        else if (dynamics_str == "evolve-ic-eds") {
+            dynamics_ = EVOLVE_IC_EDS;
         }
         else {
             throw ConfigException("Unknown dynamics in configuration file.");
@@ -348,7 +348,7 @@ void Config::set_dynamics(const libconfig::Config& cfg)
     }
 
     /* Settings for evolution dynamics */
-    if (dynamics_ == EVOLVE_ASYMP_IC || dynamics_ == EVOLVE_EDS_IC) {
+    if (dynamics_ == EVOLVE_IC_ASYMP || dynamics_ == EVOLVE_IC_EDS) {
 
         /* ODE settings */
         try {
@@ -375,7 +375,7 @@ void Config::set_dynamics(const libconfig::Config& cfg)
         catch (const libconfig::SettingTypeException& tex) {
             throw ConfigException("Encountered type exception in time grid settings.");
         }
-        if (dynamics_ == EVOLVE_ASYMP_IC) {
+        if (dynamics_ == EVOLVE_IC_ASYMP) {
             try {
                 pre_time_steps_ = cfg.lookup("pre_time_steps");
                 eta_asymp_ = static_cast<double>(cfg.lookup("eta_asymp"));
@@ -390,27 +390,30 @@ void Config::set_dynamics(const libconfig::Config& cfg)
         }
         try {
             zeta_file_ = static_cast<std::string>(cfg.lookup("zeta_file"));
-            redshift_file_ = static_cast<std::string>(cfg.lookup("redshift_file"));
-            omega_eigenvalues_file_ =
-                static_cast<std::string>(cfg.lookup("omega_eigenvalues_file"));
 
-            const libconfig::Setting& F1_ic_files_list = cfg.lookup("F1_ic_files");
-            int count = F1_ic_files_list.getLength();
-            if (count != COMPONENTS) {
-                throw ConfigException("There should be " +
-                                      std::to_string(COMPONENTS) +
-                                      " F1 ic files in the configuration");
-            }
-            for (int i = 0; i < count; ++i) {
-                F1_ic_files_.push_back(
-                    static_cast<std::string>(F1_ic_files_list[i]));
-            }
+            if (dynamics_ == EVOLVE_IC_ASYMP) {
+                redshift_file_ = static_cast<std::string>(cfg.lookup("redshift_file"));
+                omega_eigenvalues_file_ =
+                    static_cast<std::string>(cfg.lookup("omega_eigenvalues_file"));
 
-            const libconfig::Setting& effcs2_files =
-                cfg.lookup("effective_cs2_files");
-            effcs2_x_grid_ = static_cast<std::string>(effcs2_files.lookup("x_grid"));
-            effcs2_y_grid_ = static_cast<std::string>(effcs2_files.lookup("y_grid"));
-            effcs2_data_   = static_cast<std::string>(effcs2_files.lookup("data"));
+                const libconfig::Setting& F1_ic_files_list = cfg.lookup("F1_ic_files");
+                int count = F1_ic_files_list.getLength();
+                if (count != COMPONENTS) {
+                    throw ConfigException("There should be " +
+                            std::to_string(COMPONENTS) +
+                            " F1 ic files in the configuration");
+                }
+                for (int i = 0; i < count; ++i) {
+                    F1_ic_files_.push_back(
+                            static_cast<std::string>(F1_ic_files_list[i]));
+                }
+
+                const libconfig::Setting& effcs2_files =
+                    cfg.lookup("effective_cs2_files");
+                effcs2_x_grid_ = static_cast<std::string>(effcs2_files.lookup("x_grid"));
+                effcs2_y_grid_ = static_cast<std::string>(effcs2_files.lookup("y_grid"));
+                effcs2_data_   = static_cast<std::string>(effcs2_files.lookup("data"));
+            }
         }
         catch (const libconfig::SettingNotFoundException& nfex) {
             throw ConfigException(
@@ -420,15 +423,17 @@ void Config::set_dynamics(const libconfig::Config& cfg)
             throw ConfigException("Encountered type exception in settings for "
                                   "interpolation files.");
         }
-        try {
-            f_nu_ = static_cast<double>(cfg.lookup("f_nu"));
-            omega_m_0_ = static_cast<double>(cfg.lookup("omega_m_0"));
-        }
-        catch (const libconfig::SettingNotFoundException& nfex) {
-            throw ConfigException("Missing f_nu or omega_m_0 in configuration.");
-        }
-        catch (const libconfig::SettingTypeException& tex) {
-            throw ConfigException("Encountered type exception for f_nu or omega_m_0.");
+        if (dynamics_ == EVOLVE_IC_ASYMP) {
+            try {
+                f_nu_ = static_cast<double>(cfg.lookup("f_nu"));
+                omega_m_0_ = static_cast<double>(cfg.lookup("omega_m_0"));
+            }
+            catch (const libconfig::SettingNotFoundException& nfex) {
+                throw ConfigException("Missing f_nu or omega_m_0 in configuration.");
+            }
+            catch (const libconfig::SettingTypeException& tex) {
+                throw ConfigException("Encountered type exception for f_nu or omega_m_0.");
+            }
         }
     }
 }
@@ -589,7 +594,7 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
         out << "#\t statefile     = " << cfg.cuba_statefile() << "\n";
     }
 
-    if (cfg.dynamics() == EVOLVE_EDS_IC || cfg.dynamics() == EVOLVE_ASYMP_IC) {
+    if (cfg.dynamics() == EVOLVE_IC_ASYMP || cfg.dynamics() == EVOLVE_IC_EDS) {
         out << "#\n# ODE settings:\n";
         out << std::scientific;
         out << "#\t abs tolerance = " << cfg.ode_atol() << "\n";
@@ -598,7 +603,7 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
 
         out << "#\n# Time grid settings:\n";
         out << "#\t time steps     = " << cfg.time_steps() << "\n";
-        if (cfg.dynamics() == EVOLVE_ASYMP_IC) {
+        if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
             out << "#\t pre time steps = " << cfg.pre_time_steps() << "\n";
             out << "#\t eta asymp      = " << cfg.eta_asymp() << "\n";
         }
@@ -606,19 +611,24 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
         out << "#\t eta fin        = " << cfg.eta_fin() << "\n";
 
         out << "#\n# Dynamics settings:\n";
-        out << "# f_nu      = " << cfg.f_nu() << "\n";
-        out << "# omega_m_0 = " << cfg.omega_m_0() << "\n";
+        if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
+            out << "# f_nu      = " << cfg.f_nu() << "\n";
+            out << "# omega_m_0 = " << cfg.omega_m_0() << "\n";
+        }
 
         out << "#\n# zeta file              = " << cfg.zeta_file() << "\n";
-        out << "# redshift file          = " << cfg.redshift_file() << "\n";
-        out << "# omega eigenvalues file = " << cfg.omega_eigenvalues_file() << "\n";
-        for (int i = 0; i < COMPONENTS; ++i) {
-            out << "# F1 ic files[" << i << "]\t\t = " << cfg.F1_ic_files().at(i)
+        if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
+            out << "# redshift file          = " << cfg.redshift_file() << "\n";
+            out << "# omega eigenvalues file = " << cfg.omega_eigenvalues_file()
                 << "\n";
+            for (int i = 0; i < COMPONENTS; ++i) {
+                out << "# F1 ic files[" << i
+                    << "]\t\t = " << cfg.F1_ic_files().at(i) << "\n";
+            }
+            out << "# effective cs2 x grid   = " << cfg.effcs2_x_grid() << "\n";
+            out << "# effective cs2 y grid   = " << cfg.effcs2_y_grid() << "\n";
+            out << "# effective cs2 data     = " << cfg.effcs2_data() << "\n";
         }
-        out << "# effective cs2 x grid   = " << cfg.effcs2_x_grid() << "\n";
-        out << "# effective cs2 y grid   = " << cfg.effcs2_y_grid() << "\n";
-        out << "# effective cs2 data     = " << cfg.effcs2_data() << "\n";
     }
     out << "#\n# Information from Cuba integration:\n";
     if (cfg.cuba_fail() == 0) {

@@ -58,8 +58,16 @@ void configuration_term(
         values_l = tables.spt_kernels.at(arg_config_l.kernel_index).values;
         values_r = tables.spt_kernels.at(arg_config_r.kernel_index).values;
     }
-    else if (tables.loop_params.dynamics() == EVOLVE_ASYMP_IC ||
-             tables.loop_params.dynamics() == EVOLVE_EDS_IC) {
+    else if (tables.loop_params.dynamics() == EVOLVE_IC_ASYMP ||
+             tables.loop_params.dynamics() == EVOLVE_IC_EDS) {
+        /* If EdS-SPT initial conditions, compute EdS-kernels */
+        if (tables.loop_params.dynamics() == EVOLVE_IC_EDS) {
+            compute_SPT_kernels(arg_config_l.args.data(),
+                    arg_config_l.kernel_index, 2 * diagram.l + diagram.m, tables);
+            compute_SPT_kernels(arg_config_r.args.data(),
+                    arg_config_r.kernel_index, 2 * diagram.r + diagram.m, tables);
+        }
+
         kernel_evolution(arg_config_l.args.data(), arg_config_l.kernel_index,
                 2 * diagram.l + diagram.m, tables);
         kernel_evolution(arg_config_r.args.data(), arg_config_r.kernel_index,
@@ -276,8 +284,21 @@ void configuration_term(
         values_b = tables.spt_kernels.at(arg_config.b().kernel_index).values;
         values_c = tables.spt_kernels.at(arg_config.c().kernel_index).values;
     }
-    else if (tables.loop_params.dynamics() == EVOLVE_ASYMP_IC ||
-             tables.loop_params.dynamics() == EVOLVE_EDS_IC) {
+    else if (tables.loop_params.dynamics() == EVOLVE_IC_ASYMP ||
+             tables.loop_params.dynamics() == EVOLVE_IC_EDS) {
+        /* If EdS-SPT initial conditions, compute EdS-kernels */
+        if (tables.loop_params.dynamics() == EVOLVE_IC_EDS) {
+            compute_SPT_kernels(arg_config.a().args.data(),
+                    arg_config.a().kernel_index, 2 * diagram.n_a + diagram.n_ab +
+                    diagram.n_ca, tables);
+            compute_SPT_kernels(arg_config.b().args.data(),
+                    arg_config.b().kernel_index, 2 * diagram.n_b + diagram.n_ab +
+                    diagram.n_bc, tables);
+            compute_SPT_kernels(arg_config.c().args.data(),
+                    arg_config.c().kernel_index, 2 * diagram.n_c + diagram.n_bc +
+                    diagram.n_ca, tables);
+        }
+
         kernel_evolution(arg_config.a().args.data(),
                 arg_config.a().kernel_index, 2 * diagram.n_a + diagram.n_ab +
                 diagram.n_ca, tables);

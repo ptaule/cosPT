@@ -104,7 +104,20 @@ int main(int argc, char* argv[]) {
         double twopi_factor = pow(TWOPI, -3);
         input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor, true);
 
-        if (cfg.dynamics() == EVOLVE_EDS_IC || cfg.dynamics() == EVOLVE_ASYMP_IC) {
+        if (cfg.dynamics() == EVOLVE_IC_EDS) {
+            if (COMPONENTS != 2) {
+                throw std::runtime_error("Dynamics = EVOLVE_IC_EDS not "
+                                         "implemented for COMPONENTS != 2");
+            }
+            ev_params = EvolutionParameters(cfg.zeta_file(), cfg.ode_atol(),
+                    cfg.ode_rtol(), cfg.ode_hstart());
+            eta_grid = EtaGrid(cfg.time_steps(), cfg.eta_ini(), cfg.eta_fin());
+        }
+        else if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
+            if (COMPONENTS != 4) {
+                throw std::runtime_error("Dynamics = EVOLVE_IC_ASYMP not "
+                                         "implemented for COMPONENTS != 2");
+            }
             ev_params = EvolutionParameters(cfg.f_nu(), cfg.omega_m_0(),
                     cfg.zeta_file(), cfg.redshift_file(),
                     cfg.omega_eigenvalues_file(), cfg.F1_ic_files(),
@@ -157,7 +170,7 @@ int main(int argc, char* argv[]) {
             for (auto& el : lin_ps) {
                 el = input.input_ps.eval(cfg.k_a());
             }
-            if (cfg.dynamics() == EVOLVE_ASYMP_IC) {
+            if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
                 Vec1D<double> F1_eta_ini(COMPONENTS, 0);
                 Vec1D<double> F1_eta_fin(COMPONENTS, 0);
                 compute_F1(cfg.k_a(), ev_params, eta_grid, F1_eta_ini, F1_eta_fin);
