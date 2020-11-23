@@ -19,8 +19,8 @@
 #include <libconfig.h++>
 
 #include "../include/utilities.hpp"
+#include "../include/io.hpp"
 #include "../include/version.hpp"
-#include "../include/wavenumbers.hpp"
 #include "../include/parameters.hpp"
 
 using std::size_t;
@@ -64,16 +64,21 @@ Config::Config(const std::string& ini_file,
     }
 
     /* First wavenumber */
-    if (k_a_idx != -1) {
-        k_a_ = Wavenumbers::grid[k_a_idx];
+    std::string k_a_grid_file;
+    Vec2D<double> k_a_grid;
+    if (cfg.lookupValue("k_a_grid", k_a_grid_file)) {
+        read_columns_from_file(k_a_grid_file, 1, k_a_grid);
     }
-    else if (cfg.lookupValue("k_a_idx", k_a_idx)) {
-        k_a_ = Wavenumbers::grid[k_a_idx];
+    if (!k_a_grid.empty() && k_a_idx != -1) {
+        k_a_ = k_a_grid.at(0).at(k_a_idx);
+    }
+    else if (!k_a_grid.empty() && cfg.lookupValue("k_a_idx", k_a_idx)) {
+        k_a_ = k_a_grid.at(0).at(k_a_idx);
     }
     else if (cfg.lookupValue("k_a", k_a_)) {}
     else {
-        throw ConfigException("Neither k_a nor k_a_idx in configuration file, "
-                              "and no k_a index given as command line option.");
+        throw ConfigException("Did not obtain any value for k_a. Either provide "
+                              "k_a, or k_a_idx and k_a_grid.");
     }
 
     /* Integration ranges */
@@ -254,27 +259,36 @@ void Config::set_spectrum(const libconfig::Config& cfg)
                 "Encountered type exception for correlations setting.");
         }
 
-        if (k_b_idx != -1) {
-            k_b_ = Wavenumbers::grid[k_b_idx];
+        std::string k_b_grid_file;
+        Vec2D<double> k_b_grid;
+        if (cfg.lookupValue("k_b_grid", k_b_grid_file)) {
+            read_columns_from_file(k_b_grid_file, 1, k_b_grid);
         }
-        else if (cfg.lookupValue("k_b_idx", k_b_idx)) {
-            k_b_ = Wavenumbers::grid[k_b_idx];
+        if (!k_b_grid.empty() && k_b_idx != -1) {
+            k_b_ = k_b_grid.at(0).at(k_b_idx);
+        }
+        else if (!k_b_grid.empty() && cfg.lookupValue("k_b_idx", k_b_idx)) {
+            k_b_ = k_b_grid.at(0).at(k_b_idx);
         }
         else if (cfg.lookupValue("k_b", k_b_)) {}
         else {
-            throw ConfigException(
-                "Neither k_b nor k_b_idx in configuration file, "
-                "and no k_b index given as command line option.");
+            throw ConfigException("Did not obtain any value for k_b. Either provide "
+                    "k_b, or k_b_idx and k_b_grid.");
         }
 
         bool k_c_given = false;
         try {
-            if (k_c_idx != -1) {
-                k_c_ = Wavenumbers::grid[k_c_idx];
+            std::string k_c_grid_file;
+            Vec2D<double> k_c_grid;
+            if (cfg.lookupValue("k_c_grid", k_c_grid_file)) {
+                read_columns_from_file(k_c_grid_file, 1, k_c_grid);
+            }
+            if (!k_c_grid.empty() && k_c_idx != -1) {
+                k_c_ = k_c_grid.at(0).at(k_c_idx);
                 k_c_given = true;
             }
-            else if (cfg.lookupValue("k_c_idx", k_c_idx)) {
-                k_c_ = Wavenumbers::grid[k_c_idx];
+            else if (!k_c_grid.empty() && cfg.lookupValue("k_c_idx", k_c_idx)) {
+                k_c_ = k_c_grid.at(0).at(k_c_idx);
                 k_c_given = true;
             }
             else if (cfg.lookupValue("k_c", k_c_)) {
