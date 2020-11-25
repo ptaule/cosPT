@@ -478,7 +478,7 @@ void Config::set_output_file(const libconfig::Config& cfg)
             ss << "/";
             /* Add k_a_idx (& k_b_idx) to end of file */
             if (k_a_idx != -1) {
-                ss << std::setfill('0') << std::setw(2) << k_a_idx;
+                ss << std::setfill('0') << std::setw(3) << k_a_idx;
             }
             else {
                 ss << std::scientific << std::setprecision(6) << k_a_;
@@ -486,10 +486,17 @@ void Config::set_output_file(const libconfig::Config& cfg)
             if (spectrum_ == BISPECTRUM) {
                 ss << "_";
                 if (k_b_idx != -1) {
-                    ss << std::setfill('0') << std::setw(2) << k_b_idx;
+                    ss << std::setfill('0') << std::setw(3) << k_b_idx;
                 }
                 else {
                     ss << std::scientific << std::setprecision(6) << k_b_;
+                }
+                ss << "_";
+                if (k_c_idx != -1) {
+                    ss << std::setfill('0') << std::setw(3) << k_c_idx;
+                }
+                else {
+                    ss << std::scientific << std::setprecision(6) << k_c_;
                 }
             }
             ss << ".dat";
