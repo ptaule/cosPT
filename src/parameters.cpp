@@ -539,12 +539,13 @@ void Config::set_cuba_statefile(const libconfig::Setting& cuba_settings)
                                       cuba_statefile_path + " does not exist.");
             }
             cuba_statefile_ = cuba_statefile_path;
+            cuba_statefile_ += "/";
             /* Add k_a_idx (& k_b_idx) to end of file */
             if (k_a_idx != -1) {
-                cuba_statefile_ += "/" + std::to_string(k_a_idx);
+                cuba_statefile_ += std::to_string(k_a_idx);
             }
             else {
-                cuba_statefile_ += "/" + std::to_string(k_a_);
+                cuba_statefile_ += std::to_string(k_a_);
             }
             if (spectrum_ == BISPECTRUM) {
                 if (k_b_idx != -1) {
@@ -552,6 +553,12 @@ void Config::set_cuba_statefile(const libconfig::Setting& cuba_settings)
                 }
                 else {
                     cuba_statefile_ += "_" + std::to_string(k_b_);
+                }
+                if (k_c_idx != -1) {
+                    cuba_statefile_ += "_" + std::to_string(k_c_idx);
+                }
+                else {
+                    cuba_statefile_ += "_" + std::to_string(k_c_);
                 }
             }
             cuba_statefile_ += ".state";
