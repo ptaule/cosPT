@@ -13,7 +13,7 @@ HEADERS = $(wildcard $(INC_DIR)/*.hpp)
 GIT = git
 CXX ?= g++
 
-CXXFLAGS += -Wall -Wextra -Wpedantic -std=c++17 #-Wconversion
+CXXFLAGS += -Wall -Wextra -Wpedantic -std=c++17 -DHAVE_INLINE #-Wconversion
 
 all: CPPFLAGS += -DDEBUG=0 -I/space/ge52sir/local/include/
 all: CXXFLAGS += -O3
