@@ -13,7 +13,7 @@
 #include <iosfwd>
 
 /* Maximum number of kernel arguments at 2-loop */
-#define N_KERNEL_ARGS_MAX 5
+#define N_KERNEL_ARGS_MAX 6
 
 /* Number of components */
 #define EDS_SPT_COMPONENTS 2
