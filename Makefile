@@ -13,13 +13,13 @@ HEADERS = $(wildcard $(INC_DIR)/*.hpp)
 GIT = git
 CXX ?= g++
 
-CXXFLAGS += -Wall -Wextra -Wpedantic -std=c++17 -DHAVE_INLINE #-Wconversion
+CXXFLAGS += -Wall -Wextra -Wpedantic -std=c++17 #-Wconversion
 
-all: CPPFLAGS += -DDEBUG=0 -I/space/ge52sir/local/include/
+all: CPPFLAGS += -DDEBUG=0 -DHAVE_INLINE -I/space/ge52sir/local/include/
 all: CXXFLAGS += -O3
 all: LDFLAGS  += -L/space/ge52sir/local/lib/
 
-cluster: CPPFLAGS += -DDEBUG=0 -I./local/include/
+cluster: CPPFLAGS += -DDEBUG=0 -DHAVE_INLINE -I./local/include/
 cluster: CXXFLAGS += -O3
 cluster: LDFLAGS  += -L./local/lib/
 
@@ -27,8 +27,10 @@ debug: CPPFLAGS   += -D_GLIBCXX_DEBUG -DDEBUG=2 -I/space/ge52sir/local/include/
 debug: CXXFLAGS   += -g -O0
 debug: LDFLAGS    += -L/space/ge52sir/local/lib/
 
+benchmark: CPPFLAGS += -DHAVE_INLINE
 benchmark: CXXFLAGS += -O3
 benchmark: LDLIBS   += -lbenchmark -pthread
+profile:   CPPFLAGS += -DHAVE_INLINE
 profile:   CXXFLAGS += -O3 -fno-omit-frame-pointer
 profile:   LDLIBS   += -lbenchmark -pthread
 
