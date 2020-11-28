@@ -52,12 +52,17 @@ double spt_term(
                 "not equal 0 or 1."));
         }
 
-    return tables.spt_kernels.at(index_l).values[1] *
-        (    a * tables.alpha().at(sum_l).at(sum_r)
-           * tables.spt_kernels.at(index_r).values[0]
-           + b * tables.beta().at(sum_l).at(sum_r)
-           * tables.spt_kernels.at(index_r).values[1]
-        );
+        return tables.spt_kernels.at(static_cast<size_t>(index_l)).values[1] *
+               (a * tables.alpha()
+                        .at(static_cast<size_t>(sum_l))
+                        .at(static_cast<size_t>(sum_r)) *
+                    tables.spt_kernels.at(static_cast<size_t>(index_r))
+                        .values[0] +
+                b * tables.beta()
+                        .at(static_cast<size_t>(sum_l))
+                        .at(static_cast<size_t>(sum_r)) *
+                    tables.spt_kernels.at(static_cast<size_t>(index_r))
+                        .values[1]);
 }
 
 
@@ -72,7 +77,7 @@ void partial_SPT_sum(
 {
     double partial_kernel_values[EDS_SPT_COMPONENTS] = {0};
 
-    int n_kernel_args = tables.loop_params.n_kernel_args();
+    size_t n_kernel_args = tables.loop_params.n_kernel_args();
     int args_l[N_KERNEL_ARGS_MAX] = {0};
     int args_r[N_KERNEL_ARGS_MAX] = {0};
 
@@ -85,8 +90,10 @@ void partial_SPT_sum(
     do {
         /* Set args_l and args_r from current combination and complement,
          * respectively */
-        comb.rearrange_from_current_combination(arguments, args_l, m);
-        comb.rearrange_from_current_complement(arguments, args_r, n - m);
+        comb.rearrange_from_current_combination(arguments, args_l,
+                                                static_cast<size_t>(m));
+        comb.rearrange_from_current_complement(arguments, args_r,
+                                               static_cast<size_t>(n - m));
 
         int sum_l = tables.sum_table.sum_labels(args_l, n_kernel_args);
         int sum_r = tables.sum_table.sum_labels(args_r, n_kernel_args);
@@ -108,15 +115,18 @@ void partial_SPT_sum(
     } while (comb.next());
 
     // Devide through by symmetrization factor (n choose m)
-    int n_choose_m = gsl_sf_choose(n,m);
+    int n_choose_m = static_cast<int>(
+            gsl_sf_choose(static_cast<unsigned int>(n),
+                          static_cast<unsigned int>(m))
+            );
     for (int i = 0; i < EDS_SPT_COMPONENTS; ++i) {
         partial_kernel_values[i] /= n_choose_m;
     }
 
     // Add calculated term for each component to kernel table
-    for (int i = 0; i < EDS_SPT_COMPONENTS; ++i) {
-        tables.spt_kernels.at(kernel_index).values[i]
-            += partial_kernel_values[i];
+    for (size_t i = 0; i < EDS_SPT_COMPONENTS; ++i) {
+        tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[i] +=
+            partial_kernel_values[i];
     }
 }
 
@@ -140,7 +150,7 @@ int compute_SPT_kernels(
     }
 
     int n_args = 0;
-    for (int i = 0; i < tables.loop_params.n_kernel_args(); ++i) {
+    for (size_t i = 0; i < tables.loop_params.n_kernel_args(); ++i) {
         if (arguments[i] != tables.loop_params.zero_label()){
             n_args++;
         }
@@ -158,7 +168,7 @@ int compute_SPT_kernels(
     }
 
     // Alias reference to kernel we are working with for convenience/readability
-    SPTKernel& kernel = tables.spt_kernels.at(kernel_index);
+    SPTKernel& kernel = tables.spt_kernels.at(static_cast<size_t>(kernel_index));
 
     // Check if the SPT kernels are already computed
     if (kernel.computed) return kernel_index;

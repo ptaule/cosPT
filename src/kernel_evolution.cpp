@@ -41,25 +41,33 @@ void vertex(
         IntegrandTables& tables
         )
 {
-    double alpha_lr = tables.alpha().at(sum_l).at(sum_r);
-    double beta = tables.beta().at(sum_l).at(sum_r);
+    double alpha_lr = tables.alpha()
+        .at(static_cast<size_t>(sum_l))
+        .at(static_cast<size_t>(sum_r));
+    double beta = tables.beta()
+        .at(static_cast<size_t>(sum_l))
+        .at(static_cast<size_t>(sum_r));
 
     int index_l = kernel_evolution(args_l, -1, m_l, tables);
     int index_r = kernel_evolution(args_r, -1, m_r, tables);
 
-    int a,b,c;
+    size_t a, b, c;
 
     // Note: all components are zero-indexed
     for (size_t i = 0; i < partial_rhs_sum.size(); ++i) {
-
         switch (COMPONENTS) {
             case 4:
                 /* Component a = 2 */
                 a = 2, b = 3, c = 2;
                 /* gamma_223 = alpha_lr */
-                partial_rhs_sum.at(i).at(a) += alpha_lr
-                    * tables.kernels.at(index_l).values.at(i).at(b)
-                    * tables.kernels.at(index_r).values.at(i).at(c);
+                partial_rhs_sum.at(i).at(a) +=
+                    alpha_lr *
+                    tables.kernels.at(static_cast<size_t>(index_l))
+                        .values.at(i)
+                        .at(b) *
+                    tables.kernels.at(static_cast<size_t>(index_r))
+                        .values.at(i)
+                        .at(c);
 
                 /* The term gamma_232 is redundant; due to momentum symmetrization
                  * of the evolution eq. RHS, it will be covered by the term
@@ -68,20 +76,30 @@ void vertex(
                 // Component a = 3
                 a = 3, b = 3, c = 3;
                 // gamma_444 = beta
-                partial_rhs_sum.at(i).at(a) += beta
-                    * tables.kernels.at(index_l).values.at(i).at(b)
-                    * tables.kernels.at(index_r).values.at(i).at(c);
+                partial_rhs_sum.at(i).at(a) +=
+                    beta *
+                    tables.kernels.at(static_cast<size_t>(index_l))
+                        .values.at(i)
+                        .at(b) *
+                    tables.kernels.at(static_cast<size_t>(index_r))
+                        .values.at(i)
+                        .at(c);
 
-            /* Use switch fallthrough; for case 4 also code in case 2 should be
-             * executed */
-            __attribute__((fallthrough));
+                /* Use switch fallthrough; for case 4 also code in case 2 should be
+                 * executed */
+                __attribute__((fallthrough));
             case 2:
                 /* Component a = 0 */
                 a = 0, b = 1, c = 0;
                 /* gamma_001 = alpha_lr */
-                partial_rhs_sum.at(i).at(a) += alpha_lr
-                    * tables.kernels.at(index_l).values.at(i).at(b)
-                    * tables.kernels.at(index_r).values.at(i).at(c);
+                partial_rhs_sum.at(i).at(a) +=
+                    alpha_lr *
+                    tables.kernels.at(static_cast<size_t>(index_l))
+                        .values.at(i)
+                        .at(b) *
+                    tables.kernels.at(static_cast<size_t>(index_r))
+                        .values.at(i)
+                        .at(c);
 
                 /* The term gamma_010 is redundant; due to momentum symmetrization
                  * of the evolution eq. RHS, it will be covered by the term
@@ -90,14 +108,19 @@ void vertex(
                 /* Component a = 1 */
                 a = 1, b = 1, c = 1;
                 /* gamma_111 = beta */
-                partial_rhs_sum.at(i).at(a) += beta
-                    * tables.kernels.at(index_l).values.at(i).at(b)
-                    * tables.kernels.at(index_r).values.at(i).at(c);
+                partial_rhs_sum.at(i).at(a) +=
+                    beta *
+                    tables.kernels.at(static_cast<size_t>(index_l))
+                        .values.at(i)
+                        .at(b) *
+                    tables.kernels.at(static_cast<size_t>(index_r))
+                        .values.at(i)
+                        .at(c);
 
                 break;
             default:
-              throw(std::logic_error("No vertex implemented for components = " +
-                                     std::to_string(COMPONENTS)));
+                throw(std::logic_error("No vertex implemented for components = " +
+                            std::to_string(COMPONENTS)));
         }
     }
 }
@@ -111,8 +134,8 @@ void compute_RHS_sum(
         std::array<Interpolation1D, COMPONENTS>& rhs /* out */
         )
 {
-    int time_steps    = tables.eta_grid.time_steps();
-    int n_kernel_args = tables.loop_params.n_kernel_args();
+    size_t time_steps    = tables.eta_grid.time_steps();
+    size_t n_kernel_args = tables.loop_params.n_kernel_args();
 
     Vec2D<double> rhs_sum;
     Vec2D<double> partial_rhs_sum;
@@ -143,8 +166,10 @@ void compute_RHS_sum(
         do {
             /* Set args_l and args_r from current combination and complement,
              * respectively */
-            comb.rearrange_from_current_combination(arguments, args_l, m);
-            comb.rearrange_from_current_complement(arguments, args_r, n - m);
+            comb.rearrange_from_current_combination(arguments, args_l,
+                                                    static_cast<size_t>(m));
+            comb.rearrange_from_current_complement(arguments, args_r,
+                                                   static_cast<size_t>(n - m));
 
             int sum_l = tables.sum_table.sum_labels(args_l, n_kernel_args);
             int sum_r = tables.sum_table.sum_labels(args_r, n_kernel_args);
@@ -162,15 +187,18 @@ void compute_RHS_sum(
         } while (comb.next());
 
         // Devide through by symmetrization factor (n choose m)
-        int n_choose_m = gsl_sf_choose(n,m);
-        for (int i = 0; i < COMPONENTS; ++i) {
-            for (int j = 0; j < time_steps; ++j) {
+        int n_choose_m = static_cast<int>(
+                gsl_sf_choose(static_cast<unsigned int>(n),
+                    static_cast<unsigned int>(m))
+                );
+        for (size_t i = 0; i < COMPONENTS; ++i) {
+            for (size_t j = 0; j < time_steps; ++j) {
                 rhs_sum.at(i).at(j) += partial_rhs_sum.at(j).at(i) / n_choose_m;
             }
         }
     }
 
-    for (int i = 0; i < COMPONENTS; ++i) {
+    for (size_t i = 0; i < COMPONENTS; ++i) {
         rhs.at(i) = Interpolation1D(tables.eta_grid.grid(), rhs_sum.at(i));
     }
 }
@@ -199,7 +227,7 @@ class ODEInput {
 
 namespace EvolveICEdS {
 int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
-    ODEInput input = *(ODEInput*)ode_input;
+    ODEInput input = *(static_cast<ODEInput*>(ode_input));
     int n = input.n;
 
     /* Interpolate RHS */
@@ -207,7 +235,7 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
 
     // If n == 1, rhs = 0
     if (input.n > 1) {
-        for (int i = 0; i < COMPONENTS; ++i) {
+        for (size_t i = 0; i < COMPONENTS; ++i) {
             rhs[i] = input.rhs.at(i).eval(eta);
         }
     }
@@ -230,7 +258,7 @@ void solve_kernel_ODE(
         )
 {
     const EvolutionParameters& ev_params = input.ev_params;
-    int time_steps     = eta_grid.time_steps();
+    size_t time_steps     = eta_grid.time_steps();
 
     gsl_odeiv2_system sys = {kernel_gradient, nullptr, COMPONENTS, &input};
     gsl_odeiv2_driver *driver = gsl_odeiv2_driver_alloc_y_new(
@@ -240,7 +268,7 @@ void solve_kernel_ODE(
     double eta_current = eta_grid.at(0);
 
     // Evolve system
-    for (int i = 1; i < time_steps; i++) {
+    for (size_t i = 1; i < time_steps; i++) {
         /* For calculation of kernels.at(i), the initial condition is
          * kernels.at(i-1). Hence we copy kernels.at(i-1) to kernels.at(i) */
         std::copy(kernels.at(i - 1).begin(), kernels.at(i - 1).end(),
@@ -266,9 +294,9 @@ static void kernel_initial_conditions(
         IntegrandTables& tables
         )
 {
-    for (int i = 0; i < COMPONENTS; ++i) {
-        tables.kernels.at(kernel_index).values.at(0).at(i) =
-            tables.spt_kernels.at(kernel_index).values[i];
+    for (size_t i = 0; i < EDS_SPT_COMPONENTS; ++i) {
+        tables.kernels.at(static_cast<size_t>(kernel_index)).values.at(0).at(i) =
+            tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[i];
     }
 }
 }
@@ -277,7 +305,7 @@ static void kernel_initial_conditions(
 
 namespace EvolveICAsymp {
 int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
-    ODEInput input = *(ODEInput*)ode_input;
+    ODEInput input = *(static_cast<ODEInput*>(ode_input));
 
     const EvolutionParameters& ev_params = input.ev_params;
     int n       = input.n;
@@ -294,7 +322,7 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
 
     // If n == 1, rhs = 0
     if (input.n > 1) {
-        for (int i = 0; i < COMPONENTS; ++i) {
+        for (size_t i = 0; i < COMPONENTS; ++i) {
             rhs[i] = input.rhs.at(i).eval(eta);
         }
     }
@@ -322,8 +350,8 @@ void solve_kernel_ODE(
         )
 {
     const EvolutionParameters& ev_params = input.ev_params;
-    int time_steps     = eta_grid.time_steps();
-    int pre_time_steps = eta_grid.pre_time_steps();
+    size_t time_steps     = eta_grid.time_steps();
+    size_t pre_time_steps = eta_grid.pre_time_steps();
 
     gsl_odeiv2_system sys = {kernel_gradient, nullptr, COMPONENTS, &input};
     gsl_odeiv2_driver *driver = gsl_odeiv2_driver_alloc_y_new(
@@ -335,7 +363,7 @@ void solve_kernel_ODE(
         double eta_current = eta_grid.at(0);
 
         // Evolve system
-        for (int i = 1; i < time_steps; i++) {
+        for (size_t i = 1; i < time_steps; i++) {
             /* For calculation of kernels.at(i), the initial condition is
              * kernels.at(i-1). Hence we copy kernels.at(i-1) to kernels.at(i) */
             std::copy(kernels.at(i - 1).begin(), kernels.at(i - 1).end(),
@@ -353,8 +381,8 @@ void solve_kernel_ODE(
     // For n == 1 kernels, we may multipliy by exp("growing mode" eigenvalue)
     // before eta_I
     else {
-        for (int i = 1; i < pre_time_steps + 1; ++i) {
-            for (int j = 0; j < COMPONENTS; ++j) {
+        for (size_t i = 1; i < pre_time_steps + 1; ++i) {
+            for (size_t j = 0; j < COMPONENTS; ++j) {
               kernels.at(i).at(j) =
                   kernels.at(0).at(j) *
                   std::exp(ev_params.omega_eigenvalues_at_k(input.k) *
@@ -364,7 +392,7 @@ void solve_kernel_ODE(
 
         double eta_current = eta_grid.at(pre_time_steps);
 
-        for (int i = pre_time_steps + 1; i < time_steps; i++) {
+        for (size_t i = pre_time_steps + 1; i < time_steps; i++) {
             /* For calculation of kernels.at(i), the initial condition is
              * kernels.at(i-1). Hence we copy kernels.at(i-1) to kernels.at(i) */
             std::copy(kernels.at(i - 1).begin(), kernels.at(i - 1).end(),
@@ -395,15 +423,18 @@ static void kernel_initial_conditions(
 {
     // Use growing mode IC for F1 at eta_asymp
     if (n == 1) {
-        for (int i = 0; i < COMPONENTS; ++i) {
-            tables.kernels.at(kernel_index).values.at(0).at(i) =
-                tables.ev_params.F1_ic_at_k(i, k);
+        for (size_t i = 0; i < COMPONENTS; ++i) {
+            tables.kernels.at(static_cast<size_t>(kernel_index))
+                .values.at(0)
+                .at(i) = tables.ev_params.F1_ic_at_k(i, k);
         }
     }
     else {
         // Set F(n>1)-kernels to zero at eta_asymp
-        for (int i = 0; i < COMPONENTS; ++i) {
-            tables.kernels.at(kernel_index).values.at(0).at(i) = 0;
+        for (size_t i = 0; i < COMPONENTS; ++i) {
+            tables.kernels.at(static_cast<size_t>(kernel_index))
+                .values.at(0)
+                .at(i) = 0;
         }
     }
 }
@@ -427,7 +458,7 @@ int kernel_evolution(
     }
 
     int n_args = 0;
-    for (int i = 0; i < tables.loop_params.n_kernel_args(); ++i) {
+    for (size_t i = 0; i < tables.loop_params.n_kernel_args(); ++i) {
         if (arguments[i] != tables.loop_params.zero_label()){
             n_args++;
         }
@@ -445,7 +476,7 @@ int kernel_evolution(
     }
 
     /* Alias reference to kernel we are working with for convenience/readability */
-    Kernel& kernel = tables.kernels.at(kernel_index);
+    Kernel& kernel = tables.kernels.at(static_cast<size_t>(kernel_index));
 
     /* Check if the SPT kernels are already computed */
     if (kernel.computed) return kernel_index;
@@ -465,25 +496,29 @@ int kernel_evolution(
         /* Set initial conditions */
         EvolveICEdS::kernel_initial_conditions(kernel_index, tables);
         /* Solve ODE */
-        EvolveICEdS::solve_kernel_ODE(input, tables.eta_grid,
-                tables.kernels.at(kernel_index).values);
+        EvolveICEdS::solve_kernel_ODE(
+            input, tables.eta_grid,
+            tables.kernels.at(static_cast<size_t>(kernel_index)).values);
     }
     else {
         /* tables.loop_params.dynamics() == EVOLVE_ASYMP_IC */
         /* Compute k (sum of kernel arguments) */
         int sum = tables.sum_table.sum_labels(arguments,
                 tables.loop_params.n_kernel_args());
-        double k = std::sqrt(tables.scalar_products().at(sum).at(sum));
+        double k = std::sqrt(tables.scalar_products()
+                                 .at(static_cast<size_t>(sum))
+                                 .at(static_cast<size_t>(sum)));
         /* Set up ODE input and system */
         ODEInput input(n, k, tables.eta_grid.eta_ini(), tables.ev_params, rhs);
         /* Set initial conditions */
         EvolveICAsymp::kernel_initial_conditions(kernel_index, n, k, tables);
         /* Solve ODE */
-        EvolveICAsymp::solve_kernel_ODE(input, tables.eta_grid,
-                tables.kernels.at(kernel_index).values);
+        EvolveICAsymp::solve_kernel_ODE(
+            input, tables.eta_grid,
+            tables.kernels.at(static_cast<size_t>(kernel_index)).values);
     }
 
-    tables.kernels.at(kernel_index).computed = true;
+    tables.kernels.at(static_cast<size_t>(kernel_index)).computed = true;
     return kernel_index;
 }
 
@@ -498,13 +533,13 @@ void compute_F1(
         Vec1D<double>& F1_eta_fin  /* out */
         )
 {
-    int time_steps = eta_grid.time_steps();
-    int pre_time_steps = eta_grid.pre_time_steps();
+    size_t time_steps = eta_grid.time_steps();
+    size_t pre_time_steps = eta_grid.pre_time_steps();
 
     Vec2D<double> values;
     values.assign(eta_grid.time_steps(), Vec1D<double>(COMPONENTS, 0.0));
 
-    for (int i = 0; i < COMPONENTS; ++i) {
+    for (size_t i = 0; i < COMPONENTS; ++i) {
         values.at(0).at(i) = ev_params.F1_ic_at_k(i, k);
     }
 

@@ -31,8 +31,8 @@ Combinations::Combinations(int n, int k)
         throw(std::invalid_argument(
             "Combinations::Combinations(): k >= 0 && k <= n is required."));
     }
-    combination.resize(k_);
-    complement.resize(n_ - k_);
+    combination.resize(size_t(k_));
+    complement.resize(size_t(n_ - k_));
     std::iota(combination.begin(), combination.end(), 0);
     std::iota(complement.begin(), complement.end(), k_);
 }
@@ -52,10 +52,11 @@ bool Combinations::next_combination() {
     /* Go through the rest */
     for (int i = k_ - 2; i >= 0; --i) {
         /* Element i cannot be greater than (n - (k - i)) */
-        if (combination.at(i) < (n_ - k_ + i)) {
+        if (combination.at(static_cast<size_t>(i)) < (n_ - k_ + i)) {
             /* Increment this element, elements right of this is set in
              * increasing order */
-            std::iota(combination.begin() + i, combination.end(), ++combination.at(i));
+            std::iota(combination.begin() + i, combination.end(),
+                    ++combination.at(static_cast<size_t>(i)));
             return true;
         }
     }
@@ -72,12 +73,13 @@ bool Combinations::next_complement() {
     /* Go through complement backwards, if number is not 0 or one more
      * than previous number, decrement and return */
 
-    for (int i = complement.size() - 1; i > 0; --i) {
+    for (size_t i = complement.size() - 1; i > 0; --i) {
         if (complement.at(i) > (complement.at(i-1) + 1)) {
             /* Decrement this element, elements right of this is set to their
              * maximal value */
             --complement.at(i);
-            std::iota(complement.begin() + i + 1, complement.end(), k_ + i + 1);
+            std::iota(complement.begin() + static_cast<int>(i) + 1,
+                    complement.end(), k_ + static_cast<int>(i) + 1);
             return true;
         }
     }
@@ -107,7 +109,11 @@ bool Combinations::next() {
         ++counter;
     }
     else {
-        if (counter != gsl_sf_choose(n_,k_)) {
+        if (counter != gsl_sf_choose(
+                    static_cast<unsigned int>(n_),
+                    static_cast<unsigned int>(k_)
+                    )
+                ) {
             throw(std::logic_error("Combinations::next(): Did not create (n "
                                    "choose k) combinations."));
         }
@@ -143,10 +149,13 @@ void Combinations::rearrange_from_current(
     }
 
     for (int i = 0; i < k_; ++i) {
-        *(first + i) = copy.at(combination.at(i));
+        *(first + i) =
+            copy.at(static_cast<size_t>(combination.at(static_cast<size_t>(i))));
     }
     for (int i = k_; i < n_; ++i) {
-        *(first + i) = copy.at(complement.at(i - k_));
+        *(first + i) =
+            copy.at(static_cast<size_t>(complement.at(static_cast<size_t>(i -
+                                k_))));
     }
 }
 
@@ -162,7 +171,7 @@ void Combinations::rearrange_from_current_combination(
         throw(std::invalid_argument(
             "Combinations::rearrange_from_current_combination(): size != k."));
     }
-    for (int i = 0; i < k_; ++i) {
+    for (size_t i = 0; i < static_cast<size_t>(k_); ++i) {
         rearranged[i] = original[combination.at(i)];
     }
 }
@@ -179,7 +188,7 @@ void Combinations::rearrange_from_current_complement(
         throw(std::invalid_argument(
             "Combinations::rearrange_from_current_complement(): size != k."));
     }
-    for (int i = 0; i < n_ - k_; ++i) {
+    for (size_t i = 0; i < static_cast<size_t>(n_ - k_); ++i) {
         rearranged[i] = original[complement.at(i)];
     }
 }
@@ -213,7 +222,7 @@ Orderings::Orderings(int n, const Vec1D<int>& group_sizes)
     }
 
     /* Start with increasing order (0,...,n) */
-    normal_ordering.resize(n);
+    normal_ordering.resize(static_cast<size_t>(n));
     std::iota(normal_ordering.begin(), normal_ordering.end(), 0);
 
     combinations_vec.reserve(group_sizes.size());
@@ -230,7 +239,7 @@ Orderings::Orderings(int n, const Vec1D<int>& group_sizes)
 bool Orderings::next()
 {
     /* Call next on innermost combination */
-    int index = combinations_vec.size() - 1;
+    size_t index = combinations_vec.size() - 1;
     while (index > 0) {
         if (combinations_vec.at(index).next()) {
             return true;
