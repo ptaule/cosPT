@@ -1,0 +1,10 @@
+image: node:latest
+
+run:
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq gsl-bin libcuba3 libconfig++-dev
+  script:
+    - make clean && make -j
+  artifacts:
+    paths:
+      - build
