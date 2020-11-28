@@ -1,6 +1,11 @@
-image: node:latest
+image: ubuntu:latest
 
-run:
+stages:
+  - build
+  - test
+
+build:
+  stage: build
   before_script:
     - apt-get update -qq && apt-get install -y -qq gsl-bin libcuba3 libconfig++-dev
   script:
@@ -8,3 +13,8 @@ run:
   artifacts:
     paths:
       - build
+
+test:
+  stage: test
+  script:
+    ./build/cosPT
