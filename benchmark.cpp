@@ -22,293 +22,353 @@
 
 static void BM_PS_EdS_integrand_1loop(benchmark::State& state) {
     // Perform setup here
-    Config cfg("ini/benchmark/ps_eds_spt.cfg");
+    try {
+        Config cfg("ini/benchmark/ps_eds_spt.cfg");
 
-    int n_loops = 1;
-    int n_dims = 3 * n_loops - 1;
+        int n_loops = 1;
+        int n_dims = 3 * n_loops - 1;
 
-    LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
-    SumTable sum_table(loop_params);
-    EvolutionParameters ev_params;
-    EtaGrid eta_grid;
+        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
+        SumTable sum_table(loop_params);
+        EvolutionParameters ev_params;
+        EtaGrid eta_grid;
 
-    IntegrationInput input(cfg.q_min(), cfg.q_max());
+        IntegrationInput input(cfg.q_min(), cfg.q_max());
 
-    double twopi_factor = pow(TWOPI, -3);
-    input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor, true);
+        double twopi_factor = pow(TWOPI, -3);
+        input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor, true);
 
-    input.pair_correlations = cfg.pair_correlations();
-    input.ps_diagrams = ps::construct_diagrams(loop_params);
+        input.pair_correlations = cfg.pair_correlations();
+        input.ps_diagrams = ps::construct_diagrams(loop_params);
 
-    input.tables_vec.emplace_back(cfg.k_a(), loop_params, sum_table, ev_params,
-                                  eta_grid);
+        input.tables_vec.emplace_back(cfg.k_a(), loop_params, sum_table, ev_params,
+                eta_grid);
 
-    int n_correlations = input.pair_correlations.size();
+        int n_correlations = input.pair_correlations.size();
 
-    double* xx = new double[n_dims];
-    double* ff = new double[n_correlations];
+        double* xx = new double[n_dims];
+        double* ff = new double[n_correlations];
 
-    for (int i = 0; i < n_dims; ++i) {
-        xx[i] = 0.5;
+        for (int i = 0; i < n_dims; ++i) {
+            xx[i] = 0.5;
+        }
+
+        for (auto _ : state) {
+            // This code gets timed
+            int nvec = 1;
+            /* core = -1 in accordance with ps::integrand() or bs::integrand() */
+            int core = -1;
+            ps::integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
+        }
+
+        delete[] xx;
+        delete[] ff;
     }
-
-    for (auto _ : state) {
-        // This code gets timed
-        int nvec = 1;
-        /* core = -1 in accordance with ps::integrand() or bs::integrand() */
-        int core = -1;
-        ps::integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
+    catch (const ConfigException& cfgex) {
+        std::cerr << cfgex.what() << std::endl;
+            return;
     }
-
-    delete[] xx;
-    delete[] ff;
+    catch (const std::exception& ex) {
+        std::cerr << ex.what() << std::endl;
+        return;
+    }
 }
 
 
 
 static void BM_PS_EdS_integrand_2loop(benchmark::State& state) {
     // Perform setup here
-    Config cfg("ini/benchmark/ps_eds_spt.cfg");
+    try {
+        Config cfg("ini/benchmark/ps_eds_spt.cfg");
 
-    int n_loops = 2;
-    int n_dims = 3 * n_loops - 1;
+        int n_loops = 2;
+        int n_dims = 3 * n_loops - 1;
 
-    LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
-    SumTable sum_table(loop_params);
-    EvolutionParameters ev_params;
-    EtaGrid eta_grid;
+        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
+        SumTable sum_table(loop_params);
+        EvolutionParameters ev_params;
+        EtaGrid eta_grid;
 
-    IntegrationInput input(cfg.q_min(), cfg.q_max());
+        IntegrationInput input(cfg.q_min(), cfg.q_max());
 
-    double twopi_factor = pow(TWOPI, -3);
-    input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor, true);
+        double twopi_factor = pow(TWOPI, -3);
+        input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor, true);
 
-    input.pair_correlations = cfg.pair_correlations();
-    input.ps_diagrams = ps::construct_diagrams(loop_params);
+        input.pair_correlations = cfg.pair_correlations();
+        input.ps_diagrams = ps::construct_diagrams(loop_params);
 
-    input.tables_vec.emplace_back(cfg.k_a(), loop_params, sum_table, ev_params,
-                                  eta_grid);
+        input.tables_vec.emplace_back(cfg.k_a(), loop_params, sum_table, ev_params,
+                eta_grid);
 
-    int n_correlations = input.pair_correlations.size();
+        int n_correlations = input.pair_correlations.size();
 
-    double* xx = new double[n_dims];
-    double* ff = new double[n_correlations];
+        double* xx = new double[n_dims];
+        double* ff = new double[n_correlations];
 
-    for (int i = 0; i < n_dims; ++i) {
-        xx[i] = 0.5;
+        for (int i = 0; i < n_dims; ++i) {
+            xx[i] = 0.5;
+        }
+
+        for (auto _ : state) {
+            // This code gets timed
+            int nvec = 1;
+            /* core = -1 in accordance with ps::integrand() or bs::integrand() */
+            int core = -1;
+            ps::integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
+        }
+
+        delete[] xx;
+        delete[] ff;
     }
-
-    for (auto _ : state) {
-        // This code gets timed
-        int nvec = 1;
-        /* core = -1 in accordance with ps::integrand() or bs::integrand() */
-        int core = -1;
-        ps::integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
+    catch (const ConfigException& cfgex) {
+        std::cerr << cfgex.what() << std::endl;
+            return;
     }
-
-    delete[] xx;
-    delete[] ff;
+    catch (const std::exception& ex) {
+        std::cerr << ex.what() << std::endl;
+            return;
+    }
 }
 
 
 static void BM_BS_EdS_integrand_1loop(benchmark::State& state) {
     // Perform setup here
-    Config cfg("ini/benchmark/bs_eds_spt.cfg");
+    try {
+        Config cfg("ini/benchmark/bs_eds_spt.cfg");
 
-    int n_loops = 1;
-    int n_dims = 3 * n_loops;
+        int n_loops = 1;
+        int n_dims = 3 * n_loops;
 
-    LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
-    SumTable sum_table(loop_params);
-    EvolutionParameters ev_params;
-    EtaGrid eta_grid;
+        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
+        SumTable sum_table(loop_params);
+        EvolutionParameters ev_params;
+        EtaGrid eta_grid;
 
-    IntegrationInput input(cfg.q_min(), cfg.q_max());
+        IntegrationInput input(cfg.q_min(), cfg.q_max());
 
-    double twopi_factor = pow(TWOPI, -3);
-    input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor, true);
+        double twopi_factor = pow(TWOPI, -3);
+        input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor, true);
 
-    input.pair_correlations = cfg.pair_correlations();
-    input.bs_diagrams = bs::construct_diagrams(loop_params);
+        input.pair_correlations = cfg.pair_correlations();
+        input.bs_diagrams = bs::construct_diagrams(loop_params);
 
-    input.tables_vec.emplace_back(cfg.k_a(), cfg.k_b(), cfg.cos_ab(), loop_params,
-            sum_table, ev_params, eta_grid);
+        input.tables_vec.emplace_back(cfg.k_a(), cfg.k_b(), cfg.cos_ab(), loop_params,
+                sum_table, ev_params, eta_grid);
 
-    int n_correlations = input.pair_correlations.size();
+        int n_correlations = input.pair_correlations.size();
 
-    double* xx = new double[n_dims];
-    double* ff = new double[n_correlations];
+        double* xx = new double[n_dims];
+        double* ff = new double[n_correlations];
 
-    for (int i = 0; i < n_dims; ++i) {
-        xx[i] = 0.5;
+        for (int i = 0; i < n_dims; ++i) {
+            xx[i] = 0.5;
+        }
+
+        for (auto _ : state) {
+            // This code gets timed
+            int nvec = 1;
+            /* core = -1 in accordance with bs::integrand() or bs::integrand() */
+            int core = -1;
+            bs::integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
+        }
+
+        delete[] xx;
+        delete[] ff;
     }
-
-    for (auto _ : state) {
-        // This code gets timed
-        int nvec = 1;
-        /* core = -1 in accordance with bs::integrand() or bs::integrand() */
-        int core = -1;
-        bs::integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
+    catch (const ConfigException& cfgex) {
+        std::cerr << cfgex.what() << std::endl;
+            return;
     }
-
-    delete[] xx;
-    delete[] ff;
+    catch (const std::exception& ex) {
+        std::cerr << ex.what() << std::endl;
+        return;
+    }
 }
 
 
 
 static void BM_BS_EdS_integrand_2loop(benchmark::State& state) {
     // Perform setup here
-    Config cfg("ini/benchmark/bs_eds_spt.cfg");
+    try {
+        Config cfg("ini/benchmark/bs_eds_spt.cfg");
 
-    int n_loops = 2;
-    int n_dims = 3 * n_loops;
+        int n_loops = 2;
+        int n_dims = 3 * n_loops;
 
-    LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
-    SumTable sum_table(loop_params);
-    EvolutionParameters ev_params;
-    EtaGrid eta_grid;
+        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
+        SumTable sum_table(loop_params);
+        EvolutionParameters ev_params;
+        EtaGrid eta_grid;
 
-    IntegrationInput input(cfg.q_min(), cfg.q_max());
+        IntegrationInput input(cfg.q_min(), cfg.q_max());
 
-    double twopi_factor = pow(TWOPI, -3);
-    input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor, true);
+        double twopi_factor = pow(TWOPI, -3);
+        input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor, true);
 
-    input.pair_correlations = cfg.pair_correlations();
-    input.bs_diagrams = bs::construct_diagrams(loop_params);
+        input.pair_correlations = cfg.pair_correlations();
+        input.bs_diagrams = bs::construct_diagrams(loop_params);
 
-    input.tables_vec.emplace_back(cfg.k_a(), cfg.k_b(), cfg.cos_ab(), loop_params,
-            sum_table, ev_params, eta_grid);
+        input.tables_vec.emplace_back(cfg.k_a(), cfg.k_b(), cfg.cos_ab(), loop_params,
+                sum_table, ev_params, eta_grid);
 
-    int n_correlations = input.pair_correlations.size();
+        int n_correlations = input.pair_correlations.size();
 
-    double* xx = new double[n_dims];
-    double* ff = new double[n_correlations];
+        double* xx = new double[n_dims];
+        double* ff = new double[n_correlations];
 
-    for (int i = 0; i < n_dims; ++i) {
-        xx[i] = 0.5;
+        for (int i = 0; i < n_dims; ++i) {
+            xx[i] = 0.5;
+        }
+
+        for (auto _ : state) {
+            // This code gets timed
+            int nvec = 1;
+            /* core = -1 in accordance with bs::integrand() or bs::integrand() */
+            int core = -1;
+            bs::integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
+        }
+
+        delete[] xx;
+        delete[] ff;
     }
-
-    for (auto _ : state) {
-        // This code gets timed
-        int nvec = 1;
-        /* core = -1 in accordance with bs::integrand() or bs::integrand() */
-        int core = -1;
-        bs::integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
+    catch (const ConfigException& cfgex) {
+        std::cerr << cfgex.what() << std::endl;
+            return;
     }
-
-    delete[] xx;
-    delete[] ff;
+    catch (const std::exception& ex) {
+        std::cerr << ex.what() << std::endl;
+        return;
+    }
 }
 
 
 
 static void BM_PS_2fluid_integrand_1loop(benchmark::State& state) {
     // Perform setup here
-    Config cfg("ini/benchmark/m_nu_0.05eV.cfg");
+    try {
+        Config cfg("ini/benchmark/m_nu_0.05eV.cfg");
 
-    int n_loops = 1;
-    int n_dims = 3 * n_loops - 1;
+        int n_loops = 1;
+        int n_dims = 3 * n_loops - 1;
 
-    LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
-    SumTable sum_table(loop_params);
-    EvolutionParameters ev_params;
-    EtaGrid eta_grid;
+        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
+        SumTable sum_table(loop_params);
+        EvolutionParameters ev_params;
+        EtaGrid eta_grid;
 
-    ev_params = EvolutionParameters(cfg.f_nu(), cfg.omega_m_0(),
-            cfg.zeta_file(), cfg.redshift_file(),
-            cfg.omega_eigenvalues_file(), cfg.F1_ic_files(),
-            cfg.effcs2_x_grid(), cfg.effcs2_y_grid(),
-            cfg.effcs2_data(), cfg.ode_atol(), cfg.ode_rtol(),
-            cfg.ode_hstart());
-    eta_grid = EtaGrid(cfg.pre_time_steps(), cfg.time_steps(), cfg.eta_ini(),
-            cfg.eta_fin(), cfg.eta_asymp());
+        ev_params = EvolutionParameters(cfg.f_nu(), cfg.omega_m_0(),
+                cfg.zeta_file(), cfg.redshift_file(),
+                cfg.omega_eigenvalues_file(), cfg.F1_ic_files(),
+                cfg.effcs2_x_grid(), cfg.effcs2_y_grid(),
+                cfg.effcs2_data(), cfg.ode_atol(), cfg.ode_rtol(),
+                cfg.ode_hstart());
+        eta_grid = EtaGrid(cfg.pre_time_steps(), cfg.time_steps(), cfg.eta_ini(),
+                cfg.eta_fin(), cfg.eta_asymp());
 
-    IntegrationInput input(cfg.q_min(), cfg.q_max());
+        IntegrationInput input(cfg.q_min(), cfg.q_max());
 
-    double twopi_factor = pow(TWOPI, -3);
-    input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor, true);
+        double twopi_factor = pow(TWOPI, -3);
+        input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor, true);
 
-    input.pair_correlations = cfg.pair_correlations();
-    input.ps_diagrams = ps::construct_diagrams(loop_params);
+        input.pair_correlations = cfg.pair_correlations();
+        input.ps_diagrams = ps::construct_diagrams(loop_params);
 
-    input.tables_vec.emplace_back(cfg.k_a(), loop_params, sum_table, ev_params,
-                                  eta_grid);
+        input.tables_vec.emplace_back(cfg.k_a(), loop_params, sum_table, ev_params,
+                eta_grid);
 
-    int n_correlations = input.pair_correlations.size();
+        int n_correlations = input.pair_correlations.size();
 
-    double* xx = new double[n_dims];
-    double* ff = new double[n_correlations];
+        double* xx = new double[n_dims];
+        double* ff = new double[n_correlations];
 
-    for (int i = 0; i < n_dims; ++i) {
-        xx[i] = 0.5;
+        for (int i = 0; i < n_dims; ++i) {
+            xx[i] = 0.5;
+        }
+
+        for (auto _ : state) {
+            // This code gets timed
+            int nvec = 1;
+            /* core = -1 in accordance with ps::integrand() or bs::integrand() */
+            int core = -1;
+            ps::integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
+        }
+
+        delete[] xx;
+        delete[] ff;
     }
-
-    for (auto _ : state) {
-        // This code gets timed
-        int nvec = 1;
-        /* core = -1 in accordance with ps::integrand() or bs::integrand() */
-        int core = -1;
-        ps::integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
+    catch (const ConfigException& cfgex) {
+        std::cerr << cfgex.what() << std::endl;
+            return;
     }
-
-    delete[] xx;
-    delete[] ff;
+    catch (const std::exception& ex) {
+        std::cerr << ex.what() << std::endl;
+        return;
+    }
 }
 
 
 
 static void BM_PS_2fluid_integrand_2loop(benchmark::State& state) {
     // Perform setup here
-    Config cfg("ini/benchmark/m_nu_0.05eV.cfg");
+    try {
+        Config cfg("ini/benchmark/m_nu_0.05eV.cfg");
 
-    int n_loops = 2;
-    int n_dims = 3 * n_loops - 1;
+        int n_loops = 2;
+        int n_dims = 3 * n_loops - 1;
 
-    LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
-    SumTable sum_table(loop_params);
-    EvolutionParameters ev_params;
-    EtaGrid eta_grid;
+        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
+        SumTable sum_table(loop_params);
+        EvolutionParameters ev_params;
+        EtaGrid eta_grid;
 
-    ev_params = EvolutionParameters(cfg.f_nu(), cfg.omega_m_0(),
-            cfg.zeta_file(), cfg.redshift_file(),
-            cfg.omega_eigenvalues_file(), cfg.F1_ic_files(),
-            cfg.effcs2_x_grid(), cfg.effcs2_y_grid(),
-            cfg.effcs2_data(), cfg.ode_atol(), cfg.ode_rtol(),
-            cfg.ode_hstart());
-    eta_grid = EtaGrid(cfg.pre_time_steps(), cfg.time_steps(), cfg.eta_ini(),
-            cfg.eta_fin(), cfg.eta_asymp());
+        ev_params = EvolutionParameters(cfg.f_nu(), cfg.omega_m_0(),
+                cfg.zeta_file(), cfg.redshift_file(),
+                cfg.omega_eigenvalues_file(), cfg.F1_ic_files(),
+                cfg.effcs2_x_grid(), cfg.effcs2_y_grid(),
+                cfg.effcs2_data(), cfg.ode_atol(), cfg.ode_rtol(),
+                cfg.ode_hstart());
+        eta_grid = EtaGrid(cfg.pre_time_steps(), cfg.time_steps(), cfg.eta_ini(),
+                cfg.eta_fin(), cfg.eta_asymp());
 
-    IntegrationInput input(cfg.q_min(), cfg.q_max());
+        IntegrationInput input(cfg.q_min(), cfg.q_max());
 
-    double twopi_factor = pow(TWOPI, -3);
-    input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor, true);
+        double twopi_factor = pow(TWOPI, -3);
+        input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor, true);
 
-    input.pair_correlations = cfg.pair_correlations();
-    input.ps_diagrams = ps::construct_diagrams(loop_params);
+        input.pair_correlations = cfg.pair_correlations();
+        input.ps_diagrams = ps::construct_diagrams(loop_params);
 
-    input.tables_vec.emplace_back(cfg.k_a(), loop_params, sum_table, ev_params,
-                                  eta_grid);
+        input.tables_vec.emplace_back(cfg.k_a(), loop_params, sum_table, ev_params,
+                eta_grid);
 
-    int n_correlations = input.pair_correlations.size();
+        int n_correlations = input.pair_correlations.size();
 
-    double* xx = new double[n_dims];
-    double* ff = new double[n_correlations];
+        double* xx = new double[n_dims];
+        double* ff = new double[n_correlations];
 
-    for (int i = 0; i < n_dims; ++i) {
-        xx[i] = 0.5;
+        for (int i = 0; i < n_dims; ++i) {
+            xx[i] = 0.5;
+        }
+
+        for (auto _ : state) {
+            // This code gets timed
+            int nvec = 1;
+            /* core = -1 in accordance with ps::integrand() or bs::integrand() */
+            int core = -1;
+            ps::integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
+        }
+
+        delete[] xx;
+        delete[] ff;
     }
-
-    for (auto _ : state) {
-        // This code gets timed
-        int nvec = 1;
-        /* core = -1 in accordance with ps::integrand() or bs::integrand() */
-        int core = -1;
-        ps::integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
+    catch (const ConfigException& cfgex) {
+        std::cerr << cfgex.what() << std::endl;
+            return;
     }
-
-    delete[] xx;
-    delete[] ff;
+    catch (const std::exception& ex) {
+        std::cerr << ex.what() << std::endl;
+        return;
+    }
 }
 
 
