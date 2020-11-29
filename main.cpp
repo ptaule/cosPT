@@ -19,6 +19,7 @@
 #include "include/tables.hpp"
 #include "include/diagrams.hpp"
 #include "include/interpolation.hpp"
+#include "include/bispectrum_tree_level.hpp"
 #include "include/kernel_evolution.hpp"
 #include "include/integrand.hpp"
 #include "include/io.hpp"
@@ -161,13 +162,13 @@ int main(int argc, char* argv[]) {
             throw ConfigException("Unknown spectrum.");
         }
 
-        Vec1D<double> lin_ps(n_correlations, 0);
-        Vec1D<double> non_lin_ps(n_correlations, 0);
+        Vec1D<double> tree_level_result(n_correlations, 0);
+        Vec1D<double> loop_result(n_correlations, 0);
         Vec1D<double> errors(n_correlations, 0);
 
         if (cfg.spectrum() == POWERSPECTRUM) {
             /* Linear power spectrum */
-            for (auto& el : lin_ps) {
+            for (auto& el : tree_level_result) {
                 el = input.input_ps.eval(cfg.k_a());
             }
             if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
@@ -176,13 +177,17 @@ int main(int argc, char* argv[]) {
                 compute_F1(cfg.k_a(), ev_params, eta_grid, F1_eta_ini, F1_eta_fin);
 
                 for (int i = 0; i < n_correlations; ++i) {
-                  lin_ps.at(i) *=
+                  tree_level_result.at(i) *=
                       F1_eta_fin.at(input.pair_correlations.at(i).first()) *
                       F1_eta_fin.at(input.pair_correlations.at(i).second());
                 }
             }
         }
-
+        else {
+            /* Tree level bispectrum */
+            tree_level_bispectrum(input.tables_vec.at(0), input.input_ps,
+                    input.triple_correlations, tree_level_result);
+        }
 
         int cuba_cores = cfg.cuba_cores();
         int cuba_points = 10000;
@@ -223,7 +228,7 @@ int main(int argc, char* argv[]) {
                                 (cfg.spectrum() == POWERSPECTRUM ? TWOPI : 1);
 
         for (size_t i = 0; i < static_cast<size_t>(n_correlations); ++i) {
-            non_lin_ps.at(i) =
+            loop_result.at(i) =
                 overall_factor * static_cast<double>(integration_results.at(i));
             errors.at(i) =
                 overall_factor * static_cast<double>(integration_errors.at(i));
@@ -235,7 +240,7 @@ int main(int argc, char* argv[]) {
         }
         std::cout << std::endl;
 
-        write_results(cfg, lin_ps, non_lin_ps, errors);
+        write_results(cfg, tree_level_result, loop_result, errors);
         std::cout << "Results written to " << cfg.output_file() << "." << std::endl;
     }
     catch (const ConfigException& e) {

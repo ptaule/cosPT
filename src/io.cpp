@@ -142,8 +142,8 @@ using std::setw;
 
 void write_results(
         const Config& cfg,
-        const Vec1D<double>& lin_ps,
-        const Vec1D<double>& non_lin_ps,
+        const Vec1D<double>& tree_level_result,
+        const Vec1D<double>& loop_result,
         const Vec1D<double>& errors
         )
 {
@@ -172,7 +172,7 @@ void write_results(
         out << setw(18) << "k_c (h/Mpc)";
 
         for (auto& el : cfg.triple_correlations()) {
-            out << setw(13) << "B_lin " << el;
+            out << setw(13) << "B_tree " << el;
             out << setw(7)  << "B_"     << cfg.n_loops() << "loop " << el;
             out << setw(7)  << "err_"   << cfg.n_loops() << "loop " << el;
         }
@@ -183,8 +183,8 @@ void write_results(
 
     if (cfg.spectrum() == POWERSPECTRUM) {
         for (size_t i = 0; i < cfg.pair_correlations().size(); ++i) {
-            out << setw(18) << lin_ps.at(i);
-            out << setw(18) << non_lin_ps.at(i);
+            out << setw(18) << tree_level_result.at(i);
+            out << setw(18) << loop_result.at(i);
             out << setw(18) << errors.at(i);
         }
     }
@@ -193,8 +193,8 @@ void write_results(
         out << setw(18) << cfg.k_c();
 
         for (size_t i = 0; i < cfg.triple_correlations().size(); ++i) {
-            out << setw(18) << lin_ps.at(i);
-            out << setw(18) << non_lin_ps.at(i);
+            out << setw(18) << tree_level_result.at(i);
+            out << setw(18) << loop_result.at(i);
             out << setw(18) << errors.at(i);
         }
     }
