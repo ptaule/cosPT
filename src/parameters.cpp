@@ -83,11 +83,26 @@ Config::Config(const std::string& ini_file,
 
     /* Integration ranges */
     try {
-        q_min_ = static_cast<double>(cfg.lookup("q_min"));
-        q_max_ = static_cast<double>(cfg.lookup("q_max"));
+        int q;
+        if (cfg.lookupValue("q_min", q_min_)) {}
+        /* If not found as double, try int */
+        else if (cfg.lookupValue("q_min", q)) {
+            q_min_ = static_cast<double>(q);
+        }
+        else {
+            throw ConfigException("Missing q_min in configuration.");
+        }
+        if (cfg.lookupValue("q_max", q_max_)) {}
+        /* If not found as double, try int */
+        else if (cfg.lookupValue("q_max", q)) {
+            q_max_ = static_cast<double>(q);
+        }
+        else {
+            throw ConfigException("Missing q_max in configuration.");
+        }
     }
-    catch (const libconfig::SettingNotFoundException& nfex) {
-        throw ConfigException("Missing q_min and/or q_max in configuration.");
+    catch (const ConfigException& ex) {
+        throw ex;
     }
     catch (const libconfig::SettingTypeException& tex) {
         throw ConfigException("Encountered type exception for q_min/q_max setting.");
