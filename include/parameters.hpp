@@ -127,6 +127,7 @@ class Config {
         int& cuba_fail() {return cuba_fail_;}
 
         std::string description() const {return description_;}
+        std::string& description() {return description_;}
 
         double ode_atol() const {return ode_atol_ ;}
         double ode_rtol() const {return ode_rtol_;}
