@@ -146,6 +146,13 @@ Config::Config(const std::string& ini_file,
             }
             set_cuba_statefile(cuba_settings);
         }
+        else {
+            if (cuba_cores_ == -1) {
+                std::cerr << "No n_cores value given. Using default value: 4"
+                    << std::endl;
+                cuba_cores_ = 4;
+            }
+        }
     }
     catch (const libconfig::SettingTypeException& tex) {
         throw ConfigException("Encountered type exception for cuba_settings.");
