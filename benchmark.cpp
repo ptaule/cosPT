@@ -23,7 +23,7 @@
 static void BM_PS_EdS_integrand_1loop(benchmark::State& state) {
     // Perform setup here
     try {
-        Config cfg("ini/benchmark/ps_eds_spt.cfg");
+        Config cfg("ini/benchmark/ps_eds_spt.cfg", -1, -1, -1, 0, 0);
 
         int n_loops = 1;
         int n_dims = 3 * n_loops - 1;
@@ -79,7 +79,7 @@ static void BM_PS_EdS_integrand_1loop(benchmark::State& state) {
 static void BM_PS_EdS_integrand_2loop(benchmark::State& state) {
     // Perform setup here
     try {
-        Config cfg("ini/benchmark/ps_eds_spt.cfg");
+        Config cfg("ini/benchmark/ps_eds_spt.cfg", -1, -1, -1, 0, 0);
 
         int n_loops = 2;
         int n_dims = 3 * n_loops - 1;
@@ -134,7 +134,7 @@ static void BM_PS_EdS_integrand_2loop(benchmark::State& state) {
 static void BM_BS_EdS_integrand_1loop(benchmark::State& state) {
     // Perform setup here
     try {
-        Config cfg("ini/benchmark/bs_eds_spt.cfg");
+        Config cfg("ini/benchmark/bs_eds_spt.cfg", -1, -1, -1, 0, 0);
 
         int n_loops = 1;
         int n_dims = 3 * n_loops;
@@ -190,7 +190,7 @@ static void BM_BS_EdS_integrand_1loop(benchmark::State& state) {
 static void BM_BS_EdS_integrand_2loop(benchmark::State& state) {
     // Perform setup here
     try {
-        Config cfg("ini/benchmark/bs_eds_spt.cfg");
+        Config cfg("ini/benchmark/bs_eds_spt.cfg", -1, -1, -1, 0, 0);
 
         int n_loops = 2;
         int n_dims = 3 * n_loops;
@@ -246,7 +246,7 @@ static void BM_BS_EdS_integrand_2loop(benchmark::State& state) {
 static void BM_PS_2fluid_integrand_1loop(benchmark::State& state) {
     // Perform setup here
     try {
-        Config cfg("ini/benchmark/m_nu_0.05eV.cfg");
+        Config cfg("ini/benchmark/m_nu_0.05eV.cfg", -1, -1, -1, 0, 0);
 
         int n_loops = 1;
         int n_dims = 3 * n_loops - 1;
@@ -311,7 +311,7 @@ static void BM_PS_2fluid_integrand_1loop(benchmark::State& state) {
 static void BM_PS_2fluid_integrand_2loop(benchmark::State& state) {
     // Perform setup here
     try {
-        Config cfg("ini/benchmark/m_nu_0.05eV.cfg");
+        Config cfg("ini/benchmark/m_nu_0.05eV.cfg", -1, -1, -1, 0, 0);
 
         int n_loops = 2;
         int n_dims = 3 * n_loops - 1;
