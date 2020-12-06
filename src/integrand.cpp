@@ -435,7 +435,7 @@ int integrand(
 
     double ratio = input.q_max/input.q_min;
     double log_ratio = std::log(ratio);
-    double jacobian = 0.0;
+    double jacobian = 1.0;
 
     switch (n_loops) {
         case 1:
