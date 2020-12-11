@@ -368,22 +368,28 @@ void diagram_term(
                 configuration_term(diagram, i, j, k,
                         input.triple_correlations, tables, term_results);
 
-                /* Multiply by P_lin(q_xy1) if xy connecting line is present
-                 * and the loop momentum is *not* associated with this line (we
-                 * multiply all diagram results by P_lin(Q) later*/
-                if (diagram.n_ab > 0 && !(diagram.overall_loop() && k % 3 == 0)) {
+                /* Multiply by P_lin(q_xy1) if xy connecting line is present */
+                if (diagram.n_ab > 0) {
                     for (auto& el : term_results) {
                         el *= input.input_ps.eval(q_xy1.a());
                     }
                 }
-                if (diagram.n_bc > 0 && !(diagram.overall_loop() && k % 3 == 1)) {
+                if (diagram.n_bc > 0) {
                     for (auto& el : term_results) {
                         el *= input.input_ps.eval(q_xy1.b());
                     }
                 }
-                if (diagram.n_ca > 0 && !(diagram.overall_loop() && k % 3 == 2)) {
+                if (diagram.n_ca > 0) {
                     for (auto& el : term_results) {
                         el *= input.input_ps.eval(q_xy1.c());
+                    }
+                }
+                /* For overall-loop diagrams: divide by pLin(rearr(Q)) which is
+                 * multiplied also in bs::integrand() */
+                if (diagram.overall_loop()) {
+                    for (auto& el : term_results) {
+                        el /= input.input_ps.eval(
+                            diagram.q1_magnitude(i, tables.vars.magnitudes));
                     }
                 }
                 for (auto& el : term_results) {

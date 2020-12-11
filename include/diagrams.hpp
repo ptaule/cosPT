@@ -185,6 +185,15 @@ class BiSpectrumDiagram {
 #if DEBUG == 0
 #define at(x) operator[](x)
 #endif
+        /* Get the magnitude of the first (rearranged) loop momentum */
+        double q1_magnitude(
+                int rearr_idx,
+                const Vec1D<double>& loop_magnitudes
+                ) const
+        {
+            return loop_magnitudes.at(rearrangements.at(rearr_idx).at(0));
+        }
+
         const Triple<ArgumentConfiguration>& get_arg_config(int rearr_idx, int
                 sign_idx, int overall_loop_idx) const {
             return arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
