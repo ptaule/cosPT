@@ -183,3 +183,12 @@ bool single_loop_label(int label, int n_coeffs, Spectrum spectrum)
     }
     return (num_vecs_present == 1);
 }
+
+
+
+int flip_signs(int label) {
+    Vec1D<int> config;
+    label2config(label, config);
+    flip_signs(config, config);
+    return config2label(config);
+}
