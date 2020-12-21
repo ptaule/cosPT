@@ -736,9 +736,9 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
 LoopParameters::LoopParameters(int n_loops, Spectrum spectrum, Dynamics dynamics)
     : dynamics_(dynamics), spectrum_(spectrum), n_loops_(n_loops)
 {
-    if (n_loops_ < 1 || n_loops_ > 2) {
+    if (n_loops_ < 0 || n_loops_ > 2) {
         throw(std::invalid_argument("LoopParameters::LoopParameters(): "
-                                    "implementation for n_loops = 1,2 only."));
+                                    "implementation for n_loops = 0,1,2 only."));
     }
 
     if (spectrum_ == POWERSPECTRUM) {

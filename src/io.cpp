@@ -162,8 +162,10 @@ void write_results(
         out << "#\n#" << setw(17) << "k (h/Mpc)";
         for (auto& el : cfg.pair_correlations()) {
             out << setw(13) << "P_lin " << el;
-            out << setw(7)  << "P_"     << cfg.n_loops() << "loop " << el;
-            out << setw(7)  << "err_"   << cfg.n_loops() << "loop " << el;
+            if (cfg.n_loops() > 0) {
+                out << setw(7)  << "P_"     << cfg.n_loops() << "loop " << el;
+                out << setw(7)  << "err_"   << cfg.n_loops() << "loop " << el;
+            }
         }
     }
     else {
@@ -173,8 +175,10 @@ void write_results(
 
         for (auto& el : cfg.triple_correlations()) {
             out << setw(13) << "B_tree " << el;
-            out << setw(7)  << "B_"     << cfg.n_loops() << "loop " << el;
-            out << setw(7)  << "err_"   << cfg.n_loops() << "loop " << el;
+            if (cfg.n_loops() > 0) {
+                out << setw(7)  << "B_"     << cfg.n_loops() << "loop " << el;
+                out << setw(7)  << "err_"   << cfg.n_loops() << "loop " << el;
+            }
         }
     }
 
@@ -184,8 +188,10 @@ void write_results(
     if (cfg.spectrum() == POWERSPECTRUM) {
         for (size_t i = 0; i < cfg.pair_correlations().size(); ++i) {
             out << setw(18) << tree_level_result.at(i);
-            out << setw(18) << loop_result.at(i);
-            out << setw(18) << errors.at(i);
+            if (cfg.n_loops() > 0) {
+                out << setw(18) << loop_result.at(i);
+                out << setw(18) << errors.at(i);
+            }
         }
     }
     else {
@@ -194,8 +200,10 @@ void write_results(
 
         for (size_t i = 0; i < cfg.triple_correlations().size(); ++i) {
             out << setw(18) << tree_level_result.at(i);
-            out << setw(18) << loop_result.at(i);
-            out << setw(18) << errors.at(i);
+            if (cfg.n_loops() > 0) {
+                out << setw(18) << loop_result.at(i);
+                out << setw(18) << errors.at(i);
+            }
         }
     }
     out << std::endl;
