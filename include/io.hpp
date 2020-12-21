@@ -31,8 +31,8 @@ void read_data_grid_from_file(
 
 void write_results(
         const Config& cfg,
-        const Vec1D<double>& lin_ps,
-        const Vec1D<double>& non_lin_ps,
+        const Vec1D<double>& tree_level_result,
+        const Vec1D<double>& loop_result,
         const Vec1D<double>& errors
         );
 

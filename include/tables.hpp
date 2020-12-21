@@ -108,10 +108,10 @@ class IntegrandTables {
         Vec1D<int> a_coeffs;
         Vec1D<int> b_coeffs;
 
-        Vec2D<double> bare_scalar_products; /* N_COEFFS x N_COEFFS   */
-        Vec2D<double> scalar_products_;     /* N_CONFIGS x N_CONFIGS */
-        Vec2D<double> alpha_;               /* N_CONFIGS x N_CONFIGS */
-        Vec2D<double> beta_;                /* N_CONFIGS x N_CONFIGS */
+        Vec2D<double> bare_scalar_products_; /* N_COEFFS x N_COEFFS   */
+        Vec2D<double> scalar_products_;      /* N_CONFIGS x N_CONFIGS */
+        Vec2D<double> alpha_;                /* N_CONFIGS x N_CONFIGS */
+        Vec2D<double> beta_;                 /* N_CONFIGS x N_CONFIGS */
 
         void reset_spt_kernels();
         void reset_kernels();
@@ -150,6 +150,8 @@ class IntegrandTables {
                 const EtaGrid& eta_grid
                 );
 
+        const Vec2D<double>& bare_scalar_products() const {return
+            bare_scalar_products_;}
         const Vec2D<double>& scalar_products() const {return scalar_products_;}
         const Vec2D<double>& alpha() const {return alpha_;}
         const Vec2D<double>& beta() const {return beta_;}

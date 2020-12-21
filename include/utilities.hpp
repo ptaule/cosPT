@@ -153,6 +153,8 @@ void flip_signs(const Vec1D<T>& input, Vec1D<T>& result) {
     }
 }
 
+/* Return the label corresponding to the sign flipped configuration */
+int flip_signs(int label, int n_coeffs);
 
 template <typename T>
 /* Are there duplicate elements of the array? Yes, return true; */

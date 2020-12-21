@@ -903,6 +903,11 @@ Vec1D<PowerSpectrumDiagram> ps::construct_diagrams(const LoopParameters& params)
     Vec1D<PowerSpectrumDiagram> diagrams;
 
     int n_loops = params.n_loops();
+    if (n_loops < 1) {
+        throw std::logic_error(
+            "ps::construct_diagrams(): called with n_loops < 1.");
+    }
+
     int m = 0;
     int index = 0;
 
@@ -927,13 +932,15 @@ Vec1D<PowerSpectrumDiagram> ps::construct_diagrams(const LoopParameters& params)
 
 
 
-Vec1D<BiSpectrumDiagram> bs::construct_diagrams(
-        const LoopParameters& loop_params
-        )
+Vec1D<BiSpectrumDiagram> bs::construct_diagrams(const LoopParameters& loop_params)
 {
     Vec1D<BiSpectrumDiagram> diagrams;
 
     int n_loops = loop_params.n_loops();
+    if (n_loops < 1) {
+        throw std::logic_error(
+            "bs::construct_diagrams(): called with n_loops < 1.");
+    }
 
     /* Need to place L + 2 lines */
     /* First, consider diagram where a connecting line is zero, e.g. n_ab = 0 */
