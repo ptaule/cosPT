@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
         LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
         SumTable sum_table(loop_params);
 
-        integrand_t integrand;
+        integrand_t integrand = nullptr;
         IntegrationInput input(cfg.q_min(), cfg.q_max());
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
