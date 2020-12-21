@@ -8,7 +8,7 @@ cleanup() {
 }
 
 # Run cleanup on EXIT
-trap cleanup EXI
+trap cleanup EXIT
 
 # Set some default values:
 K_A=-1
