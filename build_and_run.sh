@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
-
 set -e
 set -x
+
+cleanup() {
+    rm -rf $tempdir
+    exit $1
+}
+
+# Run cleanup on EXIT
+trap cleanup EXI
 
 # Set some default values:
 K_A=-1
@@ -18,11 +25,6 @@ usage()
                      [ --k_c INDEX ] [ --n_evals NUM ] [ --n_cores NUM]
                      ini_file log_file"
   exit 2
-}
-
-clean() {
-    rm -rf $tempdir
-    exit $1
 }
 
 PARSED_ARGUMENTS=$(getopt -n build_and_run -o a:b:c:n:p: --long k_a:,k_b:,k_c:,n_evals:,n_cores: -- "$@")
@@ -66,46 +68,41 @@ LIBPATH="/space/ge52sir/"
 sourcedir=$(pwd)
 tempdir="$(mktemp -d)"
 
-cp -r $LIBPATH/$GSL $tempdir || clean 1
-cp -r $LIBPATH/$CUBA $tempdir || clean 1
-cp -r $LIBPATH/$LIBCONFIG $tempdir || clean 1
+cp -r $LIBPATH/$GSL $tempdir
+cp -r $LIBPATH/$CUBA $tempdir
+cp -r $LIBPATH/$LIBCONFIG $tempdir
 cp -r -t $tempdir $sourcedir/src $sourcedir/include \
-    $sourcedir/main.cpp $sourcedir/Makefile || clean 1
+    $sourcedir/main.cpp $sourcedir/Makefile
 
 mkdir -p $tempdir/local/
 
-cd $tempdir/$LIBCONFIG || clean 1
-autoreconf -f -i || clean 1
-./configure --prefix=$tempdir/local/ || clean 1
-make clean || clean 1
-make -j || clean 1
-make -j install || clean 1
+cd $tempdir/$LIBCONFIG
+autoreconf -f -i
+./configure --prefix=$tempdir/local/
+make clean
+make -j && make -j install
 
-cd $tempdir/$CUBA || clean 1
-./configure --prefix=$tempdir/local/ || clean 1
-make clean || clean 1
-make -j || clean 1
-make -j install || clean 1
+cd $tempdir/$CUBA
+./configure --prefix=$tempdir/local/
+make clean
+make -j install
 
-cd $tempdir/$GSL || clean 1
-./configure --prefix=$tempdir/local/ || clean 1
-make clean || clean 1
-make -j || clean 1
-make -j install || clean 1
+cd $tempdir/$GSL
+./configure --prefix=$tempdir/local/
+make clean
+make -j && make -j install
 
-cd $sourcedir || clean 1
-git_sha=$(git rev-parse HEAD) || clean 1
+cd $sourcedir
+git_sha=$(git rev-parse HEAD)
 cd $tempdir
 printf "#include \"../include/version.hpp\"\\nstd::string build_git_sha =  \"${git_sha}\";" \
-    > src/version_.cpp || clean 1
+    > src/version_.cpp
 
-cd $tempdir || clean 1
-mkdir obj || clean 1
-mkdir build || clean 1
-make clean || clean 1
-make -j cluster || clean 1
+cd $tempdir
+mkdir obj
+mkdir build
+make clean
+make -j cluster
 export LD_LIBRARY_PATH=$tempdir/local/lib/
 
-$tempdir/$exe --k_a $K_A --k_b $K_B --k_c $K_C --n_evals $N_EVALS --n_cores $N_CORES $INI_FILE > $LOG_FILE || clean 1
-
-clean 0
+$tempdir/$exe --k_a $K_A --k_b $K_B --k_c $K_C --n_evals $N_EVALS --n_cores $N_CORES $INI_FILE > $LOG_FILE
