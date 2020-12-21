@@ -1,0 +1,32 @@
+# Matter power spectrum P(k) at 1-loop
+#
+# Description: eds-spt
+# Git hash:    0ddc80df298e3d4d807cfe78d50146a971ad77cd
+# Build time:  20.12.2020 20:26 CET
+#
+# Correlations (zero-indexed components):
+#  <0,0> ,
+#
+# Input power spectrum read from /space/ge52sir/class_public/output/fiducial/newtonian/z1_pk.dat
+# Integration limits:
+#	 q_min = 1.000000e-04
+#	 q_max = 1.000000e+01
+#
+# Cuba settings:
+#	 abs tolerance = 1.000000e-12
+#	 rel tolerance = 1.000000e-04
+#	 max. evals    = 10000000
+#
+#        k (h/Mpc)       P_lin <0,0>     P_1loop <0,0>   err_1loop <0,0>
+      1.148154e-02      1.004092e+02     -2.482577e-01      2.481596e-05
+      2.290868e-02      1.004893e+02     -7.979274e-01      7.977628e-05
+      4.570882e-02      5.830834e+01     -8.335443e-01      8.334480e-05
+      7.332687e-02      4.012498e+01     -6.975363e-01      6.974957e-05
+      1.017111e-01      2.337388e+01      1.040086e+00      1.039923e-04
+      1.410825e-01      1.564361e+01      1.479952e+00      1.479888e-04
+      1.956946e-01      8.918608e+00      2.525072e+00      2.524978e-04
+      3.630781e-01      2.665897e+00      3.560924e+00      3.558983e-04
+      7.244360e-01      6.160423e-01      2.511196e+00      2.510355e-04
+      1.445440e+00      1.252809e-01      1.231968e+00      1.231959e-04
+      2.884032e+00      2.334227e-02      4.650472e-01      4.643557e-05
+      5.754399e+00      4.074717e-03      1.460238e-01      1.457601e-05
