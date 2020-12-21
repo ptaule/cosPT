@@ -42,18 +42,18 @@ function parse_commandline()
             help = "script to run"
             arg_type = String
             default = "build_and_run.sh"
+        "ini_file"
+            help = "ini file"
+            arg_type = String
+            required = true
         "k_idx_lower"
             help = "k index lower"
             arg_type = Int
             required = true
         "k_idx_upper"
-            help = "k index lower"
+            help = "k index upper (set to k_idx_lower if not given)"
             arg_type = Int
-            required = true
-        "ini_file"
-            help = "ini file"
-            arg_type = String
-            required = true
+            required = false
     end
 
     return parse_args(s)
@@ -109,6 +109,10 @@ function main()
 
     k_idx_lower = parse_args["k_idx_lower"]
     k_idx_upper = parse_args["k_idx_upper"]
+
+    if (k_idx_upper == nothing)
+        k_idx_upper = k_idx_lower
+    end
 
     k_b_idx = -1
     k_c_idx = -1
