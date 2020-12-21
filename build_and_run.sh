@@ -61,7 +61,7 @@ LOG_FILE="$2"
 
 exe=build/cosPT
 GSL="gsl-2.6"
-CUBA="Cuba-4.2"
+CUBA="Cuba-4.2.1"
 LIBCONFIG="libconfig-1.7.2"
 LIBPATH="/space/ge52sir/"
 
