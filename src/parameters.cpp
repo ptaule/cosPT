@@ -70,10 +70,20 @@ Config::Config(const std::string& ini_file,
         read_columns_from_file(k_a_grid_file, 1, k_a_grid);
     }
     if (!k_a_grid.empty() && k_a_idx != -1) {
-        k_a_ = k_a_grid.at(0).at(k_a_idx);
+        try {
+            k_a_ = k_a_grid.at(0).at(k_a_idx);
+        }
+        catch (const std::out_of_range& e) {
+            throw ConfigException("k_a_idx out of range (of k_a_grid).");
+        }
     }
     else if (!k_a_grid.empty() && cfg.lookupValue("k_a_idx", k_a_idx)) {
-        k_a_ = k_a_grid.at(0).at(k_a_idx);
+        try {
+            k_a_ = k_a_grid.at(0).at(k_a_idx);
+        }
+        catch (const std::out_of_range& e) {
+            throw ConfigException("k_a_idx out of range (of k_a_grid).");
+        }
     }
     else if (cfg.lookupValue("k_a", k_a_)) {}
     else {
@@ -287,15 +297,26 @@ void Config::set_spectrum(const libconfig::Config& cfg)
             read_columns_from_file(k_b_grid_file, 1, k_b_grid);
         }
         if (!k_b_grid.empty() && k_b_idx != -1) {
-            k_b_ = k_b_grid.at(0).at(k_b_idx);
+            try {
+                k_b_ = k_b_grid.at(0).at(k_b_idx);
+            }
+            catch (const std::out_of_range& e) {
+                throw ConfigException("k_b_idx out of range (of k_b_grid).");
+            }
         }
         else if (!k_b_grid.empty() && cfg.lookupValue("k_b_idx", k_b_idx)) {
-            k_b_ = k_b_grid.at(0).at(k_b_idx);
+            try {
+                k_b_ = k_b_grid.at(0).at(k_b_idx);
+            }
+            catch (const std::out_of_range& e) {
+                throw ConfigException("k_b_idx out of range (of k_b_grid).");
+            }
         }
         else if (cfg.lookupValue("k_b", k_b_)) {}
         else {
-            throw ConfigException("Did not obtain any value for k_b. Either provide "
-                    "k_b, or k_b_idx and k_b_grid.");
+            throw ConfigException(
+                "Did not obtain any value for k_b. Either provide "
+                "k_b, or k_b_idx and k_b_grid.");
         }
 
         bool k_c_given = false;
@@ -306,11 +327,21 @@ void Config::set_spectrum(const libconfig::Config& cfg)
                 read_columns_from_file(k_c_grid_file, 1, k_c_grid);
             }
             if (!k_c_grid.empty() && k_c_idx != -1) {
-                k_c_ = k_c_grid.at(0).at(k_c_idx);
+                try {
+                    k_c_ = k_c_grid.at(0).at(k_c_idx);
+                }
+                catch (const std::out_of_range& e) {
+                    throw ConfigException("k_c_idx out of range (of k_c_grid).");
+                }
                 k_c_given = true;
             }
             else if (!k_c_grid.empty() && cfg.lookupValue("k_c_idx", k_c_idx)) {
-                k_c_ = k_c_grid.at(0).at(k_c_idx);
+                try {
+                    k_c_ = k_c_grid.at(0).at(k_c_idx);
+                }
+                catch (const std::out_of_range& e) {
+                    throw ConfigException("k_c_idx out of range (of k_c_grid).");
+                }
                 k_c_given = true;
             }
             else if (cfg.lookupValue("k_c", k_c_)) {
@@ -328,7 +359,8 @@ void Config::set_spectrum(const libconfig::Config& cfg)
             }
         }
         catch (const libconfig::SettingTypeException& tex) {
-            throw ConfigException("Encountered type exception for cos_ab setting.");
+            throw ConfigException(
+                "Encountered type exception for cos_ab setting.");
         }
 
         /* If neither/both k_c and cos_ab was given, throw exception */
