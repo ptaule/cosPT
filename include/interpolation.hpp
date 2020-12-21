@@ -15,8 +15,6 @@
 #include <gsl/gsl_spline.h>
 #include <gsl/gsl_spline2d.h>
 
-#include "utilities.hpp"
-
 /* Wrapper classes around GSL 1d and 2d spline
  * interpolation */
 
@@ -30,8 +28,8 @@ class Interpolation1D {
         const gsl_interp_type* type;
 
         void initialize(
-                Vec1D<double> x,
-                Vec1D<double> y,
+                std::vector<double> x,
+                std::vector<double> y,
                 double factor,
                 bool padding_zeros
                 );
@@ -45,8 +43,8 @@ class Interpolation1D {
          * - gsl_interp_type: GSL interpolation type */
 
         Interpolation1D(
-                const Vec1D<double>& x,
-                const Vec1D<double>& y,
+                const std::vector<double>& x,
+                const std::vector<double>& y,
                 double factor = 1,
                 bool padding_zeros = false,
                 const gsl_interp_type* type = gsl_interp_cspline
@@ -98,18 +96,18 @@ class Interpolation2D {
         const gsl_interp2d_type* type;
 
         void initialize(
-                const Vec1D<double>& x,
-                const Vec1D<double>& y,
-                Vec1D<double> z,
+                const std::vector<double>& x,
+                const std::vector<double>& y,
+                std::vector<double> z,
                 double factor
                 );
     public:
         Interpolation2D() :
             spline(nullptr), x_acc(nullptr), y_acc(nullptr), type(nullptr) {}
         Interpolation2D(
-                const Vec1D<double>& x,
-                const Vec1D<double>& y,
-                const Vec1D<double>& z,
+                const std::vector<double>& x,
+                const std::vector<double>& y,
+                const std::vector<double>& z,
                 double factor = 1,
                 const gsl_interp2d_type* type = gsl_interp2d_bicubic
                 );
