@@ -491,9 +491,9 @@ void BiSpectrumDiagram::kernel_arguments(
             config_single.at(loop_idx) *= 0;
         }
 
-        flip_signs(config_xy.ab(), config_xy_sign_flip.ab());
-        args.b().at(args_idx.b()++) = config2label(config_xy.ab());
-        args.a().at(args_idx.a()++) = config2label(config_xy_sign_flip.ab());
+        int label = config2label(config_xy.ab());
+        args.b().at(args_idx.b()++) = label;
+        args.a().at(args_idx.a()++) = flip_signs(label, n_coeffs);
     }
 
     if (n_bc > 0) {
@@ -512,9 +512,9 @@ void BiSpectrumDiagram::kernel_arguments(
             config_single.at(loop_idx) *= 0;
         }
 
-        flip_signs(config_xy.bc(), config_xy_sign_flip.bc());
-        args.c().at(args_idx.c()++) = config2label(config_xy.bc());
-        args.b().at(args_idx.b()++) = config2label(config_xy_sign_flip.bc());
+        int label = config2label(config_xy.bc());
+        args.c().at(args_idx.c()++) = label;
+        args.b().at(args_idx.b()++) = flip_signs(label, n_coeffs);
     }
 
     if (n_ca > 0) {
@@ -533,9 +533,9 @@ void BiSpectrumDiagram::kernel_arguments(
             config_single.at(loop_idx) *= 0;
         }
 
-        flip_signs(config_xy.ca(), config_xy_sign_flip.ca());
-        args.a().at(args_idx.a()++) = config2label(config_xy.ca());
-        args.c().at(args_idx.c()++) = config2label(config_xy_sign_flip.ca());
+        int label = config2label(config_xy.ca());
+        args.a().at(args_idx.a()++) = label;
+        args.c().at(args_idx.c()++) = flip_signs(label, n_coeffs);
     }
 
     /* Cache labels corresponding to q_ab1, q_bc1 and q_ca1 for this
