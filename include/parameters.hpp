@@ -209,7 +209,13 @@ class LoopParameters {
                 return bs_arguments_2_kernel_index(arguments);
             else
                 throw(std::logic_error(
-                            "Parameters::arguments_2_kernel_index(): invalid spectrum."));
+                    "Parameters::arguments_2_kernel_index(): invalid spectrum."));
+        }
+
+        /* std::vector argument wrapper function */
+        int arguments_2_kernel_index(const std::vector<int> arguments) const
+        {
+            return arguments_2_kernel_index(arguments.data());
         }
 };
 

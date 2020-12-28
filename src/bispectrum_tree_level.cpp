@@ -90,11 +90,11 @@ Triple<ArgumentConfiguration> kernel_arguments(
     }
 
     arg_config.a().kernel_index =
-        loop_params.arguments_2_kernel_index(arg_config.a().args.data());
+        loop_params.arguments_2_kernel_index(arg_config.a().args);
     arg_config.b().kernel_index =
-        loop_params.arguments_2_kernel_index(arg_config.b().args.data());
+        loop_params.arguments_2_kernel_index(arg_config.b().args);
     arg_config.c().kernel_index =
-        loop_params.arguments_2_kernel_index(arg_config.c().args.data());
+        loop_params.arguments_2_kernel_index(arg_config.c().args);
 
     return arg_config;
 }
