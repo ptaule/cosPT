@@ -26,7 +26,7 @@ using std::size_t;
  * beginning with '#' */
 void read_columns_from_file(
         const std::string& filename,  /* in, name of file to be read */
-        unsigned int n_columns, /* in, number of columns       */
+        size_t n_columns,             /* in, number of columns       */
         Vec2D<double>& columns        /* out, columns                */
         )
 {
@@ -38,7 +38,7 @@ void read_columns_from_file(
     }
 
     columns.resize(n_columns);
-    for (unsigned int i = 0; i < n_columns; ++i) {
+    for (size_t i = 0; i < n_columns; ++i) {
         columns.at(i).reserve(RESERVE_SIZE);
     }
 
@@ -52,7 +52,7 @@ void read_columns_from_file(
         double value;
 
         // Column counter
-        unsigned int i = 0;
+        size_t i = 0;
         while (ss >> value) {
             if (i < n_columns) {
                 columns.at(i).push_back(value);
@@ -81,8 +81,8 @@ void read_columns_from_file(
 void read_data_grid_from_file(
         const std::string& filename,
         Vec1D<double>& data,
-        unsigned int n_rows,
-        unsigned int n_columns
+        size_t n_rows,
+        size_t n_columns
         )
 {
     std::ifstream input;

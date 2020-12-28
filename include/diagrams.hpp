@@ -45,7 +45,7 @@ class PowerSpectrumDiagram {
 
         /* Computes argument configurations if rearrangement and sign
          * configurations are set */
-        void kernel_arguments(int rearr_idx, int sign_idx);
+        void kernel_arguments(std::size_t rearr_idx, std::size_t sign_idx);
     public:
         const int m, l, r;
 
@@ -65,32 +65,35 @@ class PowerSpectrumDiagram {
         /* q_m1 is the momentum of the connecting line whose loop momentum is
          * evaluated by the momentum conserving delta function */
         double q_m1(
-                int rearr_idx,
-                int sign_idx,
+                std::size_t rearr_idx,
+                std::size_t sign_idx,
                 const Vec2D<double>& scalar_products
                 ) const
         {
-            int q_m1_label = q_m1_labels.at(rearr_idx).at(sign_idx);
+            std::size_t q_m1_label =
+                static_cast<std::size_t>(q_m1_labels.at(rearr_idx).at(sign_idx));
             return std::sqrt(scalar_products.at(q_m1_label).at(q_m1_label));
         }
 
         /* Heaviside theta for q_m1 and first connecting loop */
-        double heaviside_theta(
+        int heaviside_theta(
                 double q_m1,
-                int rearr_idx,
+                std::size_t rearr_idx,
                 const Vec1D<double>& loop_magnitudes
                 ) const
         {
             const Vec1D<int>& rearr = rearrangements.at(rearr_idx);
             if (m == 1) return 1;
             // Heaviside-theta (q_m1 - Q1(rearr))
-            if (q_m1 <= loop_magnitudes.at(rearr.at(0))) return 0;
+            if (q_m1 <= loop_magnitudes.at(static_cast<size_t>(rearr.at(0)))) {
+                return 0;
+            }
 #if DEBUG >= 1
             /* Check that the heaviside-theta (Q2(rearr) - Q3(rearr)) etc. are
              * satisfied by (reparametrized) momenta from CUBA */
-            for (int i = 3; i <= m; ++i) {
-                if (loop_magnitudes.at(rearr.at(i - 3)) <
-                    loop_magnitudes.at(rearr.at(i - 2))
+            for (size_t i = 3; i <= static_cast<size_t>(m); ++i) {
+                if (loop_magnitudes.at(static_cast<size_t>(rearr.at(i - 3))) <
+                    loop_magnitudes.at(static_cast<size_t>(rearr.at(i - 2)))
                     ) {
                     throw(std::logic_error(
                         "Heaviside theta: Q" + std::to_string(rearr.at(i - 3) + 1) +
@@ -101,12 +104,16 @@ class PowerSpectrumDiagram {
             return m;
         }
 
-        const ArgumentConfiguration& get_arg_config_l(int rearr_idx, int
-                sign_idx) const {
+        const ArgumentConfiguration & get_arg_config_l(
+                std::size_t rearr_idx,
+                std::size_t sign_idx
+                ) const {
             return arg_configs_l.at(rearr_idx).at(sign_idx);
         }
-        const ArgumentConfiguration& get_arg_config_r(int rearr_idx, int
-                sign_idx) const {
+        const ArgumentConfiguration& get_arg_config_r(
+                std::size_t rearr_idx,
+                std::size_t sign_idx
+                ) const {
             return arg_configs_r.at(rearr_idx).at(sign_idx);
         }
 #undef at
@@ -114,8 +121,8 @@ class PowerSpectrumDiagram {
         void print_diagram_tags(std::ostream& out) const;
         void print_argument_configuration(
                 std::ostream& out,
-                int a,
-                int b
+                std::size_t a,
+                std::size_t b
                 ) const;
 };
 
@@ -149,12 +156,16 @@ class BiSpectrumDiagram {
         Vec3D<Triple<ArgumentConfiguration>> arg_configs;
 
         void compute_rearrangements(int n_loops);
-        Vec2D<bool> connecting_line_sign_flips(int n_connecting_loops) const;
-        Vec2D<bool> compute_sign_flips(const Triple<Vec2D<bool>>& sign_configs_xy);
+        Vec2D<bool> connecting_line_sign_flips(int connecting_loops) const;
+        void compute_sign_flips(const Triple<Vec2D<bool>>& sign_configs_xy);
 
         /* Computes argument configurations if rearrangement and sign
          * configurations are set */
-        void kernel_arguments(int rearr_idx, int sign_idx, int overall_loop_idx);
+        void kernel_arguments(
+                std::size_t rearr_idx,
+                std::size_t sign_idx,
+                std::size_t overall_loop_idx
+                );
 
     public:
         const int n_ab, n_bc, n_ca;
@@ -172,9 +183,9 @@ class BiSpectrumDiagram {
         size_t n_sign_configs() const {return sign_configs.size();}
 
         void connecting_lines_factors(
-                int rearr_idx,
-                int sign_idx,
-                int overall_loop_idx,
+                std::size_t rearr_idx,
+                std::size_t sign_idx,
+                std::size_t overall_loop_idx,
                 const Vec1D<double>& loop_magnitudes,
                 const Vec2D<double>& scalar_products,
                 Triple<double>& q_xy1, /* out */
@@ -187,15 +198,19 @@ class BiSpectrumDiagram {
 #endif
         /* Get the magnitude of the first (rearranged) loop momentum */
         double q1_magnitude(
-                int rearr_idx,
+                std::size_t rearr_idx,
                 const Vec1D<double>& loop_magnitudes
                 ) const
         {
-            return loop_magnitudes.at(rearrangements.at(rearr_idx).at(0));
+            return loop_magnitudes.at(
+                static_cast<size_t>(rearrangements.at(rearr_idx).at(0)));
         }
 
-        const Triple<ArgumentConfiguration>& get_arg_config(int rearr_idx, int
-                sign_idx, int overall_loop_idx) const {
+        const Triple<ArgumentConfiguration>& get_arg_config(
+                std::size_t rearr_idx,
+                std::size_t sign_idx,
+                std::size_t overall_loop_idx
+                ) const {
             return arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx);
         }
 #undef at
@@ -203,9 +218,9 @@ class BiSpectrumDiagram {
         void print_diagram_tags(std::ostream& out) const;
         void print_argument_configuration(
                 std::ostream& out,
-                int rearr_idx,
-                int sign_idx,
-                int overall_loop_idx = 0
+                std::size_t rearr_idx,
+                std::size_t sign_idx,
+                std::size_t overall_loop_idx = 0
                 ) const;
 };
 

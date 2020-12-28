@@ -65,8 +65,8 @@ class Config {
         std::string output_path;
         std::string output_file_;
 
-        int time_steps_     = 0;
-        int pre_time_steps_ = 0;
+        std::size_t time_steps_     = 0;
+        std::size_t pre_time_steps_ = 0;
         double eta_asymp_   = 0;
         double eta_ini_     = 0;
         double eta_fin_     = 0;
@@ -136,8 +136,8 @@ class Config {
         std::string input_ps_file() const {return input_ps_file_;}
         std::string output_file() const {return output_file_;}
 
-        int time_steps() const {return time_steps_;}
-        int pre_time_steps() const {return pre_time_steps_;}
+        std::size_t time_steps() const {return time_steps_;}
+        std::size_t pre_time_steps() const {return pre_time_steps_;}
         double eta_asymp() const {return eta_asymp_;}
         double eta_ini() const {return eta_ini_;}
         double eta_fin() const {return eta_fin_;}
@@ -173,10 +173,10 @@ class LoopParameters {
 
         const int n_loops_;
 
-        int n_coeffs_;
-        int n_configs_;
-        int n_kernels_;
-        int n_kernel_args_;
+        std::size_t n_coeffs_;
+        std::size_t n_configs_;
+        std::size_t n_kernels_;
+        std::size_t n_kernel_args_;
         int zero_label_;
         int single_loop_label_min;
         int single_loop_label_max;
@@ -196,10 +196,10 @@ class LoopParameters {
         Spectrum spectrum() const { return spectrum_; }
 
         int n_loops() const { return n_loops_; }
-        int n_coeffs() const { return n_coeffs_; }
-        int n_configs() const { return n_configs_; }
-        int n_kernels() const { return n_kernels_; }
-        int n_kernel_args() const { return n_kernel_args_; }
+        std::size_t n_coeffs() const { return n_coeffs_; }
+        std::size_t n_configs() const { return n_configs_; }
+        std::size_t n_kernels() const { return n_kernels_; }
+        std::size_t n_kernel_args() const { return n_kernel_args_; }
         int zero_label() const { return zero_label_; }
 
         int arguments_2_kernel_index(const int arguments[]) const {
@@ -289,7 +289,7 @@ class EvolutionParameters {
             return omega_eigenvalues.eval(k);
         }
 
-        double F1_ic_at_k(int i, double k) const {
+        double F1_ic_at_k(std::size_t i, double k) const {
             return F1_ic[i].eval(k);
         }
 

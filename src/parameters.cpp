@@ -71,7 +71,7 @@ Config::Config(const std::string& ini_file,
     }
     if (!k_a_grid.empty() && k_a_idx != -1) {
         try {
-            k_a_ = k_a_grid.at(0).at(k_a_idx);
+            k_a_ = k_a_grid.at(0).at(static_cast<size_t>(k_a_idx));
         }
         catch (const std::out_of_range& e) {
             throw ConfigException("k_a_idx out of range (of k_a_grid).");
@@ -79,11 +79,12 @@ Config::Config(const std::string& ini_file,
     }
     else if (!k_a_grid.empty() && cfg.lookupValue("k_a_idx", k_a_idx)) {
         try {
-            k_a_ = k_a_grid.at(0).at(k_a_idx);
+            k_a_ = k_a_grid.at(0).at(static_cast<size_t>(k_a_idx));
         }
         catch (const std::out_of_range& e) {
             throw ConfigException("k_a_idx out of range (of k_a_grid).");
         }
+        k_a_ = k_a_grid.at(0).at(static_cast<size_t>(k_a_idx));
     }
     else if (cfg.lookupValue("k_a", k_a_)) {}
     else {
@@ -298,7 +299,7 @@ void Config::set_spectrum(const libconfig::Config& cfg)
         }
         if (!k_b_grid.empty() && k_b_idx != -1) {
             try {
-                k_b_ = k_b_grid.at(0).at(k_b_idx);
+                k_b_ = k_b_grid.at(0).at(static_cast<size_t>(k_b_idx));
             }
             catch (const std::out_of_range& e) {
                 throw ConfigException("k_b_idx out of range (of k_b_grid).");
@@ -306,11 +307,15 @@ void Config::set_spectrum(const libconfig::Config& cfg)
         }
         else if (!k_b_grid.empty() && cfg.lookupValue("k_b_idx", k_b_idx)) {
             try {
-                k_b_ = k_b_grid.at(0).at(k_b_idx);
+                k_b_ = k_b_grid.at(0).at(static_cast<size_t>(k_b_idx));
             }
             catch (const std::out_of_range& e) {
                 throw ConfigException("k_b_idx out of range (of k_b_grid).");
             }
+            k_b_ = k_b_grid.at(0).at(static_cast<size_t>(k_b_idx));
+        }
+        else if (!k_b_grid.empty() && cfg.lookupValue("k_b_idx", k_b_idx)) {
+            k_b_ = k_b_grid.at(0).at(static_cast<size_t>(k_b_idx));
         }
         else if (cfg.lookupValue("k_b", k_b_)) {}
         else {
@@ -328,7 +333,7 @@ void Config::set_spectrum(const libconfig::Config& cfg)
             }
             if (!k_c_grid.empty() && k_c_idx != -1) {
                 try {
-                    k_c_ = k_c_grid.at(0).at(k_c_idx);
+                    k_c_ = k_c_grid.at(0).at(static_cast<size_t>(k_c_idx));
                 }
                 catch (const std::out_of_range& e) {
                     throw ConfigException("k_c_idx out of range (of k_c_grid).");
@@ -337,11 +342,16 @@ void Config::set_spectrum(const libconfig::Config& cfg)
             }
             else if (!k_c_grid.empty() && cfg.lookupValue("k_c_idx", k_c_idx)) {
                 try {
-                    k_c_ = k_c_grid.at(0).at(k_c_idx);
+                    k_c_ = k_c_grid.at(0).at(static_cast<size_t>(k_c_idx));
                 }
                 catch (const std::out_of_range& e) {
                     throw ConfigException("k_c_idx out of range (of k_c_grid).");
                 }
+                k_c_ = k_c_grid.at(0).at(static_cast<size_t>(k_c_idx));
+                k_c_given = true;
+            }
+            else if (!k_c_grid.empty() && cfg.lookupValue("k_c_idx", k_c_idx)) {
+                k_c_ = k_c_grid.at(0).at(static_cast<size_t>(k_c_idx));
                 k_c_given = true;
             }
             else if (cfg.lookupValue("k_c", k_c_)) {
@@ -432,7 +442,9 @@ void Config::set_dynamics(const libconfig::Config& cfg)
         }
 
         try {
-            time_steps_ = cfg.lookup("time_steps");
+            /* Need to read setting as int, then convert so size_t */
+            int ts = cfg.lookup("time_steps");
+            time_steps_ = static_cast<size_t>(ts);
             eta_ini_ = static_cast<double>(cfg.lookup("eta_ini"));
             eta_fin_ = static_cast<double>(cfg.lookup("eta_fin"));
         }
@@ -445,7 +457,9 @@ void Config::set_dynamics(const libconfig::Config& cfg)
         }
         if (dynamics_ == EVOLVE_IC_ASYMP) {
             try {
-                pre_time_steps_ = cfg.lookup("pre_time_steps");
+                /* Need to read setting as int, then convert so size_t */
+                int pts = cfg.lookup("pre_time_steps");
+                pre_time_steps_ = static_cast<size_t>(pts);
                 eta_asymp_ = static_cast<double>(cfg.lookup("eta_asymp"));
             }
             catch (const libconfig::SettingNotFoundException& nfex) {
@@ -703,7 +717,7 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
             out << "# redshift file          = " << cfg.redshift_file() << "\n";
             out << "# omega eigenvalues file = " << cfg.omega_eigenvalues_file()
                 << "\n";
-            for (int i = 0; i < COMPONENTS; ++i) {
+            for (size_t i = 0; i < COMPONENTS; ++i) {
                 out << "# F1 ic files[" << i
                     << "]\t\t = " << cfg.F1_ic_files().at(i) << "\n";
             }
@@ -733,6 +747,16 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
 
 
 
+/* Helper conversions function */
+static inline int intpow(int a, int b) {
+    return static_cast<int>(pow(a,b));
+}
+static inline size_t uintpow(int a, int b) {
+    return static_cast<size_t>(pow(a,b));
+}
+
+
+
 LoopParameters::LoopParameters(int n_loops, Spectrum spectrum, Dynamics dynamics)
     : dynamics_(dynamics), spectrum_(spectrum), n_loops_(n_loops)
 {
@@ -742,33 +766,35 @@ LoopParameters::LoopParameters(int n_loops, Spectrum spectrum, Dynamics dynamics
     }
 
     if (spectrum_ == POWERSPECTRUM) {
-        n_coeffs_      = n_loops_ + 1;
-        n_configs_     = pow(3, n_coeffs_);
-        n_kernels_     = (n_configs_/3 + 1) * pow(4,n_loops_);
-        n_kernel_args_ = 2 * n_loops_ + 1;
+        n_coeffs_      = static_cast<size_t>(n_loops_) + 1;
+        n_configs_     = uintpow(3, static_cast<int>(n_coeffs_));
+        n_kernels_     = (n_configs_/3 + 1) * uintpow(4,n_loops_);
+        n_kernel_args_ = 2 * static_cast<size_t>(n_loops_) + 1;
         zero_label_    = get_zero_label(n_coeffs_);
 
         /* Define block size for kernel indexing. A block consists of all */
         /* single loop label argument combinations. */
-        single_loop_block_size = pow(4, n_loops_);
+        single_loop_block_size = intpow(4, n_loops_);
         /* Max/min single_loops labels */
-        single_loop_label_min = n_configs_ / 3;
-        single_loop_label_max = 2 * n_configs_ / 3 - 1;
+        single_loop_label_min = static_cast<int>(n_configs_) / 3;
+        single_loop_label_max = 2 * static_cast<int>(n_configs_) / 3 - 1;
     }
     else if (spectrum_ == BISPECTRUM) {
-        n_coeffs_      = n_loops_ + 2;
-        n_configs_     = pow(3, n_coeffs_);
-        n_kernels_     = pow(n_configs_ + 1, 2) * pow(4, n_loops_);
-        n_kernel_args_ = 2 * n_loops_ + 2;
+        n_coeffs_  = static_cast<size_t>(n_loops_) + 2;
+        n_configs_ = uintpow(3, static_cast<int>(n_coeffs_));
+        n_kernels_ = uintpow(static_cast<int>(n_configs_) + 1, 2) *
+                     uintpow(4, n_loops_);
+        n_kernel_args_ = 2 * static_cast<size_t>(n_loops_) + 2;
         zero_label_    = get_zero_label(n_coeffs_);
 
-        single_loop_block_size = pow(4, n_loops_);
+        single_loop_block_size = intpow(4, n_loops_);
         /* Max/min single_loops labels */
-        single_loop_label_min = 4 * n_configs_ / 9;
-        single_loop_label_max = 5 * n_configs_ / 9 - 1;
+        single_loop_label_min = 4 * static_cast<int>(n_configs_) / 9;
+        single_loop_label_max = 5 * static_cast<int>(n_configs_) / 9 - 1;
         /* Composite label has either k_a, k_b, or multiple loop momenta
          * (applicable for overall loop diagram) */
-        first_composite_block_size = (n_configs_ + 1) * single_loop_block_size;
+        first_composite_block_size = (static_cast<int>(n_configs_) + 1) *
+            single_loop_block_size;
     }
     else {
         throw(std::invalid_argument(
@@ -779,7 +805,7 @@ LoopParameters::LoopParameters(int n_loops, Spectrum spectrum, Dynamics dynamics
     Vec1D<int> config(n_coeffs_, 0);
     int label;
 
-    for (int i = 0; i < n_loops_; ++i) {
+    for (size_t i = 0; i < static_cast<size_t>(n_loops_); ++i) {
         config.at(i) = -1;
         label = config2label(config);
         single_loops.push_back(label);
@@ -810,7 +836,7 @@ int LoopParameters::ps_arguments_2_kernel_index(const int arguments[]) const
 
     int index = 0;
 
-    for (int i = 0; i < n_kernel_args_; ++i) {
+    for (size_t i = 0; i < n_kernel_args_; ++i) {
         /* First, check if argument is a zero vector */
         if (arguments[i] == zero_label_) continue;
 
@@ -877,7 +903,7 @@ int LoopParameters::bs_arguments_2_kernel_index(const int arguments[]) const
     /* Counter of composite arguments, i.e. not single loop momenta */
     int n_composite = 0;
 
-    for (int i = 0; i < n_kernel_args_; ++i) {
+    for (size_t i = 0; i < n_kernel_args_; ++i) {
         // First, check if argument is a zero vector
         if (arguments[i] == zero_label_) continue;
 

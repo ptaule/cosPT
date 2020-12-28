@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
 
         int n_loops = cfg.n_loops();
         int n_dims = 0; /* Dimension of integral measure */
-        int n_correlations = 0; /* Number of correlations to compute */
+        size_t n_correlations = 0; /* Number of correlations to compute */
 
         LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
         SumTable sum_table(loop_params);
@@ -182,10 +182,12 @@ int main(int argc, char* argv[]) {
                 Vec1D<double> F1_eta_fin(COMPONENTS, 0);
                 compute_F1(cfg.k_a(), ev_params, eta_grid, F1_eta_ini, F1_eta_fin);
 
-                for (int i = 0; i < n_correlations; ++i) {
-                  tree_level_result.at(i) *=
-                      F1_eta_fin.at(input.pair_correlations.at(i).first()) *
-                      F1_eta_fin.at(input.pair_correlations.at(i).second());
+                for (size_t i = 0; i < n_correlations; ++i) {
+                    tree_level_result.at(i) *=
+                        F1_eta_fin.at(static_cast<size_t>(
+                            input.pair_correlations.at(i).first())) *
+                        F1_eta_fin.at(static_cast<size_t>(
+                            input.pair_correlations.at(i).second()));
                 }
             }
         }
@@ -198,7 +200,7 @@ int main(int argc, char* argv[]) {
         }
 
         if (n_loops > 0) {
-            int cuba_cores = cfg.cuba_cores();
+            cuba_cores = cfg.cuba_cores();
             int cuba_points = 10000;
             cubacores(&cuba_cores, &cuba_points);
             int cuba_retain_statefile = 0;
@@ -218,8 +220,8 @@ int main(int argc, char* argv[]) {
 #define CUBA_NNEW 1000
 #define CUBA_NMIN 2
 #define CUBA_FLATNESS 25.
-            Suave(n_dims, n_correlations, integrand, &input, CUBA_NVEC,
-                  cfg.cuba_rtol(), cfg.cuba_atol(),
+            Suave(n_dims, static_cast<int>(n_correlations), integrand, &input,
+                  CUBA_NVEC, cfg.cuba_rtol(), cfg.cuba_atol(),
                   (cfg.cuba_verbose() | CUBA_LAST | cuba_retain_statefile),
                   CUBA_SEED, CUBA_MINEVAL, cfg.cuba_maxevals(), CUBA_NNEW,
                   CUBA_NMIN, CUBA_FLATNESS,
@@ -234,10 +236,11 @@ int main(int argc, char* argv[]) {
              * - Assuming Q1 > Q2 > ..., hence multiply result by LOOPS factorial
              * - Phi integration of first loop momenta gives a factor 2pi
              *   (powerspectrum) */
-            double overall_factor = pow(2, n_loops) * gsl_sf_fact(n_loops) *
+            double overall_factor =
+                pow(2, n_loops) * gsl_sf_fact(static_cast<unsigned>(n_loops)) *
                 (cfg.spectrum() == POWERSPECTRUM ? TWOPI : 1);
 
-            for (size_t i = 0; i < static_cast<size_t>(n_correlations); ++i) {
+            for (size_t i = 0; i < n_correlations; ++i) {
                 loop_result.at(i) = overall_factor *
                     static_cast<double>(integration_results.at(i));
                 errors.at(i) = overall_factor *

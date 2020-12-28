@@ -20,7 +20,7 @@ class IntegrationVariables {
         Vec1D<double> cos_theta;  /* Cosine of polar angles of the loop momenta */
         Vec1D<double> phi;        /* Azimutal angles */
 
-        IntegrationVariables(int n_loops) {
+        IntegrationVariables(std::size_t n_loops) {
             magnitudes.assign(n_loops,0);
             cos_theta.assign(n_loops,0);
             phi.assign(n_loops,0);
@@ -31,14 +31,14 @@ class IntegrationVariables {
 class SumTable {
     private:
         const int zero_label;
-        const int n_coeffs;
+        const std::size_t n_coeffs;
 
         Vec2D<int> sum_table;
 
         int sum_two_labels(int a, int b);
     public:
         SumTable(const LoopParameters& loop_params);
-        int sum_labels(const int labels[], size_t size) const;
+        int sum_labels(const int labels[], std::size_t size) const;
 };
 
 
@@ -58,8 +58,8 @@ class Kernel {
 
 class EtaGrid {
     private:
-        int pre_time_steps_ = 0;
-        int time_steps_     = 0;
+        std::size_t pre_time_steps_ = 0;
+        std::size_t time_steps_     = 0;
         double eta_ini_     = 0;
         double eta_fin_     = 0;
         double eta_asymp_   = 0;
@@ -68,29 +68,28 @@ class EtaGrid {
     public:
         EtaGrid() = default;
         EtaGrid(
-                const int pre_time_steps,
-                const int time_steps,
-                const double eta_ini,
-                const double eta_fin,
-                const double eta_asymp
+                std::size_t pre_time_steps,
+                std::size_t time_steps,
+                double eta_ini,
+                double eta_fin,
+                double eta_asymp
                 );
-
         EtaGrid(
-                const int time_steps,
-                const double eta_ini,
-                const double eta_fin
+                std::size_t time_steps,
+                double eta_ini,
+                double eta_fin
                 );
 
-        int pre_time_steps() const {return pre_time_steps_;}
-        int time_steps() const {return time_steps_;}
+        std::size_t pre_time_steps() const {return pre_time_steps_;}
+        std::size_t time_steps() const {return time_steps_;}
         double eta_ini() const {return eta_ini_;}
         double eta_fin() const {return eta_fin_;}
         double eta_asymp() const {return eta_asymp_;}
 
         const Vec1D<double>& grid() const {return grid_;}
 
-        const double& operator[](int i) const {return grid_[i];}
-        const double& at(int i) const {return grid_.at(i);}
+        const double& operator[](std::size_t i) const {return grid_[i];}
+        const double& at(size_t i) const {return grid_.at(i);}
 };
 
 

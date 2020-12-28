@@ -17,7 +17,7 @@
 
 void read_columns_from_file(
         const std::string& filename, /* in, name of file to be read */
-        unsigned int n_columns,      /* in, number of columns       */
+        std::size_t n_columns,       /* in, number of columns       */
         Vec2D<double>& columns       /* out, columns                */
         );
 
@@ -25,8 +25,8 @@ void read_columns_from_file(
 void read_data_grid_from_file(
         const std::string& filename,
         Vec1D<double>& data,
-        unsigned int n_rows,
-        unsigned int n_columns
+        std::size_t n_rows,
+        std::size_t n_columns
         );
 
 void write_results(

@@ -121,7 +121,7 @@ int config2label(const Vec1D<int>& config);
 
 void print_label(
         int label,
-        int n_coeffs,
+        size_t n_coeffs,
         Spectrum spectrum,
         std::ostream& out
         );
@@ -129,22 +129,21 @@ void print_label(
 void print_labels(
         const int labels[],
         size_t size,
-        int n_coeffs,
+        size_t n_coeffs,
         Spectrum spectrum,
         std::ostream& out
         );
 
 void print_labels(
         const Vec1D<int>& labels,
-        int n_coeffs,
+        size_t n_coeffs,
         Spectrum spectrum,
         std::ostream& out
         );
 
 
-int get_zero_label(int n_coeffs);
-bool single_loop_label(int label, int n_coeffs, Spectrum spectrum);
-
+int get_zero_label(size_t n_coeffs);
+bool single_loop_label(int label, size_t n_coeffs, Spectrum spectrum);
 
 template <typename T>
 void flip_signs(const Vec1D<T>& input, Vec1D<T>& result) {
@@ -154,7 +153,7 @@ void flip_signs(const Vec1D<T>& input, Vec1D<T>& result) {
 }
 
 /* Return the label corresponding to the sign flipped configuration */
-int flip_signs(int label, int n_coeffs);
+int flip_signs(int label, size_t n_coeffs);
 
 template <typename T>
 /* Are there duplicate elements of the array? Yes, return true; */

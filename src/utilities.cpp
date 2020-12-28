@@ -50,7 +50,7 @@ int config2label(const Vec1D<int>& config)
     int label = 0;
     for (size_t i = 0; i < config.size(); ++i) {
         /* Add 1 to obtain range {0,1,2} */
-        label += (config.at(i) + 1) * pow(3,i);
+        label += (config.at(i) + 1) * static_cast<int>(pow(3,i));
     }
     return label;
 }
@@ -60,7 +60,7 @@ int config2label(const Vec1D<int>& config)
 
 void print_label(
         int label,
-        int n_coeffs,
+        size_t n_coeffs,
         Spectrum spectrum,
         std::ostream& out
         )
@@ -99,7 +99,7 @@ void print_label(
         }
     }
 
-    for (int i = 0; i < n_coeffs - 2; ++i) {
+    for (size_t i = 0; i < n_coeffs - 2; ++i) {
         if (config.at(i) == 0) continue;
         else if (config.at(i) == -1) {
             out << "-Q" << i + 1;
@@ -115,7 +115,7 @@ void print_label(
 void print_labels(
         const int labels[],
         size_t size,
-        int n_coeffs,
+        size_t n_coeffs,
         Spectrum spectrum,
         std::ostream& out
         )
@@ -135,7 +135,7 @@ void print_labels(
 
 void print_labels(
         const Vec1D<int>& labels,
-        int n_coeffs,
+        size_t n_coeffs,
         Spectrum spectrum,
         std::ostream& out
         )
@@ -145,19 +145,19 @@ void print_labels(
 
 
 
-int get_zero_label(int n_coeffs) {
+int get_zero_label(size_t n_coeffs) {
     const Vec1D<int> config(n_coeffs, 0);
     return config2label(config);
 }
 
 
 
-bool single_loop_label(int label, int n_coeffs, Spectrum spectrum)
+bool single_loop_label(int label, size_t n_coeffs, Spectrum spectrum)
 {
     Vec1D<int> config(n_coeffs, 0);
     label2config(label, config);
 
-    int current = 0;
+    size_t current = 0;
     if (spectrum == POWERSPECTRUM) {
         /* Last label is k, which is not present when the label is pure loop
          * momentum*/
@@ -178,15 +178,15 @@ bool single_loop_label(int label, int n_coeffs, Spectrum spectrum)
     int num_vecs_present = 0;
 
     /* Go through rest of coefficients and count present momenta */
-    for (int i = current; i >= 0; --i) {
-        if (config.at(i) != 0) num_vecs_present++;
+    for (int i = static_cast<int>(current); i >= 0; --i) {
+        if (config.at(static_cast<size_t>(i)) != 0) num_vecs_present++;
     }
     return (num_vecs_present == 1);
 }
 
 
 
-int flip_signs(int label, int n_coeffs) {
+int flip_signs(int label, size_t n_coeffs) {
     Vec1D<int> config(n_coeffs);
     label2config(label, config);
     flip_signs(config, config);

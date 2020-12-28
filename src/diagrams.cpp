@@ -19,9 +19,18 @@
 #include "../include/tables.hpp"
 #include "../include/diagrams.hpp"
 
-void PowerSpectrumDiagram::kernel_arguments(int rearr_idx, int sign_idx)
+using std::size_t;
+
+/* Helper function converting from unsigned int */
+double gsl_sf_fact(int n) {
+    return gsl_sf_fact(static_cast<unsigned int>(n));
+}
+
+
+
+void PowerSpectrumDiagram::kernel_arguments(size_t rearr_idx, size_t sign_idx)
 {
-    int n_coeffs = loop_params.n_coeffs();
+    size_t n_coeffs = loop_params.n_coeffs();
 
     Vec1D<int>& rearrangement = rearrangements.at(rearr_idx);
     Vec1D<bool>& signs = sign_configs.at(sign_idx);
@@ -33,9 +42,10 @@ void PowerSpectrumDiagram::kernel_arguments(int rearr_idx, int sign_idx)
     Vec1D<int> config(n_coeffs, 0);
     config.at(n_coeffs - 1) = 1;
 
-    for (int i = 2; i <= m; ++i) {
+    for (size_t i = 2; i <= static_cast<size_t>(m); ++i) {
         /* Note extra minus sign from kernel expression */
-        config[rearrangement.at(i-2)] = (signs.at(i-2) ? - 1 : 1);
+        config[static_cast<size_t>(rearrangement.at(i - 2))] =
+            (signs.at(i - 2) ? -1 : 1);
     }
 
     int label = config2label(config);
@@ -53,16 +63,18 @@ void PowerSpectrumDiagram::kernel_arguments(int rearr_idx, int sign_idx)
     /* q_m2,q_m3,... arguments, the ordering of which is stored by the first
      * (m-1) entries of rearrangement. Note that the signs are opposite of
      * corresponding terms in the first argument */
-    for (int i = 2; i <= m; ++i) {
-        config.at(rearrangement.at(i-2)) = (signs.at(i-2) ? 1 : -1);
+    for (size_t i = 2; i <= static_cast<size_t>(m); ++i) {
+        config.at(static_cast<size_t>(rearrangement.at(i - 2))) =
+            (signs.at(i - 2) ? 1 : -1);
         arguments_l.at(index_l++) = config2label(config);
         arguments_r.at(index_r++) = config2label(config);
         std::fill(config.begin(), config.end(), 0);
     }
 
     /* l-loop arguments */
-    for (int i = 0; i < l; ++i) {
-        int loop_momentum_index = rearrangement.at(i + m - 1);
+    for (size_t i = 0; i < static_cast<size_t>(l); ++i) {
+        size_t loop_momentum_index =
+            static_cast<size_t>(rearrangement.at(i + static_cast<size_t>(m - 1)));
         config.at(loop_momentum_index) = 1;
         arguments_l.at(index_l++) = config2label(config);
         config.at(loop_momentum_index) = -1;
@@ -71,8 +83,9 @@ void PowerSpectrumDiagram::kernel_arguments(int rearr_idx, int sign_idx)
         std::fill(config.begin(), config.end(), 0);
     }
     /* r-loop arguments */
-    for (int i = 0; i < r; ++i) {
-        int loop_momentum_index = rearrangement.at(i + m - 1 + l);
+    for (size_t i = 0; i < static_cast<size_t>(r); ++i) {
+        size_t loop_momentum_index = static_cast<size_t>(
+            rearrangement.at(i + static_cast<size_t>(m + l - 1)));
         config.at(loop_momentum_index) = 1;
         arguments_r.at(index_r++) = config2label(config);
         config.at(loop_momentum_index) = -1;
@@ -83,7 +96,7 @@ void PowerSpectrumDiagram::kernel_arguments(int rearr_idx, int sign_idx)
 
     /* Fill remaining spots with zero-label */
     int zero_label = loop_params.zero_label();
-    size_t n_kernel_args = static_cast<size_t>(loop_params.n_kernel_args());
+    size_t n_kernel_args = loop_params.n_kernel_args();
     while (index_l < n_kernel_args) {
         arguments_l.at(index_l++) = zero_label;
     }
@@ -115,7 +128,7 @@ void PowerSpectrumDiagram::compute_rearrangements(int n_loops)
 {
     // Allocate memory for rearrangements
     for (auto& rearr : rearrangements) {
-        rearr.resize(n_loops);
+        rearr.resize(static_cast<size_t>(n_loops));
     }
 
     Vec1D<int> group_sizes;
@@ -133,7 +146,7 @@ void PowerSpectrumDiagram::compute_rearrangements(int n_loops)
 
     Orderings orderings(n_loops, group_sizes);
 
-    int counter = 0;
+    size_t counter = 0;
     do {
         rearrangements.at(counter) = orderings.get_current();
         ++counter;
@@ -146,14 +159,17 @@ void PowerSpectrumDiagram::compute_sign_flips() {
     // Allocate memory for sign configurations
     for (auto& sign_config : sign_configs) {
         // Signs of k2,...,km can be flipped, hence allocate (m-1)-length array
-        sign_config.resize(m-1);
+        sign_config.resize(static_cast<size_t>(m-1));
     }
 
     // Loop over possible sign configurations and store in sign table
     for (size_t i = 0; i < sign_configs.size(); ++i) {
         for (size_t j = 0; j < static_cast<size_t>(m-1); ++j) {
             // Add 1 so that the first sign configuration is +1,+1,...,+1
-            sign_configs.at(i).at(j) = (i/(int)pow(2,j) + 1) % 2;
+            sign_configs.at(i).at(j) =
+                (static_cast<int>(i) /
+                     static_cast<int>(pow(2, static_cast<int>(j))) + 1)
+                % 2;
         }
     }
 }
@@ -166,20 +182,21 @@ PowerSpectrumDiagram::PowerSpectrumDiagram(
         ) : loop_params(loop_params), m(m), l(l), r(r)
 {
     int n_loops = loop_params.n_loops();
-    int n_kernel_args = loop_params.n_kernel_args();
+    size_t n_kernel_args = loop_params.n_kernel_args();
 
     if (m + l + r != n_loops + 1) {
         throw(std::invalid_argument("m + l + r != n_loops + 1"));
     }
 
-    diagram_factor_ = (gsl_sf_fact(2*l + m) * gsl_sf_fact(2*r + m)) /
-        (pow(2,l+r) * gsl_sf_fact(l) * gsl_sf_fact(r) * gsl_sf_fact(m));
+    diagram_factor_ = static_cast<int>(
+        (gsl_sf_fact(2 * l + m) * gsl_sf_fact(2 * r + m)) /
+        (pow(2, l + r) * gsl_sf_fact(l) * gsl_sf_fact(r) * gsl_sf_fact(m)));
 
-    rearrangements.resize(
-            gsl_sf_fact(n_loops) /
-            (gsl_sf_fact(m-1) * gsl_sf_fact(l) * gsl_sf_fact(r))
-            );
-    sign_configs.resize(pow(2,m-1));
+    rearrangements.resize(static_cast<size_t>(
+        gsl_sf_fact(n_loops) /
+        (gsl_sf_fact(m - 1) * gsl_sf_fact(l) * gsl_sf_fact(r))
+        ));
+    sign_configs.resize(static_cast<size_t>(pow(2,m-1)));
 
     compute_rearrangements(n_loops);
     compute_sign_flips();
@@ -220,8 +237,8 @@ void PowerSpectrumDiagram::print_diagram_tags(std::ostream& out) const
 
 void PowerSpectrumDiagram::print_argument_configuration(
         std::ostream& out,
-        int a,
-        int b
+        size_t a,
+        size_t b
         ) const
 {
     out << COLOR_BLUE;
@@ -238,7 +255,7 @@ void PowerSpectrumDiagram::print_argument_configuration(
 void BiSpectrumDiagram::compute_rearrangements(int n_loops) {
     // Allocate memory for rearrangements
     for (auto& rearr : rearrangements) {
-        rearr.resize(n_loops);
+        rearr.resize(static_cast<size_t>(n_loops));
     }
 
     Vec1D<int> group_sizes;
@@ -270,7 +287,7 @@ void BiSpectrumDiagram::compute_rearrangements(int n_loops) {
 
     Orderings orderings(n_loops, group_sizes);
 
-    int counter = 0;
+    size_t counter = 0;
     do {
         rearrangements.at(counter) = orderings.get_current();
         ++counter;
@@ -279,31 +296,33 @@ void BiSpectrumDiagram::compute_rearrangements(int n_loops) {
 
 
 
-Vec2D<bool> BiSpectrumDiagram::connecting_line_sign_flips(
-        int n_connecting_loops
-        ) const
+Vec2D<bool> BiSpectrumDiagram::connecting_line_sign_flips(int connecting_loops)
+    const
 {
-    if (n_connecting_loops == 0) {
+    if (connecting_loops == 0) {
         return Vec2D<bool>();
     }
-    int n_sign_configs = pow(2, n_connecting_loops);
+    size_t n_sign_configs_xy = static_cast<size_t>(pow(2, connecting_loops));
 
-    Vec2D<bool> sign_configs;
+    Vec2D<bool> sign_configs_xy;
 
     /* Allocate memory for sign configurations */
-    sign_configs.resize(n_sign_configs);
-    for (int i = 0; i < n_sign_configs; ++i) {
-        sign_configs.at(i).resize(n_connecting_loops);
+    sign_configs_xy.resize(n_sign_configs_xy);
+    for (size_t i = 0; i < n_sign_configs_xy; ++i) {
+        sign_configs_xy.at(i).resize(static_cast<size_t>(connecting_loops));
     }
 
     /* Loop over possible sign configurations and store */
-    for (int i = 0; i < n_sign_configs; ++i) {
-        for (int j = 0; j < n_connecting_loops; ++j) {
+    for (size_t i = 0; i < n_sign_configs_xy; ++i) {
+        for (size_t j = 0; j < static_cast<size_t>(connecting_loops); ++j) {
             // Add 1 so that the first sign configuration is +1,+1,...,+1
-            sign_configs.at(i).at(j) = (i/(int)pow(2,j) + 1) % 2;
+            sign_configs_xy.at(i).at(j) =
+                (static_cast<int>(i) /
+                 static_cast<int>(pow(2, static_cast<int>(j))) + 1)
+                % 2;
         }
     }
-    return sign_configs;
+    return sign_configs_xy;
 }
 
 
@@ -315,21 +334,19 @@ Vec2D<bool> BiSpectrumDiagram::connecting_line_sign_flips(
 
 
 
-Vec2D<bool> BiSpectrumDiagram::compute_sign_flips(
+void BiSpectrumDiagram::compute_sign_flips(
         const Triple<Vec2D<bool>>& sign_configs_xy
         )
 {
     int tot_connecting_loops = n_connecting_loops.ab() +
         n_connecting_loops.bc() + n_connecting_loops.ca();
 
-    int n_sign_configs = pow(2, tot_connecting_loops);
-
-    Vec2D<bool> sign_configs;
+    size_t n_sign_configs = static_cast<size_t>(pow(2, tot_connecting_loops));
 
     /* Allocate memory for sign configurations */
     sign_configs.resize(n_sign_configs);
-    for (int i = 0; i < n_sign_configs; ++i) {
-        sign_configs.at(i).resize(tot_connecting_loops);
+    for (size_t i = 0; i < n_sign_configs; ++i) {
+        sign_configs.at(i).resize(static_cast<size_t>(tot_connecting_loops));
     }
 
     /* Combine sign_configs_ab,... into sign_configs */
@@ -346,40 +363,38 @@ Vec2D<bool> BiSpectrumDiagram::compute_sign_flips(
                             sign_configs.at(idx).begin());
                 }
                 if (!sign_configs_xy.bc().empty()) {
-                    size_t shift = n_connecting_loops.ab();
+                    int shift = n_connecting_loops.ab();
                     std::copy(sign_configs_xy.bc().at(j).begin(),
                             sign_configs_xy.bc().at(j).end(),
                             sign_configs.at(idx).begin() + shift);
                 }
                 if (!sign_configs_xy.ca().empty()) {
-                    size_t shift = n_connecting_loops.ab() +
+                    int shift = n_connecting_loops.ab() +
                         n_connecting_loops.bc();
                     std::copy(sign_configs_xy.ca().at(k).begin(),
-                            sign_configs_xy.ca().at(k).end(),
-                            sign_configs.at(idx).begin() + shift);
+                              sign_configs_xy.ca().at(k).end(),
+                              sign_configs.at(idx).begin() + shift);
                 }
                 idx++;
             } while (++k < sign_configs_xy.ca().size());
         } while (++j < sign_configs_xy.bc().size());
     } while (++i < sign_configs_xy.ab().size());
-
-    return sign_configs;
 }
 
 
 
 void BiSpectrumDiagram::kernel_arguments(
-        int rearr_idx,       /* Rearrangement index            */
-        int sign_idx,        /* Sign config index              */
-        int overall_loop_idx /* Overall loop assosiation index */
+        size_t rearr_idx,       /* Rearrangement index            */
+        size_t sign_idx,        /* Sign config index              */
+        size_t overall_loop_idx /* Overall loop assosiation index */
         )
 {
-    int n_coeffs = loop_params.n_coeffs();
+    size_t n_coeffs = loop_params.n_coeffs();
     Vec1D<int>& rearrangement = rearrangements.at(rearr_idx);
 
-    int rearr_counter = 0; /* How many loop momenta have been assigned */
-    int k_a_idx = n_coeffs - 1;
-    int k_b_idx = n_coeffs - 2;
+    size_t rearr_counter = 0; /* How many loop momenta have been assigned */
+    size_t k_a_idx = n_coeffs - 1;
+    size_t k_b_idx = n_coeffs - 2;
 
     Vec1D<bool>& sign_config = sign_configs.at(sign_idx);
     Triple<Vec1D<bool>> signs = {
@@ -400,7 +415,7 @@ void BiSpectrumDiagram::kernel_arguments(
     };
 
     /* How many arguments have been assigned to the kernels a,b,c? */
-    Triple<int> args_idx = {0,0,0};
+    Triple<size_t> args_idx = {0,0,0};
 
     /* Determine labels of "main" connecting lines (with external/overall loop
      * momenta), and their complementary with oppisite signs */
@@ -418,7 +433,7 @@ void BiSpectrumDiagram::kernel_arguments(
         /* Add (rearranged) first loop momenta to all connecting lines. If
          * overall_loop_idx = 0,1,2 add +Q, and if overall_loop_idx = 3,4,5 add
          * -Q */
-        int loop_idx = rearrangement.at(rearr_counter++);
+        size_t loop_idx = static_cast<size_t>(rearrangement.at(rearr_counter++));
         if (overall_loop_idx < 3) {
             config_xy.ab().at(loop_idx) = 1;
             config_xy.bc().at(loop_idx) = 1;
@@ -462,11 +477,11 @@ void BiSpectrumDiagram::kernel_arguments(
     /* Add connecting loops */
     if (n_ab > 0) {
         for (int n = 2; n <= n_ab; ++n) {
-            int loop_idx = rearrangement.at(rearr_counter++);
+            size_t loop_idx = static_cast<size_t>(rearrangement.at(rearr_counter++));
 
             /* Opposite sign for main connecting loop */
-            config_xy.ab().at(loop_idx) = (signs.ab().at(n - 2)) ? -1 : 1;
-            config_single.at(loop_idx)  = (signs.ab().at(n - 2)) ? 1 : -1;
+            config_xy.ab().at(loop_idx) = (signs.ab().at(static_cast<size_t>(n - 2))) ? -1 : 1;
+            config_single.at(loop_idx)  = (signs.ab().at(static_cast<size_t>(n - 2))) ? 1 : -1;
 
             args.b().at(args_idx.b()++) = config2label(config_single);
             config_single.at(loop_idx) *= -1;
@@ -483,11 +498,11 @@ void BiSpectrumDiagram::kernel_arguments(
 
     if (n_bc > 0) {
         for (int n = 2; n <= n_bc; ++n) {
-            int loop_idx = rearrangement.at(rearr_counter++);
+            size_t loop_idx = static_cast<size_t>(rearrangement.at(rearr_counter++));
 
             /* Opposite sign for main connecting loop */
-            config_xy.bc()[loop_idx] = (signs.bc().at(n - 2)) ? -1 : 1;
-            config_single[loop_idx]  = (signs.bc().at(n - 2)) ? 1 : -1;
+            config_xy.bc()[loop_idx] = (signs.bc().at(static_cast<size_t>(n - 2))) ? -1 : 1;
+            config_single[loop_idx]  = (signs.bc().at(static_cast<size_t>(n - 2))) ? 1 : -1;
 
             args.c().at(args_idx.c()++) = config2label(config_single);
             config_single[loop_idx] *= -1;
@@ -504,11 +519,11 @@ void BiSpectrumDiagram::kernel_arguments(
 
     if (n_ca > 0) {
         for (int n = 2; n <= n_ca; ++n) {
-            int loop_idx = rearrangement.at(rearr_counter++);
+            size_t loop_idx = static_cast<size_t>(rearrangement.at(rearr_counter++));
 
             /* Opposite sign for main connecting loop */
-            config_xy.ca()[loop_idx] = (signs.ca().at(n - 2)) ? -1 : 1;
-            config_single[loop_idx]  = (signs.ca().at(n - 2)) ? 1 : -1;
+            config_xy.ca()[loop_idx] = (signs.ca().at(static_cast<size_t>(n - 2))) ? -1 : 1;
+            config_single[loop_idx]  = (signs.ca().at(static_cast<size_t>(n - 2))) ? 1 : -1;
 
             args.a().at(args_idx.a()++) = config2label(config_single);
             config_single.at(loop_idx) *= -1;
@@ -534,7 +549,7 @@ void BiSpectrumDiagram::kernel_arguments(
 
     /* Add self loops */
     for (int i = 0; i < n_a; ++i) {
-        int loop_idx = rearrangement.at(rearr_counter++);
+        size_t loop_idx = static_cast<size_t>(rearrangement.at(rearr_counter++));
         config_single.at(loop_idx) = 1;
         args.a().at(args_idx.a()++) = config2label(config_single);
         config_single.at(loop_idx) = -1;
@@ -542,7 +557,7 @@ void BiSpectrumDiagram::kernel_arguments(
         config_single.at(loop_idx) = 0;
     }
     for (int i = 0; i < n_b; ++i) {
-        int loop_idx = rearrangement.at(rearr_counter++);
+        size_t loop_idx = static_cast<size_t>(rearrangement.at(rearr_counter++));
         config_single.at(loop_idx) = 1;
         args.b().at(args_idx.b()++) = config2label(config_single);
         config_single.at(loop_idx) = -1;
@@ -550,7 +565,7 @@ void BiSpectrumDiagram::kernel_arguments(
         config_single.at(loop_idx) = 0;
     }
     for (int i = 0; i < n_c; ++i) {
-        int loop_idx = rearrangement.at(rearr_counter++);
+        size_t loop_idx = static_cast<size_t>(rearrangement.at(rearr_counter++));
         config_single.at(loop_idx) = 1;
         args.c().at(args_idx.c()++) = config2label(config_single);
         config_single.at(loop_idx) = -1;
@@ -560,7 +575,7 @@ void BiSpectrumDiagram::kernel_arguments(
 
     // Fill remaining spots with zero-label
     int zero_label = loop_params.zero_label();
-    int n_kernel_args = loop_params.n_kernel_args();
+    size_t n_kernel_args = loop_params.n_kernel_args();
     while (args_idx.a() < n_kernel_args) {
         args.a().at(args_idx.a()++) = zero_label;
     }
@@ -574,9 +589,9 @@ void BiSpectrumDiagram::kernel_arguments(
 #if DEBUG >= 1
     /* arguments_2_kernel_index() assumes that the length of arguments[] is
      * n_kernel_args. Checking this explicitly: */
-    if (args.a().size() != static_cast<size_t>(n_kernel_args) ||
-        args.b().size() != static_cast<size_t>(n_kernel_args) ||
-        args.c().size() != static_cast<size_t>(n_kernel_args)
+    if (args.a().size() != n_kernel_args ||
+        args.b().size() != n_kernel_args ||
+        args.c().size() != n_kernel_args
        ) {
         throw(std::logic_error(
             "BiSpectrumDiagram::kernel_arguments(): Size of left argument "
@@ -604,7 +619,7 @@ BiSpectrumDiagram::BiSpectrumDiagram(
     n_a(n_a), n_b(n_b), n_c(n_c)
 {
     int n_loops = loop_params.n_loops();
-    int n_kernel_args = loop_params.n_kernel_args();
+    size_t n_kernel_args = loop_params.n_kernel_args();
 
     if (n_ab + n_bc + n_ca + n_a + n_b + n_c != n_loops + 2) {
         throw(std::invalid_argument(
@@ -621,7 +636,7 @@ BiSpectrumDiagram::BiSpectrumDiagram(
         overall_loop_ = false;
     }
 
-    diagram_factor_ =
+    diagram_factor_ = static_cast<int>(
         gsl_sf_fact(2 * n_a + n_ab + n_ca) *
         gsl_sf_fact(2 * n_b + n_bc + n_ab) *
         gsl_sf_fact(2 * n_c + n_ca + n_bc) /
@@ -629,16 +644,16 @@ BiSpectrumDiagram::BiSpectrumDiagram(
          pow(2,n_a + n_b + n_c) *
          gsl_sf_fact(n_a) * gsl_sf_fact(n_b) * gsl_sf_fact(n_c) *
          gsl_sf_fact(n_ab) * gsl_sf_fact(n_bc) * gsl_sf_fact(n_ca)
-         );
+         ));
 
-    rearrangements.resize(
+    rearrangements.resize(static_cast<size_t>(
             gsl_sf_fact(n_loops) /
         (
          gsl_sf_fact(n_ab > 0 ? n_ab - 1 : 0) *
          gsl_sf_fact(n_bc > 0 ? n_bc - 1 : 0) *
          gsl_sf_fact(n_ca > 0 ? n_ca - 1 : 0) *
          gsl_sf_fact(n_a) * gsl_sf_fact(n_b) * gsl_sf_fact(n_c)
-        ));
+        )));
 
     compute_rearrangements(n_loops);
 
@@ -652,7 +667,7 @@ BiSpectrumDiagram::BiSpectrumDiagram(
         connecting_line_sign_flips(n_connecting_loops.ca())
     };
 
-    sign_configs = compute_sign_flips(sign_configs_xy);
+    compute_sign_flips(sign_configs_xy);
 
     /* Allocate memory */
     arg_configs.resize(rearrangements.size());
@@ -666,13 +681,13 @@ BiSpectrumDiagram::BiSpectrumDiagram(
         for (size_t j = 0; j < sign_configs.size(); ++j) {
             /* There are three ways to associate the loop momenta to each
              * connecting lines, and 2 sign flips for each, hence 6 total */
-            int overall_loop_assosiations = overall_loop_ ? 6 : 1;
+            size_t overall_loop_assosiations = overall_loop_ ? 6 : 1;
             arg_configs.at(i).at(j).resize(overall_loop_assosiations);
             q_xy1_labels.at(i).at(j).resize(overall_loop_assosiations);
 
             q_xy_labels.at(i).resize(overall_loop_assosiations);
 
-            for (int k = 0; k < overall_loop_assosiations; ++k) {
+            for (size_t k = 0; k < overall_loop_assosiations; ++k) {
                 arg_configs.at(i).at(j).at(k).a().args.resize(n_kernel_args);
                 arg_configs.at(i).at(j).at(k).b().args.resize(n_kernel_args);
                 arg_configs.at(i).at(j).at(k).c().args.resize(n_kernel_args);
@@ -687,9 +702,9 @@ BiSpectrumDiagram::BiSpectrumDiagram(
 
 
 void BiSpectrumDiagram::connecting_lines_factors(
-        int rearr_idx,
-        int sign_idx,
-        int overall_loop_idx,
+        size_t rearr_idx,
+        size_t sign_idx,
+        size_t overall_loop_idx,
         const Vec1D<double>& loop_magnitudes,
         const Vec2D<double>& scalar_products,
         Triple<double>& q_xy1, /* out */
@@ -703,10 +718,13 @@ void BiSpectrumDiagram::connecting_lines_factors(
      * for q_bc1 and q_ca1.
      * q_ab (or q_bc, q_ca) is the *total* momentum flowing in the connection
      * ab (or bc or ca) between blobs */
-    Triple<int> q_xy1_label = {
-        q_xy1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx).ab(),
-        q_xy1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx).bc(),
-        q_xy1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx).ca()
+    Triple<size_t> q_xy1_label = {
+        static_cast<size_t>(
+            q_xy1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx).ab()),
+        static_cast<size_t>(
+            q_xy1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx).bc()),
+        static_cast<size_t>(
+            q_xy1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx).ca())
     };
 
     q_xy1 = {
@@ -716,7 +734,7 @@ void BiSpectrumDiagram::connecting_lines_factors(
     };
 
     /* How many loop momenta have already been assigned? */
-    int offset = 0;
+    size_t offset = 0;
 
     if (overall_loop_) {
         offset = 1;
@@ -724,11 +742,15 @@ void BiSpectrumDiagram::connecting_lines_factors(
          * momentum is associated (according to overall_loop_idx) is larger
          * than any of the other total connecting line momenta, the diagram
          * configuration is skipped (heaviside_theta = 0) */
-        Triple<int> q_xy_label = {
-            q_xy_labels.at(rearr_idx).at(overall_loop_idx).ab(),
-            q_xy_labels.at(rearr_idx).at(overall_loop_idx).bc(),
-            q_xy_labels.at(rearr_idx).at(overall_loop_idx).ca()
+        Triple<size_t> q_xy_label = {
+            static_cast<size_t>(
+                q_xy_labels.at(rearr_idx).at(overall_loop_idx).ab()),
+            static_cast<size_t>(
+                q_xy_labels.at(rearr_idx).at(overall_loop_idx).bc()),
+            static_cast<size_t>(
+                q_xy_labels.at(rearr_idx).at(overall_loop_idx).ca())
         };
+
         Triple<double> q_xy = {
             std::sqrt(scalar_products.at(q_xy_label.ab()).at(q_xy_label.ab())),
             std::sqrt(scalar_products.at(q_xy_label.bc()).at(q_xy_label.bc())),
@@ -761,16 +783,16 @@ void BiSpectrumDiagram::connecting_lines_factors(
 
     /* Heaviside-theta (q_ab1 - Q(rearr(offset)) */
     if (n_ab > 1) {
-        double q = loop_magnitudes.at(rearr.at(offset));
+        double q = loop_magnitudes.at(static_cast<size_t>(rearr.at(offset)));
         heaviside_theta *= (q_xy1.ab() > q ? n_ab : 0);
-        offset += n_connecting_loops.ab();
+        offset += static_cast<size_t>(n_connecting_loops.ab());
     }
 #if DEBUG >= 1
     /* Check that the heaviside-theta (Q2(rearr) - Q3(rearr)) etc. are
      * satisfied by (reparametrized) momenta from CUBA */
-    for (int i = 1; i < n_connecting_loops.ab(); ++i) {
-      double q_ab_i = loop_magnitudes.at(rearr.at(offset + i));
-      double q_ab_j = loop_magnitudes.at(rearr.at(offset + i + 1));
+    for (size_t i = 1; i < static_cast<size_t>(n_connecting_loops.ab()); ++i) {
+      double q_ab_i = loop_magnitudes.at(static_cast<size_t>(rearr.at(offset + i)));
+      double q_ab_j = loop_magnitudes.at(static_cast<size_t>(rearr.at(offset + i + 1)));
       if (q_ab_i < q_ab_j) {
           throw(std::logic_error("Heaviside theta(ab): Q" +
                       std::to_string(rearr.at(offset + i) + 1) + " < Q" +
@@ -781,16 +803,16 @@ void BiSpectrumDiagram::connecting_lines_factors(
 
     /* Same for n_bc */
     if (n_bc > 1) {
-        double q = loop_magnitudes.at(rearr.at(offset));
+        double q = loop_magnitudes.at(static_cast<size_t>(rearr.at(offset)));
         heaviside_theta *= (q_xy1.bc() > q ? n_bc : 0);
-        offset += n_connecting_loops.bc();
+        offset += static_cast<size_t>(n_connecting_loops.bc());
     }
 #if DEBUG >= 1
     /* Check that the heaviside-theta (Q2(rearr) - Q3(rearr)) etc. are
      * satisfied by (reparametrized) momenta from CUBA */
-    for (int i = 1; i < n_connecting_loops.bc(); ++i) {
-      double q_bc_i = loop_magnitudes.at(rearr.at(offset + i));
-      double q_bc_j = loop_magnitudes.at(rearr.at(offset + i + 1));
+    for (size_t i = 1; i < static_cast<size_t>(n_connecting_loops.bc()); ++i) {
+      double q_bc_i = loop_magnitudes.at(static_cast<size_t>(rearr.at(offset + i)));
+      double q_bc_j = loop_magnitudes.at(static_cast<size_t>(rearr.at(offset + i + 1)));
       if (q_bc_i < q_bc_j) {
           throw(std::logic_error("Heaviside theta(bc): Q" +
                       std::to_string(rearr.at(offset + i) + 1) + " < Q" +
@@ -801,16 +823,16 @@ void BiSpectrumDiagram::connecting_lines_factors(
 
     /* Same for n_ca */
     if (n_ca > 1) {
-        double q = loop_magnitudes.at(rearr.at(offset));
+        double q = loop_magnitudes.at(static_cast<size_t>(rearr.at(offset)));
         heaviside_theta *= (q_xy1.ca() > q ? n_ca : 0);
-        offset += n_connecting_loops.ca();
+        offset += static_cast<size_t>(n_connecting_loops.ca());
     }
 #if DEBUG >= 1
     /* Check that the heaviside-theta (Q2(rearr) - Q3(rearr)) etc. are
      * satisfied by (reparametrized) momenta from CUBA */
-    for (int i = 1; i < n_connecting_loops.ca(); ++i) {
-      double q_ca_i = loop_magnitudes.at(rearr.at(offset + i));
-      double q_ca_j = loop_magnitudes.at(rearr.at(offset + i + 1));
+    for (size_t i = 1; i < static_cast<size_t>(n_connecting_loops.ca()); ++i) {
+      double q_ca_i = loop_magnitudes.at(static_cast<size_t>(rearr.at(offset + i)));
+      double q_ca_j = loop_magnitudes.at(static_cast<size_t>(rearr.at(offset + i + 1)));
       if (q_ca_i < q_ca_j) {
           throw(std::logic_error("Heaviside theta(ca): Q" +
                       std::to_string(rearr.at(offset + i) + 1) + " < Q" +
@@ -834,9 +856,9 @@ void BiSpectrumDiagram::print_diagram_tags(std::ostream& out) const
 
 void BiSpectrumDiagram::print_argument_configuration(
         std::ostream& out,
-        int rearr_idx,
-        int sign_idx,
-        int overall_loop_idx
+        size_t rearr_idx,
+        size_t sign_idx,
+        size_t overall_loop_idx
         ) const
 {
     out << COLOR_BLUE;

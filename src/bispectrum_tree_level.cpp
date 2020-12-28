@@ -14,18 +14,19 @@
 #include "../include/kernel_evolution.hpp"
 #include "../include/bispectrum_tree_level.hpp"
 
+using std::size_t;
 
 Triple<ArgumentConfiguration> kernel_arguments(
         int diagram_idx,
         const LoopParameters& loop_params
         )
 {
-    int n_coeffs      = loop_params.n_coeffs();
-    int n_kernel_args = loop_params.n_kernel_args();
+    size_t n_coeffs      = loop_params.n_coeffs();
+    size_t n_kernel_args = loop_params.n_kernel_args();
     int zero_label    = loop_params.zero_label();
 
-    int k_a_idx = n_coeffs - 1;
-    int k_b_idx = n_coeffs - 2;
+    size_t k_a_idx = n_coeffs - 1;
+    size_t k_b_idx = n_coeffs - 2;
 
     /* Configs for k_a, k_b and k_c = -k_a - k_b */
     Triple<Vec1D<int>> configs = {
@@ -82,7 +83,7 @@ Triple<ArgumentConfiguration> kernel_arguments(
     /* Set remaining arguments to zero (zero_label) */
     arg_config.b().args.at(1) = zero_label;
     arg_config.c().args.at(1) = zero_label;
-    for (int j = 2; j < n_kernel_args; ++j) {
+    for (size_t j = 2; j < n_kernel_args; ++j) {
         arg_config.a().args.at(j) = zero_label;
         arg_config.b().args.at(j) = zero_label;
         arg_config.c().args.at(j) = zero_label;
@@ -108,9 +109,9 @@ void diagram_term(
         Vec1D<double>& diagram_results /* out */
         )
 {
-    int n_coeffs = tables.loop_params.n_coeffs();
-    int k_a_idx = n_coeffs - 1;
-    int k_b_idx = n_coeffs - 2;
+    size_t n_coeffs = tables.loop_params.n_coeffs();
+    size_t k_a_idx = n_coeffs - 1;
+    size_t k_b_idx = n_coeffs - 2;
 
     Triple<ArgumentConfiguration> arg_config = kernel_arguments(diagram_idx,
             tables.loop_params);
@@ -128,9 +129,15 @@ void diagram_term(
         compute_SPT_kernels(arg_config.c().args.data(),
                 arg_config.c().kernel_index, 1, tables);
 
-        values_a = tables.spt_kernels.at(arg_config.a().kernel_index).values;
-        values_b = tables.spt_kernels.at(arg_config.b().kernel_index).values;
-        values_c = tables.spt_kernels.at(arg_config.c().kernel_index).values;
+        values_a = tables.spt_kernels
+                       .at(static_cast<size_t>(arg_config.a().kernel_index))
+                       .values;
+        values_b = tables.spt_kernels
+                       .at(static_cast<size_t>(arg_config.b().kernel_index))
+                       .values;
+        values_c = tables.spt_kernels
+                       .at(static_cast<size_t>(arg_config.c().kernel_index))
+                       .values;
     }
     else if (tables.loop_params.dynamics() == EVOLVE_IC_ASYMP ||
             tables.loop_params.dynamics() == EVOLVE_IC_EDS) {
@@ -150,13 +157,19 @@ void diagram_term(
         kernel_evolution(arg_config.c().args.data(),
                 arg_config.c().kernel_index, 1, tables);
 
-        int time_steps = tables.eta_grid.time_steps();
-        values_a = tables.kernels.at(arg_config.a().kernel_index)
-            .values.at(time_steps - 1).data();
-        values_b = tables.kernels.at(arg_config.b().kernel_index)
-            .values.at(time_steps - 1).data();
-        values_c = tables.kernels.at(arg_config.c().kernel_index)
-            .values.at(time_steps - 1).data();
+        size_t time_steps = tables.eta_grid.time_steps();
+        values_a =
+            tables.kernels.at(static_cast<size_t>(arg_config.a().kernel_index))
+                .values.at(time_steps - 1)
+                .data();
+        values_b =
+            tables.kernels.at(static_cast<size_t>(arg_config.b().kernel_index))
+                .values.at(time_steps - 1)
+                .data();
+        values_c =
+            tables.kernels.at(static_cast<size_t>(arg_config.c().kernel_index))
+                .values.at(time_steps - 1)
+                .data();
     }
 
     /* External momentum values */
@@ -202,7 +215,7 @@ void tree_level_bispectrum(
         )
 {
     /* Set some irrelevant values for non-existent loops */
-    for (int i = 0; i < tables.loop_params.n_loops(); ++i) {
+    for (size_t i = 0; i < static_cast<size_t>(tables.loop_params.n_loops()); ++i) {
         tables.vars.magnitudes.at(i) = 0;
         tables.vars.cos_theta.at(i) = 0;
         tables.vars.phi.at(i) = 0;

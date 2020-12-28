@@ -19,6 +19,7 @@
 #include "include/interpolation.hpp"
 #include "include/integrand.hpp"
 
+using std::size_t;
 
 static void BM_PS_EdS_integrand_1loop(benchmark::State& state) {
     // Perform setup here
@@ -44,10 +45,10 @@ static void BM_PS_EdS_integrand_1loop(benchmark::State& state) {
         input.tables_vec.emplace_back(cfg.k_a(), loop_params, sum_table, ev_params,
                 eta_grid);
 
-        int n_correlations = input.pair_correlations.size();
+        int n_correlations = static_cast<int>(input.pair_correlations.size());
 
-        double* xx = new double[n_dims];
-        double* ff = new double[n_correlations];
+        double* xx = new double[static_cast<size_t>(n_dims)];
+        double* ff = new double[static_cast<size_t>(n_correlations)];
 
         for (int i = 0; i < n_dims; ++i) {
             xx[i] = 0.5;
@@ -100,10 +101,10 @@ static void BM_PS_EdS_integrand_2loop(benchmark::State& state) {
         input.tables_vec.emplace_back(cfg.k_a(), loop_params, sum_table, ev_params,
                 eta_grid);
 
-        int n_correlations = input.pair_correlations.size();
+        int n_correlations = static_cast<int>(input.pair_correlations.size());
 
-        double* xx = new double[n_dims];
-        double* ff = new double[n_correlations];
+        double* xx = new double[static_cast<size_t>(n_dims)];
+        double* ff = new double[static_cast<size_t>(n_correlations)];
 
         for (int i = 0; i < n_dims; ++i) {
             xx[i] = 0.5;
@@ -155,10 +156,10 @@ static void BM_BS_EdS_integrand_1loop(benchmark::State& state) {
         input.tables_vec.emplace_back(cfg.k_a(), cfg.k_b(), cfg.cos_ab(), loop_params,
                 sum_table, ev_params, eta_grid);
 
-        int n_correlations = input.pair_correlations.size();
+        int n_correlations = static_cast<int>(input.pair_correlations.size());
 
-        double* xx = new double[n_dims];
-        double* ff = new double[n_correlations];
+        double* xx = new double[static_cast<size_t>(n_dims)];
+        double* ff = new double[static_cast<size_t>(n_correlations)];
 
         for (int i = 0; i < n_dims; ++i) {
             xx[i] = 0.5;
@@ -211,10 +212,10 @@ static void BM_BS_EdS_integrand_2loop(benchmark::State& state) {
         input.tables_vec.emplace_back(cfg.k_a(), cfg.k_b(), cfg.cos_ab(), loop_params,
                 sum_table, ev_params, eta_grid);
 
-        int n_correlations = input.pair_correlations.size();
+        int n_correlations = static_cast<int>(input.pair_correlations.size());
 
-        double* xx = new double[n_dims];
-        double* ff = new double[n_correlations];
+        double* xx = new double[static_cast<size_t>(n_dims)];
+        double* ff = new double[static_cast<size_t>(n_correlations)];
 
         for (int i = 0; i < n_dims; ++i) {
             xx[i] = 0.5;
@@ -276,10 +277,10 @@ static void BM_PS_2fluid_integrand_1loop(benchmark::State& state) {
         input.tables_vec.emplace_back(cfg.k_a(), loop_params, sum_table, ev_params,
                 eta_grid);
 
-        int n_correlations = input.pair_correlations.size();
+        int n_correlations = static_cast<int>(input.pair_correlations.size());
 
-        double* xx = new double[n_dims];
-        double* ff = new double[n_correlations];
+        double* xx = new double[static_cast<size_t>(n_dims)];
+        double* ff = new double[static_cast<size_t>(n_correlations)];
 
         for (int i = 0; i < n_dims; ++i) {
             xx[i] = 0.5;
@@ -341,10 +342,10 @@ static void BM_PS_2fluid_integrand_2loop(benchmark::State& state) {
         input.tables_vec.emplace_back(cfg.k_a(), loop_params, sum_table, ev_params,
                 eta_grid);
 
-        int n_correlations = input.pair_correlations.size();
+        int n_correlations = static_cast<int>(input.pair_correlations.size());
 
-        double* xx = new double[n_dims];
-        double* ff = new double[n_correlations];
+        double* xx = new double[static_cast<size_t>(n_dims)];
+        double* ff = new double[static_cast<size_t>(n_correlations)];
 
         for (int i = 0; i < n_dims; ++i) {
             xx[i] = 0.5;

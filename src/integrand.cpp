@@ -33,8 +33,8 @@ using std::size_t;
 namespace ps {
 void configuration_term(
         const PowerSpectrumDiagram& diagram,
-        int rearr_idx,
-        int sign_idx,
+        size_t rearr_idx,
+        size_t sign_idx,
         const Vec1D<Pair<int>>& pair_correlations,
         IntegrandTables& tables,
         Vec1D<double>& term_results
@@ -55,8 +55,12 @@ void configuration_term(
         compute_SPT_kernels(arg_config_r.args.data(),
                 arg_config_r.kernel_index, 2 * diagram.r + diagram.m, tables);
 
-        values_l = tables.spt_kernels.at(arg_config_l.kernel_index).values;
-        values_r = tables.spt_kernels.at(arg_config_r.kernel_index).values;
+        values_l = tables.spt_kernels
+                       .at(static_cast<size_t>(arg_config_l.kernel_index))
+                       .values;
+        values_r = tables.spt_kernels
+                       .at(static_cast<size_t>(arg_config_r.kernel_index))
+                       .values;
     }
     else if (tables.loop_params.dynamics() == EVOLVE_IC_ASYMP ||
              tables.loop_params.dynamics() == EVOLVE_IC_EDS) {
@@ -73,11 +77,11 @@ void configuration_term(
         kernel_evolution(arg_config_r.args.data(), arg_config_r.kernel_index,
                 2 * diagram.r + diagram.m, tables);
 
-        int time_steps = tables.eta_grid.time_steps();
-        values_l = tables.kernels.at(arg_config_l.kernel_index)
+        size_t time_steps = tables.eta_grid.time_steps();
+        values_l = tables.kernels.at(static_cast<size_t>(arg_config_l.kernel_index))
                        .values.at(time_steps - 1)
                        .data();
-        values_r = tables.kernels.at(arg_config_r.kernel_index)
+        values_r = tables.kernels.at(static_cast<size_t>(arg_config_r.kernel_index))
                        .values.at(time_steps - 1)
                        .data();
     }
@@ -156,8 +160,8 @@ void diagram_term(
 
     for (size_t i = 0; i < n_correlations; ++i) {
         diagram_results.at(i) *= diagram.diagram_factor();
-        diagram_results.at(i) /= diagram.n_rearrangements() *
-            diagram.n_sign_configs();
+        diagram_results.at(i) /= static_cast<double>(
+                diagram.n_rearrangements() * diagram.n_sign_configs());
     }
 }
 
@@ -173,11 +177,11 @@ int integrand(
         const int *core
         )
 {
-    IntegrationInput& input = *(IntegrationInput*)userdata;
+    IntegrationInput& input = *static_cast<IntegrationInput*>(userdata);
 
     /*  For thread <*core + 1> (index 0 is reserved for master), we use the */
     /*  IntegrandTables number *core+1 */
-    IntegrandTables& tables = input.tables_vec.at(*core + 1);
+    IntegrandTables& tables = input.tables_vec.at(static_cast<size_t>(*core + 1));
 
     int n_loops = tables.loop_params.n_loops();
     IntegrationVariables& vars = tables.vars;
@@ -229,7 +233,8 @@ int integrand(
         }
         for (int i = 0; i < tables.loop_params.n_loops(); ++i) {
             for (auto& el : results) {
-                el *= input.input_ps.eval(tables.vars.magnitudes[i]);
+                el *= input.input_ps.eval(
+                    tables.vars.magnitudes.at(static_cast<size_t>(i)));
             }
         }
     }
@@ -253,9 +258,9 @@ int integrand(
 namespace bs {
 void configuration_term(
         const BiSpectrumDiagram& diagram,
-        int rearr_idx,
-        int sign_idx,
-        int overall_loop_idx,
+        size_t rearr_idx,
+        size_t sign_idx,
+        size_t overall_loop_idx,
         const Vec1D<Triple<int>>& triple_correlations,
         IntegrandTables& tables,
         Vec1D<double>& term_results
@@ -280,9 +285,15 @@ void configuration_term(
                 arg_config.c().kernel_index, 2 * diagram.n_c + diagram.n_bc +
                 diagram.n_ca, tables);
 
-        values_a = tables.spt_kernels.at(arg_config.a().kernel_index).values;
-        values_b = tables.spt_kernels.at(arg_config.b().kernel_index).values;
-        values_c = tables.spt_kernels.at(arg_config.c().kernel_index).values;
+        values_a = tables.spt_kernels
+                       .at(static_cast<size_t>(arg_config.a().kernel_index))
+                       .values;
+        values_b = tables.spt_kernels
+                       .at(static_cast<size_t>(arg_config.b().kernel_index))
+                       .values;
+        values_c = tables.spt_kernels
+                       .at(static_cast<size_t>(arg_config.c().kernel_index))
+                       .values;
     }
     else if (tables.loop_params.dynamics() == EVOLVE_IC_ASYMP ||
              tables.loop_params.dynamics() == EVOLVE_IC_EDS) {
@@ -309,13 +320,19 @@ void configuration_term(
                 arg_config.c().kernel_index, 2 * diagram.n_c + diagram.n_bc +
                 diagram.n_ca, tables);
 
-        int time_steps = tables.eta_grid.time_steps();
-        values_a = tables.kernels.at(arg_config.a().kernel_index)
-                       .values.at(time_steps - 1).data();
-        values_b = tables.kernels.at(arg_config.b().kernel_index)
-                       .values.at(time_steps - 1).data();
-        values_c = tables.kernels.at(arg_config.c().kernel_index)
-                       .values.at(time_steps - 1).data();
+        size_t time_steps = tables.eta_grid.time_steps();
+        values_a =
+            tables.kernels.at(static_cast<size_t>(arg_config.a().kernel_index))
+                .values.at(time_steps - 1)
+                .data();
+        values_b =
+            tables.kernels.at(static_cast<size_t>(arg_config.b().kernel_index))
+                .values.at(time_steps - 1)
+                .data();
+        values_c =
+            tables.kernels.at(static_cast<size_t>(arg_config.c().kernel_index))
+                .values.at(time_steps - 1)
+                .data();
     }
     else {
         throw std::runtime_error("integrand_term(): Unknown dynamics.");
@@ -344,10 +361,10 @@ void diagram_term(
     size_t n_correlations = input.triple_correlations.size();
 
     /* Loop over momentum rearrangement, sign flips and overall loop assosiations */
-    int overall_loop_assosiations = diagram.overall_loop() ? 6 : 1;
+    size_t overall_loop_assosiations = diagram.overall_loop() ? 6 : 1;
     for (size_t i = 0; i < diagram.n_rearrangements(); ++i) {
         for (size_t j = 0; j < diagram.n_sign_configs(); ++j) {
-            for (int k = 0; k < overall_loop_assosiations; ++k) {
+            for (size_t k = 0; k < overall_loop_assosiations; ++k) {
 #if DEBUG >= 2
                 diagram.print_argument_configuration(std::cout, i, j, k);
 #endif
@@ -412,9 +429,9 @@ void diagram_term(
         diagram_results.at(i) *= diagram.diagram_factor();
         /* Divide by # rearrangments, sign configurations for connecting lines
          * and divide by 2 for switching sign of overall loop (if present) */
-        diagram_results.at(i) /= diagram.n_rearrangements() *
-                                 diagram.n_sign_configs() *
-                                 (diagram.overall_loop() ? 2 : 1);
+        diagram_results.at(i) /= static_cast<double>(
+            diagram.n_rearrangements() * diagram.n_sign_configs() *
+            (diagram.overall_loop() ? 2 : 1));
     }
 }
 
@@ -430,11 +447,11 @@ int integrand(
         const int *core
         )
 {
-    IntegrationInput& input = *(IntegrationInput*)userdata;
+    IntegrationInput& input = *static_cast<IntegrationInput*>(userdata);
 
     /*  For thread <*core + 1> (index 0 is reserved for master), we use the */
     /*  IntegrandTables number *core+1 */
-    IntegrandTables& tables = input.tables_vec.at(*core + 1);
+    IntegrandTables& tables = input.tables_vec.at(static_cast<size_t>(*core + 1));
 
     int n_loops = tables.loop_params.n_loops();
     IntegrationVariables& vars = tables.vars;
@@ -488,7 +505,8 @@ int integrand(
         }
         for (int i = 0; i < tables.loop_params.n_loops(); ++i) {
             for (auto& el : results) {
-                el *= input.input_ps.eval(tables.vars.magnitudes[i]);
+                el *= input.input_ps.eval(
+                    tables.vars.magnitudes.at(static_cast<size_t>(i)));
             }
         }
     }
