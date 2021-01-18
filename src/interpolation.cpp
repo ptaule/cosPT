@@ -32,8 +32,8 @@ void Interpolation1D::initialize(
         x.insert(x.begin(), 0);
         y.insert(y.begin(), 0);
 
-        /* y(2 * x_max) = 0 */
-        x.push_back(2 * x.back());
+        /* y(10 * x_max) = 0 */
+        x.push_back(10 * x.back());
         y.push_back(0);
     }
 
