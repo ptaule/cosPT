@@ -31,8 +31,8 @@ Combinations::Combinations(int n, int k)
         throw(std::invalid_argument(
             "Combinations::Combinations(): k >= 0 && k <= n is required."));
     }
-    combination.resize(size_t(k_));
-    complement.resize(size_t(n_ - k_));
+    combination.resize(static_cast<size_t>(k_));
+    complement.resize(static_cast<size_t>(n_ - k_));
     std::iota(combination.begin(), combination.end(), 0);
     std::iota(complement.begin(), complement.end(), k_);
 }
