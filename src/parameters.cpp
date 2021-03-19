@@ -366,7 +366,16 @@ void Config::set_spectrum(const libconfig::Config& cfg)
         try {
             if (cfg.lookupValue("cos_ab", cos_ab_)) {
                 cos_ab_given = true;
+
+                if (cos_ab_ < -1 || cos_ab_ > 1) {
+                    throw ConfigException(
+                        "Got cos_ab = " + std::to_string(cos_ab_) +
+                        ", which is not between -1 and 1.");
+                }
             }
+        }
+        catch (const ConfigException& e) {
+            throw e;
         }
         catch (const libconfig::SettingTypeException& tex) {
             throw ConfigException(
@@ -375,15 +384,23 @@ void Config::set_spectrum(const libconfig::Config& cfg)
 
         /* If neither/both k_c and cos_ab was given, throw exception */
         if ((!k_c_given) && (!cos_ab_given)) {
-            throw ConfigException("Neither k_c nor cos_ab given.");
+            throw ConfigException(
+                "Neither k_c nor cos_ab given. Please provide one of them.");
         }
         if (k_c_given && cos_ab_given) {
-            throw ConfigException("Both k_c and cos_ab given.");
+            throw ConfigException(
+                "Both k_c and cos_ab given. Please choose one.");
         }
 
         /* k_c = - k_a - k_b */
         if (k_c_given) {
             cos_ab_ = 0.5 * (SQUARE(k_c_)/(k_a_*k_b_) - k_a_/k_b_ - k_b_/k_a_);
+
+            if (cos_ab_ < -1 || cos_ab_ > 1) {
+                throw ConfigException(
+                    "The k_a, k_b, k_c values given does not constitute a valid "
+                    "configuration (cos_ab out of range).");
+            }
         }
         else {
             /* cos_ab given */
