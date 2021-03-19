@@ -76,6 +76,31 @@ class Interpolation1D {
 #endif
         }
 
+        /* Evaluate spline when min < x < max or else return 0. This is e.g.
+         * useful for the power spectrum spline, calling e.g. P(k-q) can
+         * evaluate the power spectrum outside the limits of the q-integration.
+         * */
+        double eval(double x, double min, double max) const {
+            if (x > max || x < min) {
+                return 0;
+            }
+            else {
+#if DEBUG == 0
+                return gsl_spline_eval(spline, x, acc);
+#else
+                /* Check limits of interpolation region */
+                if (x < x_min || x > x_max) {
+                    throw std::runtime_error(
+                        "Interpolation1D::eval(): x = " + std::to_string(x) +
+                        " is outside interpolation area (" +
+                        std::to_string(x_min) + ", " + std::to_string(x_max) +
+                        ").");
+                }
+                return gsl_spline_eval(spline, x, acc);
+#endif
+            }
+        }
+
         ~Interpolation1D() {
             gsl_spline_free(spline);
             gsl_interp_accel_free(acc);

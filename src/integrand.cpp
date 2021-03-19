@@ -144,7 +144,10 @@ void diagram_term(
                     term_results);
 
             for (auto& el : term_results) {
-                el *= heaviside_theta * input.input_ps.eval(q_m1);
+                /* Use Interpolation1D::eval(x, min, max) which returns 0 when
+                 * x is not between min and max */
+                el *= heaviside_theta * input.input_ps.eval(q_m1, input.q_min,
+                        input.q_max);
             }
             for (size_t a = 0; a < n_correlations; ++a) {
                 diagram_results.at(a) += term_results.at(a);
@@ -385,20 +388,25 @@ void diagram_term(
                 configuration_term(diagram, i, j, k,
                         input.triple_correlations, tables, term_results);
 
-                /* Multiply by P_lin(q_xy1) if xy connecting line is present */
+                /* Multiply by P_lin(q_xy1) if xy connecting line is present.
+                 * Use Interpolation1D::eval(x, min, max) which returns 0 when
+                 * x is not between min and max */
                 if (diagram.n_ab > 0) {
                     for (auto& el : term_results) {
-                        el *= input.input_ps.eval(q_xy1.a());
+                        el *= input.input_ps.eval(q_xy1.a(), input.q_min,
+                                input.q_max);
                     }
                 }
                 if (diagram.n_bc > 0) {
                     for (auto& el : term_results) {
-                        el *= input.input_ps.eval(q_xy1.b());
+                        el *= input.input_ps.eval(q_xy1.b(), input.q_min,
+                                input.q_max);
                     }
                 }
                 if (diagram.n_ca > 0) {
                     for (auto& el : term_results) {
-                        el *= input.input_ps.eval(q_xy1.c());
+                        el *= input.input_ps.eval(q_xy1.c(), input.q_min,
+                                input.q_max);
                     }
                 }
                 /* For overall-loop diagrams: divide by pLin(rearr(Q)) which is
