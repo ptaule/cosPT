@@ -175,7 +175,7 @@ int main(int argc, char* argv[]) {
         if (cfg.spectrum() == POWERSPECTRUM) {
             /* Linear power spectrum */
             for (auto& el : tree_level_result) {
-                el = input.input_ps.eval(cfg.k_a());
+                el = input.input_ps(cfg.k_a());
             }
             if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
                 Vec1D<double> F1_eta_ini(COMPONENTS, 0);

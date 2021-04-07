@@ -236,7 +236,7 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
     // If n == 1, rhs = 0
     if (input.n > 1) {
         for (size_t i = 0; i < COMPONENTS; ++i) {
-            rhs[i] = input.rhs.at(i).eval(eta);
+            rhs[i] = input.rhs.at(i)(eta);
         }
     }
 
@@ -323,7 +323,7 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
     // If n == 1, rhs = 0
     if (input.n > 1) {
         for (size_t i = 0; i < COMPONENTS; ++i) {
-            rhs[i] = input.rhs.at(i).eval(eta);
+            rhs[i] = input.rhs.at(i)(eta);
         }
     }
 

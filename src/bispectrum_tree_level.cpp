@@ -187,16 +187,16 @@ void diagram_term(
 
         switch (diagram_idx) {
             case 0:
-                diagram_results.at(i) *= input_ps.eval(k_a);
-                diagram_results.at(i) *= input_ps.eval(k_c);
+                diagram_results.at(i) *= input_ps(k_a);
+                diagram_results.at(i) *= input_ps(k_c);
               break;
             case 1:
-                diagram_results.at(i) *= input_ps.eval(k_b);
-                diagram_results.at(i) *= input_ps.eval(k_c);
+                diagram_results.at(i) *= input_ps(k_b);
+                diagram_results.at(i) *= input_ps(k_c);
                 break;
             case 2:
-                diagram_results.at(i) *= input_ps.eval(k_a);
-                diagram_results.at(i) *= input_ps.eval(k_b);
+                diagram_results.at(i) *= input_ps(k_a);
+                diagram_results.at(i) *= input_ps(k_b);
                 break;
             default:
                 throw(std::logic_error(

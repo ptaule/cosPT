@@ -146,7 +146,7 @@ void diagram_term(
             for (auto& el : term_results) {
                 /* Use Interpolation1D::eval(x, min, max) which returns 0 when
                  * x is not between min and max */
-                el *= heaviside_theta * input.input_ps.eval(q_m1, input.q_min,
+                el *= heaviside_theta * input.input_ps(q_m1, input.q_min,
                         input.q_max);
             }
             for (size_t a = 0; a < n_correlations; ++a) {
@@ -236,7 +236,7 @@ int integrand(
         }
         for (int i = 0; i < tables.loop_params.n_loops(); ++i) {
             for (auto& el : results) {
-                el *= input.input_ps.eval(
+                el *= input.input_ps(
                     tables.vars.magnitudes.at(static_cast<size_t>(i)));
             }
         }
@@ -393,19 +393,19 @@ void diagram_term(
                  * x is not between min and max */
                 if (diagram.n_ab > 0) {
                     for (auto& el : term_results) {
-                        el *= input.input_ps.eval(q_xy1.a(), input.q_min,
+                        el *= input.input_ps(q_xy1.a(), input.q_min,
                                 input.q_max);
                     }
                 }
                 if (diagram.n_bc > 0) {
                     for (auto& el : term_results) {
-                        el *= input.input_ps.eval(q_xy1.b(), input.q_min,
+                        el *= input.input_ps(q_xy1.b(), input.q_min,
                                 input.q_max);
                     }
                 }
                 if (diagram.n_ca > 0) {
                     for (auto& el : term_results) {
-                        el *= input.input_ps.eval(q_xy1.c(), input.q_min,
+                        el *= input.input_ps(q_xy1.c(), input.q_min,
                                 input.q_max);
                     }
                 }
@@ -413,7 +413,7 @@ void diagram_term(
                  * multiplied also in bs::integrand() */
                 if (diagram.overall_loop()) {
                     for (auto& el : term_results) {
-                        el /= input.input_ps.eval(
+                        el /= input.input_ps(
                             diagram.q1_magnitude(i, tables.vars.magnitudes));
                     }
                 }
@@ -513,7 +513,7 @@ int integrand(
         }
         for (int i = 0; i < tables.loop_params.n_loops(); ++i) {
             for (auto& el : results) {
-                el *= input.input_ps.eval(
+                el *= input.input_ps(
                     tables.vars.magnitudes.at(static_cast<size_t>(i)));
             }
         }

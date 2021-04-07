@@ -290,21 +290,21 @@ class EvolutionParameters {
         double ode_rtol() const {return ode_rtol_;}
         double ode_hstart() const {return ode_hstart_;}
 
-        double zeta_at_eta(double eta) const {return zeta.eval(eta);}
+        double zeta_at_eta(double eta) const {return zeta(eta);}
         double omega_eigenvalues_at_k(double k) const {
-            return omega_eigenvalues.eval(k);
+            return omega_eigenvalues(k);
         }
 
         double F1_ic_at_k(std::size_t i, double k) const {
-            return F1_ic[i].eval(k);
+            return F1_ic[i](k);
         }
 
         double cs2(double eta, double k) const {
             if (sound_speed == EXACT) {
-                return cs2_factor * effcs2.eval(eta, k) / (1 + redshift.eval(eta));
+                return cs2_factor * effcs2(eta, k) / (1 + redshift(eta));
             }
             else {
-                return cg2_factor * (1 + redshift.eval(eta));
+                return cg2_factor * (1 + redshift(eta));
             }
         }
 };
