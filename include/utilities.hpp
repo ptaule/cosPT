@@ -24,8 +24,8 @@
 #define TWOPI 6.28318530718
 
 /* Macros for performant square and cubing */
-#define SQUARE(x) x*x
-#define CUBE(x) x*x*x
+#define SQUARE(x) (x*x)
+#define CUBE(x) (x*x*x)
 
 /* Debug modes (if not set by compile options): */
 /* 1: Perform additional checks during runtime. */
