@@ -46,7 +46,7 @@ fi
 
 LOG_FILE=$1
 
-julia=/space/ge52sir/bin/julia
+julia=/space/ge52sir/local/bin/julia
 isapprox=/home/t30/all/ge52sir/non_linear_PS/tests/isapprox.jl
 
 exe=build/cosPT
