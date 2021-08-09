@@ -447,8 +447,8 @@ void Config::set_dynamics(const libconfig::Config& cfg)
 
         /* ODE settings */
         try {
-            if (cfg.exists("ODE settings")) {
-                const libconfig::Setting& ode_settings = cfg.lookup("cuba_settings");
+            if (cfg.exists("ode_settings")) {
+                const libconfig::Setting& ode_settings = cfg.lookup("ode_settings");
                 ode_settings.lookupValue("abs_tolerance", ode_atol_);
                 ode_settings.lookupValue("rel_tolerance", ode_rtol_);
                 ode_settings.lookupValue("start_step", ode_hstart_);
