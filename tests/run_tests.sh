@@ -116,9 +116,9 @@ for K_A in {000,005,010,015,020,025,030,035,040,045,050,055}; do
 done
 
 for K_A in {000,010,020,030,040,050,060,070,080,090,100}; do
-    $tempdir/$exe --k_a $K_A --k_b $K_A --k_c $K_A --n_cores $N_CORES \
+    $tempdir/$exe --k_a_idx $K_A --k_b_idx $K_A --k_c_idx $K_A --n_cores $N_CORES \
         $tempdir/ini/eds_spt_bs_L1.cfg >> $LOG_FILE
-    $tempdir/$exe --k_a $K_A --k_b $K_A --k_c $K_A --n_cores $N_CORES \
+    $tempdir/$exe --k_a_idx $K_A --k_b_idx $K_A --k_c_idx $K_A --n_cores $N_CORES \
         $tempdir/ini/eds_spt_bs_L2.cfg >> $LOG_FILE
 done
 
