@@ -61,6 +61,8 @@ class Config {
         double ode_hstart_ = 1e-3;
 
         std::string input_ps_file_;
+        double input_ps_rescale_num = 1;
+        std::string input_ps_rescale_str_;
 
         std::string output_path;
         std::string output_file_;
@@ -134,6 +136,9 @@ class Config {
         double ode_hstart() const {return ode_hstart_;}
 
         std::string input_ps_file() const {return input_ps_file_;}
+        double input_ps_rescale() const {return input_ps_rescale_num;}
+        std::string input_ps_rescale_str() const {return input_ps_rescale_str_;}
+
         std::string output_file() const {return output_file_;}
 
         std::size_t time_steps() const {return time_steps_;}

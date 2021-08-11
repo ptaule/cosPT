@@ -24,6 +24,7 @@
 #include "../include/parameters.hpp"
 
 using std::size_t;
+using std::pow;
 namespace fs = std::filesystem;
 
 
@@ -174,11 +175,41 @@ Config::Config(const std::string& ini_file,
         input_ps_file_ = static_cast<std::string>(cfg.lookup("input_ps_file"));
     }
     catch (const libconfig::SettingNotFoundException& nfex) {
-        throw ConfigException("No input PS file in configuration.");
+        throw ConfigException("No input_ps_file setting found in configuration.");
     }
     catch (const libconfig::SettingTypeException& tex) {
         throw ConfigException(
             "Encountered type exception for input_ps_file setting.");
+    }
+    try {
+        /* input_ps_rescale setting. Rescaling factor set to 1 by default. */
+        /* First, check if given as string "2pi^-3" or "2pi^3" */
+        int input_ps_rescale_int;
+        if (cfg.lookupValue("input_ps_rescale", input_ps_rescale_str_)) {
+            if (input_ps_rescale_str_.compare("2pi^-3") == 0) {
+                input_ps_rescale_num = pow(TWOPI,-3);
+            }
+            else if (input_ps_rescale_str_.compare("2pi^3") == 0) {
+                input_ps_rescale_num = pow(TWOPI,3);
+            }
+            else {
+                throw ConfigException("Got input_ps_rescale string \"" + input_ps_rescale_str_ +
+                        "\" which is neither \"2pi^-3\" nor \"2pi^3\".");
+            }
+        }
+        /* If not found as string, try double */
+        else if (cfg.lookupValue("input_ps_rescale", input_ps_rescale_num)) {}
+        /* Last, try integer */
+        else if (cfg.lookupValue("input_ps_rescale", input_ps_rescale_int)) {
+            input_ps_rescale_num = static_cast<double>(input_ps_rescale_int);
+        }
+    }
+    catch (const libconfig::SettingTypeException& tex) {
+        throw ConfigException(
+            "Encountered type exception for input_ps_rescale setting.");
+    }
+    catch (const ConfigException& e) {
+        throw e;
     }
 
     /* Store potential description */
@@ -693,8 +724,19 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
     }
 
     out << "\n#\n# Input power spectrum read from " << cfg.input_ps_file() << "\n";
+    if (cfg.input_ps_rescale() != 1) {
+        out << "# Input power spectrum rescaled by a factor ";
+        if (!cfg.input_ps_rescale_str().empty()) {
+            out << cfg.input_ps_rescale_str();
+        }
+        else {
+            out << cfg.input_ps_rescale();
+        }
+        out << " before interpolation.";
+    }
+
     out << std::scientific;
-    out << "# Integration limits:\n";
+    out << "\n#\n# Integration limits:\n";
     out << "#\t q_min = " << cfg.q_min() << "\n";
     out << "#\t q_max = " << cfg.q_max() << "\n";
 

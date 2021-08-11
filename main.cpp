@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
 
     if (argc != optind + 1) {
         std::cerr << "Configuration file required as argument. "
-            << "Use --help to see instructions." << std::endl;
+            << "Use --help to see instructions.\nExiting." << std::endl;
         return EXIT_FAILURE;
     }
     else {
@@ -104,9 +104,7 @@ int main(int argc, char* argv[]) {
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
 
-        /* Conventionally divide input PS by (2pi)^3 */
-        double twopi_factor = pow(TWOPI, -3);
-        input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor);
+        input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
         if (cfg.dynamics() == EVOLVE_IC_EDS) {
             if (COMPONENTS != 2) {
