@@ -698,13 +698,13 @@ void Config::set_cuba_statefile(const libconfig::Setting& cuba_settings)
 std::ostream& operator<<(std::ostream& out, const Config& cfg) {
     if (cfg.spectrum() == POWERSPECTRUM) {
         out << "# Matter power spectrum P(k) at " << cfg.n_loops()
-            << "-loop for k = " << cfg.k_a() << " (h/Mpc)" << "\n";
+            << "-loop for k = " << cfg.k_a() << "\n";
     }
     else {
       out << "# Matter bispectrum B(k) at " << cfg.n_loops() << "-loop for\n"
-          << "#\n# k_a    = " << cfg.k_a() << " (h/Mpc)\n"
-          << "# k_b    = " << cfg.k_b() << " (h/Mpc)\n"
-          << "# k_c    = " << cfg.k_c() << " (h/Mpc)\n"
+          << "#\n# k_a    = " << cfg.k_a() << "\n"
+          << "# k_b    = " << cfg.k_b() << "\n"
+          << "# k_c    = " << cfg.k_c() << "\n"
           << "# cos_ab = " << cfg.cos_ab() << "\n";
     }
     out << "#\n# Description: " << cfg.description() << "\n";
