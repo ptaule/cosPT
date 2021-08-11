@@ -26,6 +26,7 @@
 
 using std::pow;
 
+void print_help();
 
 int main(int argc, char* argv[]) {
     /* Default values for k_a_idx etc. indicate that they should be set
@@ -38,9 +39,9 @@ int main(int argc, char* argv[]) {
     std::string config_file;
 
     static struct option long_options[] = {
-          {"k_a",     required_argument, 0, 'a'},
-          {"k_b",     required_argument, 0, 'b'},
-          {"k_c",     required_argument, 0, 'c'},
+          {"k_a_idx", required_argument, 0, 'a'},
+          {"k_b_idx", required_argument, 0, 'b'},
+          {"k_c_idx", required_argument, 0, 'c'},
           {"help",    no_argument,       0, 'h'},
           {"n_evals", required_argument, 0, 'n'},
           {"n_cores", required_argument, 0, 'p'},
@@ -63,7 +64,8 @@ int main(int argc, char* argv[]) {
                 k_c_idx = atoi(optarg);
                 break;
             case 'h':
-                break;
+                print_help();
+                return EXIT_SUCCESS;
             case 'n':
                 cuba_maxevals = static_cast<int>(atof(optarg));
                 break;
@@ -78,7 +80,8 @@ int main(int argc, char* argv[]) {
     }
 
     if (argc != optind + 1) {
-        std::cerr << "Configuration file required as argument." << std::endl;
+        std::cerr << "Configuration file required as argument. "
+            << "Use --help to see instructions.\nExiting." << std::endl;
         return EXIT_FAILURE;
     }
     else {
@@ -101,9 +104,7 @@ int main(int argc, char* argv[]) {
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
 
-        /* Conventionally divide input PS by (2pi)^3 */
-        double twopi_factor = pow(TWOPI, -3);
-        input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor);
+        input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
         if (cfg.dynamics() == EVOLVE_IC_EDS) {
             if (COMPONENTS != 2) {
@@ -265,5 +266,35 @@ int main(int argc, char* argv[]) {
         std::cerr << e.what() << "\nExiting." << std::endl;
         return EXIT_FAILURE;
     }
-    return 0;
+    return EXIT_SUCCESS;
+}
+
+
+
+void print_help() {
+    const char* help = R"(CosPT
+
+CosPT computes loop corrections to the power spectrum or bispectrum in
+cosmological perturbation theory. The program takes a configuration file as
+argument, see README.md for how to enter settings in this file. Some settings
+may also be set as a command line options, see below.
+
+Usage:
+  cosPT config_file
+  cosPT config_file [--k_a_idx=IDX] [--n_evals=NUM] [--n_cores=NUM]
+  cosPT config_file [--k_a_idx=IDX] [--k_b_idx=IDX] [--k_c_idx=IDX]
+                    [--n_evals=NUM] [--n_cores=NUM]
+  cosPT -h | --help
+
+Options:
+  -h --help     Show this screen.
+  -a --k_a_idx  External wavenumber to compute, index in k_a_grid
+                file. Overrides index given in configuration file.
+  -b --k_b_idx  Similarly for second external wavenumber (bispectrum).
+  -c --k_c_idx  Similarly for third external wavenumber (bispectrum).
+  -n --n_evals  Number of evaluations in Monte Carlo integration.
+  -p --n_cores  Number of cores/threads for CUBA to spawn, in addition to master.
+            )";
+    std::cout << help;
+    return;
 }

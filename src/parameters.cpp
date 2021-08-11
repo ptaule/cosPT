@@ -24,6 +24,7 @@
 #include "../include/parameters.hpp"
 
 using std::size_t;
+using std::pow;
 namespace fs = std::filesystem;
 
 
@@ -150,18 +151,18 @@ Config::Config(const std::string& ini_file,
             /* If cuba_cores_ is not already set, look up value */
             if (cuba_cores_ == -1) {
                 if (!cuba_settings.lookupValue("n_cores", cuba_cores_)) {
-                    std::cerr << "No n_cores value given. Using default value: 4"
+                    std::cerr << "No n_cores value given. Using default value: 0"
                               << std::endl;
-                    cuba_cores_ = 4;
+                    cuba_cores_ = 0;
                 }
             }
             set_cuba_statefile(cuba_settings);
         }
         else {
             if (cuba_cores_ == -1) {
-                std::cerr << "No n_cores value given. Using default value: 4"
+                std::cerr << "No n_cores value given. Using default value: 0"
                     << std::endl;
-                cuba_cores_ = 4;
+                cuba_cores_ = 0;
             }
         }
     }
@@ -174,11 +175,41 @@ Config::Config(const std::string& ini_file,
         input_ps_file_ = static_cast<std::string>(cfg.lookup("input_ps_file"));
     }
     catch (const libconfig::SettingNotFoundException& nfex) {
-        throw ConfigException("No input PS file in configuration.");
+        throw ConfigException("No input_ps_file setting found in configuration.");
     }
     catch (const libconfig::SettingTypeException& tex) {
         throw ConfigException(
             "Encountered type exception for input_ps_file setting.");
+    }
+    try {
+        /* input_ps_rescale setting. Rescaling factor set to 1 by default. */
+        /* First, check if given as string "2pi^-3" or "2pi^3" */
+        int input_ps_rescale_int;
+        if (cfg.lookupValue("input_ps_rescale", input_ps_rescale_str_)) {
+            if (input_ps_rescale_str_.compare("2pi^-3") == 0) {
+                input_ps_rescale_num = pow(TWOPI,-3);
+            }
+            else if (input_ps_rescale_str_.compare("2pi^3") == 0) {
+                input_ps_rescale_num = pow(TWOPI,3);
+            }
+            else {
+                throw ConfigException("Got input_ps_rescale string \"" + input_ps_rescale_str_ +
+                        "\" which is neither \"2pi^-3\" nor \"2pi^3\".");
+            }
+        }
+        /* If not found as string, try double */
+        else if (cfg.lookupValue("input_ps_rescale", input_ps_rescale_num)) {}
+        /* Last, try integer */
+        else if (cfg.lookupValue("input_ps_rescale", input_ps_rescale_int)) {
+            input_ps_rescale_num = static_cast<double>(input_ps_rescale_int);
+        }
+    }
+    catch (const libconfig::SettingTypeException& tex) {
+        throw ConfigException(
+            "Encountered type exception for input_ps_rescale setting.");
+    }
+    catch (const ConfigException& e) {
+        throw e;
     }
 
     /* Store potential description */
@@ -447,8 +478,8 @@ void Config::set_dynamics(const libconfig::Config& cfg)
 
         /* ODE settings */
         try {
-            if (cfg.exists("ODE settings")) {
-                const libconfig::Setting& ode_settings = cfg.lookup("cuba_settings");
+            if (cfg.exists("ode_settings")) {
+                const libconfig::Setting& ode_settings = cfg.lookup("ode_settings");
                 ode_settings.lookupValue("abs_tolerance", ode_atol_);
                 ode_settings.lookupValue("rel_tolerance", ode_rtol_);
                 ode_settings.lookupValue("start_step", ode_hstart_);
@@ -667,13 +698,13 @@ void Config::set_cuba_statefile(const libconfig::Setting& cuba_settings)
 std::ostream& operator<<(std::ostream& out, const Config& cfg) {
     if (cfg.spectrum() == POWERSPECTRUM) {
         out << "# Matter power spectrum P(k) at " << cfg.n_loops()
-            << "-loop for k = " << cfg.k_a() << " (h/Mpc)" << "\n";
+            << "-loop for k = " << cfg.k_a() << "\n";
     }
     else {
       out << "# Matter bispectrum B(k) at " << cfg.n_loops() << "-loop for\n"
-          << "#\n# k_a    = " << cfg.k_a() << " (h/Mpc)\n"
-          << "# k_b    = " << cfg.k_b() << " (h/Mpc)\n"
-          << "# k_c    = " << cfg.k_c() << " (h/Mpc)\n"
+          << "#\n# k_a    = " << cfg.k_a() << "\n"
+          << "# k_b    = " << cfg.k_b() << "\n"
+          << "# k_c    = " << cfg.k_c() << "\n"
           << "# cos_ab = " << cfg.cos_ab() << "\n";
     }
     out << "#\n# Description: " << cfg.description() << "\n";
@@ -693,8 +724,19 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
     }
 
     out << "\n#\n# Input power spectrum read from " << cfg.input_ps_file() << "\n";
+    if (cfg.input_ps_rescale() != 1) {
+        out << "# Input power spectrum rescaled by a factor ";
+        if (!cfg.input_ps_rescale_str().empty()) {
+            out << cfg.input_ps_rescale_str();
+        }
+        else {
+            out << cfg.input_ps_rescale();
+        }
+        out << " before interpolation.";
+    }
+
     out << std::scientific;
-    out << "# Integration limits:\n";
+    out << "\n#\n# Integration limits:\n";
     out << "#\t q_min = " << cfg.q_min() << "\n";
     out << "#\t q_max = " << cfg.q_max() << "\n";
 

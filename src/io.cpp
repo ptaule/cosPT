@@ -159,7 +159,7 @@ void write_results(
     /* A column consists of 14 characters; 4 whitespaces in between each column */
 
     if (cfg.spectrum() == POWERSPECTRUM) {
-        out << "#\n#" << setw(17) << "k (h/Mpc)";
+        out << "#\n#" << setw(17) << "k";
         for (auto& el : cfg.pair_correlations()) {
             out << setw(13) << "P_lin " << el;
             if (cfg.n_loops() > 0) {
@@ -169,9 +169,9 @@ void write_results(
         }
     }
     else {
-        out << "#\n#" << setw(17) << "k_a (h/Mpc)";
-        out << setw(18) << "k_b (h/Mpc)";
-        out << setw(18) << "k_c (h/Mpc)";
+        out << "#\n#" << setw(17) << "k_a";
+        out << setw(18) << "k_b";
+        out << setw(18) << "k_c";
 
         for (auto& el : cfg.triple_correlations()) {
             out << setw(13) << "B_tree " << el;

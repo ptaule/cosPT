@@ -11,9 +11,9 @@ cleanup() {
 trap cleanup EXIT
 
 # Set some default values:
-K_A=-1
-K_B=-1
-K_C=-1
+K_A_IDX=-1
+K_B_IDX=-1
+K_C_IDX=-1
 N_EVALS=0
 N_CORES=4
 INI_FILE=unset
@@ -21,13 +21,13 @@ LOG_FILE=unset
 
 usage()
 {
-  echo "Usage: build_and_run [ --k_a INDEX ] [ --k_b INDEX ]
-                     [ --k_c INDEX ] [ --n_evals NUM ] [ --n_cores NUM]
+  echo "Usage: build_and_run [ --k_a_idx=INDEX ] [ --k_b_idx=INDEX ]
+                     [ --k_c_idx=INDEX ] [ --n_evals=NUM ] [ --n_cores=NUM]
                      ini_file log_file"
   exit 2
 }
 
-PARSED_ARGUMENTS=$(getopt -n build_and_run -o a:b:c:n:p: --long k_a:,k_b:,k_c:,n_evals:,n_cores: -- "$@")
+PARSED_ARGUMENTS=$(getopt -n build_and_run -o a:b:c:n:p: --long k_a_idx:,k_b_idx:,k_c_idx:,n_evals:,n_cores: -- "$@")
 VALID_ARGUMENTS=$?
 if [ "$VALID_ARGUMENTS" != "0" ]; then
   usage
@@ -37,9 +37,9 @@ eval set -- "$PARSED_ARGUMENTS"
 while :
 do
   case "$1" in
-    -a | --k_a)     K_A="$2"   ; shift 2 ;;
-    -b | --k_b)     K_B="$2"   ; shift 2 ;;
-    -c | --k_c)     K_C="$2"   ; shift 2 ;;
+    -a | --k_a_idx) K_A_IDX="$2"   ; shift 2 ;;
+    -b | --k_b_idx) K_B_IDX="$2"   ; shift 2 ;;
+    -c | --k_c_idx) K_C_IDX="$2"   ; shift 2 ;;
     -n | --n_evals) N_EVALS=$2 ; shift 2 ;;
     -p | --n_cores) N_CORES=$2 ; shift 2 ;;
     # -- means the end of the arguments; drop this, and break out of the while loop
@@ -105,4 +105,4 @@ make clean
 make -j cluster
 export LD_LIBRARY_PATH=$tempdir/local/lib/
 
-$tempdir/$exe --k_a $K_A --k_b $K_B --k_c $K_C --n_evals $N_EVALS --n_cores $N_CORES $INI_FILE > $LOG_FILE
+$tempdir/$exe --k_a_idx $K_A_IDX --k_b_idx $K_B_IDX --k_c_idx $K_C_IDX --n_evals $N_EVALS --n_cores $N_CORES $INI_FILE > $LOG_FILE

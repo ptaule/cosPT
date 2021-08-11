@@ -36,8 +36,7 @@ static void BM_PS_EdS_integrand_1loop(benchmark::State& state) {
 
         IntegrationInput input(cfg.q_min(), cfg.q_max());
 
-        double twopi_factor = pow(TWOPI, -3);
-        input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor, true);
+        input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
         input.pair_correlations = cfg.pair_correlations();
         input.ps_diagrams = ps::construct_diagrams(loop_params);
@@ -92,8 +91,7 @@ static void BM_PS_EdS_integrand_2loop(benchmark::State& state) {
 
         IntegrationInput input(cfg.q_min(), cfg.q_max());
 
-        double twopi_factor = pow(TWOPI, -3);
-        input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor, true);
+        input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
         input.pair_correlations = cfg.pair_correlations();
         input.ps_diagrams = ps::construct_diagrams(loop_params);
@@ -147,8 +145,7 @@ static void BM_BS_EdS_integrand_1loop(benchmark::State& state) {
 
         IntegrationInput input(cfg.q_min(), cfg.q_max());
 
-        double twopi_factor = pow(TWOPI, -3);
-        input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor, true);
+        input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
         input.pair_correlations = cfg.pair_correlations();
         input.bs_diagrams = bs::construct_diagrams(loop_params);
@@ -203,8 +200,7 @@ static void BM_BS_EdS_integrand_2loop(benchmark::State& state) {
 
         IntegrationInput input(cfg.q_min(), cfg.q_max());
 
-        double twopi_factor = pow(TWOPI, -3);
-        input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor, true);
+        input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
         input.pair_correlations = cfg.pair_correlations();
         input.bs_diagrams = bs::construct_diagrams(loop_params);
@@ -268,8 +264,7 @@ static void BM_PS_2fluid_integrand_1loop(benchmark::State& state) {
 
         IntegrationInput input(cfg.q_min(), cfg.q_max());
 
-        double twopi_factor = pow(TWOPI, -3);
-        input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor, true);
+        input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
         input.pair_correlations = cfg.pair_correlations();
         input.ps_diagrams = ps::construct_diagrams(loop_params);
@@ -333,8 +328,7 @@ static void BM_PS_2fluid_integrand_2loop(benchmark::State& state) {
 
         IntegrationInput input(cfg.q_min(), cfg.q_max());
 
-        double twopi_factor = pow(TWOPI, -3);
-        input.input_ps = Interpolation1D(cfg.input_ps_file(), twopi_factor, true);
+        input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
         input.pair_correlations = cfg.pair_correlations();
         input.ps_diagrams = ps::construct_diagrams(loop_params);

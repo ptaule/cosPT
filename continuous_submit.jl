@@ -83,13 +83,12 @@ function continuous_submit(k_a_idx::Int,
         qsub_cmd = ``
         if longrun
             qsub_cmd = `qsub -q longrun -N $job_name -pe smp $n_cores -cwd
-            -e $log_dir/error/ -o $log_dir/output/ $script --k_a $k_a_idx --k_b
-            $k_b_idx --k_c $k_c_idx --n_evals $n_evals $ini_file $log_file`
+            -e $log_dir/error/ -o $log_dir/output/ $script --k_a_idx=$k_a_idx
+            --k_b_idx=$k_b_idx --k_c_idx=$k_c_idx --n_evals $n_evals $ini_file $log_file`
         else
             qsub_cmd = `qsub -N $job_name -pe smp $n_cores -cwd -e $log_dir/error/
-            -o $log_dir/output/ $script --k_a $k_a_idx --k_b $k_b_idx --k_c
-            $k_c_idx --n_evals $n_evals $ini_file $log_file`
-
+            -o $log_dir/output/ $script --k_a_idx=$k_a_idx --k_b_idx=$k_b_idx
+            --k_c_idx=$k_c_idx --n_evals $n_evals $ini_file $log_file`
         end
         run(pipeline(qsub_cmd, devnull))
     end
