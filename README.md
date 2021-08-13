@@ -24,22 +24,7 @@ provided to the `-I` and `-L` options to the compiler in the Makefile.
 
 ## Building and running the program
 
-To build the program, first create the two directories *build* and *obj* in the
-project directory:
-```
-mkdir build obj
-```
-Secondly, the file `src/version.cpp` is not tracked by git (it is
-updated with build information for every new build) and therefore not
-automatically made by `make` (for some reason). So one needs to create the file
-before running `make` by running e.g.
-```
-touch src/version.cpp
-```
-(These two steps need only be done once. There is probably a way to automate it
-with `make` also, if you know a fix for that, please write an issue/MR!)
-
-Now the binary can be compiled by running `make` (with the `-j` option to
+The binary can be compiled by running `make` (with the `-j` option to
 build in parallel). It is placed in the build directory and can be run as
 ```
 cosPT configuration_file [--option argument]
