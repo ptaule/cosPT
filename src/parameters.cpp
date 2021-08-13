@@ -658,9 +658,14 @@ void Config::set_cuba_statefile(const libconfig::Setting& cuba_settings)
                                            cuba_statefile_path)) {
             /* Check that directory exists */
             if (!fs::exists(fs::path(cuba_statefile_path))) {
-                throw ConfigException("CUBA statefile directory " +
-                                      cuba_statefile_path + " does not exist.");
+                throw ConfigException("CUBA statefile directory \"" +
+                                      cuba_statefile_path + "\" does not exist.");
             }
+            if (!fs::is_directory(cuba_statefile_path)) {
+                throw ConfigException("CUBA statefile directory \"" +
+                                      cuba_statefile_path + "\" is not a directory.");
+            }
+
             cuba_statefile_ = cuba_statefile_path;
             cuba_statefile_ += "/";
             /* Add k_a_idx (& k_b_idx) to end of file */
