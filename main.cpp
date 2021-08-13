@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
     }
 
     try {
-        std::cout << "Reading configuration file " << config_file << std::endl;
+        std::cout << "Reading configuration file \"" << config_file << "\"." << std::endl;
         Config cfg(config_file, k_a_idx, k_b_idx, k_c_idx, cuba_maxevals, cuba_cores);
 
         int n_loops = cfg.n_loops();

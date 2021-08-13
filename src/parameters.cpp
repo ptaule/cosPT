@@ -573,6 +573,9 @@ void Config::set_dynamics(const libconfig::Config& cfg)
 void Config::set_output_file(const libconfig::Config& cfg)
 {
     try {
+        /* In stead of running the entire integration before checking whether
+         * the output file/path can be written to, perform certain checks
+         * immediately */
         if (cfg.lookupValue("output_file", output_file_)) {
             /* Check that directory exists */
             fs::path p(output_file_);
@@ -585,8 +588,12 @@ void Config::set_output_file(const libconfig::Config& cfg)
         else if (cfg.lookupValue("output_path", output_path)) {
             /* Check that directory exists */
             if (!fs::exists(fs::path(output_path))) {
-                throw ConfigException("Output directory " + output_path +
-                                      " does not exist.");
+                throw ConfigException("Output directory \"" + output_path +
+                                      "\" does not exist.");
+            }
+            if (!fs::is_directory(output_path)) {
+                throw ConfigException("Output directory \"" + output_path +
+                                      "\" is not a directory.");
             }
 
             std::stringstream ss;
