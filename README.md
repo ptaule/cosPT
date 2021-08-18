@@ -72,7 +72,7 @@ correlations = ([0,0,0])      # bispectrum: compute <delta delta delta>
 ```
 - `dynamics` [string, **required**]: The kernel dynamics, either "eds-spt", "evolve-ic-asymp" or "evolve-ic-eds". The first corresponds to EdS-SPT kernels, the second and third are used for dynamically evolved kernels with different initial conditions.
 - `input_ps_file` [string, **required**]: The (full or relative path) filename of the input linear power spectrum. The file should contain two columns: the first with the wavenumber grid, and the second with the corresponding values for the power spectrum. Lines starting with \# are ignored.
-- `input_ps_rescale` [float or string]: Rescale the input linear power spectrum by a number before interpolation (does not alter the input file). One can use the string "twopi^3" or "twopi^-3" to conventionally rescale it by $`(2\pi)^3`$ or $`(2\pi)^{-3}`$, respectively.
+- `input_ps_rescale` [float or string]: Rescale the input linear power spectrum by a number before interpolation (does not alter the input file). One can use the string "2pi^3" or "2pi^-3" to conventionally rescale it by $`(2\pi)^3`$ or $`(2\pi)^{-3}`$, respectively.
 - Output file must be set via either of the following settings:
     - `output_file` [string]: The (full or relative path) filename to write to (either full or relative path).
     - `output_path` [string]: The (full or relative) directory in which the output file should be put. The output file is named after `k_a` or `k_a_idx`, depending on which was set. For bispectrum, `k_b` and `k_c` (or the corresponding indices) are included in the name of the file.
