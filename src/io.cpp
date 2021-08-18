@@ -34,7 +34,7 @@ void read_columns_from_file(
     std::string line;
 
     if (input.fail()){
-        throw(std::invalid_argument("Could not find " + filename + "."));
+        throw(std::invalid_argument("Could not find \"" + filename + "\"."));
     }
 
     columns.resize(n_columns);
@@ -90,7 +90,7 @@ void read_data_grid_from_file(
 
     input.open(filename);
     if (input.fail()){
-        throw(std::invalid_argument("Could not find " + filename + "."));
+        throw(std::invalid_argument("Could not find \"" + filename + "\"."));
     }
 
     size_t row_idx = 0;
@@ -150,8 +150,8 @@ void write_results(
     std::ofstream out(cfg.output_file());
 
     if (out.fail()){
-        throw(std::runtime_error("Could not open " + cfg.output_file() +
-                                 " for writing."));
+        throw(std::runtime_error("Could not open \"" + cfg.output_file() +
+                                 "\" for writing."));
     }
 
     out << cfg;

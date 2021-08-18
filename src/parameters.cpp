@@ -45,7 +45,7 @@ Config::Config(const std::string& ini_file,
         cfg.readFile(ini_file.c_str());
     }
     catch (const libconfig::FileIOException& ioex) {
-        throw ConfigException("Unable to read " + ini_file + ".");
+        throw ConfigException("Unable to read \"" + ini_file + "\".");
     }
     catch (const libconfig::ParseException& pex) {
         throw ConfigException("Parse error at " + std::string(pex.getFile()) +
