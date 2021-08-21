@@ -68,11 +68,11 @@ Config::Config(const std::string& ini_file,
     std::string k_a_grid_file;
     Vec2D<double> k_a_grid;
     if (cfg.lookupValue("k_a_grid", k_a_grid_file)) {
-        read_columns_from_file(k_a_grid_file, 1, k_a_grid);
+        read_delimited_file(k_a_grid_file, k_a_grid);
     }
     if (!k_a_grid.empty() && k_a_idx != -1) {
         try {
-            k_a_ = k_a_grid.at(0).at(static_cast<size_t>(k_a_idx));
+            k_a_ = k_a_grid.at(static_cast<size_t>(k_a_idx)).at(0);
         }
         catch (const std::out_of_range& e) {
             throw ConfigException("k_a_idx out of range (of k_a_grid).");
@@ -80,12 +80,11 @@ Config::Config(const std::string& ini_file,
     }
     else if (!k_a_grid.empty() && cfg.lookupValue("k_a_idx", k_a_idx)) {
         try {
-            k_a_ = k_a_grid.at(0).at(static_cast<size_t>(k_a_idx));
+            k_a_ = k_a_grid.at(static_cast<size_t>(k_a_idx)).at(0);
         }
         catch (const std::out_of_range& e) {
             throw ConfigException("k_a_idx out of range (of k_a_grid).");
         }
-        k_a_ = k_a_grid.at(0).at(static_cast<size_t>(k_a_idx));
     }
     else if (cfg.lookupValue("k_a", k_a_)) {}
     else {
@@ -326,11 +325,11 @@ void Config::set_spectrum(const libconfig::Config& cfg)
         std::string k_b_grid_file;
         Vec2D<double> k_b_grid;
         if (cfg.lookupValue("k_b_grid", k_b_grid_file)) {
-            read_columns_from_file(k_b_grid_file, 1, k_b_grid);
+            read_delimited_file(k_b_grid_file, k_b_grid);
         }
         if (!k_b_grid.empty() && k_b_idx != -1) {
             try {
-                k_b_ = k_b_grid.at(0).at(static_cast<size_t>(k_b_idx));
+                k_b_ = k_b_grid.at(static_cast<size_t>(k_b_idx)).at(0);
             }
             catch (const std::out_of_range& e) {
                 throw ConfigException("k_b_idx out of range (of k_b_grid).");
@@ -338,15 +337,11 @@ void Config::set_spectrum(const libconfig::Config& cfg)
         }
         else if (!k_b_grid.empty() && cfg.lookupValue("k_b_idx", k_b_idx)) {
             try {
-                k_b_ = k_b_grid.at(0).at(static_cast<size_t>(k_b_idx));
+                k_b_ = k_b_grid.at(static_cast<size_t>(k_b_idx)).at(0);
             }
             catch (const std::out_of_range& e) {
                 throw ConfigException("k_b_idx out of range (of k_b_grid).");
             }
-            k_b_ = k_b_grid.at(0).at(static_cast<size_t>(k_b_idx));
-        }
-        else if (!k_b_grid.empty() && cfg.lookupValue("k_b_idx", k_b_idx)) {
-            k_b_ = k_b_grid.at(0).at(static_cast<size_t>(k_b_idx));
         }
         else if (cfg.lookupValue("k_b", k_b_)) {}
         else {
@@ -360,11 +355,11 @@ void Config::set_spectrum(const libconfig::Config& cfg)
             std::string k_c_grid_file;
             Vec2D<double> k_c_grid;
             if (cfg.lookupValue("k_c_grid", k_c_grid_file)) {
-                read_columns_from_file(k_c_grid_file, 1, k_c_grid);
+                read_delimited_file(k_c_grid_file, k_c_grid);
             }
             if (!k_c_grid.empty() && k_c_idx != -1) {
                 try {
-                    k_c_ = k_c_grid.at(0).at(static_cast<size_t>(k_c_idx));
+                    k_c_ = k_c_grid.at(static_cast<size_t>(k_c_idx)).at(0);
                 }
                 catch (const std::out_of_range& e) {
                     throw ConfigException("k_c_idx out of range (of k_c_grid).");
@@ -373,16 +368,11 @@ void Config::set_spectrum(const libconfig::Config& cfg)
             }
             else if (!k_c_grid.empty() && cfg.lookupValue("k_c_idx", k_c_idx)) {
                 try {
-                    k_c_ = k_c_grid.at(0).at(static_cast<size_t>(k_c_idx));
+                    k_c_ = k_c_grid.at(static_cast<size_t>(k_c_idx)).at(0);
                 }
                 catch (const std::out_of_range& e) {
                     throw ConfigException("k_c_idx out of range (of k_c_grid).");
                 }
-                k_c_ = k_c_grid.at(0).at(static_cast<size_t>(k_c_idx));
-                k_c_given = true;
-            }
-            else if (!k_c_grid.empty() && cfg.lookupValue("k_c_idx", k_c_idx)) {
-                k_c_ = k_c_grid.at(0).at(static_cast<size_t>(k_c_idx));
                 k_c_given = true;
             }
             else if (cfg.lookupValue("k_c", k_c_)) {
