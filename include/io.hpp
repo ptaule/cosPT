@@ -11,21 +11,17 @@
 #include <string>
 #include <vector>
 
-#include "utilities.hpp"
-#include "integrand.hpp"
-
-
 void read_delimited_file(
         const std::string& filename,
-        Vec2D<double>& columns
+        std::vector<std::vector<double>>& data
         );
 
-
+class Config;
 void write_results(
         const Config& cfg,
-        const Vec1D<double>& tree_level_result,
-        const Vec1D<double>& loop_result,
-        const Vec1D<double>& errors
+        const std::vector<double>& tree_level_result,
+        const std::vector<double>& loop_result,
+        const std::vector<double>& errors
         );
 
 #endif /* ifndef IO_HPP */
