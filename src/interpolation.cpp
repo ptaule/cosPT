@@ -18,6 +18,10 @@
 
 using std::size_t;
 
+template <class T>
+using Vec1D = std::vector<T>;
+template <class T>
+using Vec2D = std::vector<std::vector<T>>;
 
 void Interpolation1D::ensure_increasing_x(
         std::vector<double>& x,
