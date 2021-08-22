@@ -27,32 +27,32 @@ class Interpolation1D {
         gsl_interp_accel* acc;
         const gsl_interp_type* type;
 
+        void ensure_increasing_x(
+                std::vector<double>& x,
+                std::vector<double>& y
+                );
+
         void initialize(
                 std::vector<double> x,
                 std::vector<double> y,
-                double factor,
-                bool padding_zeros
+                double factor
                 );
     public:
         Interpolation1D() : spline(nullptr), acc(nullptr), type(nullptr) {}
 
         /* Optional arguments:
          * - factor which multiplies y-values before interpolation
-         * - padding_zeros: add zeros at ends of y-vector, for x = 0 and x =
-         *   2*x_max. O(n) performance!
          * - gsl_interp_type: GSL interpolation type */
 
         Interpolation1D(
                 const std::vector<double>& x,
                 const std::vector<double>& y,
                 double factor = 1,
-                bool padding_zeros = false,
                 const gsl_interp_type* type = gsl_interp_cspline
                 );
         Interpolation1D(
                 const std::string& filename,
                 double factor = 1,
-                bool padding_zeros = false,
                 const gsl_interp_type* type = gsl_interp_cspline
                 );
         Interpolation1D(const Interpolation1D&) = delete;
@@ -121,19 +121,33 @@ class Interpolation2D {
         gsl_interp_accel* y_acc;
         const gsl_interp2d_type* type;
 
+        void ensure_increasing_x_y(
+                std::vector<double>& x,
+                std::vector<double>& y,
+                std::vector<std::vector<double>>& z
+                );
+
         void initialize(
-                const std::vector<double>& x,
-                const std::vector<double>& y,
-                std::vector<double> z,
+                std::vector<double> x,
+                std::vector<double> y,
+                std::vector<std::vector<double>> z,
                 double factor
                 );
+
+        std::size_t idx2d_to_idx1d(
+                std::size_t x_idx,
+                std::size_t x_size,
+                std::size_t y_idx
+                )
+        { return x_idx + y_idx*x_size; }
+
     public:
         Interpolation2D() :
             spline(nullptr), x_acc(nullptr), y_acc(nullptr), type(nullptr) {}
         Interpolation2D(
                 const std::vector<double>& x,
                 const std::vector<double>& y,
-                const std::vector<double>& z,
+                const std::vector<std::vector<double>>& z,
                 double factor = 1,
                 const gsl_interp2d_type* type = gsl_interp2d_bicubic
                 );

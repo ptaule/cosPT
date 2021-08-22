@@ -132,7 +132,12 @@ void diagram_term(
             double q_m1 = diagram.q_m1(i, j, tables.scalar_products());
             int heaviside_theta = diagram.heaviside_theta(q_m1, i,
                     tables.vars.magnitudes);
-            if (heaviside_theta == 0) {
+
+            /* We set P(k < q_min) and P(k > q_max) to zero, which means we can
+             * skip this configuration if q_m1 < qmin or q_m1 > q_max.
+             * Furthermore if heaviside_theta == 0, we can also skip. */
+            if (heaviside_theta == 0 || q_m1 < input.q_min ||
+                q_m1 > input.q_max) {
 #if DEBUG >= 2
                 std::cout << "\t" << 0 << std::endl;
 #endif
@@ -144,10 +149,7 @@ void diagram_term(
                     term_results);
 
             for (auto& el : term_results) {
-                /* Use Interpolation1D::eval(x, min, max) which returns 0 when
-                 * x is not between min and max */
-                el *= heaviside_theta * input.input_ps(q_m1, input.q_min,
-                        input.q_max);
+                el *= heaviside_theta * input.input_ps(q_m1);
             }
             for (size_t a = 0; a < n_correlations; ++a) {
                 diagram_results.at(a) += term_results.at(a);
