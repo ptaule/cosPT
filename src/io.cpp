@@ -17,17 +17,14 @@
 #include "../include/version.hpp"
 #include "../include/io.hpp"
 
-#define RESERVE_SIZE 200
-
 using std::size_t;
 
-/* Read file with n_columns number of columns, if there are lines that does not
- * have this number of columns, throw error. Skips empty lines and lines
- * beginning with '#' */
-void read_columns_from_file(
-        const std::string& filename,  /* in, name of file to be read */
-        size_t n_columns,             /* in, number of columns       */
-        Vec2D<double>& columns        /* out, columns                */
+/* Read delimited (with spaces/tabs) file and store values in Vec2D<double>
+ * data (row-by-row, any existing content removed). Skip empty lines or lines
+ * beginning with #. */
+void read_delimited_file(
+        const std::string& filename, /* file to read */
+        Vec2D<double>& data          /* out: data */
         )
 {
     std::ifstream input(filename);
@@ -37,105 +34,32 @@ void read_columns_from_file(
         throw(std::invalid_argument("Could not find \"" + filename + "\"."));
     }
 
-    columns.resize(n_columns);
-    for (size_t i = 0; i < n_columns; ++i) {
-        columns.at(i).reserve(RESERVE_SIZE);
-    }
+    /* Clear any existing data */
+    data.clear();
 
+    /* Row counter */
+    size_t i = 0;
+
+    /* Step through rows */
     while (getline(input, line)) {
         /* Ignore empty lines or lines beginning with # */
         if (line.empty() || line.at(0) == '#') {
             continue;
         }
 
+        data.push_back(Vec1D<double>());
+
         std::stringstream ss(line);
         double value;
 
-        // Column counter
-        size_t i = 0;
         while (ss >> value) {
-            if (i < n_columns) {
-                columns.at(i).push_back(value);
-            }
-            else {
-                throw(std::runtime_error("Found line with number of columns "
-                                         "not equal to n_columns in " +
-                                         filename));
-            }
-            i++;
+            data.at(i).push_back(value);
         }
-        if (i != n_columns) {
-            throw(std::runtime_error(
-                "Found line with number of columns not equal to n_columns in " +
-                filename));
-        }
+        ++i;
     }
     input.close();
 }
 
-
-/* Reads data from filename, using indexing scheme:
- * index = row + column * n_rows
- * If the number of rows/columns found does not equal n_rows/n_columns, an
- * error is thrown */
-void read_data_grid_from_file(
-        const std::string& filename,
-        Vec1D<double>& data,
-        size_t n_rows,
-        size_t n_columns
-        )
-{
-    std::ifstream input;
-    std::string line;
-
-    input.open(filename);
-    if (input.fail()){
-        throw(std::invalid_argument("Could not find \"" + filename + "\"."));
-    }
-
-    size_t row_idx = 0;
-    size_t column_idx = 0;
-    size_t idx = 0;
-
-    data.resize(n_rows * n_columns);
-
-    while (getline(input, line)) {
-        /* Ignore empty lines or lines beginning with # */
-        if (line.empty() || line.at(0) == '#') {
-            continue;
-        }
-
-        if (row_idx >= n_rows) {
-            throw(std::runtime_error("Number of rows exceeds n_rows."));
-        }
-
-        double value;
-        std::stringstream ss(line);
-
-        column_idx = 0;
-        idx = row_idx;
-
-        while (ss >> value) {
-            if (column_idx >= n_columns) {
-                throw(
-                    std::runtime_error("Number of columns exceeds n_columns."));
-            }
-
-            data.at(idx) = value;
-            column_idx++;
-            idx = row_idx + column_idx * n_rows;
-        }
-        if (column_idx != n_columns) {
-            throw(std::runtime_error(
-                "Number of columns does not equal n_columns."));
-        }
-        row_idx++;
-    }
-    if (row_idx != n_rows) {
-        throw(std::runtime_error("Number of columns does not equal n_rows."));
-    }
-    input.close();
-}
 
 
 using std::setw;
