@@ -1042,8 +1042,8 @@ found_single_loop: ;
 
 EvolutionParameters::EvolutionParameters(EvolutionParameters&& other) noexcept
     : f_nu_(other.f_nu_), cs2_factor(other.cs2_factor),
-    cg2_factor(other.cg2_factor), ode_atol_(other.ode_atol_),
-    ode_rtol_(other.ode_rtol_), ode_hstart_(other.ode_hstart_),
+    ode_atol_(other.ode_atol_), ode_rtol_(other.ode_rtol_),
+    ode_hstart_(other.ode_hstart_),
     zeta(std::move(other.zeta)), redshift(std::move(other.redshift)),
     omega_eigenvalues(std::move(other.omega_eigenvalues)),
     effcs2(std::move(other.effcs2))
@@ -1060,11 +1060,9 @@ EvolutionParameters& EvolutionParameters::operator=(EvolutionParameters&& other)
     if (this != &other) {
         f_nu_       = other.f_nu_;
         cs2_factor  = other.cs2_factor;
-        cg2_factor  = other.cg2_factor;
         ode_atol_   = other.ode_atol_;
         ode_rtol_   = other.ode_rtol_;
         ode_hstart_ = other.ode_hstart_;
-        sound_speed = other.sound_speed;
 
         zeta              = std::move(other.zeta);
         redshift          = std::move(other.redshift);
@@ -1107,48 +1105,8 @@ EvolutionParameters::EvolutionParameters(
         F1_ic.emplace_back(F1_ic_file);
     }
 
-    sound_speed = EXACT;
-
     /* cs2_factor = 2/3 * 1/(omegaM a^2 H^2) */
     cs2_factor = 2.0/3.0 * SQUARE(3e3) / omega_m_0;
-}
-
-
-
-EvolutionParameters::EvolutionParameters(
-        double m_nu,
-        double f_nu,
-        double omega_m_0,
-        const std::string& zeta_file,
-        const std::string& redshift_file,
-        const std::string& omega_eigenvalues_file,
-        const Vec1D<std::string>& F1_ic_files,
-        double ode_atol,
-        double ode_rtol,
-        double ode_hstart
-        ) :
-    f_nu_(f_nu), ode_atol_(ode_atol), ode_rtol_(ode_rtol),
-    ode_hstart_(ode_hstart), redshift(redshift_file),
-    omega_eigenvalues(omega_eigenvalues_file)
-{
-    /* zeta always enters with prefactor 1.5, hence we redefine and multiply
-     * here once */
-    zeta = Interpolation1D(zeta_file, 1.5);
-
-    for (auto& F1_ic_file : F1_ic_files) {
-        F1_ic.emplace_back(F1_ic_file);
-    }
-
-    sound_speed = ADIABATIC;
-
-    /* cs2_factor = 2/3 * 1/(omegaM a^2 H^2) */
-    cg2_factor = 2.0/3.0 * SQUARE(3e3) / omega_m_0;
-
-    /* Neutrino temperature today [eV] */
-    double T_nu0 = 1.67734976e-4;
-    /* 5/9 Zeta(5)/Zeta(3) = 7.188565369 */
-    double a = 7.188565369;
-    cg2_factor *= a * SQUARE(T_nu0) / SQUARE(m_nu);
 }
 
 

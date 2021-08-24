@@ -230,13 +230,10 @@ class LoopParameters {
 };
 
 
-enum SoundSpeed {EXACT, ADIABATIC};
-
 class EvolutionParameters {
     private:
         double f_nu_       = 0.0;
         double cs2_factor  = 0.0;
-        double cg2_factor  = 0.0;
 
         double ode_atol_   = 0.0;
         double ode_rtol_   = 0.0;
@@ -247,9 +244,6 @@ class EvolutionParameters {
         Interpolation1D omega_eigenvalues;
         Vec1D<Interpolation1D> F1_ic;
         Interpolation2D effcs2;
-
-        SoundSpeed sound_speed;
-
     public:
         EvolutionParameters() = default;
         EvolutionParameters(const EvolutionParameters&) = delete;
@@ -268,20 +262,6 @@ class EvolutionParameters {
                 const std::string& effcs2_x_file,
                 const std::string& effcs2_y_file,
                 const std::string& effcs2_data_file,
-                double ode_atol = 1e-6,
-                double ode_rtol = 1e-4,
-                double ode_hstart = 1e-3
-                );
-
-        /* Adiabatic sound speed constructors */
-        EvolutionParameters(
-                double m_nu,
-                double f_nu,
-                double omega_m_0,
-                const std::string& zeta_file,
-                const std::string& redshift_file,
-                const std::string& omega_eigenvalues_file,
-                const Vec1D<std::string>& F1_ic_files,
                 double ode_atol = 1e-6,
                 double ode_rtol = 1e-4,
                 double ode_hstart = 1e-3
@@ -310,12 +290,7 @@ class EvolutionParameters {
         }
 
         double cs2(double eta, double k) const {
-            if (sound_speed == EXACT) {
-                return cs2_factor * effcs2(eta, k) / (1 + redshift(eta));
-            }
-            else {
-                return cg2_factor * (1 + redshift(eta));
-            }
+            return cs2_factor * effcs2(eta, k) / (1 + redshift(eta));
         }
 };
 
