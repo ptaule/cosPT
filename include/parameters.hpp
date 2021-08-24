@@ -285,7 +285,7 @@ class EvolutionParameters {
         }
 
         double cs2(double eta, double k) const {
-            return cs2_factor * effcs2(eta, k) / (1 + redshift(eta));
+            return effcs2(eta, k);
         }
 };
 

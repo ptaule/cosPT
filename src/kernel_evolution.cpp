@@ -309,7 +309,6 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
 
     const EvolutionParameters& ev_params = input.ev_params;
     int n       = input.n;
-    double f_nu = ev_params.f_nu();
     double k    = input.k;
 
     // Between eta_asymp and eta_i, set eta = eta_i
@@ -332,11 +331,7 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
 
     /* etaD parametrization */
     f[0] = rhs[0] - n * y[0] + y[1];
-    f[1] = rhs[1] + zeta * (1 - f_nu) * y[0] + (-zeta + 1 - n) * y[1] +
-           zeta * f_nu * y[2];
-    f[2] = rhs[2] - n * y[2] + y[3];
-    f[3] = rhs[3] + zeta * (1 - f_nu) * y[0] +
-           zeta * (f_nu - k * k * cs2) * y[2] + (-zeta + 1 - n) * y[3];
+    f[1] = rhs[1] + zeta * cs2 * y[0] + (-zeta + 1 - n) * y[1];
 
     return GSL_SUCCESS;
 }

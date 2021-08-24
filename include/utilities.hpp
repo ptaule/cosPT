@@ -17,7 +17,7 @@
 
 /* Number of components */
 #define EDS_SPT_COMPONENTS 2
-#define COMPONENTS 4
+#define COMPONENTS 2
 
 /* Constants: */
 #define PI    3.14159265359
