@@ -116,10 +116,6 @@ int main(int argc, char* argv[]) {
             eta_grid = EtaGrid(cfg.time_steps(), cfg.eta_ini(), cfg.eta_fin());
         }
         else if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
-            if (COMPONENTS != 4) {
-                throw std::runtime_error("Dynamics = EVOLVE_IC_ASYMP not "
-                                         "implemented for COMPONENTS != 2");
-            }
             ev_params = EvolutionParameters(cfg.f_nu(), cfg.omega_m_0(),
                     cfg.zeta_file(), cfg.redshift_file(),
                     cfg.omega_eigenvalues_file(), cfg.F1_ic_files(),
