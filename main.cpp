@@ -84,9 +84,7 @@ int main(int argc, char* argv[]) {
             << "Use --help to see instructions.\nExiting." << std::endl;
         return EXIT_FAILURE;
     }
-    else {
-        config_file = std::string(argv[optind]);
-    }
+    config_file = std::string(argv[optind]);
 
     try {
         std::cout << "Reading configuration file \"" << config_file << "\"." << std::endl;
@@ -200,6 +198,15 @@ int main(int argc, char* argv[]) {
                     input.triple_correlations, tree_level_result);
         }
 
+        /* Single hard limit */
+        if (cfg.single_hard_limit()) {
+            input.single_hard_limit = true;
+            n_dims -= 1;
+            for (auto& el : input.tables_vec) {
+                el.vars.magnitudes.at(0) = cfg.sh_Q1();
+            }
+        }
+
         if (n_loops > 0) {
             cuba_cores = cfg.cuba_cores();
             int cuba_points = 10000;
@@ -246,6 +253,8 @@ int main(int argc, char* argv[]) {
                     static_cast<double>(integration_results.at(i));
                 errors.at(i) = overall_factor *
                     static_cast<double>(integration_errors.at(i));
+                loop_result.at(i) *= SQUARE(cfg.sh_Q1());
+                errors.at(i)      *= SQUARE(cfg.sh_Q1());
             }
 
             std::cout << "Integration probability/probabilities: ";
