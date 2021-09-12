@@ -103,6 +103,7 @@ export LD_LIBRARY_PATH="$tempdir"/local/lib/
 
 mkdir -p "$tempdir"/output/eds_spt_ps/L1
 mkdir -p "$tempdir"/output/eds_spt_ps/L2
+mkdir -p "$tempdir"/output/eds_spt_ps/L2_sh
 mkdir -p "$tempdir"/output/eds_spt_bs/L1
 mkdir -p "$tempdir"/output/eds_spt_bs/L2
 
@@ -115,6 +116,7 @@ for k_a in {000,005,010,015,020,025,030,035,040,045,050,055}; do
     {
         "$tempdir"/"$exe" --k_a_idx $k_a --n_cores $n_cores "$tempdir"/ini/eds_spt_ps_L1.cfg
         "$tempdir"/"$exe" --k_a_idx $k_a --n_cores $n_cores "$tempdir"/ini/eds_spt_ps_L2.cfg
+        "$tempdir"/"$exe" --k_a_idx $k_a --n_cores $n_cores "$tempdir"/ini/eds_spt_ps_L2_sh.cfg
     } >> "$log_file"
 done
 
@@ -136,6 +138,8 @@ done
         "$tempdir"/tests/data/eds_spt_ps/L1/total.dat "$tempdir"/output/eds_spt_ps/L1/total.dat
     "$julia" "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
         "$tempdir"/tests/data/eds_spt_ps/L2/total.dat "$tempdir"/output/eds_spt_ps/L2/total.dat
+    "$julia" "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
+        "$tempdir"/tests/data/eds_spt_ps/L2_sh/total.dat "$tempdir"/output/eds_spt_ps/L2_sh/total.dat
     "$julia" "$isapprox" --col_A 5 --col_err_A 6 --col_B 5 --col_err_B 6 \
         "$tempdir"/tests/data/eds_spt_bs/L1/total.dat "$tempdir"/output/eds_spt_bs/L1/total.dat
     "$julia" "$isapprox" --col_A 5 --col_err_A 6 --col_B 5 --col_err_B 6 \
