@@ -25,6 +25,9 @@ class Config {
         Dynamics dynamics_;
         Spectrum spectrum_;
 
+        bool single_hard_limit_;
+        double sh_Q1_ = 0;
+
         int k_a_idx = -1;
         int k_b_idx = -1;
         int k_c_idx = -1;
@@ -35,7 +38,7 @@ class Config {
         double cos_ab_ = 0;
 
         double q_min_ = 1e-4;
-        double q_max_ = 65;
+        double q_max_ = 1;
 
         Vec1D<Pair<int>> pair_correlations_;     /* Power spectrum */
         Vec1D<Triple<int>> triple_correlations_; /* Bispectrum */
@@ -49,7 +52,7 @@ class Config {
         std::string cuba_statefile_;
         std::string cuba_statefile_path;
 
-        /* Information from MC integration */
+        /* Information from CUBA integration */
         int cuba_evals_      = 0;
         int cuba_fail_       = 0;
         int cuba_subregions_ = 0;
@@ -99,6 +102,8 @@ class Config {
         int n_loops() const {return n_loops_;}
         Dynamics dynamics() const {return dynamics_;}
         Spectrum spectrum() const {return spectrum_;}
+        bool single_hard_limit() const {return single_hard_limit_;}
+        double sh_Q1() const {return sh_Q1_;}
 
         double k_a() const {return k_a_;}
         double k_b() const {return k_b_;}

@@ -20,6 +20,8 @@ class IntegrationInput {
         const double q_min = 0;
         const double q_max = 0;
 
+        bool single_hard_limit;
+
         Interpolation1D input_ps;
         Vec1D<IntegrandTables> tables_vec;
 

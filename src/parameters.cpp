@@ -122,6 +122,27 @@ Config::Config(const std::string& ini_file,
     set_spectrum(cfg);
     set_dynamics(cfg);
 
+    /* Compute single hard limit? */
+    if (cfg.lookupValue("single_hard_limit", single_hard_limit_)) {
+        if (cfg.lookupValue("single_hard_limit_q", sh_Q1_)) {
+            if (sh_Q1_ < q_max_) {
+                std::cerr << "Warning: Single hard limit: Fixed q = "
+                    << sh_Q1_ << " is less than q_max = " << q_max_
+                    << "."<< std::endl;
+            }
+        }
+        else {
+            sh_Q1_ = q_max_ * 10;
+            std::cerr << "Info: Single hard limit: Setting q = 10 * q_max = "
+                << sh_Q1_ << "."<< std::endl;
+        }
+    }
+    else if (cfg.lookupValue("single_hard_limit_Q1", sh_Q1_)) {
+        throw ConfigException("Setting \"single_hard_limit_q\" can only be used "
+            "when simultaneously \"single_hard_limit = true\".");
+    }
+
+
     /* CUBA settings */
     try {
         if (cfg.exists("cuba_settings")) {
@@ -703,11 +724,11 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
             << "-loop for k = " << cfg.k_a() << "\n";
     }
     else {
-      out << "# Matter bispectrum B(k) at " << cfg.n_loops() << "-loop for\n"
-          << "#\n# k_a    = " << cfg.k_a() << "\n"
-          << "# k_b    = " << cfg.k_b() << "\n"
-          << "# k_c    = " << cfg.k_c() << "\n"
-          << "# cos_ab = " << cfg.cos_ab() << "\n";
+        out << "# Matter bispectrum B(k) at " << cfg.n_loops() << "-loop for\n"
+            << "#\n# k_a    = " << cfg.k_a() << "\n"
+            << "# k_b    = " << cfg.k_b() << "\n"
+            << "# k_c    = " << cfg.k_c() << "\n"
+            << "# cos_ab = " << cfg.cos_ab() << "\n";
     }
     out << "#\n# Description: " << cfg.description() << "\n";
     out <<    "# Git hash:    " << build_git_sha << "\n";
@@ -723,6 +744,12 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
         for (auto& el : cfg.triple_correlations()) {
             out << " " << el <<  " ,";
         }
+    }
+
+    if (cfg.single_hard_limit()) {
+        out << "\n#\n# Computing single-hard limit with fixed Q1 = "
+            << cfg.sh_Q1()
+            << " h/Mpc.";
     }
 
     out << "\n#\n# Input power spectrum read from " << cfg.input_ps_file() << "\n";
