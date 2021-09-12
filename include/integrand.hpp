@@ -32,7 +32,8 @@ class IntegrationInput {
         Vec1D<BiSpectrumDiagram> bs_diagrams;
         Vec1D<Triple<int>> triple_correlations;
 
-        IntegrationInput(double q_min, double q_max) : q_min(q_min), q_max(q_max) {}
+        IntegrationInput(double q_min, double q_max, bool single_hard_limit)
+		: q_min(q_min), q_max(q_max), single_hard_limit(single_hard_limit) {}
 };
 
 

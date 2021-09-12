@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
         SumTable sum_table(loop_params);
 
         integrand_t integrand = nullptr;
-        IntegrationInput input(cfg.q_min(), cfg.q_max());
+        IntegrationInput input(cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
 
@@ -200,7 +200,6 @@ int main(int argc, char* argv[]) {
 
         /* Single hard limit */
         if (cfg.single_hard_limit()) {
-            input.single_hard_limit = true;
             n_dims -= 1;
             for (auto& el : input.tables_vec) {
                 el.vars.magnitudes.at(0) = cfg.sh_Q1();
@@ -253,8 +252,11 @@ int main(int argc, char* argv[]) {
                     static_cast<double>(integration_results.at(i));
                 errors.at(i) = overall_factor *
                     static_cast<double>(integration_errors.at(i));
-                loop_result.at(i) *= SQUARE(cfg.sh_Q1());
-                errors.at(i)      *= SQUARE(cfg.sh_Q1());
+
+                if (input.single_hard_limit) {
+                    loop_result.at(i) *= SQUARE(cfg.sh_Q1());
+                    errors.at(i)      *= SQUARE(cfg.sh_Q1());
+                }
             }
 
             std::cout << "Integration probability/probabilities: ";
