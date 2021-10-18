@@ -461,6 +461,21 @@ void IntegrandTables::compute_alpha_beta()
 
 
 
+void IntegrandTables::compute_LoS_projections() {
+    size_t n_coeffs = loop_params.n_coeffs();
+    size_t n_configs = loop_params.n_configs();
+
+    size_t k_a_idx = n_coeffs - 1;
+    Vec1D<double> bare_LoS_projections(n_coeffs);
+
+
+    for (size_t a = 0; a < n_configs; ++a) {
+            label2config(static_cast<int>(a), a_coeffs);
+
+}
+
+
+
 void IntegrandTables::compute_tables()
 {
     if (loop_params.spectrum() == POWERSPECTRUM) {

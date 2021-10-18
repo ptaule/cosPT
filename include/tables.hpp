@@ -19,8 +19,9 @@ class IntegrationVariables {
         Vec1D<double> magnitudes; /* Loop momenta magnitudes */
         Vec1D<double> cos_theta;  /* Cosine of polar angles of the loop momenta */
         Vec1D<double> phi;        /* Azimutal angles */
+        double mu;                /* Cosine of angle between k and line-of-sight */
 
-        IntegrationVariables(std::size_t n_loops) {
+        IntegrationVariables(std::size_t n_loops) : mu(0) {
             magnitudes.assign(n_loops,0);
             cos_theta.assign(n_loops,0);
             phi.assign(n_loops,0);
@@ -112,6 +113,9 @@ class IntegrandTables {
         Vec2D<double> alpha_;                /* N_CONFIGS x N_CONFIGS */
         Vec2D<double> beta_;                 /* N_CONFIGS x N_CONFIGS */
 
+        /* Dot product of each configuration with LoS, divided by length of configuration */
+        Vec1D<double> LoS_projections; /* N_CONFIGS */
+
         void reset_spt_kernels();
         void reset_kernels();
 
@@ -120,6 +124,8 @@ class IntegrandTables {
 
         void compute_scalar_products();
         void compute_alpha_beta();
+
+        void compute_LoS_projections();
     public:
         const LoopParameters& loop_params;
         const SumTable& sum_table;
