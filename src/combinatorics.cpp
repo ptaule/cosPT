@@ -128,6 +128,9 @@ void Combinations::reset()
 {
     std::iota(combination.begin(), combination.end(), 0);
     std::iota(complement.begin(), complement.end(), k_);
+#if DEBUG >= 1
+    counter = 1;
+#endif
 }
 
 
