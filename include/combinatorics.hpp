@@ -71,6 +71,7 @@ class Orderings {
         bool next();
         void reset();
 
+        void write_current(std::vector<int>& ordering) const;
         std::vector<int> get_current() const;
 };
 

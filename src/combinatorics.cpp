@@ -157,8 +157,7 @@ void Combinations::rearrange_from_current(
     }
     for (int i = k_; i < n_; ++i) {
         *(first + i) =
-            copy.at(static_cast<size_t>(complement.at(static_cast<size_t>(i -
-                                k_))));
+            copy.at(static_cast<size_t>(complement.at(static_cast<size_t>(i - k_))));
     }
 }
 
@@ -274,9 +273,8 @@ void Orderings::reset()
 
 
 
-std::vector<int> Orderings::get_current() const
-{
-    Vec1D<int> ordering(normal_ordering);
+void Orderings::write_current(Vec1D<int>& ordering) const {
+    ordering = normal_ordering;
 
     int cursor = 0;
     for (size_t i = 0; i < combinations_vec.size(); ++i) {
@@ -284,6 +282,14 @@ std::vector<int> Orderings::get_current() const
                 ordering.begin() + cursor, ordering.end());
         cursor += combinations_vec.at(i).k();
     }
+}
+
+
+
+Vec1D<int> Orderings::get_current() const
+{
+    Vec1D<int> ordering(n_);
+    write_current(ordering);
     return ordering;
 }
 
