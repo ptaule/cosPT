@@ -124,20 +124,24 @@ Config::Config(const std::string& ini_file,
 
     /* Compute single hard limit? */
     if (cfg.lookupValue("single_hard_limit", single_hard_limit_)) {
-        if (cfg.lookupValue("single_hard_limit_q", sh_Q1_)) {
-            if (sh_Q1_ < q_max_) {
-                std::cerr << "Warning: Single hard limit: Fixed q = "
-                    << sh_Q1_ << " is less than q_max = " << q_max_
-                    << "."<< std::endl;
-            }
+        int sh_Q1_int;
+        if (cfg.lookupValue("single_hard_limit_q", sh_Q1_)) {}
+        /* If not found as double, try int */
+        else if (cfg.lookupValue("single_hard_limit_q", sh_Q1_int)) {
+            sh_Q1_ = static_cast<double>(sh_Q1_int);
         }
         else {
             sh_Q1_ = q_max_ * 10;
-            std::cerr << "Info: Single hard limit: Setting q = 10 * q_max = "
+            std::cout << "Info: Single hard limit: Setting q = 10 * q_max = "
                 << sh_Q1_ << "."<< std::endl;
         }
+        if (sh_Q1_ < q_max_) {
+            std::cout << "Warning: Single hard limit: Fixed q = "
+                << sh_Q1_ << " is less than q_max = " << q_max_
+                << "."<< std::endl;
+        }
     }
-    else if (cfg.lookupValue("single_hard_limit_Q1", sh_Q1_)) {
+    else if (cfg.lookupValue("single_hard_limit_q", sh_Q1_)) {
         throw ConfigException("Setting \"single_hard_limit_q\" can only be used "
             "when simultaneously \"single_hard_limit = true\".");
     }
