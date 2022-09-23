@@ -25,10 +25,6 @@ all: CPPFLAGS += -DDEBUG=0 -DHAVE_INLINE -I/space/ge52sir/local/include/
 all: CXXFLAGS += -O3
 all: LDFLAGS  += -L/space/ge52sir/local/lib/
 
-cluster: CPPFLAGS += -DDEBUG=0 -DHAVE_INLINE -I./local/include/
-cluster: CXXFLAGS += -O3
-cluster: LDFLAGS  += -L./local/lib/
-
 debug: CPPFLAGS   += -D_GLIBCXX_DEBUG -DDEBUG=2 -I/space/ge52sir/local/include/
 debug: CXXFLAGS   += -g -O0
 debug: LDFLAGS    += -L/space/ge52sir/local/lib/
@@ -45,7 +41,6 @@ LDLIBS  += -lconfig++ -lcuba -lgsl -lgslcblas
 .PHONY: all clean run debug benchmark profile force
 
 all: $(EXE)
-cluster: $(EXE)
 debug: $(DEBUG_EXE)
 benchmark: $(BENCHMARK_EXE)
 profile: $(BENCHMARK_EXE)
@@ -65,7 +60,7 @@ main.o: main.cpp $(HEADERS) compiler_flags
 benchmark.o: benchmark.cpp $(HEADERS) compiler_flags
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp compiler_flags | $(OBJ_DIR)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADERS) compiler_flags | $(OBJ_DIR)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 $(SRC_DIR)/version.cpp: force

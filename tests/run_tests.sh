@@ -50,10 +50,6 @@ julia=/space/ge52sir/local/bin/julia
 isapprox=/home/t30/all/ge52sir/non_linear_PS/tests/isapprox.jl
 
 exe=build/cosPT
-GSL="gsl-2.6"
-CUBA="Cuba-4.2.1"
-LIBCONFIG="libconfig-1.7.2"
-LIBPATH="/space/ge52sir/"
 
 sourcedir=$(pwd)
 tempdir="$(mktemp -d -t cosPT_XXXXXXXXXX)"
@@ -63,29 +59,10 @@ mkdir -p "$tempdir"/output
 mkdir -p "$tempdir"/ini
 mkdir -p "$tempdir"/tests
 
-cp -r $LIBPATH/$GSL "$tempdir"
-cp -r $LIBPATH/$CUBA "$tempdir"
-cp -r $LIBPATH/$LIBCONFIG "$tempdir"
 cp -r -t "$tempdir" "$sourcedir"/src "$sourcedir"/include \
     "$sourcedir"/main.cpp "$sourcedir"/Makefile
 cp -r -t "$tempdir"/ini "$sourcedir"/ini/tests/*
 cp -r -t "$tempdir"/tests "$sourcedir"/tests/data
-
-cd "$tempdir"/"$LIBCONFIG"
-autoreconf -f -i
-./configure --prefix="$tempdir"/local/
-make clean
-make -j && make -j install
-
-cd "$tempdir/$CUBA"
-./configure --prefix="$tempdir"/local/
-make clean
-make -j install
-
-cd "$tempdir/$GSL"
-./configure --prefix="$tempdir"/local/
-make clean
-make -j && make -j install
 
 # Remember git sha from source directory
 cd "$sourcedir"
@@ -98,8 +75,8 @@ printf "#include \"../include/version.hpp\"\nstd::string build_git_sha =  \"%s\"
     $git_sha > src/version_.cpp
 sed -i '/SRC_FILES/ s/\\$/version_.cpp \\/' Makefile
 make clean
-make -j cluster
-export LD_LIBRARY_PATH="$tempdir"/local/lib/
+make -j
+export LD_LIBRARY_PATH=/space/ge52sir/local/lib/
 
 mkdir -p "$tempdir"/output/eds_spt_ps/L1
 mkdir -p "$tempdir"/output/eds_spt_ps/L2

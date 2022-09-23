@@ -41,7 +41,7 @@ function parse_commandline()
         "--script"
             help = "script to run"
             arg_type = String
-            default = "build_and_run.sh"
+            default = "run.sh"
         "ini_file"
             help = "ini file"
             arg_type = String
@@ -76,17 +76,17 @@ function continuous_submit(k_a_idx::Int,
         log_file = log_dir * job_name * ".log"
 
         # Wait for the last job to finish
-        while (occursin(job_prefix * "_" * string(k_a_idx), read(`qstat`, String)))
+        while (occursin(job_prefix * "_$(k_a_idx)_", read(`qstat_formatted.sh`, String)))
             sleep(30)
         end
 
         qsub_cmd = ``
         if longrun
-            qsub_cmd = `qsub -q longrun -N $job_name -pe smp $n_cores -cwd
+            qsub_cmd = `qsub -q longrun -N $job_name -pe smp $n_cores
             -e $log_dir/error/ -o $log_dir/output/ $script --k_a_idx=$k_a_idx
             --k_b_idx=$k_b_idx --k_c_idx=$k_c_idx --n_evals $n_evals $ini_file $log_file`
         else
-            qsub_cmd = `qsub -N $job_name -pe smp $n_cores -cwd -e $log_dir/error/
+            qsub_cmd = `qsub -N $job_name -pe smp $n_cores -e $log_dir/error/
             -o $log_dir/output/ $script --k_a_idx=$k_a_idx --k_b_idx=$k_b_idx
             --k_c_idx=$k_c_idx --n_evals $n_evals $ini_file $log_file`
         end

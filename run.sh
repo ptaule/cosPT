@@ -20,10 +20,6 @@ cleanup() {
 trap cleanup EXIT
 
 exe=build/cosPT
-gsl="gsl-2.7.1"
-cuba="Cuba-4.2.1"
-libconfig="libconfig-1.7.2"
-libpath="/space/ge52sir/"
 
 # Set some default values:
 k_a_idx=-1
@@ -71,33 +67,11 @@ if [ $# -ne 2 ]; then
   usage
 fi
 
-
 ini_file="$1"
 log_file="$2"
 
-cp -r "$libpath"/"$gsl" "$tempdir"
-cp -r "$libpath"/"$cuba" "$tempdir"
-cp -r "$libpath"/"$libconfig" "$tempdir"
 cp -r -t "$tempdir" "$sourcedir"/src "$sourcedir"/include \
     "$sourcedir"/main.cpp "$sourcedir"/Makefile
-
-mkdir -p "$tempdir"/local/
-
-cd "$tempdir"/"$libconfig"
-autoreconf -f -i
-./configure --prefix="$tempdir"/local/
-make clean
-make -j && make -j install
-
-cd "$tempdir"/"$cuba"
-./configure --prefix="$tempdir"/local/
-make clean
-make -j install
-
-cd "$tempdir"/"$gsl"
-./configure --prefix="$tempdir"/local/
-make clean
-make -j && make -j install
 
 cd "$sourcedir"
 git_sha=$(git rev-parse HEAD)
@@ -109,8 +83,8 @@ printf "#include \"../include/version.hpp\"\nstd::string build_git_sha =  \"%s\"
     $git_sha > src/version_.cpp
 sed -i '/SRC_FILES/ s/\\$/version_.cpp \\/' Makefile
 make clean
-make -j cluster
-export LD_LIBRARY_PATH="$tempdir"/local/lib/
+make -j
+export LD_LIBRARY_PATH=/space/ge52sir/local/lib/
 
 "$tempdir"/$exe --k_a_idx $k_a_idx --k_b_idx $k_b_idx --k_c_idx $k_c_idx \
     --n_evals $n_evals --n_cores $n_cores "$ini_file" > "$log_file"
