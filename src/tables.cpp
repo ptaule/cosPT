@@ -461,17 +461,40 @@ void IntegrandTables::compute_alpha_beta()
 
 
 
-void IntegrandTables::compute_LoS_projections() {
-    size_t n_coeffs = loop_params.n_coeffs();
+void IntegrandTables::ps_compute_LoS_projections() {
+    int n_loops      = loop_params.n_loops();
+    size_t n_coeffs  = loop_params.n_coeffs();
     size_t n_configs = loop_params.n_configs();
 
     size_t k_a_idx = n_coeffs - 1;
+
+    /* Dot products of bare vectors and LoS */
     Vec1D<double> bare_LoS_projections(n_coeffs);
 
+    /* Sine of angle between k (along z-axis) and LoS */
+    double sin_mu = sqrt(1 - SQUARE(vars.mu));
 
-    for (size_t a = 0; a < n_configs; ++a) {
-            label2config(static_cast<int>(a), a_coeffs);
+    /* Loop dot products with the LoS */
+    for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
+        double sin_theta_i = sqrt(1 - SQUARE(vars.cos_theta.at(i)));
+        bare_LoS_projections.at(i) = vars.magnitudes.at(i) *
+            (sin_theta_i * cos(vars.phi.at(i)) * sin_mu +
+                vars.cos_theta.at(i) * vars.mu);
+    }
 
+    /* Dot product of k_a and LoS is simply |k_a|*mu */
+    bare_LoS_projections.at(k_a_idx) = k_a * vars.mu;
+
+    /* Compute dot products between vector configurations and LoS */
+    for (size_t i = 0; i < n_configs; ++i) {
+        double product_value = 0;
+
+        label2config(static_cast<int>(i), a_coeffs);
+        for (size_t j = 0; j < n_coeffs; ++j) {
+            product_value += a_coeffs[j] * bare_LoS_projections.at(j);
+        }
+        LoS_projections.at(i) = product_value;
+    }
 }
 
 

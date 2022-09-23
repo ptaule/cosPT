@@ -125,7 +125,7 @@ class IntegrandTables {
         void compute_scalar_products();
         void compute_alpha_beta();
 
-        void compute_LoS_projections();
+        void ps_compute_LoS_projections();
     public:
         const LoopParameters& loop_params;
         const SumTable& sum_table;

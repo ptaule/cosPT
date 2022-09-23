@@ -509,18 +509,15 @@ int integrand(
                 vars.magnitudes.at(1) = input.q_min * pow(ratio,xx[0]);
                 vars.cos_theta.at(0) = xx[1];
                 vars.cos_theta.at(1) = xx[2];
-                /* We may fix the coordinate system s.t. vars.phi[0] = 0 */
                 vars.phi.at(0) = xx[3] * TWOPI;
                 vars.phi.at(1) = xx[4] * TWOPI;
                 jacobian = SQUARE(TWOPI) * log_ratio * CUBE(vars.magnitudes.at(1));
-
             }
             else {
                 vars.magnitudes.at(0) = input.q_min * pow(ratio,xx[0]);
                 vars.magnitudes.at(1) = input.q_min * pow(ratio,xx[0] * xx[1]);
                 vars.cos_theta.at(0) = xx[2];
                 vars.cos_theta.at(1) = xx[3];
-                /* We may fix the coordinate system s.t. vars.phi[0] = 0 */
                 vars.phi.at(0) = xx[4] * TWOPI;
                 vars.phi.at(1) = xx[5] * TWOPI;
                 jacobian = SQUARE(TWOPI) * xx[0]
@@ -580,113 +577,114 @@ int integrand(
 
 
 
-namespace rsd {
-int integrand(
-        __attribute__((unused)) const int *ndim,
-        const cubareal xx[],
-        __attribute__((unused)) const int *ncomp,
-        cubareal ff[],
-        void *userdata,
-        __attribute__((unused)) const int *nvec,
-        const int *core
-        )
-{
-    IntegrationInput& input = *static_cast<IntegrationInput*>(userdata);
+// namespace rsd {
+// int integrand(
+//         __attribute__((unused)) const int *ndim,
+//         const cubareal xx[],
+//         __attribute__((unused)) const int *ncomp,
+//         cubareal ff[],
+//         void *userdata,
+//         __attribute__((unused)) const int *nvec,
+//         const int *core
+//         )
+// {
+//     IntegrationInput& input = *static_cast<IntegrationInput*>(userdata);
 
-    /*  For thread <*core + 1> (index 0 is reserved for master), we use the */
-    /*  IntegrandTables number *core+1 */
-    IntegrandTables& tables = input.tables_vec.at(static_cast<size_t>(*core + 1));
+//     /*  For thread <*core + 1> (index 0 is reserved for master), we use the */
+//     /*  IntegrandTables number *core+1 */
+//     IntegrandTables& tables = input.tables_vec.at(static_cast<size_t>(*core + 1));
 
-    int n_loops = tables.loop_params.n_loops();
-    IntegrationVariables& vars = tables.vars;
+//     int n_loops = tables.loop_params.n_loops();
+//     IntegrationVariables& vars = tables.vars;
 
-    double ratio = input.q_max/input.q_min;
-    double log_ratio = std::log(ratio);
-    double jacobian = 1.0;
+//     double ratio = input.q_max/input.q_min;
+//     double log_ratio = std::log(ratio);
+//     double jacobian = 1.0;
 
-    switch (n_loops) {
-        case 1:
-            if (input.single_hard_limit) {
-                vars.mu = 2 * xx[0] - 1;
-                vars.cos_theta.at(0) = xx[1];
-                jacobian = 2;
-            }
-            else {
-                vars.mu = 2 * xx[0] - 1;
-                vars.magnitudes.at(0) = input.q_min * pow(ratio,xx[1]);
-                vars.cos_theta.at(0) = xx[2];
-                jacobian = 2 * log(ratio) * CUBE(vars.magnitudes.at(0));
-            }
-            break;
-        case 2:
-            if (input.single_hard_limit) {
-                vars.mu = 2 * xx[0] - 1;
-                vars.magnitudes.at(1) = input.q_min * pow(ratio,xx[1]);
-                vars.cos_theta.at(0) = xx[2];
-                vars.cos_theta.at(1) = xx[3];
-                /* We may fix the coordinate system s.t. vars.phi[0] = 0 */
-                vars.phi.at(1) = xx[4] * TWOPI;
-                jacobian = 2 * TWOPI * log_ratio * CUBE(vars.magnitudes.at(1));
+//     switch (n_loops) {
+//         case 1:
+//             if (input.single_hard_limit) {
+//                 vars.cos_theta.at(0) = xx[0];
+//                 vars.phi.at(0) = xx[1] * TWOPI;
+//                 jacobian = TWOPI;
+//             }
+//             else {
+//                 vars.magnitudes.at(0) = input.q_min * pow(ratio,xx[0]);
+//                 vars.cos_theta.at(0) = xx[1];
+//                 vars.phi.at(0) = xx[2] * TWOPI;
+//                 jacobian = TWOPI * log(ratio) * CUBE(vars.magnitudes.at(0));
+//             }
+//             break;
+//         case 2:
+//             if (input.single_hard_limit) {
+//                 vars.magnitudes.at(1) = input.q_min * pow(ratio,xx[0]);
+//                 vars.cos_theta.at(0) = xx[1];
+//                 vars.cos_theta.at(1) = xx[2];
+//                 vars.phi.at(0) = xx[3] * TWOPI;
+//                 vars.phi.at(1) = xx[4] * TWOPI;
+//                 jacobian = SQUARE(TWOPI) * log_ratio * CUBE(vars.magnitudes.at(1));
+//             }
+//             else {
+//                 vars.magnitudes.at(0) = input.q_min * pow(ratio,xx[0]);
+//                 vars.magnitudes.at(1) = input.q_min * pow(ratio,xx[0] * xx[1]);
+//                 vars.cos_theta.at(0) = xx[2];
+//                 vars.cos_theta.at(1) = xx[3];
+//                 vars.phi.at(0) = xx[4] * TWOPI;
+//                 vars.phi.at(1) = xx[5] * TWOPI;
+//                 jacobian = SQUARE(TWOPI) * xx[0]
+//                     * SQUARE(log_ratio)
+//                     * CUBE(vars.magnitudes.at(0))
+//                     * CUBE(vars.magnitudes.at(1));
+//             }
+//             break;
+//         default:
+//             throw(std::invalid_argument("bs::integrand(): n_loops is not 1."));
+//     }
 
-            }
-            else {
-                vars.mu = 2 * xx[0] - 1;
-                vars.magnitudes.at(0) = input.q_min * pow(ratio,xx[1]);
-                vars.magnitudes.at(1) = input.q_min * pow(ratio,xx[1] * xx[2]);
-                vars.cos_theta.at(0) = xx[3];
-                vars.cos_theta.at(1) = xx[4];
-                /* We may fix the coordinate system s.t. vars.phi[0] = 0 */
-                vars.phi.at(1) = xx[5] * TWOPI;
-                jacobian = 2 * TWOPI * xx[1]
-                    * SQUARE(log_ratio)
-                    * CUBE(vars.magnitudes.at(0))
-                    * CUBE(vars.magnitudes.at(1));
-            }
-            break;
-        default:
-            throw(std::invalid_argument("ps::integrand(): n_loops is not 1 or 2."));
-    }
+//     /* LoS direction */
+//     vars.mu = 2 * xx[*ndim-1] - 1;
+//     jacobian *= 2;
 
-    /* Monopole and dipole results */
-    Vec1D<double> results(2, 0.0);
-    Vec1D<double> diagram_results(2, 0.0);
-    try {
-        /* Zero-initialize kernel tables */
-        tables.reset();
-        // Compute scalar_products-, alpha- and beta-tables
-        tables.compute_tables();
+//     /* Monopole and dipole results */
+//     Vec1D<double> results(2, 0.0);
+//     Vec1D<double> diagram_results(2, 0.0);
+//     try {
+//         /* Zero-initialize kernel tables */
+//         tables.reset();
+//         // Compute scalar_products-, alpha- and beta-tables
+//         tables.compute_tables();
 
-        // Loop over all diagrams
-        for (auto& diagram : input.ps_diagrams) {
-            diagram_term(diagram, input, tables, diagram_results);
+//         // Loop over all diagrams
+//         for (auto& diagram : input.ps_diagrams) {
+//             diagram_term(diagram, input, tables, diagram_results);
 
-            for (size_t j = 0; j < n_correlations; ++j) {
-                results.at(j) += diagram_results.at(j);
-            }
-            std::fill(diagram_results.begin(), diagram_results.end(), 0.0);
-        }
+//             for (size_t j = 0; j < n_correlations; ++j) {
+//                 results.at(j) += diagram_results.at(j);
+//             }
+//             std::fill(diagram_results.begin(), diagram_results.end(), 0.0);
+//         }
 
-        int i = 0;
-        /* Skip P_lin(Q1) if single_hard_limit = true */
-        if (input.single_hard_limit) ++i;
-        for (; i < tables.loop_params.n_loops(); ++i) {
-            for (auto& el : results) {
-                el *= input.input_ps(
-                    tables.vars.magnitudes.at(static_cast<size_t>(i)));
-            }
-        }
-    }
-    catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        /* Tell CUBA an error occured */
-        return -999;
-    }
+//         int i = 0;
+//         /* Skip P_lin(Q1) if single_hard_limit = true */
+//         if (input.single_hard_limit) ++i;
+//         for (; i < tables.loop_params.n_loops(); ++i) {
+//             for (auto& el : results) {
+//                 el *= input.input_ps(
+//                     tables.vars.magnitudes.at(static_cast<size_t>(i)));
+//             }
+//         }
+//     }
+//     catch (const std::exception& e) {
+//         std::cerr << e.what() << std::endl;
+//         /* Tell CUBA an error occured */
+//         return -999;
+//     }
 
-    for (size_t i = 0; i < n_correlations; ++i) {
-        ff[i] = results.at(i) * jacobian;
-    }
+//     for (size_t i = 0; i < n_correlations; ++i) {
+//         ff[i] = results.at(i) * jacobian;
+//     }
 
-    /* Return success */
-    return 0;
-}
-} /* namespace rsd */
+//     /* Return success */
+//     return 0;
+// }
+// } /* namespace rsd */

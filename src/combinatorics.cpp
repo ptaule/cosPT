@@ -197,11 +197,6 @@ void Combinations::rearrange_from_current_complement(
 
 
 
-/* Orderings code is not performance critical, therefore always check bounds */
-#undef at
-
-
-
 Orderings::Orderings(int n, const Vec1D<int>& group_sizes)
     : n_(n)
 {
@@ -291,6 +286,52 @@ Vec1D<int> Orderings::get_current() const
     Vec1D<int> ordering(n_);
     write_current(ordering);
     return ordering;
+}
+
+
+
+void NumbersAndBars::next_combination_compute() {
+    comb.write_current_combination(current_comb);
+    std::fill(group_sizes.begin(), group_sizes.end(), 0);
+
+    int elements_left = n_;
+    if (!current_comb.empty()) {
+        /* There is always an element before first bar */
+        group_sizes.at(0) = current_comb.at(0) + 1;
+        elements_left -= group_sizes.at(0);
+    }
+
+    for (size_t i = 1; i < current_comb.size(); ++i) {
+        group_sizes.at(i) = current_comb.at(i) - current_comb.at(i - 1);
+        elements_left -= group_sizes.at(i);
+    }
+    group_sizes.back() = elements_left;
+
+    orderings = Orderings(n_, group_sizes);
+}
+
+
+
+NumbersAndBars::NumbersAndBars(int n, int m)
+    : n_(n), m_(m), comb(n-1, m-1), current_comb(m-1), ordering(n),
+    group_sizes(m, 0)
+{
+    next_combination_compute();
+    next_ordering_compute();
+}
+
+
+
+bool NumbersAndBars::next() {
+    if (orderings.next()) {
+        next_ordering_compute();
+        return true;
+    }
+    if (comb.next()) {
+        next_combination_compute();
+        return true;
+    }
+    return false;
 }
 
 

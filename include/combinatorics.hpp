@@ -42,6 +42,13 @@ class Combinations {
             return complement;
         }
 
+        void write_current_combination(std::vector<int>& vec) const {
+            vec = combination;
+        }
+        void write_current_complement(std::vector<int>& vec) const {
+            vec = complement;
+        }
+
         void rearrange_from_current(
                 std::vector<int>::iterator first,
                 std::vector<int>::iterator last
@@ -58,6 +65,7 @@ class Combinations {
                 ) const;
 };
 
+
 class Orderings {
     private:
         int n_;
@@ -65,7 +73,12 @@ class Orderings {
         std::vector<Combinations> combinations_vec;
         std::vector<int> normal_ordering;
     public:
+        Orderings() : n_(), combinations_vec(), normal_ordering() {}
         Orderings(int n, const std::vector<int>& group_sizes);
+
+        Orderings& operator=(const Orderings& other) = default;
+        Orderings& operator=(Orderings&& other) = default;
+
         int n() const {return n_;}
 
         bool next();
@@ -73,6 +86,30 @@ class Orderings {
 
         void write_current(std::vector<int>& ordering) const;
         std::vector<int> get_current() const;
+};
+
+
+/* Variant of combinatorics problem "stars and bars", where the stars are
+* unique elements (numbers). Have n elements and want to group them in m bins
+* (or equivalently divide using (m-1) bars). Go through all prossibilities
+* using next(), permutations within a group is not counted. */
+class NumbersAndBars {
+    private:
+        int n_;
+        int m_;
+
+        Combinations comb;
+        Orderings orderings;
+        std::vector<int> current_comb;
+        std::vector<int> ordering;
+        std::vector<int> group_sizes;
+
+        void next_combination_compute();
+        void next_ordering_compute() { orderings.write_current(ordering); }
+    public:
+        NumbersAndBars(int n, int m);
+
+        bool next();
 };
 
 std::ostream& operator<<(std::ostream& out, const Combinations& combinations);

@@ -60,6 +60,17 @@ int integrand(
         const int *core
         );
 }
+namespace rsd {
+int integrand(
+        __attribute__((unused)) const int *ndim,
+        const double xx[],
+        __attribute__((unused)) const int *ncomp,
+        double ff[],
+        void *userdata,
+        __attribute__((unused)) const int *nvec,
+        const int *core
+        );
+}
 
 
 #endif /* ifndef INTEGRAND_HPP */

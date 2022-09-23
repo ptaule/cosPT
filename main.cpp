@@ -26,35 +26,71 @@
 
 #include "include/combinatorics.hpp"
 
-using std::pow;
 
 void print_help();
+void numbers_and_bars();
 
-int main(int argc, char* argv[]) {
+
+int main(int argc, char *argv[]) {
+    numbers_and_bars();
+}
+
+
+
+void numbers_and_bars() {
     /* Vec1D<std::string> a = {"k1", "k2", "k3", "k4", "k5"}; */
-    Vec1D<std::string> a = {"k1", "k2", "k3", "k4"};
-    /* Vec1D<std::string> a = {"k1", "k2", "k3"}; */
+    // Vec1D<std::string> a = {"k1", "k2", "k3", "k4"};
+    Vec1D<std::string> a = {"k1", "k2", "k3"};
     int n = a.size();
 
+    Vec1D<int> current_ordering(n);
+
+    /* m is number of groups that the wavenumbers is divided into. The first
+     * group corresponds to (delta + f mu^2 theta), so m >= 1. The expansion of
+    * exp(.. theta) gives m = 2,...,n-1 */
     for (int m = 1; m <= n; ++m) {
-        Combinations comb(n-1,m-1);
+        /* Go through combinations of "placing (m-1) bars", i.e. divide wavenumbers
+        * amoung m groups */
+        Combinations comb(n - 1, m - 1);
 
+        /* Current combination and group sizes */
+        Vec1D<int> current(m-1);
+        Vec1D<int> group_sizes(m);
         do {
-            Vec1D<int> current = comb.get_current_combination();
+            comb.write_current_combination(current);
+            std::fill(group_sizes.begin(), group_sizes.end(), 0);
 
-            int i = 0;
-            for (auto& el : current) {
-                while (i < el + 1) {
-                    std::cout << a.at(i) << "\t";
-                    ++i;
+            int elements_left = n;
+            if (!current.empty()) {
+                /* There is always an element before first bar */
+                group_sizes.at(0) = current.at(0) + 1;
+                elements_left -= group_sizes.at(0);
+            }
+
+            for (size_t i = 1; i < current.size(); ++i) {
+                group_sizes.at(i) = current.at(i) - current.at(i - 1);
+                elements_left -= group_sizes.at(i);
+            }
+            group_sizes.back() = elements_left;
+
+            Orderings orderings(n, group_sizes);
+
+            do {
+                orderings.write_current(current_ordering );
+
+                size_t i = 0;
+                for (auto &el : group_sizes) {
+                    for (int j = 0; j < el; ++j) {
+                        std::cout << a.at(current_ordering.at(i)) << " ";
+                        ++i;
+                    }
+                    std::cout << "| ";
                 }
-                std::cout << "|\t";
-            }
-            for (; i < n; ++i) {
-                std::cout << a.at(i) << "\t";
-            }
-            std::cout << std::endl;
+                std::cout << std::endl;
+            } while (orderings.next());
+
         } while (comb.next());
+        std::cout << std::endl;
     }
 }
 
