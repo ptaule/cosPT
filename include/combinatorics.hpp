@@ -8,7 +8,7 @@
 #ifndef COMBINATORICS_HPP
 #define COMBINATORICS_HPP
 
-#include <ostream>
+#include <iosfwd>
 #include <vector>
 
 class Combinations {

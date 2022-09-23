@@ -9,8 +9,10 @@
 #define KERNEL_EVOLUTION_HPP
 
 #include "utilities.hpp"
-#include "parameters.hpp"
-#include "tables.hpp"
+
+class IntegrandTables;
+class EvolutionParameters;
+class EtaGrid;
 
 int kernel_evolution(
         const int arguments[],

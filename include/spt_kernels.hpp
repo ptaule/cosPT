@@ -8,8 +8,7 @@
 #ifndef SPT_KERNELS_HPP
 #define SPT_KERNELS_HPP
 
-#include "utilities.hpp"
-#include "tables.hpp"
+class IntegrandTables;
 
 int compute_SPT_kernels(
         const int arguments[],

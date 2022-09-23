@@ -12,6 +12,7 @@
 
 #include "../include/utilities.hpp"
 #include "../include/combinatorics.hpp"
+#include "../include/parameters.hpp"
 #include "../include/tables.hpp"
 #include "../include/spt_kernels.hpp"
 

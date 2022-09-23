@@ -11,8 +11,9 @@
 #include <vector>
 
 #include "utilities.hpp"
-#include "parameters.hpp"
 
+class LoopParameters;
+class EvolutionParameters;
 
 class IntegrationVariables {
     public:

@@ -17,8 +17,9 @@
 #include <gsl/gsl_odeiv2.h>
 
 #include "../include/utilities.hpp"
-#include "../include/interpolation.hpp"
 #include "../include/combinatorics.hpp"
+#include "../include/interpolation.hpp"
+#include "../include/parameters.hpp"
 #include "../include/tables.hpp"
 #include "../include/kernel_evolution.hpp"
 

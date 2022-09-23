@@ -9,8 +9,9 @@
 #define BISPECTRUM_TREE_LEVEL_HPP
 
 #include "utilities.hpp"
-#include "interpolation.hpp"
-#include "tables.hpp"
+
+class Interpolation1D;
+class IntegrandTables;
 
 void tree_level_bispectrum(
         IntegrandTables& tables,

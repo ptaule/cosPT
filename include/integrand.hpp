@@ -12,8 +12,10 @@
 
 #include "utilities.hpp"
 #include "interpolation.hpp"
-#include "diagrams.hpp"
-#include "tables.hpp"
+
+class IntegrandTables;
+class PowerSpectrumDiagram;
+class BiSpectrumDiagram;
 
 class IntegrationInput {
     public:

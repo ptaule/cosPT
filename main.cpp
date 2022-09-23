@@ -16,13 +16,14 @@
 #include <cuba.h>
 
 #include "include/utilities.hpp"
-#include "include/tables.hpp"
-#include "include/diagrams.hpp"
-#include "include/interpolation.hpp"
 #include "include/bispectrum_tree_level.hpp"
+#include "include/diagrams.hpp"
 #include "include/kernel_evolution.hpp"
 #include "include/integrand.hpp"
+#include "include/interpolation.hpp"
 #include "include/io.hpp"
+#include "include/parameters.hpp"
+#include "include/tables.hpp"
 
 using std::pow;
 

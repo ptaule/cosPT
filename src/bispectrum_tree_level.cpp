@@ -10,8 +10,10 @@
 
 #include "../include/interpolation.hpp"
 #include "../include/diagrams.hpp"
-#include "../include/spt_kernels.hpp"
 #include "../include/kernel_evolution.hpp"
+#include "../include/parameters.hpp"
+#include "../include/tables.hpp"
+#include "../include/spt_kernels.hpp"
 #include "../include/bispectrum_tree_level.hpp"
 
 using std::size_t;

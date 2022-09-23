@@ -13,7 +13,8 @@
 #include <cmath>
 
 #include "utilities.hpp"
-#include "parameters.hpp"
+
+class LoopParameters;
 
 class ArgumentConfiguration {
     public:

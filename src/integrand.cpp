@@ -5,10 +5,10 @@
    Copyright (c) 2020 Petter Taule. All rights reserved.
 */
 
+#include <cmath>
 #include <iostream>
 #include <stdexcept>
 #include <utility>
-#include <array>
 #include <vector>
 
 #include <cuba.h>

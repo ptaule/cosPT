@@ -7,13 +7,13 @@
 
 #include <iostream>
 #include <iomanip>
-#include <string>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 
 #include "../include/utilities.hpp"
-#include "../include/integrand.hpp"
+#include "../include/parameters.hpp"
 #include "../include/version.hpp"
 #include "../include/io.hpp"
 
