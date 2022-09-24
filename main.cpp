@@ -5,11 +5,11 @@
    Copyright (c) 2020 Petter Taule. All rights reserved.
 */
 
+#include <algorithm>
+#include <array>
+#include <cmath>
 #include <iostream>
 #include <vector>
-#include <array>
-#include <algorithm>
-#include <cmath>
 
 #include <getopt.h>
 #include <gsl/gsl_sf.h>

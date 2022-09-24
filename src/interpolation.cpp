@@ -5,10 +5,11 @@
    Copyright (c) 2020 Petter Taule. All rights reserved.
 */
 
-#include <iostream>
-#include <vector>
 #include <algorithm>
+#include <iostream>
 #include <stdexcept>
+#include <utility>
+#include <vector>
 
 #include <gsl/gsl_spline.h>
 #include <gsl/gsl_spline2d.h>
