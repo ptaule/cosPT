@@ -34,7 +34,7 @@ static void BM_PS_EdS_integrand_1loop(benchmark::State& state) {
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
 
-        IntegrationInput input(cfg.q_min(), cfg.q_max());
+        IntegrationInput input(cfg.q_min(), cfg.q_max(), false);
 
         input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
@@ -89,7 +89,7 @@ static void BM_PS_EdS_integrand_2loop(benchmark::State& state) {
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
 
-        IntegrationInput input(cfg.q_min(), cfg.q_max());
+        IntegrationInput input(cfg.q_min(), cfg.q_max(), false);
 
         input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
@@ -143,7 +143,7 @@ static void BM_BS_EdS_integrand_1loop(benchmark::State& state) {
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
 
-        IntegrationInput input(cfg.q_min(), cfg.q_max());
+        IntegrationInput input(cfg.q_min(), cfg.q_max(), false);
 
         input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
@@ -198,7 +198,7 @@ static void BM_BS_EdS_integrand_2loop(benchmark::State& state) {
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
 
-        IntegrationInput input(cfg.q_min(), cfg.q_max());
+        IntegrationInput input(cfg.q_min(), cfg.q_max(), false);
 
         input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
@@ -262,7 +262,7 @@ static void BM_PS_2fluid_integrand_1loop(benchmark::State& state) {
         eta_grid = EtaGrid(cfg.pre_time_steps(), cfg.time_steps(), cfg.eta_ini(),
                 cfg.eta_fin(), cfg.eta_asymp());
 
-        IntegrationInput input(cfg.q_min(), cfg.q_max());
+        IntegrationInput input(cfg.q_min(), cfg.q_max(), false);
 
         input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
@@ -326,7 +326,7 @@ static void BM_PS_2fluid_integrand_2loop(benchmark::State& state) {
         eta_grid = EtaGrid(cfg.pre_time_steps(), cfg.time_steps(), cfg.eta_ini(),
                 cfg.eta_fin(), cfg.eta_asymp());
 
-        IntegrationInput input(cfg.q_min(), cfg.q_max());
+        IntegrationInput input(cfg.q_min(), cfg.q_max(), false);
 
         input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
