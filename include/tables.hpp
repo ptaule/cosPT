@@ -107,18 +107,20 @@ class IntegrandTables {
         Vec1D<int> a_coeffs;
         Vec1D<int> b_coeffs;
 
-        Vec2D<double> bare_scalar_products_; /* N_COEFFS x N_COEFFS   */
-        Vec2D<double> scalar_products_;      /* N_CONFIGS x N_CONFIGS */
+        Vec2D<double> bare_dot_prod;
+        /* N_COEFFS x N_COEFFS, dot products between external/loop wavenumbers */
+        Vec2D<double> comp_dot_prod;
+        /* N_CONFIGS x N_CONFIGS, dot products between composite wavenumbers */
         Vec2D<double> alpha_;                /* N_CONFIGS x N_CONFIGS */
         Vec2D<double> beta_;                 /* N_CONFIGS x N_CONFIGS */
 
         void reset_spt_kernels();
         void reset_kernels();
 
-        void ps_compute_bare_scalar_products(); /* Power spectrum */
-        void bs_compute_bare_scalar_products(); /* Bispectrum */
+        void ps_compute_bare_dot_prod(); /* Power spectrum */
+        void bs_compute_bare_dot_prod(); /* Bispectrum */
 
-        void compute_scalar_products();
+        void compute_comp_dot_prod();
         void compute_alpha_beta();
     public:
         const LoopParameters& loop_params;
@@ -149,9 +151,8 @@ class IntegrandTables {
                 const EtaGrid& eta_grid
                 );
 
-        const Vec2D<double>& bare_scalar_products() const {return
-            bare_scalar_products_;}
-        const Vec2D<double>& scalar_products() const {return scalar_products_;}
+        const Vec2D<double>& bare_dot_products() const {return bare_dot_prod;}
+        const Vec2D<double>& comp_dot_products() const {return comp_dot_prod;}
         const Vec2D<double>& alpha() const {return alpha_;}
         const Vec2D<double>& beta() const {return beta_;}
 

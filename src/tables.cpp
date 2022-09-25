@@ -171,16 +171,16 @@ IntegrandTables::IntegrandTables(
     size_t n_configs = loop_params.n_configs();
     size_t n_kernels = loop_params.n_kernels();
 
-    bare_scalar_products_.resize(n_coeffs);
+    bare_dot_prod.resize(n_coeffs);
     for (size_t i = 0; i < n_coeffs; ++i) {
-        bare_scalar_products_.at(i).resize(n_coeffs);
+        bare_dot_prod.at(i).resize(n_coeffs);
     }
 
-    scalar_products_.resize(n_configs);
+    comp_dot_prod.resize(n_configs);
     alpha_.resize(n_configs);
     beta_.resize(n_configs);
     for (size_t i = 0; i < n_configs; ++i) {
-        scalar_products_.at(i).resize(n_configs);
+        comp_dot_prod.at(i).resize(n_configs);
         alpha_.at(i).resize(n_configs);
         beta_.at(i).resize(n_configs);
     }
@@ -226,7 +226,7 @@ IntegrandTables::IntegrandTables(
 
 void IntegrandTables::reset()
 {
-    // bare_scalar_products, alpha, beta tables etc. are completely rewritten
+    // bare_dot_prod, alpha_, beta_ tables etc. are completely rewritten
     // by their respective compute-functions, hence no need to zero initialize
 
     if (loop_params.dynamics() == EDS_SPT) {
@@ -269,7 +269,7 @@ void IntegrandTables::reset_kernels()
 
 
 
-void IntegrandTables::ps_compute_bare_scalar_products()
+void IntegrandTables::ps_compute_bare_dot_prod()
 {
     int n_loops = loop_params.n_loops();
     size_t n_coeffs = loop_params.n_coeffs();
@@ -278,15 +278,15 @@ void IntegrandTables::ps_compute_bare_scalar_products()
 
     // Diagonal products correspond to Q1*Q1, etc.
     for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
-        bare_scalar_products_.at(i).at(i) = SQUARE(vars.magnitudes.at(i));
+        bare_dot_prod.at(i).at(i) = SQUARE(vars.magnitudes.at(i));
     }
-    bare_scalar_products_.at(k_a_idx).at(k_a_idx) = SQUARE(k_a);
+    bare_dot_prod.at(k_a_idx).at(k_a_idx) = SQUARE(k_a);
 
     // Products involving k_a and Q_i has the form k*Q_i*cos(theta_i)
     for (size_t i = 0; i < n_coeffs - 1; ++i) {
         double value = k_a * vars.magnitudes.at(i) * vars.cos_theta.at(i);
-        bare_scalar_products_.at(k_a_idx).at(i) = value;
-        bare_scalar_products_.at(i).at(k_a_idx) = value;
+        bare_dot_prod.at(k_a_idx).at(i) = value;
+        bare_dot_prod.at(i).at(k_a_idx) = value;
     }
 
     if (n_loops > 1) {
@@ -301,8 +301,8 @@ void IntegrandTables::ps_compute_bare_scalar_products()
                            cos_theta_1 * vars.cos_theta.at(i);
             value *= Q_1 * vars.magnitudes.at(i);
 
-            bare_scalar_products_.at(i).at(0) = value;
-            bare_scalar_products_.at(0).at(i) = value;
+            bare_dot_prod.at(i).at(0) = value;
+            bare_dot_prod.at(0).at(i) = value;
         }
 
         // Compute Q_i * Q_j for {i,j} != 1
@@ -318,8 +318,8 @@ void IntegrandTables::ps_compute_bare_scalar_products()
                                vars.cos_theta.at(i) * vars.cos_theta.at(j);
 
                 value *= vars.magnitudes.at(i) * vars.magnitudes.at(j);
-                bare_scalar_products_.at(i).at(j) = value;
-                bare_scalar_products_.at(j).at(i) = value;
+                bare_dot_prod.at(i).at(j) = value;
+                bare_dot_prod.at(j).at(i) = value;
             }
         }
     }
@@ -327,7 +327,7 @@ void IntegrandTables::ps_compute_bare_scalar_products()
 
 
 
-void IntegrandTables::bs_compute_bare_scalar_products()
+void IntegrandTables::bs_compute_bare_dot_prod()
 {
     int n_loops = loop_params.n_loops();
     size_t n_coeffs = loop_params.n_coeffs();
@@ -337,20 +337,20 @@ void IntegrandTables::bs_compute_bare_scalar_products()
 
     /* Diagonal products correspond to Q1*Q1, etc. */
     for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
-        bare_scalar_products_.at(i).at(i) = SQUARE(vars.magnitudes.at(i));
+        bare_dot_prod.at(i).at(i) = SQUARE(vars.magnitudes.at(i));
     }
-    bare_scalar_products_.at(k_a_idx).at(k_a_idx) = SQUARE(k_a);
-    bare_scalar_products_.at(k_b_idx).at(k_b_idx) = SQUARE(k_b);
+    bare_dot_prod.at(k_a_idx).at(k_a_idx) = SQUARE(k_a);
+    bare_dot_prod.at(k_b_idx).at(k_b_idx) = SQUARE(k_b);
 
     double value = k_a * k_b * cos_ab;
-    bare_scalar_products_.at(k_a_idx).at(k_b_idx) = value;
-    bare_scalar_products_.at(k_b_idx).at(k_a_idx) = value;
+    bare_dot_prod.at(k_a_idx).at(k_b_idx) = value;
+    bare_dot_prod.at(k_b_idx).at(k_a_idx) = value;
 
     /* Products involving k_a and Q_i has the form k_a*Q_i*cos(theta_i) */
     for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
         value = k_a * vars.magnitudes.at(i) * vars.cos_theta.at(i);
-        bare_scalar_products_.at(k_a_idx).at(i) = value;
-        bare_scalar_products_.at(i).at(k_a_idx) = value;
+        bare_dot_prod.at(k_a_idx).at(i) = value;
+        bare_dot_prod.at(i).at(k_a_idx) = value;
     }
     /* Products involving k_b and Q_i (special case since k_b has azimuthal
      * angle 0)*/
@@ -361,8 +361,8 @@ void IntegrandTables::bs_compute_bare_scalar_products()
         value = sin_ab * cos(vars.phi.at(i)) * sin_theta_i +
                 cos_ab * vars.cos_theta.at(i);
         value *= k_b * vars.magnitudes.at(i);
-        bare_scalar_products_.at(k_b_idx).at(i) = value;
-        bare_scalar_products_.at(i).at(k_b_idx) = value;
+        bare_dot_prod.at(k_b_idx).at(i) = value;
+        bare_dot_prod.at(i).at(k_b_idx) = value;
     }
 
     if (n_loops > 1) {
@@ -379,8 +379,8 @@ void IntegrandTables::bs_compute_bare_scalar_products()
                         vars.cos_theta.at(i) * vars.cos_theta.at(j);
 
                 value *= vars.magnitudes.at(i) * vars.magnitudes.at(j);
-                bare_scalar_products_.at(i).at(j) = value;
-                bare_scalar_products_.at(j).at(i) = value;
+                bare_dot_prod.at(i).at(j) = value;
+                bare_dot_prod.at(j).at(i) = value;
             }
         }
     }
@@ -388,8 +388,8 @@ void IntegrandTables::bs_compute_bare_scalar_products()
 
 
 
-/* Computes table of scalar_products given bare_scalar_products table */
-void IntegrandTables::compute_scalar_products()
+/* Computes table of composite dot products given bare_dot_prod table */
+void IntegrandTables::compute_comp_dot_prod()
 {
     size_t n_coeffs = loop_params.n_coeffs();
     size_t n_configs = loop_params.n_configs();
@@ -405,15 +405,15 @@ void IntegrandTables::compute_scalar_products()
             for (size_t i = 0; i < n_coeffs; ++i) {
                 for (size_t j = 0; j < n_coeffs; ++j) {
                     product_value += a_coeffs[i] * b_coeffs[j]
-                        * bare_scalar_products_.at(i).at(j);
+                        * bare_dot_prod.at(i).at(j);
                 }
             }
             if (a == b) {
-                scalar_products_.at(a).at(a) = product_value;
+                comp_dot_prod.at(a).at(a) = product_value;
             }
             else {
-                scalar_products_.at(a).at(b) = product_value;
-                scalar_products_.at(b).at(a) = product_value;
+                comp_dot_prod.at(a).at(b) = product_value;
+                comp_dot_prod.at(b).at(a) = product_value;
             }
         }
     }
@@ -439,13 +439,13 @@ void IntegrandTables::compute_alpha_beta()
             // If the first argument is the zero-vector, alpha and beta remains 0
             // If the second argument is the zero-vector, beta remains 0
             if (a != static_cast<size_t>(loop_params.zero_label())) {
-                double product_ab = scalar_products_.at(a).at(b);
-                double product_aa = scalar_products_.at(a).at(a);
+                double product_ab = comp_dot_prod.at(a).at(b);
+                double product_aa = comp_dot_prod.at(a).at(a);
 
                 alpha_val = 1 + product_ab/product_aa;
 
                 if (b != static_cast<size_t>(loop_params.zero_label())) {
-                    double product_bb = scalar_products_.at(b).at(b);
+                    double product_bb = comp_dot_prod.at(b).at(b);
 
                     beta_val = product_ab / 2.0
                         * ( 1.0 / product_aa + 1.0 / product_bb
@@ -464,11 +464,11 @@ void IntegrandTables::compute_alpha_beta()
 void IntegrandTables::compute_tables()
 {
     if (loop_params.spectrum() == POWERSPECTRUM) {
-        ps_compute_bare_scalar_products();
+        ps_compute_bare_dot_prod();
     }
     else if (loop_params.spectrum() == BISPECTRUM) {
-        bs_compute_bare_scalar_products();
+        bs_compute_bare_dot_prod();
     }
-    compute_scalar_products();
+    compute_comp_dot_prod();
     compute_alpha_beta();
 }

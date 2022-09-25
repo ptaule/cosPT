@@ -706,7 +706,7 @@ void BiSpectrumDiagram::connecting_lines_factors(
         size_t sign_idx,
         size_t overall_loop_idx,
         const Vec1D<double>& loop_magnitudes,
-        const Vec2D<double>& scalar_products,
+        const Vec2D<double>& dot_products,
         Triple<double>& q_xy1, /* out */
         int& heaviside_theta   /* out */
         ) const
@@ -728,9 +728,9 @@ void BiSpectrumDiagram::connecting_lines_factors(
     };
 
     q_xy1 = {
-        std::sqrt(scalar_products.at(q_xy1_label.ab()).at(q_xy1_label.ab())),
-        std::sqrt(scalar_products.at(q_xy1_label.bc()).at(q_xy1_label.bc())),
-        std::sqrt(scalar_products.at(q_xy1_label.ca()).at(q_xy1_label.ca()))
+        std::sqrt(dot_products.at(q_xy1_label.ab()).at(q_xy1_label.ab())),
+        std::sqrt(dot_products.at(q_xy1_label.bc()).at(q_xy1_label.bc())),
+        std::sqrt(dot_products.at(q_xy1_label.ca()).at(q_xy1_label.ca()))
     };
 
     /* How many loop momenta have already been assigned? */
@@ -752,9 +752,9 @@ void BiSpectrumDiagram::connecting_lines_factors(
         };
 
         Triple<double> q_xy = {
-            std::sqrt(scalar_products.at(q_xy_label.ab()).at(q_xy_label.ab())),
-            std::sqrt(scalar_products.at(q_xy_label.bc()).at(q_xy_label.bc())),
-            std::sqrt(scalar_products.at(q_xy_label.ca()).at(q_xy_label.ca()))
+            std::sqrt(dot_products.at(q_xy_label.ab()).at(q_xy_label.ab())),
+            std::sqrt(dot_products.at(q_xy_label.bc()).at(q_xy_label.bc())),
+            std::sqrt(dot_products.at(q_xy_label.ca()).at(q_xy_label.ca()))
         };
 
         switch (overall_loop_idx % 3) {

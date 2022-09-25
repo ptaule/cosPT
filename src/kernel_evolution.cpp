@@ -506,7 +506,7 @@ int kernel_evolution(
         /* Compute k (sum of kernel arguments) */
         int sum = tables.sum_table.sum_labels(arguments,
                 tables.loop_params.n_kernel_args());
-        double k = std::sqrt(tables.scalar_products()
+        double k = std::sqrt(tables.comp_dot_products()
                                  .at(static_cast<size_t>(sum))
                                  .at(static_cast<size_t>(sum)));
         /* Set up ODE input and system */

@@ -175,10 +175,10 @@ void diagram_term(
     }
 
     /* External momentum values */
-    double k_a = std::sqrt(tables.bare_scalar_products().at(k_a_idx).at(k_a_idx));
-    double k_b = std::sqrt(tables.bare_scalar_products().at(k_b_idx).at(k_b_idx));
+    double k_a = std::sqrt(tables.bare_dot_products().at(k_a_idx).at(k_a_idx));
+    double k_b = std::sqrt(tables.bare_dot_products().at(k_b_idx).at(k_b_idx));
     double k_c = std::sqrt(SQUARE(k_a) + SQUARE(k_b) + 2 *
-            tables.bare_scalar_products().at(k_a_idx).at(k_b_idx));
+            tables.bare_dot_products().at(k_a_idx).at(k_b_idx));
 
 
     for (size_t i = 0; i < triple_correlations.size(); ++i) {
@@ -224,7 +224,7 @@ void tree_level_bispectrum(
     }
     /* Zero-initialize kernel tables */
     tables.reset();
-    /* Compute scalar_products-, alpha- and beta-tables */
+    /* Compute dot_products-, alpha- and beta-tables */
     tables.compute_tables();
 
     /* Three diagrams: 000110, 000101, 000011 */

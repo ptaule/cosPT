@@ -129,7 +129,7 @@ void diagram_term(
             diagram.print_argument_configuration(std::cout, i, j);
 #endif
 
-            double q_m1 = diagram.q_m1(i, j, tables.scalar_products());
+            double q_m1 = diagram.q_m1(i, j, tables.comp_dot_products());
             int heaviside_theta = diagram.heaviside_theta(q_m1, i,
                     tables.vars.magnitudes);
 
@@ -239,7 +239,7 @@ int integrand(
     try {
         /* Zero-initialize kernel tables */
         tables.reset();
-        // Compute scalar_products-, alpha- and beta-tables
+        // Compute dot_products-, alpha- and beta-tables
         tables.compute_tables();
 
         // Loop over all diagrams
@@ -396,7 +396,7 @@ void diagram_term(
                 Triple<double> q_xy1 = {0,0,0};
                 int heaviside_theta = 1;
                 diagram.connecting_lines_factors(i, j, k,
-                        tables.vars.magnitudes, tables.scalar_products(),
+                        tables.vars.magnitudes, tables.comp_dot_products(),
                         q_xy1, heaviside_theta);
 
                 if (heaviside_theta == 0) {
@@ -539,7 +539,7 @@ int integrand(
     try {
         /* Zero-initialize kernel tables */
         tables.reset();
-        // Compute scalar_products-, alpha- and beta-tables
+        // Compute dot_products-, alpha- and beta-tables
         tables.compute_tables();
 
         // Loop over all diagrams
