@@ -17,25 +17,24 @@ class IntegrandTables;
 class PowerSpectrumDiagram;
 class BiSpectrumDiagram;
 
-class IntegrationInput {
-    public:
-        const double q_min = 0;
-        const double q_max = 0;
+struct IntegrationInput {
+    const double q_min = 0;
+    const double q_max = 0;
 
-        bool single_hard_limit;
+    bool single_hard_limit;
 
-        Interpolation1D input_ps;
-        Vec1D<IntegrandTables> tables_vec;
+    Interpolation1D input_ps;
+    Vec1D<IntegrandTables> tables_vec;
 
-        /* For power spectrum */
-        Vec1D<PowerSpectrumDiagram> ps_diagrams;
-        Vec1D<Pair<int>> pair_correlations;
-        /* For bispectrum */
-        Vec1D<BiSpectrumDiagram> bs_diagrams;
-        Vec1D<Triple<int>> triple_correlations;
+    /* For power spectrum */
+    Vec1D<PowerSpectrumDiagram> ps_diagrams;
+    Vec1D<Pair<int>> pair_correlations;
+    /* For bispectrum */
+    Vec1D<BiSpectrumDiagram> bs_diagrams;
+    Vec1D<Triple<int>> triple_correlations;
 
-        IntegrationInput(double q_min, double q_max, bool single_hard_limit)
-		: q_min(q_min), q_max(q_max), single_hard_limit(single_hard_limit) {}
+    IntegrationInput(double q_min, double q_max, bool single_hard_limit)
+    : q_min(q_min), q_max(q_max), single_hard_limit(single_hard_limit) {}
 };
 
 

@@ -15,17 +15,28 @@
 class LoopParameters;
 class EvolutionParameters;
 
-class IntegrationVariables {
-    public:
-        Vec1D<double> magnitudes; /* Loop momenta magnitudes */
-        Vec1D<double> cos_theta;  /* Cosine of polar angles of the loop momenta */
-        Vec1D<double> phi;        /* Azimutal angles */
+struct IntegrationVariables {
+    Vec1D<double> magnitudes; /* Loop momenta magnitudes */
+    Vec1D<double> cos_theta;  /* Cosine of polar angles of the loop momenta */
+    Vec1D<double> phi;        /* Azimutal angles */
 
-        IntegrationVariables(std::size_t n_loops) {
-            magnitudes.assign(n_loops,0);
-            cos_theta.assign(n_loops,0);
-            phi.assign(n_loops,0);
-        }
+    IntegrationVariables(std::size_t n_loops) {
+        magnitudes.assign(n_loops,0);
+        cos_theta.assign(n_loops,0);
+        phi.assign(n_loops,0);
+    }
+};
+
+
+struct SPTKernel {
+    double values[EDS_SPT_COMPONENTS] = {0};
+    bool computed = false;
+};
+
+
+struct Kernel {
+    Vec2D<double> values;
+    bool computed = false;
 };
 
 
@@ -43,18 +54,6 @@ class SumTable {
 };
 
 
-class SPTKernel {
-    public:
-        double values[EDS_SPT_COMPONENTS] = {0};
-        bool computed = false;
-};
-
-
-class Kernel {
-    public:
-        Vec2D<double> values;
-        bool computed = false;
-};
 
 
 class EtaGrid {
