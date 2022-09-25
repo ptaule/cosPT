@@ -180,6 +180,7 @@ class LoopParameters {
     private:
         const Dynamics dynamics_;
         const Spectrum spectrum_;
+        const bool rsd_;
 
         const int n_loops_;
 
@@ -200,10 +201,12 @@ class LoopParameters {
         int bs_arguments_2_kernel_index(const int arguments[]) const;
 
     public:
-        LoopParameters(int n_loops, Spectrum spectrum, Dynamics dynamics);
+        LoopParameters(int n_loops, Spectrum spectrum, Dynamics dynamics,
+                bool rsd);
 
         Dynamics dynamics() const { return dynamics_; }
         Spectrum spectrum() const { return spectrum_; }
+        bool rsd() const { return rsd_; }
 
         int n_loops() const { return n_loops_; }
         std::size_t n_coeffs() const { return n_coeffs_; }

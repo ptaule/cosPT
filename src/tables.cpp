@@ -158,13 +158,15 @@ IntegrandTables::IntegrandTables(
         double k_a,
         double k_b,
         double cos_ab,
+        double mu_los,
         const LoopParameters& loop_params,
         const SumTable& sum_table,
         const EvolutionParameters& ev_params,
         const EtaGrid& eta_grid
         ) :
-    k_a(k_a), k_b(k_b), cos_ab(cos_ab), loop_params(loop_params),
-    sum_table(sum_table), ev_params(ev_params), eta_grid(eta_grid),
+    k_a(k_a), k_b(k_b), cos_ab(cos_ab), mu_los(mu_los),
+    loop_params(loop_params), sum_table(sum_table), ev_params(ev_params),
+    eta_grid(eta_grid),
     vars(IntegrationVariables(static_cast<size_t>(loop_params.n_loops())))
 {
     size_t n_coeffs = loop_params.n_coeffs();
@@ -187,6 +189,9 @@ IntegrandTables::IntegrandTables(
     a_coeffs.resize(n_coeffs);
     b_coeffs.resize(n_coeffs);
 
+    bare_los_projection_.resize(n_coeffs);
+    comp_los_projection_.resize(n_configs);
+
     if (loop_params.dynamics() == EDS_SPT ||
         loop_params.dynamics() == EVOLVE_IC_EDS) {
         spt_kernels.resize(loop_params.n_kernels());
@@ -208,17 +213,41 @@ IntegrandTables::IntegrandTables(
 
 IntegrandTables::IntegrandTables(
         double k_a,
+        double mu_los,
         const LoopParameters& loop_params,
         const SumTable& sum_table,
         const EvolutionParameters& ev_params,
         const EtaGrid& eta_grid
         ) :
-    IntegrandTables(k_a, 0, 0, loop_params, sum_table, ev_params, eta_grid)
+    IntegrandTables(k_a, 0, 0, mu_los, loop_params, sum_table, ev_params, eta_grid)
 {
     if (loop_params.spectrum() == BISPECTRUM) {
         throw(std::invalid_argument(
             "IntegrandTables::IntegrandTables(): this constructor can only be "
             "used for spetrum = POWERSPECTRUM."));
+    }
+}
+
+
+
+IntegrandTables::IntegrandTables(
+        double k_a,
+        const LoopParameters& loop_params,
+        const SumTable& sum_table,
+        const EvolutionParameters& ev_params,
+        const EtaGrid& eta_grid
+        ) :
+    IntegrandTables(k_a, 0, 0, 0, loop_params, sum_table, ev_params, eta_grid)
+{
+    if (loop_params.spectrum() == BISPECTRUM) {
+        throw(std::invalid_argument(
+            "IntegrandTables::IntegrandTables(): this constructor can only be "
+            "used for spetrum = POWERSPECTRUM."));
+    }
+    if (loop_params.rsd() == false) {
+        throw(std::invalid_argument(
+            "IntegrandTables::IntegrandTables(): this constructor is only "
+            "applicable for RSD == false"));
     }
 }
 
@@ -388,6 +417,46 @@ void IntegrandTables::bs_compute_bare_dot_prod()
 
 
 
+void IntegrandTables::compute_bare_los_proj() {
+    int n_loops = loop_params.n_loops();
+    size_t n_coeffs = loop_params.n_coeffs();
+
+    size_t k_a_idx = n_coeffs - 1;
+
+    double sin_los_angle = sqrt(1 - SQUARE(mu_los));
+
+    /* k_a * mu_los */
+    bare_los_projection_.at(k_a_idx) = k_a * mu_los;
+
+    /* Products involving k_a and Q_i has the form k_a*Q_i*cos(theta_i) */
+    for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
+        double sin_theta_i = sqrt(1 - SQUARE(vars.cos_theta.at(i)));
+        bare_los_projection_.at(k_a_idx) = vars.magnitudes.at(i) * (
+                sin_los_angle * sin_theta_i * vars.phi.at(i) +
+                mu_los * vars.cos_theta.at(i)
+                );
+    }
+}
+
+
+
+void IntegrandTables::compute_comp_los_proj() {
+    size_t n_coeffs = loop_params.n_coeffs();
+    size_t n_configs = loop_params.n_configs();
+
+    for (size_t a = 0; a < n_configs; ++a) {
+        double product_value = 0;
+
+        label2config(static_cast<int>(a), a_coeffs);
+        for (size_t i = 0; i < n_coeffs; ++i) {
+            product_value += a_coeffs[i] * bare_los_projection_.at(i);
+        }
+        comp_los_projection_.at(a) = product_value;
+    }
+}
+
+
+
 /* Computes table of composite dot products given bare_dot_prod table */
 void IntegrandTables::compute_comp_dot_prod()
 {
@@ -465,6 +534,10 @@ void IntegrandTables::compute_tables()
 {
     if (loop_params.spectrum() == POWERSPECTRUM) {
         ps_compute_bare_dot_prod();
+        if (loop_params.rsd()) {
+            compute_bare_los_proj();
+            compute_comp_los_proj();
+        }
     }
     else if (loop_params.spectrum() == BISPECTRUM) {
         bs_compute_bare_dot_prod();

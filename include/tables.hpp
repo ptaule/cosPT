@@ -40,6 +40,12 @@ struct Kernel {
 };
 
 
+struct RSDKernel {
+    Vec1D<double> values;
+    bool computed = false;
+};
+
+
 class SumTable {
     private:
         const int zero_label;
@@ -52,8 +58,6 @@ class SumTable {
         SumTable(const LoopParameters& loop_params);
         int sum_labels(const int labels[], std::size_t size) const;
 };
-
-
 
 
 class EtaGrid {
@@ -103,6 +107,8 @@ class IntegrandTables {
         double k_b    = 0.0; // For bispectrum
         double cos_ab = 0.0; // For bispectrum
 
+        double mu_los; // RSD: Cosine of angle between k and L.o.S.
+
         /* Helper vectors for compute_scalar_products() */
         Vec1D<int> a_coeffs;
         Vec1D<int> b_coeffs;
@@ -114,11 +120,19 @@ class IntegrandTables {
         Vec2D<double> alpha_;                /* N_CONFIGS x N_CONFIGS */
         Vec2D<double> beta_;                 /* N_CONFIGS x N_CONFIGS */
 
+        Vec1D<double> bare_los_projection_;
+        /* N_COEFFS dot products between external/loop wavenumbers and L.o.S */
+        Vec1D<double> comp_los_projection_;
+        /* N_CONFIGS dot products between composite wavenumbers and L.o.S */
+
         void reset_spt_kernels();
         void reset_kernels();
 
         void ps_compute_bare_dot_prod(); /* Power spectrum */
         void bs_compute_bare_dot_prod(); /* Bispectrum */
+
+        void compute_bare_los_proj();
+        void compute_comp_los_proj();
 
         void compute_comp_dot_prod();
         void compute_alpha_beta();
@@ -134,10 +148,22 @@ class IntegrandTables {
         Vec1D<SPTKernel> spt_kernels;
         Vec1D<Kernel> kernels;
 
+        Vec1D<RSDKernel> rsd_kernels;
+        Vec1D<RSDKernel> vel_power_kernels;
+
         IntegrandTables(
                 double k_a,
                 double k_b,
                 double cos_ab,
+                double mu_los,
+                const LoopParameters& loop_params,
+                const SumTable& sum_table,
+                const EvolutionParameters& ev_params,
+                const EtaGrid& eta_grid
+                );
+        IntegrandTables(
+                double k_a,
+                double mu_los,
                 const LoopParameters& loop_params,
                 const SumTable& sum_table,
                 const EvolutionParameters& ev_params,
@@ -151,10 +177,13 @@ class IntegrandTables {
                 const EtaGrid& eta_grid
                 );
 
-        const Vec2D<double>& bare_dot_products() const {return bare_dot_prod;}
-        const Vec2D<double>& comp_dot_products() const {return comp_dot_prod;}
+        const Vec2D<double>& bare_dot_products() const { return bare_dot_prod; }
+        const Vec2D<double>& comp_dot_products() const { return comp_dot_prod; }
         const Vec2D<double>& alpha() const {return alpha_;}
         const Vec2D<double>& beta() const {return beta_;}
+
+        const Vec1D<double>& bare_los_projection() const { return bare_los_projection_; }
+        const Vec1D<double>& comp_los_projection() const { return comp_los_projection_; }
 
         void reset();
         void compute_tables();
