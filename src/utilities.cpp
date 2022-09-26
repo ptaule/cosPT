@@ -186,7 +186,8 @@ bool single_loop_label(int label, size_t n_coeffs, Spectrum spectrum)
 
 
 
-int flip_signs(int label, size_t n_coeffs) {
+int flip_signs(int label, size_t n_coeffs)
+{
     Vec1D<int> config(n_coeffs);
     label2config(label, config);
     flip_signs(config, config);

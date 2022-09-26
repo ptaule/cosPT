@@ -5,8 +5,9 @@
    Copyright (c) 2020 Petter Taule. All rights reserved.
 */
 
-#include <stdexcept>
 #include <algorithm>
+#include <iostream>
+#include <stdexcept>
 
 #include <gsl/gsl_sf.h>
 
@@ -140,26 +141,16 @@ int compute_SPT_kernels(
         IntegrandTables& tables
         )
 {
-    // DEBUG: check that the number of non-zero arguments is in fact n, and
-    // that kernel_index is in fact equivalent to arguments
+    /* DEBUG: check that the number of non-zero arguments is in fact n, and
+     * that kernel_index is in fact equivalent to arguments */
 #if DEBUG >= 1
-    int argument_index =
-        tables.loop_params.arguments_2_kernel_index(arguments);
-    if (kernel_index != -1 && argument_index != kernel_index) {
-        throw(std::logic_error("Index computed from kernel arguments does not "
-                               "equal kernel index."));
+    try {
+        kernel_computer_validate_n(arguments, n, tables);
+        kernel_computer_validate_kernel_index(arguments, kernel_index, tables);
     }
-
-    int n_args = 0;
-    for (size_t i = 0; i < tables.loop_params.n_kernel_args(); ++i) {
-        if (arguments[i] != tables.loop_params.zero_label()){
-            n_args++;
-        }
-    }
-    if (n_args != n) {
-        throw(std::invalid_argument(
-            "compute_SPT_kernels(): number of non-zero-label arguments in "
-            "arguments does not equal n."));
+    catch (const std::exception& e){
+        std::cout << "In function compute_SPT_kernels():" << std::endl;
+        throw e;
     }
 #endif
 
@@ -197,4 +188,40 @@ int compute_SPT_kernels(
     kernel.computed = true;
 
     return kernel_index;
+}
+
+
+
+void kernel_computer_validate_n(
+        const int arguments[],
+        int n,
+        IntegrandTables& tables
+        )
+{
+    int n_args = 0;
+    for (size_t i = 0; i < tables.loop_params.n_kernel_args(); ++i) {
+        if (arguments[i] != tables.loop_params.zero_label()){
+            n_args++;
+        }
+    }
+    if (n_args != n) {
+        throw(std::logic_error(
+            "number of non-zero-label arguments does not equal n."));
+    }
+}
+
+
+
+void kernel_computer_validate_kernel_index(
+        const int arguments[],
+        int kernel_index,
+        IntegrandTables& tables
+        )
+{
+    int argument_index =
+        tables.loop_params.arguments_2_kernel_index(arguments);
+    if (kernel_index != -1 && argument_index != kernel_index) {
+        throw(std::logic_error("Index computed from kernel arguments does not "
+                               "equal kernel index."));
+    }
 }

@@ -5,13 +5,13 @@
    Copyright (c) 2020 Petter Taule. All rights reserved.
 */
 
-#include <ostream>
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <array>
-#include <algorithm>
-#include <cmath>
 
 #include <gsl/gsl_sf.h>
 #include <gsl/gsl_odeiv2.h>
@@ -20,6 +20,7 @@
 #include "../include/combinatorics.hpp"
 #include "../include/interpolation.hpp"
 #include "../include/parameters.hpp"
+#include "../include/spt_kernels.hpp"
 #include "../include/tables.hpp"
 #include "../include/kernel_evolution.hpp"
 
@@ -445,29 +446,19 @@ static void kernel_initial_conditions(
 
 int kernel_evolution(
         const int arguments[],
-        int kernel_index,             /* -1 indicates not known */
+        int kernel_index,
         int n,
         IntegrandTables& tables
         )
 {
 #if DEBUG >= 1
-    int argument_index = tables.loop_params.arguments_2_kernel_index(arguments);
-
-    if (kernel_index != -1 && argument_index != kernel_index) {
-        throw(std::logic_error("Index computed from kernel arguments does not "
-                               "equal kernel index."));
+    try {
+        kernel_computer_validate_n(arguments, n, tables);
+        kernel_computer_validate_kernel_index(arguments, kernel_index, tables);
     }
-
-    int n_args = 0;
-    for (size_t i = 0; i < tables.loop_params.n_kernel_args(); ++i) {
-        if (arguments[i] != tables.loop_params.zero_label()){
-            n_args++;
-        }
-    }
-    if (n_args != n) {
-        throw(std::invalid_argument(
-            "compute_SPT_kernels(): number of non-zero-label arguments in "
-            "arguments does not equal n."));
+    catch (const std::exception& e){
+        std::cout << "In function kernel_evolution():" << std::endl;
+        throw e;
     }
 #endif
 
