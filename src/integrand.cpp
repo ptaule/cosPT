@@ -72,9 +72,9 @@ void configuration_term(
                     arg_config_r.kernel_index, 2 * diagram.r + diagram.m, tables);
         }
 
-        kernel_evolution(arg_config_l.args.data(), arg_config_l.kernel_index,
+        compute_gen_kernels(arg_config_l.args.data(), arg_config_l.kernel_index,
                 2 * diagram.l + diagram.m, tables);
-        kernel_evolution(arg_config_r.args.data(), arg_config_r.kernel_index,
+        compute_gen_kernels(arg_config_r.args.data(), arg_config_r.kernel_index,
                 2 * diagram.r + diagram.m, tables);
 
         size_t time_steps = tables.eta_grid.time_steps();
@@ -335,13 +335,13 @@ void configuration_term(
                     diagram.n_ca, tables);
         }
 
-        kernel_evolution(arg_config.a().args.data(),
+        compute_gen_kernels(arg_config.a().args.data(),
                 arg_config.a().kernel_index, 2 * diagram.n_a + diagram.n_ab +
                 diagram.n_ca, tables);
-        kernel_evolution(arg_config.b().args.data(),
+        compute_gen_kernels(arg_config.b().args.data(),
                 arg_config.b().kernel_index, 2 * diagram.n_b + diagram.n_ab +
                 diagram.n_bc, tables);
-        kernel_evolution(arg_config.c().args.data(),
+        compute_gen_kernels(arg_config.c().args.data(),
                 arg_config.c().kernel_index, 2 * diagram.n_c + diagram.n_bc +
                 diagram.n_ca, tables);
 

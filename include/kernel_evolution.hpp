@@ -14,7 +14,7 @@ class IntegrandTables;
 class EvolutionParameters;
 class EtaGrid;
 
-int kernel_evolution(
+int compute_gen_kernels(
         const int arguments[],
         int kernel_index,
         int n,

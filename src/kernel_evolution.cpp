@@ -50,8 +50,8 @@ void vertex(
         .at(static_cast<size_t>(sum_l))
         .at(static_cast<size_t>(sum_r));
 
-    int index_l = kernel_evolution(args_l, -1, m_l, tables);
-    int index_r = kernel_evolution(args_r, -1, m_r, tables);
+    int index_l = compute_gen_kernels(args_l, -1, m_l, tables);
+    int index_r = compute_gen_kernels(args_r, -1, m_r, tables);
 
     size_t a, b, c;
 
@@ -444,7 +444,7 @@ static void kernel_initial_conditions(
 
 
 
-int kernel_evolution(
+int compute_gen_kernels(
         const int arguments[],
         int kernel_index,
         int n,
@@ -457,7 +457,7 @@ int kernel_evolution(
         kernel_computer_validate_kernel_index(arguments, kernel_index, tables);
     }
     catch (const std::exception& e){
-        std::cout << "In function kernel_evolution():" << std::endl;
+        std::cout << "In function compute_gen_kernels():" << std::endl;
         throw e;
     }
 #endif
