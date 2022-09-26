@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+#$ -S /bin/bash                            # shell to be used by SGE
+#$ -cwd                                    # run in the Current Working Directory
+#$ -l h_vmem=3G,h_cpu=0:59:00,h_fsize=2G   # hardware requirements - reserve enough memory!
+#$ -M petter.taule@tum.de
+#$ -m ae # a="MAIL_AT_ABORT", e="MAIL_AT_EXIT", combination `-m ae` is allowed
+
 set -e
 set -x
 
