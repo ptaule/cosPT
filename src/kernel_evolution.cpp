@@ -208,7 +208,7 @@ void compute_RHS_sum(
 
 
 /* Structure which compiles user input to GSL ODE */
-class ODEInput {
+struct ODEInput {
     public:
         const int n;
         const double k;
