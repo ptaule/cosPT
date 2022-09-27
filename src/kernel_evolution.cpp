@@ -470,7 +470,7 @@ int compute_gen_kernels(
     /* Alias reference to kernel we are working with for convenience/readability */
     Kernel& kernel = tables.kernels.at(static_cast<size_t>(kernel_index));
 
-    /* Check if the SPT kernels are already computed */
+    /* Check if the kernels are already computed */
     if (kernel.computed) return kernel_index;
 
     /* Interpolation variables for interpolated RHS */
