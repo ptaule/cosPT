@@ -107,7 +107,8 @@ class IntegrandTables {
         double k_b    = 0.0; // For bispectrum
         double cos_ab = 0.0; // For bispectrum
 
-        double mu_los; // RSD: Cosine of angle between k and L.o.S.
+        double mu_los_; // RSD: Cosine of angle between k and L.o.S.
+        double rsd_f; // Growth factor (at observation redshift) for L.o.S.
 
         /* Helper vectors for compute_scalar_products() */
         Vec1D<int> a_coeffs;
@@ -156,6 +157,7 @@ class IntegrandTables {
                 double k_b,
                 double cos_ab,
                 double mu_los,
+                double rsd_growth_f,
                 const LoopParameters& loop_params,
                 const SumTable& sum_table,
                 const EvolutionParameters& ev_params,
@@ -164,6 +166,7 @@ class IntegrandTables {
         IntegrandTables(
                 double k_a,
                 double mu_los,
+                double rsd_growth_f,
                 const LoopParameters& loop_params,
                 const SumTable& sum_table,
                 const EvolutionParameters& ev_params,
@@ -184,6 +187,9 @@ class IntegrandTables {
 
         const Vec1D<double>& bare_los_projection() const { return bare_los_projection_; }
         const Vec1D<double>& comp_los_projection() const { return comp_los_projection_; }
+
+        double mu_los() const { return mu_los_; }
+        double rsd_growth_f() const { return rsd_f; }
 
         void reset();
         void compute_tables();
