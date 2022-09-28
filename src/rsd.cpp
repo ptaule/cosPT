@@ -112,7 +112,10 @@ int rsd_velocity_power(
     /* If N < 1 or there are more factors N than wavenumbers, do nothing */
     if (N < 1 || n < N) return kernel_index;
 
-    // TODO: if n==N one could simply multiply N jacobians?
+    // If kernel_index is not known, -1 is sent as argument
+    if (kernel_index == -1) {
+        kernel_index = tables.loop_params.arguments_2_kernel_index(arguments);
+    }
 
     // Alias reference to kernel we are working with for convenience/readability
     RSDKernel& kernel = tables.vel_power_kernels.at(static_cast<size_t>(kernel_index));
@@ -323,6 +326,10 @@ double compute_rsd_kernels(
                 );
         result += result_for_m / n_choose_m;
     }
+
+    /* Add contribution with no velocity powers */
+
+    result += rsd_coord_transformation(arguments, kernel_index, n, tables);
 
     // Update kernel table
     kernel.computed = true;
