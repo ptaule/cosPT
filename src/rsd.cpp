@@ -5,6 +5,7 @@
    Copyright (c) 2022 Petter Taule. All rights reserved.
 */
 
+#include <iostream>
 #include <cmath>
 
 #include <gsl/gsl_sf.h>
@@ -41,13 +42,14 @@ inline double rsd_coord_transformation(
     int sum = tables.sum_table.sum_labels(arguments,
             tables.loop_params.n_kernel_args());
     /* Sum of arguments dotted with L.o.S. */
-    double mu = tables.comp_los_projection().at(sum);
+    double mu = tables.comp_los_projection().at(static_cast<size_t>(sum));
 
-    return (
-            tables.spt_kernels.at(kernel_index).values[0] +
+    double result =  (
+            tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[0] +
             tables.rsd_growth_f() * SQUARE(mu) *
-            tables.spt_kernels.at(kernel_index).values[1]
+            tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[1]
            );
+    return result;
 }
 
 
@@ -81,9 +83,10 @@ inline double rsd_jac_transformation(
             .at(static_cast<size_t>(sum))
             .at(static_cast<size_t>(sum)));
     /* Sum of arguments dotted with L.o.S. */
-    double mu = tables.comp_los_projection().at(sum);
+    double mu = tables.comp_los_projection().at(static_cast<size_t>(sum));
 
-    return mu / k * tables.spt_kernels.at(kernel_index).values[1];
+    return mu / k *
+        tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[1];
 }
 
 
@@ -126,8 +129,10 @@ int rsd_velocity_power(
         result = rsd_jac_transformation(arguments, kernel_index, n, tables);
 
         /* Update vel_power_kernels table */
-        tables.vel_power_kernels.at(kernel_index).values.at(N) = result;
-        tables.vel_power_kernels.at(kernel_index).computed = true;
+        tables.vel_power_kernels.at(static_cast<size_t>(kernel_index)).
+            values.at(static_cast<size_t>(N)) = result;
+        tables.vel_power_kernels.at(static_cast<size_t>(kernel_index)).computed
+            = true;
         return kernel_index;
     }
     /* Special case N==n where each velocity factor only contains one argument */
@@ -142,19 +147,21 @@ int rsd_velocity_power(
             result += rsd_jac_transformation(args, -1, 1, tables);
         }
         /* Update vel_power_kernels table */
-        tables.vel_power_kernels.at(kernel_index).values.at(N) = result;
-        tables.vel_power_kernels.at(kernel_index).computed = true;
+        tables.vel_power_kernels.at(static_cast<size_t>(kernel_index)).
+            values.at(static_cast<size_t>(N)) = result;
+        tables.vel_power_kernels.at(static_cast<size_t>(kernel_index)).computed
+            = true;
         return kernel_index;
     }
     /* Otherwise, recursive calculation: */
 
-    double partial_result = 0;
+    double result_for_m = 0;
 
     int args_l[N_KERNEL_ARGS_MAX] = {0};
     int args_r[N_KERNEL_ARGS_MAX] = {0};
 
     for (int m = 1; m <= n/2; ++m) {
-        partial_result = 0;
+        result_for_m = 0;
 
         /* Initialize args_l and args_r */
         std::fill(&args_l[0], &args_l[n_kernel_args],
@@ -175,9 +182,10 @@ int rsd_velocity_power(
             /* Recursive step: the N-th power equals one power times the (N-1)-th power */
             int kernel_idx_l = rsd_velocity_power(args_l, -1, m, N-1, tables);
 
-            partial_result += (
+            result_for_m += (
                     rsd_jac_transformation(args_r, -1, n-m, tables)
-                    * tables.vel_power_kernels.at(kernel_idx_l).values.at(N-1)
+                    * tables.vel_power_kernels.at(static_cast<size_t>(kernel_idx_l)).
+                        values.at(static_cast<size_t>(N-1))
                     );
 
             /* When m != (n - m), we may additionally compute the (n-m)-term by
@@ -186,9 +194,10 @@ int rsd_velocity_power(
             if (m != n - m) {
                 int kernel_idx_r = rsd_velocity_power(args_r, -1, n-m, N-1, tables);
 
-                partial_result += (
+                result_for_m += (
                         rsd_jac_transformation(args_l, -1, m, tables)
-                        * tables.vel_power_kernels.at(kernel_idx_r).values.at(N-1)
+                        * tables.vel_power_kernels.at(static_cast<size_t>(kernel_idx_r)).
+                            values.at(static_cast<size_t>(N-1))
                         );
             }
         } while (comb.next());
@@ -198,18 +207,20 @@ int rsd_velocity_power(
                 gsl_sf_choose(static_cast<unsigned int>(n),
                     static_cast<unsigned int>(m))
                 );
-        result += partial_result / n_choose_m;
+        result += result_for_m / n_choose_m;
     }
 
     /* Update vel_power_kernels table */
-    tables.vel_power_kernels.at(kernel_index).values.at(N) = result;
-    tables.vel_power_kernels.at(kernel_index).computed = true;
+    tables.vel_power_kernels.at(static_cast<size_t>(kernel_index)).
+        values.at(static_cast<size_t>(N)) = result;
+    tables.vel_power_kernels.at(static_cast<size_t>(kernel_index)).computed =
+        true;
     return kernel_index;
 }
 
 
 
-double compute_RSD_kernels(
+double compute_rsd_kernels(
         const int arguments[],
         int kernel_index,
         int n,
@@ -222,7 +233,7 @@ double compute_RSD_kernels(
         kernel_computer_validate_kernel_index(arguments, kernel_index, tables);
     }
     catch (const std::exception& e){
-        std::cout << "In function compute_RSD_kernels():" << std::endl;
+        std::cout << "In function compute_rsd_kernels():" << std::endl;
         throw e;
     }
 #endif
@@ -281,8 +292,9 @@ double compute_RSD_kernels(
             for (int N = 1; N <= m; N++) {
                 int kernel_idx_l = rsd_velocity_power(args_l, -1, m, N, tables);
                 result_N_loop += (
-                        pow(rsd_f * mu_los * k, N) / gsl_sf_fact(N) *
-                        tables.vel_power_kernels.at(kernel_idx_l).values.at(N)
+                        pow(rsd_f * mu_los * k, N) / gsl_sf_fact(static_cast<unsigned int>(N)) *
+                        tables.vel_power_kernels.at(static_cast<size_t>(kernel_idx_l)).
+                            values.at(static_cast<size_t>(N))
                         );
             }
             result_for_m += result_N_loop * rsd_coord_transformation(args_r, -1, n-m, tables);
@@ -295,8 +307,9 @@ double compute_RSD_kernels(
                 for (int N = 1; N <= n-m; N++) {
                     int kernel_idx_r = rsd_velocity_power(args_r, -1, n-m, N, tables);
                     result_N_loop += (
-                            pow(rsd_f * mu_los * k, N) / gsl_sf_fact(N) *
-                            tables.vel_power_kernels.at(kernel_idx_r).values.at(N)
+                            pow(rsd_f * mu_los * k, N) / gsl_sf_fact(static_cast<unsigned int>(N)) *
+                            tables.vel_power_kernels.at(static_cast<size_t>(kernel_idx_r)).
+                                values.at(static_cast<size_t>(N))
                             );
                 }
                 result_for_m += result_N_loop * rsd_coord_transformation(args_l, -1, m, tables);
