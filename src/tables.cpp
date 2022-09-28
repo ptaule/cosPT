@@ -269,119 +269,65 @@ void IntegrandTables::reset_kernels()
 
 
 
-void IntegrandTables::ps_compute_bare_dot_prod()
+void IntegrandTables::compute_bare_dot_prod()
 {
     int n_loops = loop_params.n_loops();
     size_t n_coeffs = loop_params.n_coeffs();
 
     size_t k_a_idx = n_coeffs - 1;
-
-    // Diagonal products correspond to Q1*Q1, etc.
-    for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
-        bare_dot_prod.at(i).at(i) = SQUARE(vars.magnitudes.at(i));
-    }
     bare_dot_prod.at(k_a_idx).at(k_a_idx) = SQUARE(k_a);
 
-    // Products involving k_a and Q_i has the form k*Q_i*cos(theta_i)
-    for (size_t i = 0; i < n_coeffs - 1; ++i) {
-        double value = k_a * vars.magnitudes.at(i) * vars.cos_theta.at(i);
-        bare_dot_prod.at(k_a_idx).at(i) = value;
-        bare_dot_prod.at(i).at(k_a_idx) = value;
-    }
-
-    if (n_loops > 1) {
-        // Compute Q_1 * Q_i
-        // (This is a special case since phi_1 is chosen to be zero.)
-        double cos_theta_1 = vars.cos_theta.at(0);
-        double sin_theta_1 = sqrt(1 - SQUARE(cos_theta_1));
-        double Q_1 = vars.magnitudes.at(0);
-        for (size_t i = 1; i < static_cast<size_t>(n_loops); ++i) {
-            double sin_theta_i = sqrt(1 - SQUARE(vars.cos_theta.at(i)));
-            double value = sin_theta_1 * cos(vars.phi.at(i)) * sin_theta_i +
-                           cos_theta_1 * vars.cos_theta.at(i);
-            value *= Q_1 * vars.magnitudes.at(i);
-
-            bare_dot_prod.at(i).at(0) = value;
-            bare_dot_prod.at(0).at(i) = value;
-        }
-
-        // Compute Q_i * Q_j for {i,j} != 1
-        for (size_t i = 1; i < static_cast<size_t>(n_loops); ++i) {
-            for (size_t j = 1; j < i; ++j) {
-                double sin_theta_i = sqrt(1 - SQUARE(vars.cos_theta.at(i)));
-                double sin_theta_j = sqrt(1 - SQUARE(vars.cos_theta.at(j)));
-
-                double value = cos(vars.phi.at(i)) * sin_theta_i *
-                                   cos(vars.phi.at(j)) * sin_theta_j +
-                               sin(vars.phi.at(i)) * sin_theta_i *
-                                   sin(vars.phi.at(j)) * sin_theta_j +
-                               vars.cos_theta.at(i) * vars.cos_theta.at(j);
-
-                value *= vars.magnitudes.at(i) * vars.magnitudes.at(j);
-                bare_dot_prod.at(i).at(j) = value;
-                bare_dot_prod.at(j).at(i) = value;
-            }
-        }
-    }
-}
-
-
-
-void IntegrandTables::bs_compute_bare_dot_prod()
-{
-    int n_loops = loop_params.n_loops();
-    size_t n_coeffs = loop_params.n_coeffs();
-
-    size_t k_a_idx = n_coeffs - 1;
-    size_t k_b_idx = n_coeffs - 2;
-
-    /* Diagonal products correspond to Q1*Q1, etc. */
-    for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
-        bare_dot_prod.at(i).at(i) = SQUARE(vars.magnitudes.at(i));
-    }
-    bare_dot_prod.at(k_a_idx).at(k_a_idx) = SQUARE(k_a);
-    bare_dot_prod.at(k_b_idx).at(k_b_idx) = SQUARE(k_b);
-
-    double value = k_a * k_b * cos_ab;
-    bare_dot_prod.at(k_a_idx).at(k_b_idx) = value;
-    bare_dot_prod.at(k_b_idx).at(k_a_idx) = value;
-
-    /* Products involving k_a and Q_i has the form k_a*Q_i*cos(theta_i) */
+    double value = 0;
+    /* k_a is chosen to point in the z-direction, hence products involving k_a
+     * and Q_i has the form k_a*Q_i*cos(theta_i) */
     for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
         value = k_a * vars.magnitudes.at(i) * vars.cos_theta.at(i);
         bare_dot_prod.at(k_a_idx).at(i) = value;
         bare_dot_prod.at(i).at(k_a_idx) = value;
     }
-    /* Products involving k_b and Q_i (special case since k_b has azimuthal
-     * angle 0)*/
-    double sin_ab = sqrt(1 - SQUARE(cos_ab));
-    for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
-        double sin_theta_i = sqrt(1 - SQUARE(vars.cos_theta.at(i)));
 
-        value = sin_ab * cos(vars.phi.at(i)) * sin_theta_i +
-                cos_ab * vars.cos_theta.at(i);
-        value *= k_b * vars.magnitudes.at(i);
-        bare_dot_prod.at(k_b_idx).at(i) = value;
-        bare_dot_prod.at(i).at(k_b_idx) = value;
+    /* Diagonal products correspond to Q1*Q1, etc. */
+    for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
+        bare_dot_prod.at(i).at(i) = SQUARE(vars.magnitudes.at(i));
     }
 
-    if (n_loops > 1) {
-        // Compute Q_i * Q_j
+    /* Compute Q_i * Q_j */
+    for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
+        for (size_t j = 0; j < i; ++j) {
+            double sin_theta_i = sqrt(1 - SQUARE(vars.cos_theta.at(i)));
+            double sin_theta_j = sqrt(1 - SQUARE(vars.cos_theta.at(j)));
+
+            value = cos(vars.phi.at(i)) * sin_theta_i *
+                cos(vars.phi.at(j)) * sin_theta_j +
+                sin(vars.phi.at(i)) * sin_theta_i *
+                sin(vars.phi.at(j)) * sin_theta_j +
+                vars.cos_theta.at(i) * vars.cos_theta.at(j);
+
+            value *= vars.magnitudes.at(i) * vars.magnitudes.at(j);
+            bare_dot_prod.at(i).at(j) = value;
+            bare_dot_prod.at(j).at(i) = value;
+        }
+    }
+
+    if (loop_params.spectrum() == BISPECTRUM) {
+        size_t k_b_idx = n_coeffs - 2;
+        bare_dot_prod.at(k_b_idx).at(k_b_idx) = SQUARE(k_b);
+
+        double value = k_a * k_b * cos_ab;
+        bare_dot_prod.at(k_a_idx).at(k_b_idx) = value;
+        bare_dot_prod.at(k_b_idx).at(k_a_idx) = value;
+
+        /* Products involving k_b and Q_i (special case since k_b has azimuthal
+         * angle 0)*/
+        double sin_ab = sqrt(1 - SQUARE(cos_ab));
         for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
-            for (size_t j = 0; j < i; ++j) {
-                double sin_theta_i = sqrt(1 - SQUARE(vars.cos_theta.at(i)));
-                double sin_theta_j = sqrt(1 - SQUARE(vars.cos_theta.at(j)));
+            double sin_theta_i = sqrt(1 - SQUARE(vars.cos_theta.at(i)));
 
-                value = cos(vars.phi.at(i)) * sin_theta_i *
-                            cos(vars.phi.at(j)) * sin_theta_j +
-                        sin(vars.phi.at(i)) * sin_theta_i *
-                            sin(vars.phi.at(j)) * sin_theta_j +
-                        vars.cos_theta.at(i) * vars.cos_theta.at(j);
-
-                value *= vars.magnitudes.at(i) * vars.magnitudes.at(j);
-                bare_dot_prod.at(i).at(j) = value;
-                bare_dot_prod.at(j).at(i) = value;
-            }
+            value = sin_ab * cos(vars.phi.at(i)) * sin_theta_i +
+                cos_ab * vars.cos_theta.at(i);
+            value *= k_b * vars.magnitudes.at(i);
+            bare_dot_prod.at(k_b_idx).at(i) = value;
+            bare_dot_prod.at(i).at(k_b_idx) = value;
         }
     }
 }
@@ -457,18 +403,4 @@ void IntegrandTables::compute_alpha_beta()
             beta_.at(a).at(b) = beta_val;
         }
     }
-}
-
-
-
-void IntegrandTables::compute_tables()
-{
-    if (loop_params.spectrum() == POWERSPECTRUM) {
-        ps_compute_bare_dot_prod();
-    }
-    else if (loop_params.spectrum() == BISPECTRUM) {
-        bs_compute_bare_dot_prod();
-    }
-    compute_comp_dot_prod();
-    compute_alpha_beta();
 }

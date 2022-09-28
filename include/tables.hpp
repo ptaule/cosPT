@@ -117,9 +117,7 @@ class IntegrandTables {
         void reset_spt_kernels();
         void reset_kernels();
 
-        void ps_compute_bare_dot_prod(); /* Power spectrum */
-        void bs_compute_bare_dot_prod(); /* Bispectrum */
-
+        void compute_bare_dot_prod();
         void compute_comp_dot_prod();
         void compute_alpha_beta();
     public:
@@ -157,7 +155,11 @@ class IntegrandTables {
         const Vec2D<double>& beta() const {return beta_;}
 
         void reset();
-        void compute_tables();
+        void compute_tables() {
+            compute_bare_dot_prod();
+            compute_comp_dot_prod();
+            compute_alpha_beta();
+        };
 };
 
 
