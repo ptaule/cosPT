@@ -122,12 +122,13 @@ class IntegrandTables {
         Vec2D<double> beta_;                 /* N_CONFIGS x N_CONFIGS */
 
         Vec1D<double> bare_los_projection_;
-        /* N_COEFFS dot products between external/loop wavenumbers and L.o.S */
+        /* N_COEFFS dot products between external/loop wavenumber directions (unit vector) and L.o.S */
         Vec1D<double> comp_los_projection_;
-        /* N_CONFIGS dot products between composite wavenumbers and L.o.S */
+        /* N_CONFIGS dot products between composite wavenumber directions (unit vector) and L.o.S */
 
         void reset_spt_kernels();
         void reset_kernels();
+        void reset_rsd_kernels();
 
         void ps_compute_bare_dot_prod(); /* Power spectrum */
         void bs_compute_bare_dot_prod(); /* Bispectrum */

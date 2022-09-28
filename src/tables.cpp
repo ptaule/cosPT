@@ -170,6 +170,7 @@ IntegrandTables::IntegrandTables(
     eta_grid(eta_grid),
     vars(IntegrationVariables(static_cast<size_t>(loop_params.n_loops())))
 {
+    int n_loops = loop_params.n_loops();
     size_t n_coeffs = loop_params.n_coeffs();
     size_t n_configs = loop_params.n_configs();
     size_t n_kernels = loop_params.n_kernels();
@@ -190,22 +191,30 @@ IntegrandTables::IntegrandTables(
     a_coeffs.resize(n_coeffs);
     b_coeffs.resize(n_coeffs);
 
-    bare_los_projection_.resize(n_coeffs);
-    comp_los_projection_.resize(n_configs);
-
     if (loop_params.dynamics() == EDS_SPT ||
         loop_params.dynamics() == EVOLVE_IC_EDS) {
-        spt_kernels.resize(loop_params.n_kernels());
+        spt_kernels.resize(n_kernels);
     }
     if (loop_params.dynamics() == EVOLVE_IC_EDS ||
         loop_params.dynamics() == EVOLVE_IC_ASYMP
         ) {
-        spt_kernels.resize(n_kernels);
         kernels.resize(n_kernels);
 
         for (size_t i = 0; i < n_kernels; ++i) {
             kernels.at(i).values.assign(eta_grid.time_steps(),
                 Vec1D<double>(COMPONENTS));
+        }
+    }
+    if (loop_params.rsd()) {
+        bare_los_projection_.resize(n_coeffs);
+        comp_los_projection_.resize(n_configs);
+
+        rsd_kernels.resize(n_kernels);
+        vel_power_kernels.resize(n_kernels);
+
+        for (size_t i = 0; i < n_kernels; ++i) {
+            rsd_kernels.at(i).values.resize(1);
+            vel_power_kernels.at(i).values.resize(2*static_cast<size_t>(n_loops));
         }
     }
 }
@@ -271,6 +280,9 @@ void IntegrandTables::reset()
         reset_spt_kernels();
         reset_kernels();
     }
+    if (loop_params.rsd()) {
+        reset_rsd_kernels();
+    }
 }
 
 
@@ -295,6 +307,21 @@ void IntegrandTables::reset_kernels()
           std::fill(kernels.at(i).values.at(j).begin(),
                     kernels.at(i).values.at(j).end(), 0);
         }
+    }
+}
+
+
+
+void IntegrandTables::reset_rsd_kernels()
+{
+    for (size_t i = 0; i < loop_params.n_kernels(); ++i) {
+        rsd_kernels.at(i).computed = false;
+        vel_power_kernels.at(i).computed = false;
+
+        rsd_kernels.at(i).values.at(0) = 0;
+
+        std::fill(vel_power_kernels.at(i).values.begin(),
+                vel_power_kernels.at(i).values.end(), 0);
     }
 }
 
@@ -427,13 +454,13 @@ void IntegrandTables::compute_bare_los_proj() {
 
     double sin_los_angle = sqrt(1 - SQUARE(mu_los_));
 
-    /* k_a * mu_los_ */
-    bare_los_projection_.at(k_a_idx) = k_a * mu_los_;
+    /* k_a (unit vector) along L.o.S. is simply mu_los_ */
+    bare_los_projection_.at(k_a_idx) = mu_los_;
 
     /* Products involving k_a and Q_i has the form k_a*Q_i*cos(theta_i) */
     for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
         double sin_theta_i = sqrt(1 - SQUARE(vars.cos_theta.at(i)));
-        bare_los_projection_.at(i) = vars.magnitudes.at(i) * (
+        bare_los_projection_.at(i) = (
                 sin_los_angle * sin_theta_i * vars.phi.at(i) +
                 mu_los_ * vars.cos_theta.at(i)
                 );
