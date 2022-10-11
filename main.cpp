@@ -134,10 +134,16 @@ int main(int argc, char* argv[]) {
 
         if (cfg.spectrum() == POWERSPECTRUM) {
             input.pair_correlations = cfg.pair_correlations();
-            n_correlations = input.pair_correlations.size();
 
             if (n_loops > 0) {
-                n_dims = 3 * n_loops - 1;
+                if (loop_params.rsd()) {
+                    n_correlations = 1;
+                    n_dims = 3 * n_loops;
+                }
+                else {
+                    n_correlations = input.pair_correlations.size();
+                    n_dims = 3 * n_loops - 1;
+                }
 
                 input.ps_diagrams = ps::construct_diagrams(loop_params);
 

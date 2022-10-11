@@ -421,19 +421,7 @@ int integrand(
         jacobian *= TWOPI;
     }
 
-    size_t n_correlations;
-
-    if (tables.loop_params.spectrum() == POWERSPECTRUM) {
-        n_correlations = input.pair_correlations.size();
-    }
-    else {
-        /* Bispectrum */
-        n_correlations = input.triple_correlations.size();
-    }
-    /* For RSD, we only compute delta-delta correlation */
-    if (tables.loop_params.rsd()) {
-        n_correlations = 1;
-    }
+    size_t n_correlations = static_cast<size_t>(*ncomp);
 
     Vec1D<double> results(n_correlations, 0.0);
     Vec1D<double> diagram_results(n_correlations, 0.0);
