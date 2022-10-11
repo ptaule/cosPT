@@ -27,14 +27,8 @@ inline double rsd_coord_transformation(
         )
 {
 #if DEBUG >= 1
-    try {
-        kernel_computer_validate_n(arguments, n, tables);
-        kernel_computer_validate_kernel_index(arguments, kernel_index, tables);
-    }
-    catch (const std::exception& e){
-        std::cout << "In function rsd_coord_transformation():" << std::endl;
-        throw e;
-    }
+    kernel_computer_validate_n(arguments, n, tables);
+    kernel_computer_validate_kernel_index(arguments, kernel_index, tables);
 #endif
     /* Compute sum of arguments */
     int sum = tables.sum_table.sum_labels(arguments,
@@ -70,14 +64,8 @@ inline double rsd_jac_transformation(
         )
 {
 #if DEBUG >= 1
-    try {
-        kernel_computer_validate_n(arguments, n, tables);
-        kernel_computer_validate_kernel_index(arguments, kernel_index, tables);
-    }
-    catch (const std::exception& e){
-        std::cout << "In function rsd_jac_transformation():" << std::endl;
-        throw e;
-    }
+    kernel_computer_validate_n(arguments, n, tables);
+    kernel_computer_validate_kernel_index(arguments, kernel_index, tables);
 #endif
     /* Compute sum of arguments */
     int sum = tables.sum_table.sum_labels(arguments,
@@ -109,14 +97,8 @@ int rsd_velocity_power(
         )
 {
 #if DEBUG >= 1
-    try {
-        kernel_computer_validate_n(arguments, n, tables);
-        kernel_computer_validate_kernel_index(arguments, kernel_index, tables);
-    }
-    catch (const std::exception& e){
-        std::cout << "In function rsd_velocity_power():" << std::endl;
-        throw e;
-    }
+    kernel_computer_validate_n(arguments, n, tables);
+    kernel_computer_validate_kernel_index(arguments, kernel_index, tables);
 #endif
     /* If N < 1 or there are more factors N than wavenumbers, do nothing */
     if (N < 1 || n < N) return kernel_index;
@@ -241,14 +223,8 @@ double compute_rsd_kernels(
         )
 {
 #if DEBUG >= 1
-    try {
-        kernel_computer_validate_n(arguments, n, tables);
-        kernel_computer_validate_kernel_index(arguments, kernel_index, tables);
-    }
-    catch (const std::exception& e){
-        std::cout << "In function compute_rsd_kernels():" << std::endl;
-        throw e;
-    }
+    kernel_computer_validate_n(arguments, n, tables);
+    kernel_computer_validate_kernel_index(arguments, kernel_index, tables);
 #endif
 
     // If kernel_index is not known, -1 is sent as argument

@@ -144,14 +144,8 @@ int compute_SPT_kernels(
     /* DEBUG: check that the number of non-zero arguments is in fact n, and
      * that kernel_index is in fact equivalent to arguments */
 #if DEBUG >= 1
-    try {
-        kernel_computer_validate_n(arguments, n, tables);
-        kernel_computer_validate_kernel_index(arguments, kernel_index, tables);
-    }
-    catch (const std::exception& e){
-        std::cout << "In function compute_SPT_kernels():" << std::endl;
-        throw e;
-    }
+    kernel_computer_validate_n(arguments, n, tables);
+    kernel_computer_validate_kernel_index(arguments, kernel_index, tables);
 #endif
 
     // If kernel_index is not known, -1 is sent as argument
