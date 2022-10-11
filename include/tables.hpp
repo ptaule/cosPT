@@ -41,7 +41,7 @@ struct Kernel {
 
 
 struct RSDKernel {
-    Vec1D<double> values;
+    double value;
     bool computed = false;
 };
 
@@ -122,9 +122,9 @@ class IntegrandTables {
         Vec2D<double> beta_;                 /* N_CONFIGS x N_CONFIGS */
 
         Vec1D<double> bare_los_projection_;
-        /* N_COEFFS dot products between external/loop wavenumber directions (unit vector) and L.o.S */
+        /* N_COEFFS dot products between external/loop wavenumber and L.o.S */
         Vec1D<double> comp_los_projection_;
-        /* N_CONFIGS dot products between composite wavenumber directions (unit vector) and L.o.S */
+        /* N_CONFIGS dot products between composite wavenumber and L.o.S */
 
         void reset_spt_kernels();
         void reset_kernels();
@@ -151,7 +151,7 @@ class IntegrandTables {
         Vec1D<Kernel> kernels;
 
         Vec1D<RSDKernel> rsd_kernels;
-        Vec1D<RSDKernel> vel_power_kernels;
+        Vec2D<RSDKernel> vel_power_kernels;
 
         IntegrandTables(
                 double k_a,

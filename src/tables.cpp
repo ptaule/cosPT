@@ -213,8 +213,7 @@ IntegrandTables::IntegrandTables(
         vel_power_kernels.resize(n_kernels);
 
         for (size_t i = 0; i < n_kernels; ++i) {
-            rsd_kernels.at(i).values.resize(1);
-            vel_power_kernels.at(i).values.resize(2*static_cast<size_t>(n_loops));
+            vel_power_kernels.at(i).resize(2*static_cast<size_t>(n_loops));
         }
     }
 }
@@ -316,12 +315,12 @@ void IntegrandTables::reset_rsd_kernels()
 {
     for (size_t i = 0; i < loop_params.n_kernels(); ++i) {
         rsd_kernels.at(i).computed = false;
-        vel_power_kernels.at(i).computed = false;
+        rsd_kernels.at(i).value = 0;
 
-        rsd_kernels.at(i).values.at(0) = 0;
-
-        std::fill(vel_power_kernels.at(i).values.begin(),
-                vel_power_kernels.at(i).values.end(), 0);
+        for (auto& el : vel_power_kernels.at(i)) {
+            el.value    = 0;
+            el.computed = false;
+        }
     }
 }
 
@@ -454,14 +453,14 @@ void IntegrandTables::compute_bare_los_proj() {
 
     double sin_los_angle = sqrt(1 - SQUARE(mu_los_));
 
-    /* k_a (unit vector) along L.o.S. is simply mu_los_ */
-    bare_los_projection_.at(k_a_idx) = mu_los_;
+    /* k_a along L.o.S. is simply k_a * mu_los_ */
+    bare_los_projection_.at(k_a_idx) = k_a * mu_los_;
 
     /* Products involving k_a and Q_i has the form k_a*Q_i*cos(theta_i) */
     for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
         double sin_theta_i = sqrt(1 - SQUARE(vars.cos_theta.at(i)));
-        bare_los_projection_.at(i) = (
-                sin_los_angle * sin_theta_i * vars.phi.at(i) +
+        bare_los_projection_.at(i) = vars.magnitudes.at(i) * (
+                sin_los_angle * sin_theta_i * cos(vars.phi.at(i)) +
                 mu_los_ * vars.cos_theta.at(i)
                 );
     }
