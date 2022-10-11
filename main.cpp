@@ -106,8 +106,10 @@ int main(int argc, char* argv[]) {
 
         if (cfg.dynamics() == EVOLVE_IC_EDS) {
             if (COMPONENTS != 2) {
-                throw std::runtime_error("Dynamics = EVOLVE_IC_EDS not "
-                                         "implemented for COMPONENTS != 2");
+                std::cerr <<
+                    "Dynamics = EVOLVE_IC_EDS not implemented for COMPONENTS != 2"
+                    << std::endl;
+                return EXIT_FAILURE;
             }
             ev_params = EvolutionParameters(cfg.zeta_file(), cfg.ode_atol(),
                     cfg.ode_rtol(), cfg.ode_hstart());
@@ -115,8 +117,10 @@ int main(int argc, char* argv[]) {
         }
         else if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
             if (COMPONENTS != 4) {
-                throw std::runtime_error("Dynamics = EVOLVE_IC_ASYMP not "
-                                         "implemented for COMPONENTS != 2");
+                std::cerr <<
+                    "Dynamics = EVOLVE_IC_EDS not implemented for COMPONENTS != 2"
+                    << std::endl;
+                return EXIT_FAILURE;
             }
             ev_params = EvolutionParameters(cfg.f_nu(), cfg.omega_m_0(),
                     cfg.zeta_file(), cfg.redshift_file(),
