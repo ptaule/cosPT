@@ -139,7 +139,7 @@ int main(int argc, char* argv[]) {
 
                 /* (Master + n_cores) instances of IntegrandTables */
                 for (int i = 0; i < cfg.cuba_cores() + 1; ++i) {
-                    input.tables_vec.emplace_back(cfg.k_a(), loop_params,
+                    input.tables_vec.emplace_back(cfg.k_a(), 0, 0, loop_params,
                             sum_table, ev_params, eta_grid);
                 }
             }
@@ -156,7 +156,7 @@ int main(int argc, char* argv[]) {
                 /* (Master + n_cores) instances of IntegrandTables */
                 for (int i = 0; i < cfg.cuba_cores() + 1; ++i) {
                     input.tables_vec.emplace_back(cfg.k_a(), cfg.k_b(),
-                            cfg.cos_ab(), loop_params, sum_table, ev_params,
+                            cfg.cos_ab(), 0, 0, loop_params, sum_table, ev_params,
                             eta_grid);
                 }
             }
@@ -191,7 +191,7 @@ int main(int argc, char* argv[]) {
         else {
             /* Tree level bispectrum */
             IntegrandTables tables(cfg.k_a(), cfg.k_b(), cfg.cos_ab(),
-                    loop_params, sum_table, ev_params, eta_grid);
+                    0,0, loop_params, sum_table, ev_params, eta_grid);
             tree_level_bispectrum(tables, input.input_ps,
                     input.triple_correlations, tree_level_result);
         }
