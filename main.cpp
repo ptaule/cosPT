@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
         int n_dims = 0; /* Dimension of integral measure */
         size_t n_correlations = 0; /* Number of correlations to compute */
 
-        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
+        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), false);
         SumTable sum_table(loop_params);
 
         IntegrationInput input(cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
