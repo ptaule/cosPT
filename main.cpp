@@ -98,7 +98,6 @@ int main(int argc, char* argv[]) {
         LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
         SumTable sum_table(loop_params);
 
-        integrand_t integrand = nullptr;
         IntegrationInput input(cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
@@ -135,7 +134,6 @@ int main(int argc, char* argv[]) {
 
             if (n_loops > 0) {
                 n_dims = 3 * n_loops - 1;
-                integrand = (integrand_t)ps::integrand;
 
                 input.ps_diagrams = ps::construct_diagrams(loop_params);
 
@@ -152,7 +150,6 @@ int main(int argc, char* argv[]) {
 
             if (n_loops > 0) {
                 n_dims = 3 * n_loops;
-                integrand = (integrand_t)bs::integrand;
 
                 input.bs_diagrams = bs::construct_diagrams(loop_params);
 
@@ -228,7 +225,7 @@ int main(int argc, char* argv[]) {
 #define CUBA_NNEW 1000
 #define CUBA_NMIN 2
 #define CUBA_FLATNESS 25.
-            Suave(n_dims, static_cast<int>(n_correlations), integrand, &input,
+            Suave(n_dims, static_cast<int>(n_correlations), (integrand_t)integrand, &input,
                   CUBA_NVEC, cfg.cuba_rtol(), cfg.cuba_atol(),
                   (cfg.cuba_verbose() | CUBA_LAST | cuba_retain_statefile),
                   CUBA_SEED, CUBA_MINEVAL, cfg.cuba_maxevals(), CUBA_NNEW,
