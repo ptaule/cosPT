@@ -46,10 +46,9 @@ fi
 
 log_file=$1
 
-julia=/space/ge52sir/local/bin/julia
-isapprox=/home/t30/all/ge52sir/non_linear_PS/tests/isapprox.jl
 
 exe=build/cosPT
+isapprox=tests/isapprox.jl
 
 sourcedir=$(pwd)
 tempdir="$(mktemp -d -t cosPT_XXXXXXXXXX)"
@@ -76,7 +75,7 @@ printf "#include \"../include/version.hpp\"\nstd::string build_git_sha =  \"%s\"
 sed -i '/SRC_FILES/ s/\\$/version_.cpp \\/' Makefile
 make clean
 make -j
-export LD_LIBRARY_PATH=/space/ge52sir/local/lib/
+#export LD_LIBRARY_PATH=path to libs
 
 mkdir -p "$tempdir"/output/eds_spt_ps/L1
 mkdir -p "$tempdir"/output/eds_spt_ps/L2
@@ -111,14 +110,14 @@ for f in output/*/*/; do
 done
 
 {
-    "$julia" "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
+    julia "$sourcedir/$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
         "$tempdir"/tests/data/eds_spt_ps/L1/total.dat "$tempdir"/output/eds_spt_ps/L1/total.dat
-    "$julia" "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
+    julia "$sourcedir/$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
         "$tempdir"/tests/data/eds_spt_ps/L2/total.dat "$tempdir"/output/eds_spt_ps/L2/total.dat
-    "$julia" "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
+    julia "$sourcedir/$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
         "$tempdir"/tests/data/eds_spt_ps/L2_sh/total.dat "$tempdir"/output/eds_spt_ps/L2_sh/total.dat
-    "$julia" "$isapprox" --col_A 5 --col_err_A 6 --col_B 5 --col_err_B 6 \
+    julia "$sourcedir/$isapprox" --col_A 5 --col_err_A 6 --col_B 5 --col_err_B 6 \
         "$tempdir"/tests/data/eds_spt_bs/L1/total.dat "$tempdir"/output/eds_spt_bs/L1/total.dat
-    "$julia" "$isapprox" --col_A 5 --col_err_A 6 --col_B 5 --col_err_B 6 \
+    julia "$sourcedir/$isapprox" --col_A 5 --col_err_A 6 --col_B 5 --col_err_B 6 \
         "$tempdir"/tests/data/eds_spt_bs/L2/total.dat "$tempdir"/output/eds_spt_bs/L2/total.dat
 } >> "$log_file"
