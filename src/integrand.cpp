@@ -393,15 +393,22 @@ int integrand(
     double log_ratio = std::log(ratio);
     double jacobian = 1.0;
 
+    int idx = 0; /* Index for reading xx-array */
+    double Q1_xx = 0; /* Temp storage of xx-element for Q1 if not single_hard_limit */
+
     /* 1-loop */
     if (!input.single_hard_limit) {
-        vars.magnitudes.at(0) = input.q_min * pow(ratio,xx[0]);
+        Q1_xx = xx[idx++];
+        vars.magnitudes.at(0) = input.q_min * pow(ratio, Q1_xx);
         jacobian *= log_ratio * CUBE(vars.magnitudes.at(0));
     }
 
-    int idx = 1;
     vars.cos_theta.at(0) = xx[idx++];
-    if (tables.loop_params.rsd()) {
+    /* For bispectrum or RSD we cannot fix phi[0] = 0 */
+    if (
+            tables.loop_params.spectrum() == BISPECTRUM ||
+            tables.loop_params.rsd()
+        ) {
         vars.phi.at(0) = xx[idx++] * TWOPI;
         jacobian *= TWOPI;
     }
@@ -409,11 +416,12 @@ int integrand(
     /* 2-loop */
     if (n_loops > 1){
         if (!input.single_hard_limit) {
-            vars.magnitudes.at(1) = pow(vars.magnitudes.at(0), xx[idx++]);
-            jacobian *= xx[0];
+            vars.magnitudes.at(1) = input.q_min *
+                pow(vars.magnitudes.at(0) / input.q_min, xx[idx++]);
+            jacobian *= Q1_xx;
         }
         else {
-            vars.magnitudes.at(1) = input.q_min * pow(ratio,xx[idx]);
+            vars.magnitudes.at(1) = input.q_min * pow(ratio,xx[idx++]);
         }
         jacobian *= log_ratio * CUBE(vars.magnitudes.at(1));
         vars.cos_theta.at(1) = xx[idx++];
