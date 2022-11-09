@@ -249,7 +249,7 @@ double compute_rsd_kernels(
             .at(static_cast<size_t>(sum))
             .at(static_cast<size_t>(sum)));
     /* RSD growth factor f and L.o.S angle */
-    double mu_los = tables.mu_los();
+    double mu_los = tables.vars.mu_los;
     double rsd_f = tables.rsd_growth_f();
 
     int args_l[N_KERNEL_ARGS_MAX] = {0};

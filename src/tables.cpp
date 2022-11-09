@@ -158,14 +158,13 @@ IntegrandTables::IntegrandTables(
         double k_a,
         double k_b,
         double cos_ab,
-        double mu_los,
         double rsd_growth_f,
         const LoopParameters& loop_params,
         const SumTable& sum_table,
         const EvolutionParameters& ev_params,
         const EtaGrid& eta_grid
         ) :
-    k_a(k_a), k_b(k_b), cos_ab(cos_ab), mu_los_(mu_los), rsd_f(rsd_growth_f),
+    k_a(k_a), k_b(k_b), cos_ab(cos_ab), rsd_f(rsd_growth_f),
     loop_params(loop_params), sum_table(sum_table), ev_params(ev_params),
     eta_grid(eta_grid),
     vars(IntegrationVariables(static_cast<size_t>(loop_params.n_loops())))
@@ -222,14 +221,13 @@ IntegrandTables::IntegrandTables(
 
 IntegrandTables::IntegrandTables(
         double k_a,
-        double mu_los,
         double rsd_growth_f,
         const LoopParameters& loop_params,
         const SumTable& sum_table,
         const EvolutionParameters& ev_params,
         const EtaGrid& eta_grid
         ) :
-    IntegrandTables(k_a, 0, 0, mu_los, rsd_growth_f, loop_params, sum_table, ev_params, eta_grid)
+    IntegrandTables(k_a, 0, 0, rsd_growth_f, loop_params, sum_table, ev_params, eta_grid)
 {
     if (loop_params.spectrum() == BISPECTRUM) {
         throw(std::invalid_argument(
@@ -428,17 +426,17 @@ void IntegrandTables::compute_bare_los_proj() {
 
     size_t k_a_idx = n_coeffs - 1;
 
-    double sin_los_angle = sqrt(1 - SQUARE(mu_los_));
+    double sin_los_angle = sqrt(1 - SQUARE(vars.mu_los));
 
     /* k_a along L.o.S. is simply k_a * mu_los_ */
-    bare_los_projection_.at(k_a_idx) = k_a * mu_los_;
+    bare_los_projection_.at(k_a_idx) = k_a * vars.mu_los;
 
     /* Products involving k_a and Q_i has the form k_a*Q_i*cos(theta_i) */
     for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
         double sin_theta_i = sqrt(1 - SQUARE(vars.cos_theta.at(i)));
         bare_los_projection_.at(i) = vars.magnitudes.at(i) * (
                 sin_los_angle * sin_theta_i * cos(vars.phi.at(i)) +
-                mu_los_ * vars.cos_theta.at(i)
+                vars.mu_los * vars.cos_theta.at(i)
                 );
     }
 }

@@ -19,8 +19,9 @@ struct IntegrationVariables {
     Vec1D<double> magnitudes; /* Loop momenta magnitudes */
     Vec1D<double> cos_theta;  /* Cosine of polar angles of the loop momenta */
     Vec1D<double> phi;        /* Azimutal angles */
+    double mu_los;           /* RSD: Cosine of angle between k and L.o.S. */
 
-    IntegrationVariables(std::size_t n_loops) {
+    IntegrationVariables(std::size_t n_loops) : mu_los(0) {
         magnitudes.assign(n_loops,0);
         cos_theta.assign(n_loops,0);
         phi.assign(n_loops,0);
@@ -107,7 +108,6 @@ class IntegrandTables {
         double k_b    = 0.0; // For bispectrum
         double cos_ab = 0.0; // For bispectrum
 
-        double mu_los_; // RSD: Cosine of angle between k and L.o.S.
         double rsd_f; // Growth factor (at observation redshift) for L.o.S.
 
         /* Helper vectors for compute_scalar_products() */
@@ -157,7 +157,6 @@ class IntegrandTables {
                 double k_a,
                 double k_b,
                 double cos_ab,
-                double mu_los,
                 double rsd_growth_f,
                 const LoopParameters& loop_params,
                 const SumTable& sum_table,
@@ -166,7 +165,6 @@ class IntegrandTables {
                 );
         IntegrandTables(
                 double k_a,
-                double mu_los,
                 double rsd_growth_f,
                 const LoopParameters& loop_params,
                 const SumTable& sum_table,
@@ -182,7 +180,6 @@ class IntegrandTables {
         const Vec1D<double>& bare_los_projection() const { return bare_los_projection_; }
         const Vec1D<double>& comp_los_projection() const { return comp_los_projection_; }
 
-        double mu_los() const { return mu_los_; }
         double rsd_growth_f() const { return rsd_f; }
 
         void reset();
