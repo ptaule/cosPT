@@ -219,25 +219,6 @@ IntegrandTables::IntegrandTables(
 
 
 
-IntegrandTables::IntegrandTables(
-        double k_a,
-        double rsd_growth_f,
-        const LoopParameters& loop_params,
-        const SumTable& sum_table,
-        const EvolutionParameters& ev_params,
-        const EtaGrid& eta_grid
-        ) :
-    IntegrandTables(k_a, 0, 0, rsd_growth_f, loop_params, sum_table, ev_params, eta_grid)
-{
-    if (loop_params.spectrum() == BISPECTRUM) {
-        throw(std::invalid_argument(
-            "IntegrandTables::IntegrandTables(): this constructor can only be "
-            "used for spetrum = POWERSPECTRUM."));
-    }
-}
-
-
-
 void IntegrandTables::reset()
 {
     // bare_dot_prod, alpha_, beta_ tables etc. are completely rewritten

@@ -163,14 +163,6 @@ class IntegrandTables {
                 const EvolutionParameters& ev_params,
                 const EtaGrid& eta_grid
                 );
-        IntegrandTables(
-                double k_a,
-                double rsd_growth_f,
-                const LoopParameters& loop_params,
-                const SumTable& sum_table,
-                const EvolutionParameters& ev_params,
-                const EtaGrid& eta_grid
-                );
 
         const Vec2D<double>& bare_dot_products() const { return bare_dot_prod; }
         const Vec2D<double>& comp_dot_products() const { return comp_dot_prod; }
