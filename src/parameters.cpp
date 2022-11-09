@@ -119,8 +119,25 @@ Config::Config(const std::string& ini_file,
         throw ConfigException("Encountered type exception for q_min/q_max setting.");
     }
 
+    /* RSD. Read before spectrum settings, so that warning messages can be
+     * given if rsd AND correlations are set */
+    if (cfg.lookupValue("rsd", rsd_)) {
+        int rsd_growth_f_int;
+        if (cfg.lookupValue("rsd_growth_f", rsd_growth_f_)) {}
+        /* If not found as double, try int */
+        else if (cfg.lookupValue("rsd_growth_f", rsd_growth_f_int)) {
+            rsd_growth_f_ = static_cast<double>(rsd_growth_f_int);
+        }
+        else {
+            rsd_growth_f_ = 1;
+            std::cout <<
+                "Info: No value for rsd_growth_f read, setting the value to "
+                << rsd_growth_f_ << "."<< std::endl;
+        }
+    }
     set_spectrum(cfg);
     set_dynamics(cfg);
+
 
     /* Compute single hard limit? */
     if (cfg.lookupValue("single_hard_limit", single_hard_limit_)) {
@@ -277,25 +294,37 @@ void Config::set_spectrum(const libconfig::Config& cfg)
         try {
             const libconfig::Setting& correlation = cfg.lookup("correlations");
             int count = correlation.getLength();
-            if (count == 0) {
-                throw ConfigException("No correlations in configuration file.");
+            if (count == 0 && !rsd_) {
+                std::cout << "Info: correlations setting empty, computing [0,0]."
+                    << std::endl;
+                pair_correlations_.push_back({0,0});
             }
-            for (int i = 0; i < count; ++i) {
-                if (correlation[i].getLength() != 2) {
-                    throw ConfigException(
-                        "Correlation must be two indices (powerspectrum)");
+            else if (count > 0 && rsd_) {
+                std::cout << "Warning: correlations setting ignored for RSD."
+                    << std::endl;
+            }
+            else {
+                for (int i = 0; i < count; ++i) {
+                    if (correlation[i].getLength() != 2) {
+                        throw ConfigException(
+                            "Correlation must be two indices (powerspectrum)");
+                    }
+                    int a = correlation[i][0];
+                    int b = correlation[i][1];
+                    if (a < 0 || a >= COMPONENTS || b < 0 || b >= COMPONENTS) {
+                        throw ConfigException("a and b must be element in [0," +
+                                std::to_string(COMPONENTS) + "]");
+                    }
+                    pair_correlations_.push_back({a,b});
                 }
-                int a = correlation[i][0];
-                int b = correlation[i][1];
-                if (a < 0 || a >= COMPONENTS || b < 0 || b >= COMPONENTS) {
-                    throw ConfigException("a and b must be element in [0," +
-                            std::to_string(COMPONENTS) + "]");
-                }
-                pair_correlations_.push_back({a,b});
             }
         }
         catch (const libconfig::SettingNotFoundException& nfex) {
-            throw ConfigException("No correlations in configuration file.");
+            if (!rsd_) {
+                std::cout << "Info: No correlation setting read, computing [0,0]."
+                    << std::endl;
+                pair_correlations_.push_back({0,0});
+            }
         }
         catch (const ConfigException& e) {
             throw e;
@@ -317,30 +346,42 @@ void Config::set_spectrum(const libconfig::Config& cfg)
         try {
             const libconfig::Setting& correlation = cfg.lookup("correlations");
             int count = correlation.getLength();
-            if (count == 0) {
-                throw ConfigException("No correlations in configuration file.");
+            if (count == 0 && !rsd_) {
+                std::cout << "Info: correlations setting empty, computing [0,0,0]."
+                    << std::endl;
+                triple_correlations_.push_back({0,0,0});
             }
-            for (int i = 0; i < count; ++i) {
-                if (correlation[i].getLength() != 3) {
-                    throw ConfigException(
-                        "Correlation must be three indices (bispectrum)");
+            else if (count > 0 && rsd_) {
+                std::cout << "Warning: correlations setting ignored for RSD."
+                    << std::endl;
+            }
+            else {
+                for (int i = 0; i < count; ++i) {
+                    if (correlation[i].getLength() != 3) {
+                        throw ConfigException(
+                                "Correlation must be three indices (bispectrum)");
+                    }
+                    int a = correlation[i][0];
+                    int b = correlation[i][1];
+                    int c = correlation[i][2];
+                    if (a < 0 || a >= COMPONENTS || b < 0 || b >= COMPONENTS ||
+                            c < 0 || c >= COMPONENTS) {
+                        throw ConfigException("a, b and c must be element in [0," +
+                                std::to_string(COMPONENTS) + "]");
+                    }
+                    triple_correlations_.push_back({a,b,c});
                 }
-                int a = correlation[i][0];
-                int b = correlation[i][1];
-                int c = correlation[i][2];
-                if (a < 0 || a >= COMPONENTS || b < 0 || b >= COMPONENTS ||
-                        c < 0 || c >= COMPONENTS) {
-                    throw ConfigException("a, b and c must be element in [0," +
-                            std::to_string(COMPONENTS) + "]");
-                }
-                triple_correlations_.push_back({a,b,c});
             }
         }
         catch (const ConfigException& e) {
             throw e;
         }
         catch (const libconfig::SettingNotFoundException& nfex) {
-            throw ConfigException("No correlations in configuration file.");
+            if (!rsd_) {
+                std::cout << "Info: No correlation setting read, computing [0,0]."
+                    << std::endl;
+                pair_correlations_.push_back({0,0});
+            }
         }
         catch (const libconfig::SettingTypeException& tex) {
             throw ConfigException(

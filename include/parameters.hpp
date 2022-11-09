@@ -37,6 +37,9 @@ class Config {
         double k_c_ = 0;
         double cos_ab_ = 0;
 
+        bool rsd_ = false;
+        double rsd_growth_f_ = 0;
+
         double q_min_ = 1e-4;
         double q_max_ = 1;
 
@@ -108,7 +111,10 @@ class Config {
         double k_a() const {return k_a_;}
         double k_b() const {return k_b_;}
         double k_c() const {return k_c_;}
-        double cos_ab() const {return cos_ab_;};
+        double cos_ab() const {return cos_ab_;}
+
+        bool rsd() const {return rsd_;}
+        double rsd_growth_f() const {return rsd_growth_f_; }
 
         double q_min() const {return q_min_;}
         double q_max() const {return q_max_;}
