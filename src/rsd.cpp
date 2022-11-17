@@ -282,7 +282,7 @@ double compute_rsd_kernels(
                 result_N_loop += (
                         pow(rsd_f * mu_los * k, N) / gsl_sf_fact(static_cast<unsigned int>(N)) *
                         tables.vel_power_kernels.at(static_cast<size_t>(kernel_idx_l)).
-                            at(static_cast<size_t>(N)).value
+                            at(static_cast<size_t>(N-1)).value
                         );
             }
             result_for_m += result_N_loop * rsd_coord_transformation(args_r, -1, n-m, tables);
