@@ -5,7 +5,6 @@
    Copyright (c) 2022 Petter Taule. All rights reserved.
 */
 
-#include <iostream>
 #include <cmath>
 
 #include <gsl/gsl_sf.h>
@@ -311,13 +310,10 @@ double compute_rsd_kernels(
                     static_cast<unsigned int>(m))
                 );
         result += result_for_m / n_choose_m;
-        std::cout << "m = " << m << "\t result_for_m = " << result_for_m  << std::endl;
     }
 
     /* Add contribution with no velocity powers */
     result += rsd_coord_transformation(arguments, kernel_index, n, tables);
-    std::cout << "no vel power res = " << rsd_coord_transformation(arguments,
-            kernel_index, n, tables) << std::endl;
 
     // Update kernel table
     kernel.computed = true;
