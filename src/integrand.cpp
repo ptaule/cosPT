@@ -66,27 +66,27 @@ void configuration_term(
                 2 * diagram.r + diagram.m, tables);
     }
 
-    /* Compute RSD kernels if necessary */
     if (rsd) {
         compute_rsd_kernels(arg_config_l.args.data(), arg_config_l.kernel_index,
                 2 * diagram.l + diagram.m, tables);
         compute_rsd_kernels(arg_config_r.args.data(), arg_config_r.kernel_index,
                 2 * diagram.r + diagram.m, tables);
+
+        /* Read values for two-point correlators.
+         * If l != r, there are two diagrams corresponding to l <-> r */
+        term_results.at(0) = tables.rsd_kernels
+            .at(static_cast<size_t>(arg_config_l.kernel_index)).value
+            * tables.rsd_kernels
+            .at(static_cast<size_t>(arg_config_r.kernel_index)).value
+            * (diagram.l == diagram.r ? 1 : 2);
+        return;
     }
 
     /* Pointers to SPTKernel vector or last time step of Kernel vector */
     double* values_l = nullptr;
     double* values_r = nullptr;
 
-    if (rsd) {
-        values_l = &tables.rsd_kernels
-                        .at(static_cast<size_t>(arg_config_l.kernel_index))
-                        .value;
-        values_r = &tables.rsd_kernels
-                        .at(static_cast<size_t>(arg_config_r.kernel_index))
-                        .value;
-    }
-    else if (dynamics == EDS_SPT) {
+    if (dynamics == EDS_SPT) {
         values_l = tables.spt_kernels
                        .at(static_cast<size_t>(arg_config_l.kernel_index))
                        .values;
@@ -102,13 +102,6 @@ void configuration_term(
         values_r = tables.kernels.at(static_cast<size_t>(arg_config_r.kernel_index))
                        .values.at(time_steps - 1)
                        .data();
-    }
-
-    /* Read values for two-point correlators.
-     * If l != r, there are two diagrams corresponding to l <-> r */
-    if (rsd) {
-        term_results.at(0) = values_l[0] * values_r[0] *
-            (diagram.l == diagram.r ? 1 : 2);
     }
 
     if (diagram.l == diagram.r) {
