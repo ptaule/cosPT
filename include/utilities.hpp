@@ -23,9 +23,10 @@
 #define PI    3.14159265359
 #define TWOPI 6.28318530718
 
-/* Macros for performant square and cubing */
+/* Macros for performant powers */
 #define SQUARE(x) (x*x)
 #define CUBE(x) (x*x*x)
+#define POW4(x) (x*x*x*x)
 
 /* Debug modes (if not set by compile options): */
 /* 1: Perform additional checks during runtime. */

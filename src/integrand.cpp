@@ -501,7 +501,7 @@ int integrand(
         if (rsd) {
             results.at(1) *= 0.5 * (3 * SQUARE(vars.mu_los) - 1);
             results.at(2) *= 0.125 * (
-                    35 * pow(vars.mu_los, 4) - 30 * SQUARE(vars.mu_los) + 3
+                    35 * POW4(vars.mu_los) - 30 * SQUARE(vars.mu_los) + 3
                     );
         }
     }
