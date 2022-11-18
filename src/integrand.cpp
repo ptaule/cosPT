@@ -469,7 +469,10 @@ int integrand(
 
                 /* Add diagram results to results and reset diagram results */
                 for (size_t j = 0; j < n_comp; ++j) {
-                    results.at(j) += diagram_results.at(j);
+                    /* If RSD, only one element of diagram_results (index 0),
+                     * if not use j */
+                    size_t idx = rsd ? 0 : j;
+                    results.at(j) += diagram_results.at(idx);
                 }
                 std::fill(diagram_results.begin(), diagram_results.end(), 0.0);
             }
