@@ -765,8 +765,15 @@ void Config::set_cuba_statefile(const libconfig::Setting& cuba_settings)
 
 std::ostream& operator<<(std::ostream& out, const Config& cfg) {
     if (cfg.spectrum() == POWERSPECTRUM) {
-        out << "# Matter power spectrum P(k) at " << cfg.n_loops()
-            << "-loop for k = " << cfg.k_a() << "\n";
+        if (cfg.rsd()) {
+            out << "# Power spectrum multipoles Pl(k) in redshift space at "
+                << cfg.n_loops()
+                << "-loop for k = " << cfg.k_a() << "\n";
+        }
+        else {
+            out << "# Matter power spectrum P(k) at " << cfg.n_loops()
+                << "-loop for k = " << cfg.k_a() << "\n";
+        }
     }
     else {
         out << "# Matter bispectrum B(k) at " << cfg.n_loops() << "-loop for\n"
@@ -775,29 +782,34 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
             << "# k_c    = " << cfg.k_c() << "\n"
             << "# cos_ab = " << cfg.cos_ab() << "\n";
     }
-    out << "#\n# Description: " << cfg.description() << "\n";
-    out <<    "# Git hash:    " << build_git_sha << "\n";
-    out <<    "# Build time:  " << build_git_time << "\n";
+    out << "#\n";
+    out << "# Description: " << cfg.description() << "\n";
+    out << "# Git hash:    " << build_git_sha     << "\n";
+    out << "# Build time:  " << build_git_time    << "\n";
+    out << "#\n";
 
-    out << "#\n# Correlations (zero-indexed components):\n# ";
-    if (cfg.spectrum() == POWERSPECTRUM) {
-        for (auto& el : cfg.pair_correlations()) {
-            out << " " << el <<  " ,";
+    if (!cfg.rsd()) {
+        out << "# Correlations (zero-indexed components):\n# ";
+        if (cfg.spectrum() == POWERSPECTRUM) {
+            for (auto& el : cfg.pair_correlations()) {
+                out << " " << el <<  " ,";
+            }
         }
-    }
-    else {
-        for (auto& el : cfg.triple_correlations()) {
-            out << " " << el <<  " ,";
+        else {
+            for (auto& el : cfg.triple_correlations()) {
+                out << " " << el <<  " ,";
+            }
         }
+        out << "\n#\n";
     }
 
     if (cfg.single_hard_limit()) {
-        out << "\n#\n# Computing single-hard limit with fixed Q1 = "
+        out << "# Computing single-hard limit with fixed Q1 = "
             << cfg.sh_Q1()
-            << " h/Mpc.";
+            << "\n#\n";
     }
 
-    out << "\n#\n# Input power spectrum read from " << cfg.input_ps_file() << "\n";
+    out << "# Input power spectrum read from " << cfg.input_ps_file() << "\n";
     if (cfg.input_ps_rescale() != 1) {
         out << "# Input power spectrum rescaled by a factor ";
         if (!cfg.input_ps_rescale_str().empty()) {
@@ -806,11 +818,12 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
         else {
             out << cfg.input_ps_rescale();
         }
-        out << " before interpolation.";
+        out << " before interpolation." << "\n";
     }
+    out << "#\n";
 
     out << std::scientific;
-    out << "\n#\n# Integration limits:\n";
+    out << "# Integration limits:\n";
     out << "#\t q_min = " << cfg.q_min() << "\n";
     out << "#\t q_max = " << cfg.q_max() << "\n";
 
@@ -822,30 +835,36 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
     if (!cfg.cuba_statefile().empty()) {
         out << "#\t statefile     = " << cfg.cuba_statefile() << "\n";
     }
+    out << "#\n";
+
+    if (cfg.rsd()) {
+        out << "# (RSD) growth_f = " << cfg.rsd_growth_f() << "\n#\n";
+    }
 
     if (cfg.dynamics() == EVOLVE_IC_ASYMP || cfg.dynamics() == EVOLVE_IC_EDS) {
-        out << "#\n# ODE settings:\n";
+        out << "# ODE settings:\n";
         out << std::scientific;
         out << "#\t abs tolerance = " << cfg.ode_atol() << "\n";
         out << "#\t rel tolerance = " << cfg.ode_rtol() << "\n";
-        out << "#\t start step    = " << cfg.ode_hstart() << "\n";
+        out << "#\t start step    = " << cfg.ode_hstart() << "\n#\n";
 
-        out << "#\n# Time grid settings:\n";
+        out << "# Time grid settings:\n";
         out << "#\t time steps     = " << cfg.time_steps() << "\n";
         if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
             out << "#\t pre time steps = " << cfg.pre_time_steps() << "\n";
             out << "#\t eta asymp      = " << cfg.eta_asymp() << "\n";
         }
         out << "#\t eta ini        = " << cfg.eta_ini() << "\n";
-        out << "#\t eta fin        = " << cfg.eta_fin() << "\n";
+        out << "#\t eta fin        = " << cfg.eta_fin() << "\n#\n";
 
-        out << "#\n# Dynamics settings:\n";
+        out << "# Dynamics settings:\n";
         if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
             out << "# f_nu      = " << cfg.f_nu() << "\n";
             out << "# omega_m_0 = " << cfg.omega_m_0() << "\n";
         }
+        out << "#\n";
 
-        out << "#\n# zeta file              = " << cfg.zeta_file() << "\n";
+        out << "# zeta file              = " << cfg.zeta_file() << "\n";
         if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
             out << "# redshift file          = " << cfg.redshift_file() << "\n";
             out << "# omega eigenvalues file = " << cfg.omega_eigenvalues_file()
@@ -858,8 +877,10 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
             out << "# effective cs2 y grid   = " << cfg.effcs2_y_grid() << "\n";
             out << "# effective cs2 data     = " << cfg.effcs2_data() << "\n";
         }
+        out << "#\n";
     }
-    out << "#\n# Information from Cuba integration:\n";
+
+    out << "# Information from Cuba integration:\n";
     if (cfg.cuba_fail() == 0) {
         out << "#\t Accuracy reached.\n";
     }
