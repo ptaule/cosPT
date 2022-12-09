@@ -99,13 +99,13 @@ int rsd_velocity_power(
     kernel_computer_validate_n(arguments, n, tables);
     kernel_computer_validate_kernel_index(arguments, kernel_index, tables);
 #endif
-    /* If N < 1 or there are more factors N than wavenumbers, do nothing */
-    if (N < 1 || n < N) return kernel_index;
-
     // If kernel_index is not known, -1 is sent as argument
     if (kernel_index == -1) {
         kernel_index = tables.loop_params.arguments_2_kernel_index(arguments);
     }
+
+    /* If N < 1 or there are more factors N than wavenumbers, do nothing */
+    if (N < 1 || n < N) return kernel_index;
 
     // Alias reference to kernel we are working with for convenience/readability
     RSDKernel& kernel = tables.vel_power_kernels.at(static_cast<size_t>(kernel_index)).
