@@ -138,7 +138,7 @@ int main(int argc, char* argv[]) {
             if (n_loops > 0) {
                 if (loop_params.rsd()) {
                     n_comp = 3; /* Monopole, quadrupole, hexadecapole */
-                    n_dims = 3 * n_loops;
+                    n_dims = 3 * n_loops + 1;
                 }
                 else {
                     n_comp = input.pair_correlations.size();
