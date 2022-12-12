@@ -19,7 +19,7 @@ struct IntegrationVariables {
     Vec1D<double> magnitudes; /* Loop momenta magnitudes */
     Vec1D<double> cos_theta;  /* Cosine of polar angles of the loop momenta */
     Vec1D<double> phi;        /* Azimutal angles */
-    double mu_los;           /* RSD: Cosine of angle between k and L.o.S. */
+    double mu_los;            /* RSD: Cosine of angle between k and L.o.S. */
 
     IntegrationVariables(std::size_t n_loops) : mu_los(0) {
         magnitudes.assign(n_loops,0);
@@ -130,8 +130,7 @@ class IntegrandTables {
         void reset_kernels();
         void reset_rsd_kernels();
 
-        void ps_compute_bare_dot_prod(); /* Power spectrum */
-        void bs_compute_bare_dot_prod(); /* Bispectrum */
+        void compute_bare_dot_prod();
 
         void compute_bare_los_proj();
         void compute_comp_los_proj();
