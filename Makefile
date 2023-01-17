@@ -9,7 +9,7 @@ BENCHMARK_EXE = $(BUILD_DIR)/bench
 
 SRC_FILES = bispectrum_tree_level.cpp combinatorics.cpp diagrams.cpp \
 		integrand.cpp interpolation.cpp io.cpp kernel_evolution.cpp parameters.cpp \
-		spt_kernels.cpp tables.cpp utilities.cpp version.cpp
+		rsd.cpp spt_kernels.cpp tables.cpp utilities.cpp version.cpp
 SRC = $(addprefix $(SRC_DIR)/, $(SRC_FILES))
 OBJ = $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 HEADERS = $(wildcard $(INC_DIR)/*.hpp)

@@ -152,11 +152,11 @@ void diagram_term(
                     arg_config.c().kernel_index, 1, tables);
         }
 
-        kernel_evolution(arg_config.a().args.data(),
+        compute_gen_kernels(arg_config.a().args.data(),
                 arg_config.a().kernel_index, 2, tables);
-        kernel_evolution(arg_config.b().args.data(),
+        compute_gen_kernels(arg_config.b().args.data(),
                 arg_config.b().kernel_index, 1, tables);
-        kernel_evolution(arg_config.c().args.data(),
+        compute_gen_kernels(arg_config.c().args.data(),
                 arg_config.c().kernel_index, 1, tables);
 
         size_t time_steps = tables.eta_grid.time_steps();

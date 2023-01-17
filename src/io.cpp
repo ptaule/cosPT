@@ -84,11 +84,23 @@ void write_results(
 
     if (cfg.spectrum() == POWERSPECTRUM) {
         out << "#\n#" << setw(17) << "k";
-        for (auto& el : cfg.pair_correlations()) {
-            out << setw(13) << "P_lin " << el;
-            if (cfg.n_loops() > 0) {
-                out << setw(7)  << "P_"     << cfg.n_loops() << "loop " << el;
-                out << setw(7)  << "err_"   << cfg.n_loops() << "loop " << el;
+
+        if (cfg.rsd()) {
+            for (int i = 0; i < 3; ++i) {
+                out << setw(14) << "P_l" << 2*i << "_L0";
+                if (cfg.n_loops() > 0) {
+                    out << setw(14)  << "P_l" << 2*i << "_L"   << cfg.n_loops();
+                    out << setw(14)  << "err_l" << 2*i << "_L" << cfg.n_loops();
+                }
+            }
+        }
+        else {
+            for (auto& el : cfg.pair_correlations()) {
+                out << setw(13) << "P_L0 " << el;
+                if (cfg.n_loops() > 0) {
+                    out << setw(7)  << "P_L"     << cfg.n_loops() << " " << el;
+                    out << setw(7)  << "err_L"   << cfg.n_loops() << " " << el;
+                }
             }
         }
     }
@@ -98,10 +110,10 @@ void write_results(
         out << setw(18) << "k_c";
 
         for (auto& el : cfg.triple_correlations()) {
-            out << setw(13) << "B_tree " << el;
+            out << setw(13) << "B_L0 " << el;
             if (cfg.n_loops() > 0) {
-                out << setw(7)  << "B_"     << cfg.n_loops() << "loop " << el;
-                out << setw(7)  << "err_"   << cfg.n_loops() << "loop " << el;
+                out << setw(7)  << "B_L"   << cfg.n_loops() << " " << el;
+                out << setw(7)  << "err_L" << cfg.n_loops() << " " << el;
             }
         }
     }
@@ -110,11 +122,22 @@ void write_results(
     out << std::setw(18) << cfg.k_a();
 
     if (cfg.spectrum() == POWERSPECTRUM) {
-        for (size_t i = 0; i < cfg.pair_correlations().size(); ++i) {
-            out << setw(18) << tree_level_result.at(i);
-            if (cfg.n_loops() > 0) {
-                out << setw(18) << loop_result.at(i);
-                out << setw(18) << errors.at(i);
+        if (cfg.rsd()) {
+            for (size_t i = 0; i < 3; ++i) {
+                out << setw(18) << tree_level_result.at(i);
+                if (cfg.n_loops() > 0) {
+                    out << setw(18) << loop_result.at(i);
+                    out << setw(18) << errors.at(i);
+                }
+            }
+        }
+        else {
+            for (size_t i = 0; i < cfg.pair_correlations().size(); ++i) {
+                out << setw(18) << tree_level_result.at(i);
+                if (cfg.n_loops() > 0) {
+                    out << setw(18) << loop_result.at(i);
+                    out << setw(18) << errors.at(i);
+                }
             }
         }
     }

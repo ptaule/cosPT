@@ -119,8 +119,25 @@ Config::Config(const std::string& ini_file,
         throw ConfigException("Encountered type exception for q_min/q_max setting.");
     }
 
+    /* RSD. Read before spectrum settings, so that warning messages can be
+     * given if rsd AND correlations are set */
+    if (cfg.lookupValue("rsd", rsd_)) {
+        int rsd_growth_f_int;
+        if (cfg.lookupValue("rsd_growth_f", rsd_growth_f_)) {}
+        /* If not found as double, try int */
+        else if (cfg.lookupValue("rsd_growth_f", rsd_growth_f_int)) {
+            rsd_growth_f_ = static_cast<double>(rsd_growth_f_int);
+        }
+        else {
+            rsd_growth_f_ = 1;
+            std::cout <<
+                "Info: No value for rsd_growth_f read, setting the value to "
+                << rsd_growth_f_ << "."<< std::endl;
+        }
+    }
     set_spectrum(cfg);
     set_dynamics(cfg);
+
 
     /* Compute single hard limit? */
     if (cfg.lookupValue("single_hard_limit", single_hard_limit_)) {
@@ -277,25 +294,37 @@ void Config::set_spectrum(const libconfig::Config& cfg)
         try {
             const libconfig::Setting& correlation = cfg.lookup("correlations");
             int count = correlation.getLength();
-            if (count == 0) {
-                throw ConfigException("No correlations in configuration file.");
+            if (count == 0 && !rsd_) {
+                std::cout << "Info: correlations setting empty, computing [0,0]."
+                    << std::endl;
+                pair_correlations_.push_back({0,0});
             }
-            for (int i = 0; i < count; ++i) {
-                if (correlation[i].getLength() != 2) {
-                    throw ConfigException(
-                        "Correlation must be two indices (powerspectrum)");
+            else if (count > 0 && rsd_) {
+                std::cout << "Warning: correlations setting ignored for RSD."
+                    << std::endl;
+            }
+            else {
+                for (int i = 0; i < count; ++i) {
+                    if (correlation[i].getLength() != 2) {
+                        throw ConfigException(
+                            "Correlation must be two indices (powerspectrum)");
+                    }
+                    int a = correlation[i][0];
+                    int b = correlation[i][1];
+                    if (a < 0 || a >= COMPONENTS || b < 0 || b >= COMPONENTS) {
+                        throw ConfigException("a and b must be element in [0," +
+                                std::to_string(COMPONENTS) + "]");
+                    }
+                    pair_correlations_.push_back({a,b});
                 }
-                int a = correlation[i][0];
-                int b = correlation[i][1];
-                if (a < 0 || a >= COMPONENTS || b < 0 || b >= COMPONENTS) {
-                    throw ConfigException("a and b must be element in [0," +
-                            std::to_string(COMPONENTS) + "]");
-                }
-                pair_correlations_.push_back({a,b});
             }
         }
         catch (const libconfig::SettingNotFoundException& nfex) {
-            throw ConfigException("No correlations in configuration file.");
+            if (!rsd_) {
+                std::cout << "Info: No correlation setting read, computing [0,0]."
+                    << std::endl;
+                pair_correlations_.push_back({0,0});
+            }
         }
         catch (const ConfigException& e) {
             throw e;
@@ -317,30 +346,42 @@ void Config::set_spectrum(const libconfig::Config& cfg)
         try {
             const libconfig::Setting& correlation = cfg.lookup("correlations");
             int count = correlation.getLength();
-            if (count == 0) {
-                throw ConfigException("No correlations in configuration file.");
+            if (count == 0 && !rsd_) {
+                std::cout << "Info: correlations setting empty, computing [0,0,0]."
+                    << std::endl;
+                triple_correlations_.push_back({0,0,0});
             }
-            for (int i = 0; i < count; ++i) {
-                if (correlation[i].getLength() != 3) {
-                    throw ConfigException(
-                        "Correlation must be three indices (bispectrum)");
+            else if (count > 0 && rsd_) {
+                std::cout << "Warning: correlations setting ignored for RSD."
+                    << std::endl;
+            }
+            else {
+                for (int i = 0; i < count; ++i) {
+                    if (correlation[i].getLength() != 3) {
+                        throw ConfigException(
+                                "Correlation must be three indices (bispectrum)");
+                    }
+                    int a = correlation[i][0];
+                    int b = correlation[i][1];
+                    int c = correlation[i][2];
+                    if (a < 0 || a >= COMPONENTS || b < 0 || b >= COMPONENTS ||
+                            c < 0 || c >= COMPONENTS) {
+                        throw ConfigException("a, b and c must be element in [0," +
+                                std::to_string(COMPONENTS) + "]");
+                    }
+                    triple_correlations_.push_back({a,b,c});
                 }
-                int a = correlation[i][0];
-                int b = correlation[i][1];
-                int c = correlation[i][2];
-                if (a < 0 || a >= COMPONENTS || b < 0 || b >= COMPONENTS ||
-                        c < 0 || c >= COMPONENTS) {
-                    throw ConfigException("a, b and c must be element in [0," +
-                            std::to_string(COMPONENTS) + "]");
-                }
-                triple_correlations_.push_back({a,b,c});
             }
         }
         catch (const ConfigException& e) {
             throw e;
         }
         catch (const libconfig::SettingNotFoundException& nfex) {
-            throw ConfigException("No correlations in configuration file.");
+            if (!rsd_) {
+                std::cout << "Info: No correlation setting read, computing [0,0]."
+                    << std::endl;
+                pair_correlations_.push_back({0,0});
+            }
         }
         catch (const libconfig::SettingTypeException& tex) {
             throw ConfigException(
@@ -724,8 +765,15 @@ void Config::set_cuba_statefile(const libconfig::Setting& cuba_settings)
 
 std::ostream& operator<<(std::ostream& out, const Config& cfg) {
     if (cfg.spectrum() == POWERSPECTRUM) {
-        out << "# Matter power spectrum P(k) at " << cfg.n_loops()
-            << "-loop for k = " << cfg.k_a() << "\n";
+        if (cfg.rsd()) {
+            out << "# Power spectrum multipoles Pl(k) in redshift space at "
+                << cfg.n_loops()
+                << "-loop for k = " << cfg.k_a() << "\n";
+        }
+        else {
+            out << "# Matter power spectrum P(k) at " << cfg.n_loops()
+                << "-loop for k = " << cfg.k_a() << "\n";
+        }
     }
     else {
         out << "# Matter bispectrum B(k) at " << cfg.n_loops() << "-loop for\n"
@@ -734,29 +782,34 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
             << "# k_c    = " << cfg.k_c() << "\n"
             << "# cos_ab = " << cfg.cos_ab() << "\n";
     }
-    out << "#\n# Description: " << cfg.description() << "\n";
-    out <<    "# Git hash:    " << build_git_sha << "\n";
-    out <<    "# Build time:  " << build_git_time << "\n";
+    out << "#\n";
+    out << "# Description: " << cfg.description() << "\n";
+    out << "# Git hash:    " << build_git_sha     << "\n";
+    out << "# Build time:  " << build_git_time    << "\n";
+    out << "#\n";
 
-    out << "#\n# Correlations (zero-indexed components):\n# ";
-    if (cfg.spectrum() == POWERSPECTRUM) {
-        for (auto& el : cfg.pair_correlations()) {
-            out << " " << el <<  " ,";
+    if (!cfg.rsd()) {
+        out << "# Correlations (zero-indexed components):\n# ";
+        if (cfg.spectrum() == POWERSPECTRUM) {
+            for (auto& el : cfg.pair_correlations()) {
+                out << " " << el <<  " ,";
+            }
         }
-    }
-    else {
-        for (auto& el : cfg.triple_correlations()) {
-            out << " " << el <<  " ,";
+        else {
+            for (auto& el : cfg.triple_correlations()) {
+                out << " " << el <<  " ,";
+            }
         }
+        out << "\n#\n";
     }
 
     if (cfg.single_hard_limit()) {
-        out << "\n#\n# Computing single-hard limit with fixed Q1 = "
+        out << "# Computing single-hard limit with fixed Q1 = "
             << cfg.sh_Q1()
-            << " h/Mpc.";
+            << "\n#\n";
     }
 
-    out << "\n#\n# Input power spectrum read from " << cfg.input_ps_file() << "\n";
+    out << "# Input power spectrum read from " << cfg.input_ps_file() << "\n";
     if (cfg.input_ps_rescale() != 1) {
         out << "# Input power spectrum rescaled by a factor ";
         if (!cfg.input_ps_rescale_str().empty()) {
@@ -765,11 +818,12 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
         else {
             out << cfg.input_ps_rescale();
         }
-        out << " before interpolation.";
+        out << " before interpolation." << "\n";
     }
+    out << "#\n";
 
     out << std::scientific;
-    out << "\n#\n# Integration limits:\n";
+    out << "# Integration limits:\n";
     out << "#\t q_min = " << cfg.q_min() << "\n";
     out << "#\t q_max = " << cfg.q_max() << "\n";
 
@@ -781,30 +835,36 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
     if (!cfg.cuba_statefile().empty()) {
         out << "#\t statefile     = " << cfg.cuba_statefile() << "\n";
     }
+    out << "#\n";
+
+    if (cfg.rsd()) {
+        out << "# (RSD) growth_f = " << cfg.rsd_growth_f() << "\n#\n";
+    }
 
     if (cfg.dynamics() == EVOLVE_IC_ASYMP || cfg.dynamics() == EVOLVE_IC_EDS) {
-        out << "#\n# ODE settings:\n";
+        out << "# ODE settings:\n";
         out << std::scientific;
         out << "#\t abs tolerance = " << cfg.ode_atol() << "\n";
         out << "#\t rel tolerance = " << cfg.ode_rtol() << "\n";
-        out << "#\t start step    = " << cfg.ode_hstart() << "\n";
+        out << "#\t start step    = " << cfg.ode_hstart() << "\n#\n";
 
-        out << "#\n# Time grid settings:\n";
+        out << "# Time grid settings:\n";
         out << "#\t time steps     = " << cfg.time_steps() << "\n";
         if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
             out << "#\t pre time steps = " << cfg.pre_time_steps() << "\n";
             out << "#\t eta asymp      = " << cfg.eta_asymp() << "\n";
         }
         out << "#\t eta ini        = " << cfg.eta_ini() << "\n";
-        out << "#\t eta fin        = " << cfg.eta_fin() << "\n";
+        out << "#\t eta fin        = " << cfg.eta_fin() << "\n#\n";
 
-        out << "#\n# Dynamics settings:\n";
+        out << "# Dynamics settings:\n";
         if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
             out << "# f_nu      = " << cfg.f_nu() << "\n";
             out << "# omega_m_0 = " << cfg.omega_m_0() << "\n";
         }
+        out << "#\n";
 
-        out << "#\n# zeta file              = " << cfg.zeta_file() << "\n";
+        out << "# zeta file              = " << cfg.zeta_file() << "\n";
         if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
             out << "# redshift file          = " << cfg.redshift_file() << "\n";
             out << "# omega eigenvalues file = " << cfg.omega_eigenvalues_file()
@@ -817,8 +877,10 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
             out << "# effective cs2 y grid   = " << cfg.effcs2_y_grid() << "\n";
             out << "# effective cs2 data     = " << cfg.effcs2_data() << "\n";
         }
+        out << "#\n";
     }
-    out << "#\n# Information from Cuba integration:\n";
+
+    out << "# Information from Cuba integration:\n";
     if (cfg.cuba_fail() == 0) {
         out << "#\t Accuracy reached.\n";
     }
@@ -849,8 +911,9 @@ static inline size_t uintpow(int a, int b) {
 
 
 
-LoopParameters::LoopParameters(int n_loops, Spectrum spectrum, Dynamics dynamics)
-    : dynamics_(dynamics), spectrum_(spectrum), n_loops_(n_loops)
+LoopParameters::LoopParameters(int n_loops, Spectrum spectrum,
+        Dynamics dynamics, bool rsd)
+    : dynamics_(dynamics), spectrum_(spectrum), rsd_(rsd), n_loops_(n_loops)
 {
     if (n_loops_ < 0 || n_loops_ > 2) {
         throw(std::invalid_argument("LoopParameters::LoopParameters(): "

@@ -6,6 +6,7 @@
 */
 
 #include <cmath>
+#include <exception>
 #include <iostream>
 #include <stdexcept>
 #include <utility>
@@ -21,6 +22,7 @@
 #include "../include/diagrams.hpp"
 #include "../include/interpolation.hpp"
 #include "../include/integrand.hpp"
+#include "../include/rsd.hpp"
 
 /* Turn off vector bounds check if not in debug-mode */
 #if DEBUG == 0
@@ -45,16 +47,46 @@ void configuration_term(
     const ArgumentConfiguration& arg_config_r =
         diagram.get_arg_config_r(rearr_idx, sign_idx);
 
-    /* Pointers to SPTKernel vector or last time step of Kernel vector */
-    double* values_l = nullptr;
-    double* values_r = nullptr;
+    const Dynamics dynamics = tables.loop_params.dynamics();
+    bool rsd = tables.loop_params.rsd();
 
-    if (tables.loop_params.dynamics() == EDS_SPT) {
+    /* If dynamics is EdS-SPT or these set initial conditions, compute the
+     * EdS-SPT kernels */
+    if (dynamics == EDS_SPT || dynamics == EVOLVE_IC_EDS) {
         compute_SPT_kernels(arg_config_l.args.data(),
                 arg_config_l.kernel_index, 2 * diagram.l + diagram.m, tables);
         compute_SPT_kernels(arg_config_r.args.data(),
                 arg_config_r.kernel_index, 2 * diagram.r + diagram.m, tables);
+    }
+    /* Else, evolve kernels with asymptotic initial conditions */
+    else {
+        compute_gen_kernels(arg_config_l.args.data(), arg_config_l.kernel_index,
+                2 * diagram.l + diagram.m, tables);
+        compute_gen_kernels(arg_config_r.args.data(), arg_config_r.kernel_index,
+                2 * diagram.r + diagram.m, tables);
+    }
 
+    if (rsd) {
+        compute_rsd_kernels(arg_config_l.args.data(), arg_config_l.kernel_index,
+                2 * diagram.l + diagram.m, tables);
+        compute_rsd_kernels(arg_config_r.args.data(), arg_config_r.kernel_index,
+                2 * diagram.r + diagram.m, tables);
+
+        /* Read values for two-point correlators.
+         * If l != r, there are two diagrams corresponding to l <-> r */
+        term_results.at(0) = tables.rsd_kernels
+            .at(static_cast<size_t>(arg_config_l.kernel_index)).value
+            * tables.rsd_kernels
+            .at(static_cast<size_t>(arg_config_r.kernel_index)).value
+            * (diagram.l == diagram.r ? 1 : 2);
+        return;
+    }
+
+    /* Pointers to SPTKernel vector or last time step of Kernel vector */
+    double* values_l = nullptr;
+    double* values_r = nullptr;
+
+    if (dynamics == EDS_SPT) {
         values_l = tables.spt_kernels
                        .at(static_cast<size_t>(arg_config_l.kernel_index))
                        .values;
@@ -62,21 +94,7 @@ void configuration_term(
                        .at(static_cast<size_t>(arg_config_r.kernel_index))
                        .values;
     }
-    else if (tables.loop_params.dynamics() == EVOLVE_IC_ASYMP ||
-             tables.loop_params.dynamics() == EVOLVE_IC_EDS) {
-        /* If EdS-SPT initial conditions, compute EdS-kernels */
-        if (tables.loop_params.dynamics() == EVOLVE_IC_EDS) {
-            compute_SPT_kernels(arg_config_l.args.data(),
-                    arg_config_l.kernel_index, 2 * diagram.l + diagram.m, tables);
-            compute_SPT_kernels(arg_config_r.args.data(),
-                    arg_config_r.kernel_index, 2 * diagram.r + diagram.m, tables);
-        }
-
-        kernel_evolution(arg_config_l.args.data(), arg_config_l.kernel_index,
-                2 * diagram.l + diagram.m, tables);
-        kernel_evolution(arg_config_r.args.data(), arg_config_r.kernel_index,
-                2 * diagram.r + diagram.m, tables);
-
+    else {
         size_t time_steps = tables.eta_grid.time_steps();
         values_l = tables.kernels.at(static_cast<size_t>(arg_config_l.kernel_index))
                        .values.at(time_steps - 1)
@@ -85,12 +103,7 @@ void configuration_term(
                        .values.at(time_steps - 1)
                        .data();
     }
-    else {
-        throw std::runtime_error("integrand_term(): Unknown dynamics.");
-    }
 
-    // Get values for two-point correlators
-    // If l != r, there are two diagrams corresponding to l <-> r
     if (diagram.l == diagram.r) {
         for (size_t i = 0; i < pair_correlations.size(); ++i) {
             term_results.at(i) = values_l[pair_correlations.at(i).first()] *
@@ -120,7 +133,7 @@ void diagram_term(
     diagram.print_diagram_tags(std::cout);
     std::cout << std::endl;
 #endif
-    size_t n_correlations = input.pair_correlations.size();
+    size_t n_comp = diagram_results.size();
 
     // Loop over momentum rearrangement and sign flips
     for (size_t i = 0; i < diagram.n_rearrangements(); ++i) {
@@ -144,14 +157,14 @@ void diagram_term(
                 continue;
             }
 
-            Vec1D<double> term_results(n_correlations, 0.0);
+            Vec1D<double> term_results(n_comp, 0.0);
             configuration_term(diagram, i, j, input.pair_correlations, tables,
                     term_results);
 
             for (auto& el : term_results) {
                 el *= heaviside_theta * input.input_ps(q_m1);
             }
-            for (size_t a = 0; a < n_correlations; ++a) {
+            for (size_t a = 0; a < n_comp; ++a) {
                 diagram_results.at(a) += term_results.at(a);
             }
 #if DEBUG >= 2
@@ -163,118 +176,11 @@ void diagram_term(
         }
     }
 
-    for (size_t i = 0; i < n_correlations; ++i) {
+    for (size_t i = 0; i < n_comp; ++i) {
         diagram_results.at(i) *= diagram.diagram_factor();
         diagram_results.at(i) /= static_cast<double>(
                 diagram.n_rearrangements() * diagram.n_sign_configs());
     }
-}
-
-
-
-int integrand(
-        __attribute__((unused)) const int *ndim,
-        const cubareal xx[],
-        __attribute__((unused)) const int *ncomp,
-        cubareal ff[],
-        void *userdata,
-        __attribute__((unused)) const int *nvec,
-        const int *core
-        )
-{
-    IntegrationInput& input = *static_cast<IntegrationInput*>(userdata);
-
-    /*  For thread <*core + 1> (index 0 is reserved for master), we use the */
-    /*  IntegrandTables number *core+1 */
-    IntegrandTables& tables = input.tables_vec.at(static_cast<size_t>(*core + 1));
-
-    int n_loops = tables.loop_params.n_loops();
-    IntegrationVariables& vars = tables.vars;
-
-    double ratio = input.q_max/input.q_min;
-    double log_ratio = std::log(ratio);
-    double jacobian = 1.0;
-
-    switch (n_loops) {
-        case 1:
-            if (input.single_hard_limit) {
-                vars.cos_theta.at(0) = xx[0];
-            }
-            else {
-                vars.magnitudes.at(0) = input.q_min * pow(ratio,xx[0]);
-                vars.cos_theta.at(0) = xx[1];
-                jacobian = log(ratio) * CUBE(vars.magnitudes.at(0));
-            }
-            break;
-        case 2:
-            if (input.single_hard_limit) {
-                vars.magnitudes.at(1) = input.q_min * pow(ratio,xx[0]);
-                vars.cos_theta.at(0) = xx[1];
-                vars.cos_theta.at(1) = xx[2];
-                /* We may fix the coordinate system s.t. vars.phi[0] = 0 */
-                vars.phi.at(1) = xx[3] * TWOPI;
-                jacobian = TWOPI * log_ratio * CUBE(vars.magnitudes.at(1));
-
-            }
-            else {
-                vars.magnitudes.at(0) = input.q_min * pow(ratio,xx[0]);
-                vars.magnitudes.at(1) = input.q_min * pow(ratio,xx[0] * xx[1]);
-                vars.cos_theta.at(0) = xx[2];
-                vars.cos_theta.at(1) = xx[3];
-                /* We may fix the coordinate system s.t. vars.phi[0] = 0 */
-                vars.phi.at(1) = xx[4] * TWOPI;
-                jacobian = TWOPI * xx[0]
-                    * SQUARE(log_ratio)
-                    * CUBE(vars.magnitudes.at(0))
-                    * CUBE(vars.magnitudes.at(1));
-            }
-            break;
-        default:
-            throw(std::invalid_argument("ps::integrand(): n_loops is not 1 or 2."));
-    }
-
-    size_t n_correlations = input.pair_correlations.size();
-    Vec1D<double> results(n_correlations, 0.0);
-    Vec1D<double> diagram_results(n_correlations, 0.0);
-    try {
-        /* Zero-initialize kernel tables */
-        tables.reset();
-        // Compute dot_products-, alpha- and beta-tables
-        tables.compute_tables();
-
-        // Loop over all diagrams
-        for (auto& diagram : input.ps_diagrams) {
-            diagram_term(diagram, input, tables, diagram_results);
-
-            /* Add diagram results to results and reset diagram results */
-            for (size_t j = 0; j < n_correlations; ++j) {
-                results.at(j) += diagram_results.at(j);
-            }
-            std::fill(diagram_results.begin(), diagram_results.end(), 0.0);
-        }
-
-        int i = 0;
-        /* Skip P_lin(Q1) if single_hard_limit = true */
-        if (input.single_hard_limit) ++i;
-        for (; i < tables.loop_params.n_loops(); ++i) {
-            for (auto& el : results) {
-                el *= input.input_ps(
-                    tables.vars.magnitudes.at(static_cast<size_t>(i)));
-            }
-        }
-    }
-    catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        /* Tell CUBA an error occured */
-        return -999;
-    }
-
-    for (size_t i = 0; i < n_correlations; ++i) {
-        ff[i] = results.at(i) * jacobian;
-    }
-
-    /* Return success */
-    return 0;
 }
 } /* namespace ps */
 
@@ -335,13 +241,13 @@ void configuration_term(
                     diagram.n_ca, tables);
         }
 
-        kernel_evolution(arg_config.a().args.data(),
+        compute_gen_kernels(arg_config.a().args.data(),
                 arg_config.a().kernel_index, 2 * diagram.n_a + diagram.n_ab +
                 diagram.n_ca, tables);
-        kernel_evolution(arg_config.b().args.data(),
+        compute_gen_kernels(arg_config.b().args.data(),
                 arg_config.b().kernel_index, 2 * diagram.n_b + diagram.n_ab +
                 diagram.n_bc, tables);
-        kernel_evolution(arg_config.c().args.data(),
+        compute_gen_kernels(arg_config.c().args.data(),
                 arg_config.c().kernel_index, 2 * diagram.n_c + diagram.n_bc +
                 diagram.n_ca, tables);
 
@@ -383,7 +289,7 @@ void diagram_term(
     diagram.print_diagram_tags(std::cout);
     std::cout << std::endl;
 #endif
-    size_t n_correlations = input.triple_correlations.size();
+    size_t n_comp = diagram_results.size();
 
     /* Loop over momentum rearrangement, sign flips and overall loop assosiations */
     size_t overall_loop_assosiations = diagram.overall_loop() ? 6 : 1;
@@ -406,7 +312,7 @@ void diagram_term(
                     continue;
                 }
 
-                Vec1D<double> term_results(n_correlations, 0.0);
+                Vec1D<double> term_results(n_comp, 0.0);
                 configuration_term(diagram, i, j, k,
                         input.triple_correlations, tables, term_results);
 
@@ -442,7 +348,7 @@ void diagram_term(
                 for (auto& el : term_results) {
                     el *= heaviside_theta;
                 }
-                for (size_t a = 0; a < n_correlations; ++a) {
+                for (size_t a = 0; a < n_comp; ++a) {
                     diagram_results.at(a) += term_results.at(a);
                 }
 #if DEBUG >= 2
@@ -455,7 +361,7 @@ void diagram_term(
         }
     }
 
-    for (size_t i = 0; i < n_correlations; ++i) {
+    for (size_t i = 0; i < n_comp; ++i) {
         diagram_results.at(i) *= diagram.diagram_factor();
         /* Divide by # rearrangments, sign configurations for connecting lines
          * and divide by 2 for switching sign of overall loop (if present) */
@@ -464,6 +370,7 @@ void diagram_term(
             (diagram.overall_loop() ? 2 : 1));
     }
 }
+} /* namespace bs */
 
 
 
@@ -483,59 +390,72 @@ int integrand(
     /*  IntegrandTables number *core+1 */
     IntegrandTables& tables = input.tables_vec.at(static_cast<size_t>(*core + 1));
 
+    size_t n_comp = static_cast<size_t>(*ncomp);
     int n_loops = tables.loop_params.n_loops();
     IntegrationVariables& vars = tables.vars;
+
+    Spectrum spectrum = tables.loop_params.spectrum();
+    bool rsd = tables.loop_params.rsd();
+
+#if DEBUG > 1
+    /* Check that n_loops > 0 */
+    if (n_loops < 1) {
+        throw std::runtime_error("n_loops is not larger than or equal to 1.");
+    }
+#endif
 
     double ratio = input.q_max/input.q_min;
     double log_ratio = std::log(ratio);
     double jacobian = 1.0;
 
-    switch (n_loops) {
-        case 1:
-            if (input.single_hard_limit) {
-                vars.cos_theta.at(0) = xx[0];
-                vars.phi.at(0) = xx[1] * TWOPI;
-                jacobian = TWOPI;
-            }
-            else {
-                vars.magnitudes.at(0) = input.q_min * pow(ratio,xx[0]);
-                vars.cos_theta.at(0) = xx[1];
-                vars.phi.at(0) = xx[2] * TWOPI;
-                jacobian = TWOPI * log(ratio) * CUBE(vars.magnitudes.at(0));
-            }
-            break;
-        case 2:
-            if (input.single_hard_limit) {
-                vars.magnitudes.at(1) = input.q_min * pow(ratio,xx[0]);
-                vars.cos_theta.at(0) = xx[1];
-                vars.cos_theta.at(1) = xx[2];
-                /* We may fix the coordinate system s.t. vars.phi[0] = 0 */
-                vars.phi.at(0) = xx[3] * TWOPI;
-                vars.phi.at(1) = xx[4] * TWOPI;
-                jacobian = SQUARE(TWOPI) * log_ratio * CUBE(vars.magnitudes.at(1));
+    int idx = 0; /* Index for reading xx-array */
+    double Q1_xx = 0; /* Temp storage of xx-element for Q1 if not single_hard_limit */
 
-            }
-            else {
-                vars.magnitudes.at(0) = input.q_min * pow(ratio,xx[0]);
-                vars.magnitudes.at(1) = input.q_min * pow(ratio,xx[0] * xx[1]);
-                vars.cos_theta.at(0) = xx[2];
-                vars.cos_theta.at(1) = xx[3];
-                /* We may fix the coordinate system s.t. vars.phi[0] = 0 */
-                vars.phi.at(0) = xx[4] * TWOPI;
-                vars.phi.at(1) = xx[5] * TWOPI;
-                jacobian = SQUARE(TWOPI) * xx[0]
-                    * SQUARE(log_ratio)
-                    * CUBE(vars.magnitudes.at(0))
-                    * CUBE(vars.magnitudes.at(1));
-            }
-            break;
-        default:
-            throw(std::invalid_argument("bs::integrand(): n_loops is not 1."));
+    if (rsd) {
+        vars.mu_los = xx[idx++];
+    }
+    /* 1-loop */
+    if (!input.single_hard_limit) {
+        Q1_xx = xx[idx++];
+        vars.magnitudes.at(0) = input.q_min * pow(ratio, Q1_xx);
+        jacobian *= log_ratio * CUBE(vars.magnitudes.at(0));
     }
 
-    size_t n_correlations = input.triple_correlations.size();
-    Vec1D<double> results(n_correlations, 0.0);
-    Vec1D<double> diagram_results(n_correlations, 0.0);
+    vars.cos_theta.at(0) = xx[idx++];
+    /* For bispectrum or RSD we cannot fix phi[0] = 0 */
+    if (spectrum == BISPECTRUM || rsd) {
+        vars.phi.at(0) = xx[idx++] * TWOPI;
+        jacobian *= TWOPI;
+    }
+
+    /* 2-loop */
+    if (n_loops > 1){
+        if (!input.single_hard_limit) {
+            vars.magnitudes.at(1) = input.q_min *
+                pow(vars.magnitudes.at(0) / input.q_min, xx[idx++]);
+            jacobian *= Q1_xx;
+        }
+        else {
+            vars.magnitudes.at(1) = input.q_min * pow(ratio,xx[idx++]);
+        }
+        jacobian *= log_ratio * CUBE(vars.magnitudes.at(1));
+        vars.cos_theta.at(1) = xx[idx++];
+        vars.phi.at(1) = xx[idx++] * TWOPI;
+        jacobian *= TWOPI;
+    }
+
+    Vec1D<double> results(n_comp, 0.0);
+    Vec1D<double> diagram_results;
+
+    /* For RSD, we only compute the [0,0] (or [0,0,0] for bispectrum)
+     * correlation. Therefore we only need diagram_results of size 1 */
+    if (rsd) {
+        diagram_results.resize(1);
+    }
+    else {
+        diagram_results.resize(n_comp);
+    }
+
     try {
         /* Zero-initialize kernel tables */
         tables.reset();
@@ -543,14 +463,31 @@ int integrand(
         tables.compute_tables();
 
         // Loop over all diagrams
-        for (auto& diagram : input.bs_diagrams) {
-            diagram_term(diagram, input, tables, diagram_results);
+        if (spectrum == POWERSPECTRUM) {
+            for (auto& diagram : input.ps_diagrams) {
+                ps::diagram_term(diagram, input, tables, diagram_results);
 
-            /* Add diagram results to results and reset diagram results */
-            for (size_t j = 0; j < n_correlations; ++j) {
-                results.at(j) += diagram_results.at(j);
+                /* Add diagram results to results and reset diagram results */
+                for (size_t j = 0; j < n_comp; ++j) {
+                    /* If RSD, only one element of diagram_results (index 0),
+                     * if not use j */
+                    size_t idx = rsd ? 0 : j;
+                    results.at(j) += diagram_results.at(idx);
+                }
+                std::fill(diagram_results.begin(), diagram_results.end(), 0.0);
             }
-            std::fill(diagram_results.begin(), diagram_results.end(), 0.0);
+        }
+        else {
+            /* Bispectrum */
+            for (auto& diagram : input.bs_diagrams) {
+                bs::diagram_term(diagram, input, tables, diagram_results);
+
+                /* Add diagram results to results and reset diagram results */
+                for (size_t j = 0; j < n_comp; ++j) {
+                    results.at(j) += diagram_results.at(j);
+                }
+                std::fill(diagram_results.begin(), diagram_results.end(), 0.0);
+            }
         }
 
         int i = 0;
@@ -562,6 +499,14 @@ int integrand(
                     tables.vars.magnitudes.at(static_cast<size_t>(i)));
             }
         }
+
+        /* RSD multipoles: multiply with Legendre polynomials */
+        if (rsd) {
+            results.at(1) *= 0.5 * (3 * SQUARE(vars.mu_los) - 1);
+            results.at(2) *= 0.125 * (
+                    35 * POW4(vars.mu_los) - 30 * SQUARE(vars.mu_los) + 3
+                    );
+        }
     }
     catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
@@ -569,11 +514,10 @@ int integrand(
         return -999;
     }
 
-    for (size_t i = 0; i < n_correlations; ++i) {
+    for (size_t i = 0; i < n_comp; ++i) {
         ff[i] = results.at(i) * jacobian;
     }
 
     /* Return success */
     return 0;
 }
-} /* namespace bs */

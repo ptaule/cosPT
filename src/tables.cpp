@@ -158,15 +158,18 @@ IntegrandTables::IntegrandTables(
         double k_a,
         double k_b,
         double cos_ab,
+        double rsd_growth_f,
         const LoopParameters& loop_params,
         const SumTable& sum_table,
         const EvolutionParameters& ev_params,
         const EtaGrid& eta_grid
         ) :
-    k_a(k_a), k_b(k_b), cos_ab(cos_ab), loop_params(loop_params),
-    sum_table(sum_table), ev_params(ev_params), eta_grid(eta_grid),
+    k_a(k_a), k_b(k_b), cos_ab(cos_ab), rsd_f(rsd_growth_f),
+    loop_params(loop_params), sum_table(sum_table), ev_params(ev_params),
+    eta_grid(eta_grid),
     vars(IntegrationVariables(static_cast<size_t>(loop_params.n_loops())))
 {
+    int n_loops = loop_params.n_loops();
     size_t n_coeffs = loop_params.n_coeffs();
     size_t n_configs = loop_params.n_configs();
     size_t n_kernels = loop_params.n_kernels();
@@ -189,12 +192,11 @@ IntegrandTables::IntegrandTables(
 
     if (loop_params.dynamics() == EDS_SPT ||
         loop_params.dynamics() == EVOLVE_IC_EDS) {
-        spt_kernels.resize(loop_params.n_kernels());
+        spt_kernels.resize(n_kernels);
     }
     if (loop_params.dynamics() == EVOLVE_IC_EDS ||
         loop_params.dynamics() == EVOLVE_IC_ASYMP
         ) {
-        spt_kernels.resize(n_kernels);
         kernels.resize(n_kernels);
 
         for (size_t i = 0; i < n_kernels; ++i) {
@@ -202,23 +204,16 @@ IntegrandTables::IntegrandTables(
                 Vec1D<double>(COMPONENTS));
         }
     }
-}
+    if (loop_params.rsd()) {
+        bare_los_projection_.resize(n_coeffs);
+        comp_los_projection_.resize(n_configs);
 
+        rsd_kernels.resize(n_kernels);
+        vel_power_kernels.resize(n_kernels);
 
-
-IntegrandTables::IntegrandTables(
-        double k_a,
-        const LoopParameters& loop_params,
-        const SumTable& sum_table,
-        const EvolutionParameters& ev_params,
-        const EtaGrid& eta_grid
-        ) :
-    IntegrandTables(k_a, 0, 0, loop_params, sum_table, ev_params, eta_grid)
-{
-    if (loop_params.spectrum() == BISPECTRUM) {
-        throw(std::invalid_argument(
-            "IntegrandTables::IntegrandTables(): this constructor can only be "
-            "used for spetrum = POWERSPECTRUM."));
+        for (size_t i = 0; i < n_kernels; ++i) {
+            vel_power_kernels.at(i).resize(2*static_cast<size_t>(n_loops));
+        }
     }
 }
 
@@ -239,6 +234,9 @@ void IntegrandTables::reset()
         /* loop_params.dynamics() == EVOLVE_IC_EDS */
         reset_spt_kernels();
         reset_kernels();
+    }
+    if (loop_params.rsd()) {
+        reset_rsd_kernels();
     }
 }
 
@@ -269,12 +267,31 @@ void IntegrandTables::reset_kernels()
 
 
 
+void IntegrandTables::reset_rsd_kernels()
+{
+    for (size_t i = 0; i < loop_params.n_kernels(); ++i) {
+        rsd_kernels.at(i).computed = false;
+        rsd_kernels.at(i).value = 0;
+
+        for (auto& el : vel_power_kernels.at(i)) {
+            el.value    = 0;
+            el.computed = false;
+        }
+    }
+}
+
+
+
 void IntegrandTables::compute_bare_dot_prod()
 {
     int n_loops = loop_params.n_loops();
     size_t n_coeffs = loop_params.n_coeffs();
-
     size_t k_a_idx = n_coeffs - 1;
+
+    /* Diagonal products correspond to Q1*Q1, etc. */
+    for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
+        bare_dot_prod.at(i).at(i) = SQUARE(vars.magnitudes.at(i));
+    }
     bare_dot_prod.at(k_a_idx).at(k_a_idx) = SQUARE(k_a);
 
     double value = 0;
@@ -286,37 +303,34 @@ void IntegrandTables::compute_bare_dot_prod()
         bare_dot_prod.at(i).at(k_a_idx) = value;
     }
 
-    /* Diagonal products correspond to Q1*Q1, etc. */
-    for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
-        bare_dot_prod.at(i).at(i) = SQUARE(vars.magnitudes.at(i));
-    }
+    if (n_loops > 1) {
+        /* Compute Q_i * Q_j */
+        for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
+            for (size_t j = 0; j < i; ++j) {
+                double sin_theta_i = sqrt(1 - SQUARE(vars.cos_theta.at(i)));
+                double sin_theta_j = sqrt(1 - SQUARE(vars.cos_theta.at(j)));
 
-    /* Compute Q_i * Q_j */
-    for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
-        for (size_t j = 0; j < i; ++j) {
-            double sin_theta_i = sqrt(1 - SQUARE(vars.cos_theta.at(i)));
-            double sin_theta_j = sqrt(1 - SQUARE(vars.cos_theta.at(j)));
+                value = cos(vars.phi.at(i)) * sin_theta_i *
+                    cos(vars.phi.at(j)) * sin_theta_j +
+                    sin(vars.phi.at(i)) * sin_theta_i *
+                    sin(vars.phi.at(j)) * sin_theta_j +
+                    vars.cos_theta.at(i) * vars.cos_theta.at(j);
 
-            value = cos(vars.phi.at(i)) * sin_theta_i *
-                cos(vars.phi.at(j)) * sin_theta_j +
-                sin(vars.phi.at(i)) * sin_theta_i *
-                sin(vars.phi.at(j)) * sin_theta_j +
-                vars.cos_theta.at(i) * vars.cos_theta.at(j);
-
-            value *= vars.magnitudes.at(i) * vars.magnitudes.at(j);
-            bare_dot_prod.at(i).at(j) = value;
-            bare_dot_prod.at(j).at(i) = value;
+                value *= vars.magnitudes.at(i) * vars.magnitudes.at(j);
+                bare_dot_prod.at(i).at(j) = value;
+                bare_dot_prod.at(j).at(i) = value;
+            }
         }
     }
 
     if (loop_params.spectrum() == BISPECTRUM) {
         size_t k_b_idx = n_coeffs - 2;
-        bare_dot_prod.at(k_b_idx).at(k_b_idx) = SQUARE(k_b);
 
         double value = k_a * k_b * cos_ab;
         bare_dot_prod.at(k_a_idx).at(k_b_idx) = value;
         bare_dot_prod.at(k_b_idx).at(k_a_idx) = value;
 
+        bare_dot_prod.at(k_b_idx).at(k_b_idx) = SQUARE(k_b);
         /* Products involving k_b and Q_i (special case since k_b has azimuthal
          * angle 0)*/
         double sin_ab = sqrt(1 - SQUARE(cos_ab));
@@ -329,6 +343,46 @@ void IntegrandTables::compute_bare_dot_prod()
             bare_dot_prod.at(k_b_idx).at(i) = value;
             bare_dot_prod.at(i).at(k_b_idx) = value;
         }
+    }
+}
+
+
+
+void IntegrandTables::compute_bare_los_proj() {
+    int n_loops = loop_params.n_loops();
+    size_t n_coeffs = loop_params.n_coeffs();
+
+    size_t k_a_idx = n_coeffs - 1;
+
+    double sin_los_angle = sqrt(1 - SQUARE(vars.mu_los));
+
+    /* k_a along L.o.S. is simply k_a * mu_los_ */
+    bare_los_projection_.at(k_a_idx) = k_a * vars.mu_los;
+
+    /* Products involving k_a and Q_i has the form k_a*Q_i*cos(theta_i) */
+    for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
+        double sin_theta_i = sqrt(1 - SQUARE(vars.cos_theta.at(i)));
+        bare_los_projection_.at(i) = vars.magnitudes.at(i) * (
+                sin_los_angle * sin_theta_i * cos(vars.phi.at(i)) +
+                vars.mu_los * vars.cos_theta.at(i)
+                );
+    }
+}
+
+
+
+void IntegrandTables::compute_comp_los_proj() {
+    size_t n_coeffs = loop_params.n_coeffs();
+    size_t n_configs = loop_params.n_configs();
+
+    for (size_t a = 0; a < n_configs; ++a) {
+        double product_value = 0;
+
+        label2config(static_cast<int>(a), a_coeffs);
+        for (size_t i = 0; i < n_coeffs; ++i) {
+            product_value += a_coeffs[i] * bare_los_projection_.at(i);
+        }
+        comp_los_projection_.at(a) = product_value;
     }
 }
 
@@ -402,5 +456,19 @@ void IntegrandTables::compute_alpha_beta()
             alpha_.at(a).at(b) = alpha_val;
             beta_.at(a).at(b) = beta_val;
         }
+    }
+}
+
+
+
+void IntegrandTables::compute_tables()
+{
+    compute_bare_dot_prod();
+    compute_comp_dot_prod();
+    compute_alpha_beta();
+
+    if (loop_params.rsd()) {
+        compute_bare_los_proj();
+        compute_comp_los_proj();
     }
 }

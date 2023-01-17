@@ -5,13 +5,13 @@
    Copyright (c) 2020 Petter Taule. All rights reserved.
 */
 
-#include <ostream>
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <array>
-#include <algorithm>
-#include <cmath>
 
 #include <gsl/gsl_sf.h>
 #include <gsl/gsl_odeiv2.h>
@@ -20,6 +20,7 @@
 #include "../include/combinatorics.hpp"
 #include "../include/interpolation.hpp"
 #include "../include/parameters.hpp"
+#include "../include/spt_kernels.hpp"
 #include "../include/tables.hpp"
 #include "../include/kernel_evolution.hpp"
 
@@ -49,8 +50,8 @@ void vertex(
         .at(static_cast<size_t>(sum_l))
         .at(static_cast<size_t>(sum_r));
 
-    int index_l = kernel_evolution(args_l, -1, m_l, tables);
-    int index_r = kernel_evolution(args_r, -1, m_r, tables);
+    int index_l = compute_gen_kernels(args_l, -1, m_l, tables);
+    int index_r = compute_gen_kernels(args_r, -1, m_r, tables);
 
     size_t a, b, c;
 
@@ -207,7 +208,7 @@ void compute_RHS_sum(
 
 
 /* Structure which compiles user input to GSL ODE */
-class ODEInput {
+struct ODEInput {
     public:
         const int n;
         const double k;
@@ -443,32 +444,16 @@ static void kernel_initial_conditions(
 
 
 
-int kernel_evolution(
+int compute_gen_kernels(
         const int arguments[],
-        int kernel_index,             /* -1 indicates not known */
+        int kernel_index,
         int n,
         IntegrandTables& tables
         )
 {
 #if DEBUG >= 1
-    int argument_index = tables.loop_params.arguments_2_kernel_index(arguments);
-
-    if (kernel_index != -1 && argument_index != kernel_index) {
-        throw(std::logic_error("Index computed from kernel arguments does not "
-                               "equal kernel index."));
-    }
-
-    int n_args = 0;
-    for (size_t i = 0; i < tables.loop_params.n_kernel_args(); ++i) {
-        if (arguments[i] != tables.loop_params.zero_label()){
-            n_args++;
-        }
-    }
-    if (n_args != n) {
-        throw(std::invalid_argument(
-            "compute_SPT_kernels(): number of non-zero-label arguments in "
-            "arguments does not equal n."));
-    }
+    kernel_computer_validate_n(arguments, n, tables);
+    kernel_computer_validate_kernel_index(arguments, kernel_index, tables);
 #endif
 
     /* If kernel_index is not known, -1 is sent as argument */
@@ -479,7 +464,7 @@ int kernel_evolution(
     /* Alias reference to kernel we are working with for convenience/readability */
     Kernel& kernel = tables.kernels.at(static_cast<size_t>(kernel_index));
 
-    /* Check if the SPT kernels are already computed */
+    /* Check if the kernels are already computed */
     if (kernel.computed) return kernel_index;
 
     /* Interpolation variables for interpolated RHS */

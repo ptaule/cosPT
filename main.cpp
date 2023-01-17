@@ -93,12 +93,11 @@ int main(int argc, char* argv[]) {
 
         int n_loops = cfg.n_loops();
         int n_dims = 0; /* Dimension of integral measure */
-        size_t n_correlations = 0; /* Number of correlations to compute */
+        size_t n_comp = 0; /* Integrand dimension */
 
-        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
+        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
         SumTable sum_table(loop_params);
 
-        integrand_t integrand = nullptr;
         IntegrationInput input(cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
@@ -107,8 +106,10 @@ int main(int argc, char* argv[]) {
 
         if (cfg.dynamics() == EVOLVE_IC_EDS) {
             if (COMPONENTS != 2) {
-                throw std::runtime_error("Dynamics = EVOLVE_IC_EDS not "
-                                         "implemented for COMPONENTS != 2");
+                std::cerr <<
+                    "Dynamics = EVOLVE_IC_EDS not implemented for COMPONENTS != 2"
+                    << std::endl;
+                return EXIT_FAILURE;
             }
             ev_params = EvolutionParameters(cfg.zeta_file(), cfg.ode_atol(),
                     cfg.ode_rtol(), cfg.ode_hstart());
@@ -116,8 +117,10 @@ int main(int argc, char* argv[]) {
         }
         else if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
             if (COMPONENTS != 4) {
-                throw std::runtime_error("Dynamics = EVOLVE_IC_ASYMP not "
-                                         "implemented for COMPONENTS != 2");
+                std::cerr <<
+                    "Dynamics = EVOLVE_IC_EDS not implemented for COMPONENTS != 2"
+                    << std::endl;
+                return EXIT_FAILURE;
             }
             ev_params = EvolutionParameters(cfg.f_nu(), cfg.omega_m_0(),
                     cfg.zeta_file(), cfg.redshift_file(),
@@ -125,41 +128,53 @@ int main(int argc, char* argv[]) {
                     cfg.effcs2_x_grid(), cfg.effcs2_y_grid(),
                     cfg.effcs2_data(), cfg.ode_atol(), cfg.ode_rtol(),
                     cfg.ode_hstart());
-            eta_grid = EtaGrid(cfg.pre_time_steps(), cfg.time_steps(), cfg.eta_ini(),
-                    cfg.eta_fin(), cfg.eta_asymp());
+            eta_grid = EtaGrid(cfg.pre_time_steps(), cfg.time_steps(),
+                    cfg.eta_ini(), cfg.eta_fin(), cfg.eta_asymp());
         }
 
         if (cfg.spectrum() == POWERSPECTRUM) {
             input.pair_correlations = cfg.pair_correlations();
-            n_correlations = input.pair_correlations.size();
 
             if (n_loops > 0) {
-                n_dims = 3 * n_loops - 1;
-                integrand = (integrand_t)ps::integrand;
+                if (loop_params.rsd()) {
+                    n_comp = 3; /* Monopole, quadrupole, hexadecapole */
+                    n_dims = 3 * n_loops + 1;
+                }
+                else {
+                    n_comp = input.pair_correlations.size();
+                    n_dims = 3 * n_loops - 1;
+                }
 
                 input.ps_diagrams = ps::construct_diagrams(loop_params);
 
                 /* (Master + n_cores) instances of IntegrandTables */
                 for (int i = 0; i < cfg.cuba_cores() + 1; ++i) {
-                    input.tables_vec.emplace_back(cfg.k_a(), loop_params,
-                            sum_table, ev_params, eta_grid);
+                    input.tables_vec.emplace_back(cfg.k_a(), 0, 0,
+                            cfg.rsd_growth_f(), loop_params, sum_table,
+                            ev_params, eta_grid);
                 }
             }
         }
         else if (cfg.spectrum() == BISPECTRUM) {
             input.triple_correlations = cfg.triple_correlations();
-            n_correlations = input.triple_correlations.size();
+            n_comp = input.triple_correlations.size();
+
+            if (cfg.rsd()) {
+                std::cerr << "RSD is not implemented for bispectrum. Exiting."
+                    << std::endl;
+                return EXIT_FAILURE;
+            }
 
             if (n_loops > 0) {
                 n_dims = 3 * n_loops;
-                integrand = (integrand_t)bs::integrand;
 
                 input.bs_diagrams = bs::construct_diagrams(loop_params);
 
                 /* (Master + n_cores) instances of IntegrandTables */
                 for (int i = 0; i < cfg.cuba_cores() + 1; ++i) {
                     input.tables_vec.emplace_back(cfg.k_a(), cfg.k_b(),
-                            cfg.cos_ab(), loop_params, sum_table, ev_params,
+                            cfg.cos_ab(), cfg.rsd_growth_f(), loop_params,
+                            sum_table, ev_params,
                             eta_grid);
                 }
             }
@@ -168,21 +183,37 @@ int main(int argc, char* argv[]) {
             throw ConfigException("Unknown spectrum.");
         }
 
-        Vec1D<double> tree_level_result(n_correlations, 0);
-        Vec1D<double> loop_result(n_correlations, 0);
-        Vec1D<double> errors(n_correlations, 0);
+        Vec1D<double> tree_level_result(n_comp, 0);
+        Vec1D<double> loop_result(n_comp, 0);
+        Vec1D<double> errors(n_comp, 0);
 
         if (cfg.spectrum() == POWERSPECTRUM) {
             /* Linear power spectrum */
             for (auto& el : tree_level_result) {
                 el = input.input_ps(cfg.k_a());
             }
+            if (cfg.rsd()) {
+                /* Linear monopole */
+                tree_level_result.at(0) *= (
+                        1 + 2.0/3.0 * cfg.rsd_growth_f() +
+                        1.0/5.0 * SQUARE(cfg.rsd_growth_f())
+                        );
+                /* Linear quadrupole */
+                tree_level_result.at(1) *= (
+                        4.0/3.0 * cfg.rsd_growth_f()
+                        + 4.0/7.0 * SQUARE(cfg.rsd_growth_f())
+                        );
+                /* Linear hexadecapole */
+                tree_level_result.at(2) *= (
+                        8.0/35.0 * SQUARE(cfg.rsd_growth_f()));
+            }
             if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
                 Vec1D<double> F1_eta_ini(COMPONENTS, 0);
                 Vec1D<double> F1_eta_fin(COMPONENTS, 0);
-                compute_F1(cfg.k_a(), ev_params, eta_grid, F1_eta_ini, F1_eta_fin);
+                compute_F1(cfg.k_a(), ev_params, eta_grid, F1_eta_ini,
+                        F1_eta_fin);
 
-                for (size_t i = 0; i < n_correlations; ++i) {
+                for (size_t i = 0; i < n_comp; ++i) {
                     tree_level_result.at(i) *=
                         F1_eta_fin.at(static_cast<size_t>(
                             input.pair_correlations.at(i).first())) *
@@ -194,7 +225,7 @@ int main(int argc, char* argv[]) {
         else {
             /* Tree level bispectrum */
             IntegrandTables tables(cfg.k_a(), cfg.k_b(), cfg.cos_ab(),
-                    loop_params, sum_table, ev_params, eta_grid);
+                    0, loop_params, sum_table, ev_params, eta_grid);
             tree_level_bispectrum(tables, input.input_ps,
                     input.triple_correlations, tree_level_result);
         }
@@ -217,9 +248,9 @@ int main(int argc, char* argv[]) {
                 cuba_retain_statefile = 16;
             }
 
-            Vec1D<cubareal> integration_results(n_correlations, 0);
-            Vec1D<cubareal> integration_errors(n_correlations, 0);
-            Vec1D<cubareal> integration_probs(n_correlations, 0);
+            Vec1D<cubareal> integration_results(n_comp, 0);
+            Vec1D<cubareal> integration_errors(n_comp, 0);
+            Vec1D<cubareal> integration_probs(n_comp, 0);
 #define CUBA_NVEC 1
 #define CUBA_LAST 4
 #define CUBA_SEED 0
@@ -228,7 +259,7 @@ int main(int argc, char* argv[]) {
 #define CUBA_NNEW 1000
 #define CUBA_NMIN 2
 #define CUBA_FLATNESS 25.
-            Suave(n_dims, static_cast<int>(n_correlations), integrand, &input,
+            Suave(n_dims, static_cast<int>(n_comp), (integrand_t)integrand, &input,
                   CUBA_NVEC, cfg.cuba_rtol(), cfg.cuba_atol(),
                   (cfg.cuba_verbose() | CUBA_LAST | cuba_retain_statefile),
                   CUBA_SEED, CUBA_MINEVAL, cfg.cuba_maxevals(), CUBA_NNEW,
@@ -245,10 +276,12 @@ int main(int argc, char* argv[]) {
              * - Phi integration of first loop momenta gives a factor 2pi
              *   (powerspectrum) */
             double overall_factor =
-                pow(2, n_loops) * gsl_sf_fact(static_cast<unsigned>(n_loops)) *
-                (cfg.spectrum() == POWERSPECTRUM ? TWOPI : 1);
+                pow(2, n_loops) * gsl_sf_fact(static_cast<unsigned>(n_loops));
+            if (cfg.spectrum() == POWERSPECTRUM && !cfg.rsd()) {
+                overall_factor *= TWOPI;
+            }
 
-            for (size_t i = 0; i < n_correlations; ++i) {
+            for (size_t i = 0; i < n_comp; ++i) {
                 loop_result.at(i) = overall_factor *
                     static_cast<double>(integration_results.at(i));
                 errors.at(i) = overall_factor *
@@ -257,6 +290,11 @@ int main(int argc, char* argv[]) {
                 if (input.single_hard_limit) {
                     loop_result.at(i) *= SQUARE(cfg.sh_Q1());
                     errors.at(i)      *= SQUARE(cfg.sh_Q1());
+                }
+
+                if (cfg.rsd()) {
+                    loop_result.at(i) *= 4 * static_cast<double>(i) + 1;
+                    errors.at(i)      *= 4 * static_cast<double>(i) + 1;
                 }
             }
 

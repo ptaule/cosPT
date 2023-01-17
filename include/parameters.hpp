@@ -37,6 +37,9 @@ class Config {
         double k_c_ = 0;
         double cos_ab_ = 0;
 
+        bool rsd_ = false;
+        double rsd_growth_f_ = 0;
+
         double q_min_ = 1e-4;
         double q_max_ = 1;
 
@@ -108,7 +111,10 @@ class Config {
         double k_a() const {return k_a_;}
         double k_b() const {return k_b_;}
         double k_c() const {return k_c_;}
-        double cos_ab() const {return cos_ab_;};
+        double cos_ab() const {return cos_ab_;}
+
+        bool rsd() const {return rsd_;}
+        double rsd_growth_f() const {return rsd_growth_f_; }
 
         double q_min() const {return q_min_;}
         double q_max() const {return q_max_;}
@@ -180,6 +186,7 @@ class LoopParameters {
     private:
         const Dynamics dynamics_;
         const Spectrum spectrum_;
+        const bool rsd_;
 
         const int n_loops_;
 
@@ -200,10 +207,12 @@ class LoopParameters {
         int bs_arguments_2_kernel_index(const int arguments[]) const;
 
     public:
-        LoopParameters(int n_loops, Spectrum spectrum, Dynamics dynamics);
+        LoopParameters(int n_loops, Spectrum spectrum, Dynamics dynamics,
+                bool rsd);
 
         Dynamics dynamics() const { return dynamics_; }
         Spectrum spectrum() const { return spectrum_; }
+        bool rsd() const { return rsd_; }
 
         int n_loops() const { return n_loops_; }
         std::size_t n_coeffs() const { return n_coeffs_; }
