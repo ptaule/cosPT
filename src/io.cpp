@@ -98,8 +98,8 @@ void write_results(
             for (auto& el : cfg.pair_correlations()) {
                 out << setw(13) << "P_L0 " << el;
                 if (cfg.n_loops() > 0) {
-                    out << setw(7)  << "P_L"     << cfg.n_loops() << " " << el;
-                    out << setw(7)  << "err_L"   << cfg.n_loops() << " " << el;
+                    out << setw(13)  << "P_L"   << cfg.n_loops() << " " << el;
+                    out << setw(13)  << "err_L" << cfg.n_loops() << " " << el;
                 }
             }
         }
@@ -112,8 +112,8 @@ void write_results(
         for (auto& el : cfg.triple_correlations()) {
             out << setw(13) << "B_L0 " << el;
             if (cfg.n_loops() > 0) {
-                out << setw(7)  << "B_L"   << cfg.n_loops() << " " << el;
-                out << setw(7)  << "err_L" << cfg.n_loops() << " " << el;
+                out << setw(13)  << "B_L"   << cfg.n_loops() << " " << el;
+                out << setw(13)  << "err_L" << cfg.n_loops() << " " << el;
             }
         }
     }
