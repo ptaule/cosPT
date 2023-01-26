@@ -50,16 +50,16 @@ void configuration_term(
     const Dynamics dynamics = tables.loop_params.dynamics();
     bool rsd = tables.loop_params.rsd();
 
-    /* If dynamics is EdS-SPT or these set initial conditions, compute the
-     * EdS-SPT kernels */
+    /* If dynamics is EdS-SPT or the corresponding kernels are used for initial
+     * conditions, compute the EdS-SPT kernels */
     if (dynamics == EDS_SPT || dynamics == EVOLVE_IC_EDS) {
         compute_SPT_kernels(arg_config_l.args.data(),
                 arg_config_l.kernel_index, 2 * diagram.l + diagram.m, tables);
         compute_SPT_kernels(arg_config_r.args.data(),
                 arg_config_r.kernel_index, 2 * diagram.r + diagram.m, tables);
     }
-    /* Else, evolve kernels with asymptotic initial conditions */
-    else {
+    /* If dynamics is not EdS-SPT, solve general ODE system for kernels */
+    if (dynamics != EDS_SPT) {
         compute_gen_kernels(arg_config_l.args.data(), arg_config_l.kernel_index,
                 2 * diagram.l + diagram.m, tables);
         compute_gen_kernels(arg_config_r.args.data(), arg_config_r.kernel_index,
