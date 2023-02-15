@@ -17,6 +17,17 @@
 #include "../include/io.hpp"
 #include "../include/interpolation.hpp"
 
+#if (__cplusplus < 201402L)
+template <typename T, typename U>
+T exchange(T &storage, U &&value) {
+    T out = std::move(storage);
+    storage = (T)std::move(value);
+    return out;
+}
+#else
+using std::exchange;
+#endif
+
 using std::size_t;
 
 template <class T>
@@ -133,11 +144,11 @@ Interpolation1D::Interpolation1D(
 
 
 Interpolation1D::Interpolation1D(Interpolation1D&& other)
-    : x_min (std::exchange(other.x_min, 0)),
-    x_max(std::exchange(other.x_max, 0)),
-    spline(std::exchange(other.spline, nullptr)),
-    acc(std::exchange(other.acc, nullptr)),
-    type(std::exchange(other.type, nullptr))
+    : x_min (exchange(other.x_min, 0)),
+    x_max(exchange(other.x_max, 0)),
+    spline(exchange(other.spline, nullptr)),
+    acc(exchange(other.acc, nullptr)),
+    type(exchange(other.type, nullptr))
 {}
 
 
@@ -145,11 +156,11 @@ Interpolation1D::Interpolation1D(Interpolation1D&& other)
 Interpolation1D& Interpolation1D::operator=(Interpolation1D&& other)
 {
     if (this != &other) {
-        x_min  = std::exchange(other.x_min, 0);
-        x_max  = std::exchange(other.x_max, 0);
-        acc    = std::exchange(other.acc, nullptr);
-        spline = std::exchange(other.spline, nullptr);
-        type   = std::exchange(other.type, nullptr);
+        x_min  = exchange(other.x_min, 0);
+        x_max  = exchange(other.x_max, 0);
+        acc    = exchange(other.acc, nullptr);
+        spline = exchange(other.spline, nullptr);
+        type   = exchange(other.type, nullptr);
     }
     return *this;
 }
@@ -330,14 +341,14 @@ Interpolation2D::Interpolation2D(
 
 
 Interpolation2D::Interpolation2D(Interpolation2D&& other) noexcept
-    : x_min (std::exchange(other.x_min, 0)),
-    x_max(std::exchange(other.x_max, 0)),
-    y_min(std::exchange(other.y_min, 0)),
-    y_max(std::exchange(other.y_max, 0)),
-    spline(std::exchange(other.spline, nullptr)),
-    x_acc(std::exchange(other.x_acc, nullptr)),
-    y_acc(std::exchange(other.y_acc, nullptr)),
-    type(std::exchange(other.type, nullptr))
+    : x_min (exchange(other.x_min, 0)),
+    x_max(exchange(other.x_max, 0)),
+    y_min(exchange(other.y_min, 0)),
+    y_max(exchange(other.y_max, 0)),
+    spline(exchange(other.spline, nullptr)),
+    x_acc(exchange(other.x_acc, nullptr)),
+    y_acc(exchange(other.y_acc, nullptr)),
+    type(exchange(other.type, nullptr))
 {}
 
 
@@ -345,15 +356,15 @@ Interpolation2D::Interpolation2D(Interpolation2D&& other) noexcept
 Interpolation2D& Interpolation2D::operator=(Interpolation2D&& other)
 {
     if (this != &other) {
-        x_min  = std::exchange(other.x_min, 0);
-        x_max  = std::exchange(other.x_max, 0);
-        y_min  = std::exchange(other.y_min, 0);
-        y_max  = std::exchange(other.y_max, 0);
+        x_min  = exchange(other.x_min, 0);
+        x_max  = exchange(other.x_max, 0);
+        y_min  = exchange(other.y_min, 0);
+        y_max  = exchange(other.y_max, 0);
 
-        x_acc  = std::exchange(other.x_acc, nullptr);
-        y_acc  = std::exchange(other.y_acc, nullptr);
-        spline = std::exchange(other.spline, nullptr);
-        type   = std::exchange(other.type, nullptr);
+        x_acc  = exchange(other.x_acc, nullptr);
+        y_acc  = exchange(other.y_acc, nullptr);
+        spline = exchange(other.spline, nullptr);
+        type   = exchange(other.type, nullptr);
     }
     return *this;
 }

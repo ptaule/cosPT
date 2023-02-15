@@ -14,7 +14,11 @@
 #include <stdexcept>
 #include <algorithm>
 #include <utility>
+
+#if (__cplusplus >= 201703L)
 #include <filesystem>
+namespace fs = std::filesystem;
+#endif
 
 #include <libconfig.h++>
 
@@ -25,7 +29,6 @@
 
 using std::size_t;
 using std::pow;
-namespace fs = std::filesystem;
 
 
 Config::Config(const std::string& ini_file,
@@ -213,7 +216,7 @@ Config::Config(const std::string& ini_file,
 
     /* Input power spectrum */
     try {
-        input_ps_file_ = static_cast<std::string>(cfg.lookup("input_ps_file"));
+        input_ps_file_ = cfg.lookup("input_ps_file").c_str();
     }
     catch (const libconfig::SettingNotFoundException& nfex) {
         throw ConfigException("No input_ps_file setting found in configuration.");
@@ -575,12 +578,12 @@ void Config::set_dynamics(const libconfig::Config& cfg)
             }
         }
         try {
-            zeta_file_ = static_cast<std::string>(cfg.lookup("zeta_file"));
+            zeta_file_ = cfg.lookup("zeta_file").c_str();
 
             if (dynamics_ == EVOLVE_IC_ASYMP) {
-                redshift_file_ = static_cast<std::string>(cfg.lookup("redshift_file"));
+                redshift_file_ = cfg.lookup("redshift_file").c_str();
                 omega_eigenvalues_file_ =
-                    static_cast<std::string>(cfg.lookup("omega_eigenvalues_file"));
+                    cfg.lookup("omega_eigenvalues_file").c_str();
 
                 const libconfig::Setting& F1_ic_files_list = cfg.lookup("F1_ic_files");
                 int count = F1_ic_files_list.getLength();
@@ -591,14 +594,14 @@ void Config::set_dynamics(const libconfig::Config& cfg)
                 }
                 for (int i = 0; i < count; ++i) {
                     F1_ic_files_.push_back(
-                            static_cast<std::string>(F1_ic_files_list[i]));
+                            F1_ic_files_list[i].c_str());
                 }
 
                 const libconfig::Setting& effcs2_files =
                     cfg.lookup("effective_cs2_files");
-                effcs2_x_grid_ = static_cast<std::string>(effcs2_files.lookup("x_grid"));
-                effcs2_y_grid_ = static_cast<std::string>(effcs2_files.lookup("y_grid"));
-                effcs2_data_   = static_cast<std::string>(effcs2_files.lookup("data"));
+                effcs2_x_grid_ = effcs2_files.lookup("x_grid").c_str();
+                effcs2_y_grid_ = effcs2_files.lookup("y_grid").c_str();
+                effcs2_data_   = effcs2_files.lookup("data").c_str();
             }
         }
         catch (const libconfig::SettingNotFoundException& nfex) {
@@ -633,16 +636,20 @@ void Config::set_output_file(const libconfig::Config& cfg)
          * the output file/path can be written to, perform certain checks
          * immediately */
         if (cfg.lookupValue("output_file", output_file_)) {
-            /* Check that directory exists */
+
+            /* For c++ version >= 2017 use routines in <filesystem> to check
+             * that directory exists */
+#if (__cplusplus >= 201703L)
             fs::path p(output_file_);
             if (p.has_parent_path() && !fs::exists(p.parent_path())) {
                 throw ConfigException("Output file directory " +
                                       std::string(p.parent_path()) +
                                       " does not exist.");
             }
+#endif
         }
         else if (cfg.lookupValue("output_path", output_path)) {
-            /* Check that directory exists */
+#if (__cplusplus >= 201703L)
             if (!fs::exists(fs::path(output_path))) {
                 throw ConfigException("Output directory \"" + output_path +
                                       "\" does not exist.");
@@ -651,6 +658,7 @@ void Config::set_output_file(const libconfig::Config& cfg)
                 throw ConfigException("Output directory \"" + output_path +
                                       "\" is not a directory.");
             }
+#endif
 
             std::stringstream ss;
             ss << output_path;
@@ -702,17 +710,21 @@ void Config::set_cuba_statefile(const libconfig::Setting& cuba_settings)
 {
     try {
         if (cuba_settings.lookupValue("statefile", cuba_statefile_)) {
-            /* Check that directory exists */
+
+            /* For c++ version >= 2017 use routines in <filesystem> to check
+             * that directory exists */
+#if (__cplusplus >= 201703L)
             fs::path p(cuba_statefile_);
             if (!fs::exists(p.parent_path())) {
                 throw ConfigException("CUBA statefile file directory " +
                                       std::string(p.parent_path()) +
                                       " does not exist.");
             }
+#endif
         }
         else if (cuba_settings.lookupValue("statefile_path",
                                            cuba_statefile_path)) {
-            /* Check that directory exists */
+#if (__cplusplus >= 201703L)
             if (!fs::exists(fs::path(cuba_statefile_path))) {
                 throw ConfigException("CUBA statefile directory \"" +
                                       cuba_statefile_path + "\" does not exist.");
@@ -721,6 +733,7 @@ void Config::set_cuba_statefile(const libconfig::Setting& cuba_settings)
                 throw ConfigException("CUBA statefile directory \"" +
                                       cuba_statefile_path + "\" is not a directory.");
             }
+#endif
 
             cuba_statefile_ = cuba_statefile_path;
             cuba_statefile_ += "/";

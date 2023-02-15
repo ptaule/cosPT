@@ -115,8 +115,8 @@ void diagram_term(
     size_t k_a_idx = n_coeffs - 1;
     size_t k_b_idx = n_coeffs - 2;
 
-    Triple<ArgumentConfiguration> arg_config = kernel_arguments(diagram_idx,
-            tables.loop_params);
+    Triple<ArgumentConfiguration> arg_config =
+        kernel_arguments(diagram_idx, tables.loop_params);
 
     /* Pointers to SPTKernel vector or last time step of Kernel vector */
     double* values_a = nullptr;

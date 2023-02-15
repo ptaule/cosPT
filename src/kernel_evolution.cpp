@@ -87,9 +87,8 @@ void vertex(
                         .values.at(i)
                         .at(c);
 
-                /* Use switch fallthrough; for case 4 also code in case 2 should be
-                 * executed */
-                __attribute__((fallthrough));
+                /* For case 4 also code in case 2 should be executed */
+                /* fall through */
             case 2:
                 /* Component a = 0 */
                 a = 0, b = 1, c = 0;
