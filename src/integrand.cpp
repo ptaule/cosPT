@@ -299,7 +299,7 @@ void diagram_term(
 #if DEBUG >= 2
                 diagram.print_argument_configuration(std::cout, i, j, k);
 #endif
-                Triple<double> q_xy1 = {0,0,0};
+                Triple<double> q_xy1(0,0,0);
                 int heaviside_theta = 1;
                 diagram.connecting_lines_factors(i, j, k,
                         tables.vars.magnitudes, tables.comp_dot_products(),

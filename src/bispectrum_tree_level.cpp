@@ -31,21 +31,21 @@ Triple<ArgumentConfiguration> kernel_arguments(
     size_t k_b_idx = n_coeffs - 2;
 
     /* Configs for k_a, k_b and k_c = -k_a - k_b */
-    Triple<Vec1D<int>> configs = {
+    Triple<Vec1D<int>> configs(
         Vec1D<int>(n_coeffs, 0),
         Vec1D<int>(n_coeffs, 0),
         Vec1D<int>(n_coeffs, 0)
-    };
+    );
     configs.a().at(k_a_idx) = 1;
     configs.b().at(k_b_idx) = 1;
     configs.c().at(k_a_idx) = -1;
     configs.c().at(k_b_idx) = -1;
 
-    Triple<int> labels = {
+    Triple<int> labels(
         config2label(configs.a()),
         config2label(configs.b()),
         config2label(configs.c())
-    };
+    );
 
     Triple<ArgumentConfiguration> arg_config;
     /* Allocate memory */

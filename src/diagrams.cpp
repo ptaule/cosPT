@@ -397,7 +397,7 @@ void BiSpectrumDiagram::kernel_arguments(
     size_t k_b_idx = n_coeffs - 2;
 
     Vec1D<bool>& sign_config = sign_configs.at(sign_idx);
-    Triple<Vec1D<bool>> signs = {
+    Triple<Vec1D<bool>> signs(
         Vec1D<bool>(sign_config.begin(),
                     sign_config.begin() + n_connecting_loops.ab()),
         Vec1D<bool>(sign_config.begin() + n_connecting_loops.ab(),
@@ -406,24 +406,24 @@ void BiSpectrumDiagram::kernel_arguments(
         Vec1D<bool>(sign_config.begin() + n_connecting_loops.ab() +
                         n_connecting_loops.bc(),
                     sign_config.end())
-    };
+    );
 
-    Triple<Vec1D<int>&> args = {
-        {arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).a().args},
-        {arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).b().args},
-        {arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).c().args}
-    };
+    Triple<Vec1D<int>&> args(
+        arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).a().args,
+        arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).b().args,
+        arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).c().args
+    );
 
     /* How many arguments have been assigned to the kernels a,b,c? */
-    Triple<size_t> args_idx = {0,0,0};
+    Triple<size_t> args_idx(0,0,0);
 
     /* Determine labels of "main" connecting lines (with external/overall loop
      * momenta), and their complementary with oppisite signs */
-    Triple<Vec1D<int>> config_xy = {
+    Triple<Vec1D<int>> config_xy(
         Vec1D<int>(n_coeffs, 0),
         Vec1D<int>(n_coeffs, 0),
         Vec1D<int>(n_coeffs, 0)
-    };
+    );
     Triple<Vec1D<int>> config_xy_sign_flip = config_xy;
 
     /* Single loop config */
@@ -661,11 +661,11 @@ BiSpectrumDiagram::BiSpectrumDiagram(
     n_connecting_loops.bc() = n_bc > 1 ? n_bc - 1 : 0;
     n_connecting_loops.ca() = n_ca > 1 ? n_ca - 1 : 0;
 
-    Triple<Vec2D<bool>> sign_configs_xy = {
+    Triple<Vec2D<bool>> sign_configs_xy(
         connecting_line_sign_flips(n_connecting_loops.ab()),
         connecting_line_sign_flips(n_connecting_loops.bc()),
         connecting_line_sign_flips(n_connecting_loops.ca())
-    };
+    );
 
     compute_sign_flips(sign_configs_xy);
 
@@ -718,14 +718,14 @@ void BiSpectrumDiagram::connecting_lines_factors(
      * for q_bc1 and q_ca1.
      * q_ab (or q_bc, q_ca) is the *total* momentum flowing in the connection
      * ab (or bc or ca) between blobs */
-    Triple<size_t> q_xy1_label = {
+    Triple<size_t> q_xy1_label(
         static_cast<size_t>(
             q_xy1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx).ab()),
         static_cast<size_t>(
             q_xy1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx).bc()),
         static_cast<size_t>(
             q_xy1_labels.at(rearr_idx).at(sign_idx).at(overall_loop_idx).ca())
-    };
+    );
 
     q_xy1 = {
         std::sqrt(dot_products.at(q_xy1_label.ab()).at(q_xy1_label.ab())),
@@ -742,20 +742,20 @@ void BiSpectrumDiagram::connecting_lines_factors(
          * momentum is associated (according to overall_loop_idx) is larger
          * than any of the other total connecting line momenta, the diagram
          * configuration is skipped (heaviside_theta = 0) */
-        Triple<size_t> q_xy_label = {
+        Triple<size_t> q_xy_label(
             static_cast<size_t>(
                 q_xy_labels.at(rearr_idx).at(overall_loop_idx).ab()),
             static_cast<size_t>(
                 q_xy_labels.at(rearr_idx).at(overall_loop_idx).bc()),
             static_cast<size_t>(
                 q_xy_labels.at(rearr_idx).at(overall_loop_idx).ca())
-        };
+        );
 
-        Triple<double> q_xy = {
+        Triple<double> q_xy(
             std::sqrt(dot_products.at(q_xy_label.ab()).at(q_xy_label.ab())),
             std::sqrt(dot_products.at(q_xy_label.bc()).at(q_xy_label.bc())),
             std::sqrt(dot_products.at(q_xy_label.ca()).at(q_xy_label.ca()))
-        };
+        );
 
         switch (overall_loop_idx % 3) {
             case 0:
