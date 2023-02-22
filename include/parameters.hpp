@@ -8,6 +8,7 @@
 #ifndef PARAMETERS_HPP
 #define PARAMETERS_HPP
 
+#include <functional>
 #include <stdexcept>
 #include <string>
 
@@ -203,8 +204,8 @@ class LoopParameters {
 
         int first_composite_block_size = 0; /* Bispectrum */
 
-        int ps_arguments_2_kernel_index(const int arguments[]) const;
-        int bs_arguments_2_kernel_index(const int arguments[]) const;
+        int ps_args_2_kernel_index(const int arguments[]) const;
+        int bs_args_2_kernel_index(const int arguments[]) const;
 
     public:
         LoopParameters(int n_loops, Spectrum spectrum, Dynamics dynamics,
@@ -221,21 +222,7 @@ class LoopParameters {
         std::size_t n_kernel_args() const { return n_kernel_args_; }
         int zero_label() const { return zero_label_; }
 
-        int arguments_2_kernel_index(const int arguments[]) const {
-            if (spectrum_ == POWERSPECTRUM)
-                return ps_arguments_2_kernel_index(arguments);
-            else if (spectrum_ == BISPECTRUM)
-                return bs_arguments_2_kernel_index(arguments);
-            else
-                throw(std::logic_error(
-                    "Parameters::arguments_2_kernel_index(): invalid spectrum."));
-        }
-
-        /* std::vector argument wrapper function */
-        int arguments_2_kernel_index(const std::vector<int> arguments) const
-        {
-            return arguments_2_kernel_index(arguments.data());
-        }
+        std::function<int(const int[])> args_2_kernel_index;
 };
 
 

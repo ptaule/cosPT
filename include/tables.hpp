@@ -8,6 +8,7 @@
 #ifndef TABLES_HPP
 #define TABLES_HPP
 
+#include <functional>
 #include <vector>
 
 #include "utilities.hpp"

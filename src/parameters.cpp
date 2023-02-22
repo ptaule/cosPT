@@ -5,14 +5,15 @@
    Copyright (c) 2020 Petter Taule. All rights reserved.
 */
 
+#include <algorithm>
+#include <cmath>
+#include <functional>
 #include <iostream>
 #include <iomanip>
-#include <cmath>
 #include <vector>
 #include <string>
 #include <sstream>
 #include <stdexcept>
-#include <algorithm>
 #include <utility>
 
 #if (__cplusplus >= 201703L)
@@ -946,6 +947,11 @@ LoopParameters::LoopParameters(int n_loops, Spectrum spectrum,
         /* Max/min single_loops labels */
         single_loop_label_min = static_cast<int>(n_configs_) / 3;
         single_loop_label_max = 2 * static_cast<int>(n_configs_) / 3 - 1;
+
+        /* Set argument-to-kernel index converter to a lambda function for the PS case */
+        args_2_kernel_index = [=](const int args[]) {
+            return this->ps_args_2_kernel_index(args);
+        };
     }
     else if (spectrum_ == BISPECTRUM) {
         n_coeffs_  = static_cast<size_t>(n_loops_) + 2;
@@ -963,6 +969,11 @@ LoopParameters::LoopParameters(int n_loops, Spectrum spectrum,
          * (applicable for overall loop diagram) */
         first_composite_block_size = (static_cast<int>(n_configs_) + 1) *
             single_loop_block_size;
+
+        /* Set argument-to-kernel index converter to a lambda function for the BS case */
+        args_2_kernel_index = [=](const int args[]) {
+            return this->bs_args_2_kernel_index(args);
+        };
     }
     else {
         throw(std::invalid_argument(
@@ -988,7 +999,7 @@ LoopParameters::LoopParameters(int n_loops, Spectrum spectrum,
 
 
 
-int LoopParameters::ps_arguments_2_kernel_index(const int arguments[]) const
+int LoopParameters::ps_args_2_kernel_index(const int arguments[]) const
 {
    /* Precompute powers of two for speedup */
     int pow2[] = {1,2,4,8,16,32,64,128};
@@ -997,7 +1008,7 @@ int LoopParameters::ps_arguments_2_kernel_index(const int arguments[]) const
 #if DEBUG >= 1
     if (!unique_elements(arguments, n_kernel_args_, zero_label_))
         throw(std::logic_error(
-            "LoopParameters::ps_arguments_2_kernel_index(): duplicate "
+            "LoopParameters::ps_args_2_kernel_index(): duplicate "
             "vector arguments passed."));
     int n_k_labels = 0;
 #endif
@@ -1021,7 +1032,7 @@ int LoopParameters::ps_arguments_2_kernel_index(const int arguments[]) const
 #if DEBUG >= 1
         /* We should not get -k in power spectrum computation */
         else if (arguments[i] < single_loop_label_min) {
-            throw(std::logic_error("LoopParameters::ps_arguments_2_kernel_index()"
+            throw(std::logic_error("LoopParameters::ps_args_2_kernel_index()"
                                    ": got argument with -k."));
         }
 #endif
@@ -1037,14 +1048,14 @@ int LoopParameters::ps_arguments_2_kernel_index(const int arguments[]) const
             /* Check that this is in fact a single loop vector */
             if(!single_loop_label(arguments[i], n_coeffs_, spectrum_))
                 throw(std::logic_error(
-                    "LoopParameters::ps_arguments_2_kernel_index(): argument is "
+                    "LoopParameters::ps_args_2_kernel_index(): argument is "
                     "neither 0, composite type, or single loop."));
 #endif
         }
     }
 #if DEBUG >= 1
     if (n_k_labels > 1)
-        throw(std::logic_error("LoopParameters::ps_arguments_2_kernel_index(): "
+        throw(std::logic_error("LoopParameters::ps_args_2_kernel_index(): "
                                "more than one argument is of composite type."));
 #endif
 
@@ -1053,7 +1064,7 @@ int LoopParameters::ps_arguments_2_kernel_index(const int arguments[]) const
 
 
 
-int LoopParameters::bs_arguments_2_kernel_index(const int arguments[]) const
+int LoopParameters::bs_args_2_kernel_index(const int arguments[]) const
 {
    /* Precompute powers of two for speedup */
     int pow2[] = {1,2,4,8,16,32,64,128};
@@ -1062,7 +1073,7 @@ int LoopParameters::bs_arguments_2_kernel_index(const int arguments[]) const
 #if DEBUG >= 1
     if (!unique_elements(arguments, n_kernel_args_, zero_label_))
         throw(std::logic_error(
-            "LoopParameters::bs_arguments_2_kernel_index(): duplicate "
+            "LoopParameters::bs_args_2_kernel_index(): duplicate "
             "vector arguments passed."));
 #endif
 
@@ -1111,7 +1122,7 @@ found_single_loop: ;
 #if DEBUG >= 1
     if (n_composite > 2)
         throw(std::logic_error(
-            "LoopParameters::bs_arguments_2_kernel_index(): more than two "
+            "LoopParameters::bs_args_2_kernel_index(): more than two "
             "arguments is of composite type."));
 #endif
 

@@ -117,9 +117,9 @@ void PowerSpectrumDiagram::kernel_arguments(size_t rearr_idx, size_t sign_idx)
 #endif
 
     arg_configs_l.at(rearr_idx).at(sign_idx).kernel_index =
-        loop_params.arguments_2_kernel_index(arguments_l);
+        loop_params.args_2_kernel_index(arguments_l.data());
     arg_configs_r.at(rearr_idx).at(sign_idx).kernel_index =
-        loop_params.arguments_2_kernel_index(arguments_r);
+        loop_params.args_2_kernel_index(arguments_r.data());
 }
 
 
@@ -600,11 +600,11 @@ void BiSpectrumDiagram::kernel_arguments(
 #endif
 
     arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).a().kernel_index
-        = loop_params.arguments_2_kernel_index(args.a());
+        = loop_params.args_2_kernel_index(args.a().data());
     arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).b().kernel_index
-        = loop_params.arguments_2_kernel_index(args.b());
+        = loop_params.args_2_kernel_index(args.b().data());
     arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).c().kernel_index
-        = loop_params.arguments_2_kernel_index(args.c());
+        = loop_params.args_2_kernel_index(args.c().data());
 }
 
 
