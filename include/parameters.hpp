@@ -41,6 +41,14 @@ class Config {
         bool rsd_ = false;
         double rsd_growth_f_ = 0;
 
+        bool ir_resum_ = false;
+        /* Values from 1605.02149 */
+        double k_s_ = 0.2;
+        double k_osc_ = 1.0/110.0;
+        /* Which PT order are we working at? Relevant for avoiding overcounting
+         * of IR contribution */
+        int pt_order_ = 1;
+
         double q_min_ = 1e-4;
         double q_max_ = 1;
 
@@ -115,7 +123,12 @@ class Config {
         double cos_ab() const {return cos_ab_;}
 
         bool rsd() const {return rsd_;}
-        double rsd_growth_f() const {return rsd_growth_f_; }
+        double rsd_growth_f() const {return rsd_growth_f_;}
+
+        bool ir_resum() const {return ir_resum_;}
+        double k_s() const {return k_s_;}
+        double k_osc() const {return k_osc_;}
+        double pt_order() const {return pt_order_;}
 
         double q_min() const {return q_min_;}
         double q_max() const {return q_max_;}

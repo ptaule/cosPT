@@ -139,9 +139,37 @@ Config::Config(const std::string& ini_file,
                 << rsd_growth_f_ << "."<< std::endl;
         }
     }
+
+    /* IR resummation */
+    if (cfg.lookupValue("ir_resum", ir_resum_)) {
+        int k_s_int;
+        if (cfg.lookupValue("k_s", k_s_)) {}
+        /* If not found as double, try int */
+        else if (cfg.lookupValue("k_s", k_s_int)) {
+            k_s_ = static_cast<double>(k_s_int);
+        }
+
+        int k_osc_int;
+        if (cfg.lookupValue("k_osc", k_osc_)) {}
+        /* If not found as double, try int */
+        else if (cfg.lookupValue("k_osc", k_osc_int)) {
+            k_osc_ = static_cast<double>(k_osc_int);
+        }
+
+        int pt_order_int;
+        if (cfg.lookupValue("pt_order", pt_order_)) {}
+        /* If not found as double, try int */
+        else if (cfg.lookupValue("pt_order", pt_order_int)) {
+            pt_order_ = static_cast<double>(pt_order_int);
+        }
+        else {
+            throw ConfigException("No pt_order parameter read, needed for \
+                    ir_resum = true.");
+        }
+    }
+
     set_spectrum(cfg);
     set_dynamics(cfg);
-
 
     /* Compute single hard limit? */
     if (cfg.lookupValue("single_hard_limit", single_hard_limit_)) {
@@ -853,6 +881,13 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
 
     if (cfg.rsd()) {
         out << "# (RSD) growth_f = " << cfg.rsd_growth_f() << "\n#\n";
+    }
+    if (cfg.ir_resum()) {
+        out << "# IR resummation on, working at PT order N = " <<
+            cfg.pt_order() << "\n";
+        out << "#\tk_s   = " << cfg.k_s() << "\n";
+        out << "#\tk_osc = " << cfg.k_osc() << "\n";
+        out << "#\n";
     }
 
     if (cfg.dynamics() == EVOLVE_IC_ASYMP || cfg.dynamics() == EVOLVE_IC_EDS) {
