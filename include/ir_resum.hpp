@@ -17,6 +17,10 @@
 class Interpolation1D;
 
 
+void DST_II(Vec1D<double>& data);
+void DST_III(Vec1D<double>& data);
+
+
 void compute_ir_damping(
         const Interpolation1D& ps_nw,
         double k_min,

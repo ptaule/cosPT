@@ -6,16 +6,19 @@
 */
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <exception>
 #include <string>
 
 #include <gsl/gsl_errno.h>
+#include <gsl/gsl_fft_real.h>
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_sf_bessel.h>
 
 #include "../include/interpolation.hpp"
 #include "../include/ir_resum.hpp"
+#include "../include/utilities.hpp"
 
 /* Turn off vector bounds check if not in debug-mode */
 #if DEBUG == 0
@@ -23,6 +26,93 @@
 #endif
 
 using std::size_t;
+using std::pow;
+using std::sqrt;
+using std::sin;
+using std::cos;
+
+
+/* Discrete sine transform II */
+void DST_II(Vec1D<double>& data) {
+    size_t N = data.size();
+    /* Check that N is larger than 0 and a power of 2 */
+    if (N == 0 || ((N & (N-1)) != 0)) {
+        throw std::invalid_argument("DST(): data.size() is either 0 or not a"
+                                  "power of 2.");
+    }
+
+    Vec1D<double> input(data);
+    /* Make twice as long by adding zeros. (See
+     * https://en.wikipedia.org/wiki/Discrete_sine_transform ; to convert the
+     * expression to the equivalent FFT sum, we need twice as long an input) */
+    input.insert(input.end(), N, 0);
+
+    /* FFT of purely real input */
+    gsl_fft_real_radix2_transform(input.data(), 1, 2*N);
+    /* Normalization factor 1/sqrt(2*N) */
+    double norm = SQRT2 * sqrt(N);
+    for (auto& el : input) el /= norm;
+
+    for (size_t i = 0; i < N; ++i) {
+        /* gsl_fft_real_radix2_transform uses the fact that the input is real
+         * to store real/imag output at specific locations, see GSL
+         * documentation */
+        double re = input.at(i + 1);
+        double im = -input.at(2*N - i - 1);
+        double arg = static_cast<double>(i + 1) * PI /
+            (2.0 * static_cast<double>(N));
+
+        data.at(i) = SQRT2 * (cos(arg) * im + sin(arg) * re);
+    }
+}
+
+
+
+/* Discrete sine transform III (inverse of DST_II) */
+void DST_III(Vec1D<double>& data) {
+    size_t N = data.size();
+    /* Check that N is larger than 0 and a power of 2 */
+    if (N == 0 || ((N & (N-1)) != 0)) {
+        throw std::invalid_argument("DST(): data.size() is either 0 or not a"
+                                  "power of 2.");
+    }
+
+    Vec1D<double> input(data);
+    /* Change last element to 0 and make four times as long by adding zeros.
+     * (See https://en.wikipedia.org/wiki/Discrete_sine_transform ; to convert
+     * the expression to the equivalent FFT sum, we need twice as long an
+     * input) */
+    input.back() = 0;
+    input.insert(input.end(), 3*N, 0);
+
+    /* FFT of purely real input */
+    gsl_fft_real_radix2_transform(input.data(), 1, 4*N);
+    /* Normalization factor 1/sqrt(2*N) */
+    double norm = 2 * sqrt(N);
+    for (auto& el : input) el /= norm;
+
+    /* Store (normalized) last element of data which is explicitly added in the
+     * final sum. (See https://en.wikipedia.org/wiki/Discrete_sine_transform )
+     * */
+    double last = data.back() / sqrt(N);
+
+    for (size_t i = 0; i < N; ++i) {
+        /* gsl_fft_real_radix2_transform uses the fact that the input is real
+         * to store real/imag output at specific locations, see GSL
+         * documentation.
+         * We need fourier index 2i+1 */
+        size_t idx = 2*i + 1;
+        double re = input.at(idx);
+        double im = -input.at(4*N - idx);
+        double arg = static_cast<double>(idx) * PI /
+            (2.0 * static_cast<double>(N));
+
+        data.at(i) = 4 * (cos(arg) * im + std::sin(arg) * re) +
+            pow(-1,i) * last;
+    }
+}
+
+
 
 struct IRDampingIntParams {
     const Interpolation1D& ps_nw;

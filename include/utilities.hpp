@@ -20,6 +20,7 @@
 #define COMPONENTS 4
 
 /* Constants: */
+#define SQRT2 1.41421356237
 #define PI    3.14159265359
 #define TWOPI 6.28318530718
 
