@@ -49,6 +49,9 @@
 #define COLOR_CYAN    "\x1b[36m"
 #define COLOR_RESET   "\x1b[0m"
 
+/* Unused parameters (to silence gcc warnings) */
+#define UNUSED(x) (void)(x)
+
 /* Vector aliases */
 template <class T>
 using Vec1D = std::vector<T>;

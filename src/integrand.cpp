@@ -375,15 +375,19 @@ void diagram_term(
 
 
 int integrand(
-        __attribute__((unused)) const int *ndim,
+        const int *ndim,
         const cubareal xx[],
-        __attribute__((unused)) const int *ncomp,
+        const int *ncomp,
         cubareal ff[],
         void *userdata,
-        __attribute__((unused)) const int *nvec,
+        const int *nvec,
         const int *core
         )
 {
+    UNUSED(ndim);
+    UNUSED(ncomp);
+    UNUSED(nvec);
+
     IntegrationInput& input = *static_cast<IntegrationInput*>(userdata);
 
     /*  For thread <*core + 1> (index 0 is reserved for master), we use the */

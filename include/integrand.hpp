@@ -39,12 +39,12 @@ struct IntegrationInput {
 
 
 int integrand(
-        __attribute__((unused)) const int *ndim,
+        const int *ndim,
         const double xx[],
-        __attribute__((unused)) const int *ncomp,
+        const int *ncomp,
         double ff[],
         void *userdata,
-        __attribute__((unused)) const int *nvec,
+        const int *nvec,
         const int *core
         );
 
