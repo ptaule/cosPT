@@ -21,6 +21,19 @@ void DST_II(Vec1D<double>& data);
 void DST_III(Vec1D<double>& data);
 
 
+/* Remove BAO wiggles. Default parameters taken from CLASS-PT, i.e. 2004.10607 */
+void remove_BAO_wiggles(
+        const Interpolation1D& ps,
+        Interpolation1D& ps_nw,
+        double k_s = 0.2,
+        double k_osc = 1.0/110.0,
+        double k_max = 10,
+        int N_power = 16,
+        int N_left = 120,
+        int N_right = 240
+        );
+
+
 void compute_ir_damping(
         const Interpolation1D& ps_nw,
         double k_min,

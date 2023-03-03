@@ -9,6 +9,7 @@
 #include <cmath>
 #include <cstddef>
 #include <exception>
+#include <numeric>
 #include <string>
 
 #include <gsl/gsl_errno.h>
@@ -28,6 +29,7 @@
 using std::size_t;
 using std::pow;
 using std::sqrt;
+using std::log;
 using std::sin;
 using std::cos;
 
@@ -110,6 +112,72 @@ void DST_III(Vec1D<double>& data) {
         data.at(i) = 4 * (cos(arg) * im + std::sin(arg) * re) +
             pow(-1,i) * last;
     }
+}
+
+
+
+void remove_BAO_wiggles(
+        const Interpolation1D& ps,
+        Interpolation1D& ps_nw,
+        double k_s,
+        double k_osc,
+        double k_max,
+        int N_power,
+        int N_left,
+        int N_right
+        )
+{
+    /* Wiggle/non-wiggle split as in 2004.10607 */
+    int N = pow(2,N_power);
+
+    Vec1D<double> k_grid(N);
+    Vec1D<double> logkPk(N);
+
+    double k_min = ps.x_minimum();
+    /* If k_max is larger than ps interpolation range, use max of that range */
+    k_max = k_max > ps.x_maximum() ? ps.x_maximum() : k_max;
+
+    /* Create grid of ln(k*Pk) */
+    for (size_t i = 0; i < N; ++i) {
+        double k = k_min + (k_max - k_min) * i / (N - 1);
+        k_grid.at(i) = k;
+        logkPk.at(i) = log(k * ps(k));
+    }
+
+    /* Discrete sine transform */
+    DST_II(logkPk);
+
+    /* Split into odd/even-indexed elements */
+    Vec1D<double> even(N/2);
+    Vec1D<double> odd(N/2);
+
+    for (size_t i = 0; i < N/2; ++i) {
+        even.at(i) = logkPk.at(2*i);
+        odd.at(i) = logkPk.at(2*i + 1);
+    }
+    /* Create corresponding x-vector = [0,1,2,3,...] for interpolation */
+    Vec1D<double> x(N/2);
+    std::iota(x.begin(), x.end(), 0);
+
+    /* Remove the BAO peak, i.e. elements between N_left and N_right */
+    x.erase(x.begin() + N_left, x.begin() + N_right);
+    even.erase(even.begin() + N_left, even.begin() + N_right);
+    odd.erase(odd.begin() + N_left, odd.begin() + N_right);
+
+    Interpolation1D even_removed(x,even);
+    Interpolation1D odd_removed(x,odd);
+
+    Vec1D<double> logkPk_BAO_removed(N);
+    for (size_t i = 0; i < N/2; ++i) {
+        logkPk_BAO_removed.at(2*i)     = even_removed(i);
+        logkPk_BAO_removed.at(2*i + 1) = odd_removed(i);
+    }
+
+    /* Back transform power spectrum with BAO wiggles removed */
+    DST_III(logkPk_BAO_removed);
+
+    /* Interpolate non-wiggly spectrum */
+    ps_nw = Interpolation1D(k_grid, logkPk_BAO_removed);
 }
 
 
