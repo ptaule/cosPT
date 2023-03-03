@@ -21,30 +21,36 @@ void DST_II(Vec1D<double>& data);
 void DST_III(Vec1D<double>& data);
 
 
+struct IRresumSettings {
+    /* Wiggly/non-wiggly split */
+    double k_max = 10;
+    int N_power = 16;
+    int N_left = 120;
+    int N_right = 240;
+    /* Damping factor */
+    double k_min = 1e-4;
+    double k_s = 0.2;
+    double k_osc = 1.0/110.0;
+    double integrate_sub_regions = 10000;
+    double integrate_atol = 0;
+    double integrate_rtol = 1e-6;
+    int integrate_key = GSL_INTEG_GAUSS61;
+};
+
+
 /* Remove BAO wiggles. Default parameters taken from CLASS-PT, i.e. 2004.10607 */
 void remove_BAO_wiggles(
         const Interpolation1D& ps,
         Interpolation1D& ps_nw,
-        double k_s = 0.2,
-        double k_osc = 1.0/110.0,
-        double k_max = 10,
-        int N_power = 16,
-        int N_left = 120,
-        int N_right = 240
+        const IRresumSettings& settings
         );
 
 
 void compute_ir_damping(
         const Interpolation1D& ps_nw,
-        double k_min,
-        double k_s,
-        double k_osc,
-        double& Sigma2,
-        double& delta_Sigma2,
-        size_t sub_regions = 10000,
-        double atol        = 0,
-        double rtol        = 1e-6,
-        int key            = GSL_INTEG_GAUSS61
+        double& Sigma2,       /* out */
+        double& delta_Sigma2, /* out */
+        const IRresumSettings& settings
         );
 
 

@@ -119,23 +119,18 @@ void DST_III(Vec1D<double>& data) {
 void remove_BAO_wiggles(
         const Interpolation1D& ps,
         Interpolation1D& ps_nw,
-        double k_s,
-        double k_osc,
-        double k_max,
-        int N_power,
-        int N_left,
-        int N_right
+        const IRresumSettings& settings
         )
 {
     /* Wiggle/non-wiggle split as in 2004.10607 */
-    int N = pow(2,N_power);
+    int N = pow(2,settings.N_power);
 
     Vec1D<double> k_grid(N);
     Vec1D<double> logkPk(N);
 
     double k_min = ps.x_minimum();
     /* If k_max is larger than ps interpolation range, use max of that range */
-    k_max = k_max > ps.x_maximum() ? ps.x_maximum() : k_max;
+    double k_max = settings.k_max > ps.x_maximum() ? ps.x_maximum() : settings.k_max;
 
     /* Create grid of ln(k*Pk) */
     for (size_t i = 0; i < N; ++i) {
@@ -160,9 +155,9 @@ void remove_BAO_wiggles(
     std::iota(x.begin(), x.end(), 0);
 
     /* Remove the BAO peak, i.e. elements between N_left and N_right */
-    x.erase(x.begin() + N_left, x.begin() + N_right);
-    even.erase(even.begin() + N_left, even.begin() + N_right);
-    odd.erase(odd.begin() + N_left, odd.begin() + N_right);
+    x.erase(x.begin() + settings.N_left, x.begin() + settings.N_right);
+    even.erase(even.begin() + settings.N_left, even.begin() + settings.N_right);
+    odd.erase(odd.begin() + settings.N_left, odd.begin() + settings.N_right);
 
     Interpolation1D even_removed(x,even);
     Interpolation1D odd_removed(x,odd);
@@ -185,11 +180,6 @@ void remove_BAO_wiggles(
 struct IRDampingIntParams {
     const Interpolation1D& ps_nw;
     double k_osc;
-
-    IRDampingIntParams(
-            const Interpolation1D& ps_nw,
-            double k_osc
-            ) : ps_nw(ps_nw), k_osc(k_osc) {}
 };
 
 
@@ -217,29 +207,25 @@ double ir_delta_Sigma_integrand(double q, void* parameters) {
 
 void compute_ir_damping(
         const Interpolation1D& ps_nw,
-        double k_min,
-        double k_s,
-        double k_osc,
         double& Sigma2,        /* out */
         double& delta_Sigma2,  /* out */
-        size_t sub_regions,
-        double atol,
-        double rtol,
-        int key
+        const IRresumSettings& settings
         )
 {
     gsl_integration_workspace* workspace;
-    workspace = gsl_integration_workspace_alloc(sub_regions);
+    workspace = gsl_integration_workspace_alloc(settings.integrate_sub_regions);
 
-    IRDampingIntParams params(ps_nw, k_osc);
+    IRDampingIntParams params{.ps_nw = ps_nw, .k_osc = settings.k_osc};
 
     gsl_function F;
     F.function = ir_Sigma_integrand;
     F.params = static_cast<void*>(&params);
 
     double error;
-    int status = gsl_integration_qag(&F, k_min, k_s, atol, rtol, sub_regions,
-            key, workspace, &Sigma2, &error);
+    int status = gsl_integration_qag(&F, settings.k_min, settings.k_s,
+            settings.integrate_atol, settings.integrate_rtol,
+            settings.integrate_sub_regions, settings.integrate_key, workspace, &Sigma2,
+            &error);
     Sigma2 *= 4.0 * PI / 3.0;
 
     if (status != 0) {
@@ -248,8 +234,10 @@ void compute_ir_damping(
     }
 
     F.function = ir_delta_Sigma_integrand;
-    status = gsl_integration_qag(&F, k_min, k_s, atol, rtol, sub_regions,
-            key, workspace, &delta_Sigma2, &error);
+    status = gsl_integration_qag(&F, settings.k_min, settings.k_s,
+            settings.integrate_atol, settings.integrate_rtol,
+            settings.integrate_sub_regions, settings.integrate_key, workspace,
+            &delta_Sigma2, &error);
     delta_Sigma2 *= 4.0 * PI;
 
     if (status != 0) {
