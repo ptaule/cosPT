@@ -9,20 +9,23 @@
 #include <exception>
 #include <iostream>
 #include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include <cuba.h>
 
-#include "../include/utilities.hpp"
-#include "../include/parameters.hpp"
-#include "../include/tables.hpp"
-#include "../include/spt_kernels.hpp"
-#include "../include/kernel_evolution.hpp"
 #include "../include/diagrams.hpp"
+#include "../include/kernel_evolution.hpp"
 #include "../include/interpolation.hpp"
-#include "../include/integrand.hpp"
+#include "../include/ir_resum.hpp"
+#include "../include/parameters.hpp"
 #include "../include/rsd.hpp"
+#include "../include/spt_kernels.hpp"
+#include "../include/tables.hpp"
+#include "../include/utilities.hpp"
+
+#include "../include/integrand.hpp"
 
 /* Turn off vector bounds check if not in debug-mode */
 #if DEBUG == 0
@@ -30,6 +33,51 @@
 #endif
 
 using std::size_t;
+
+InputPowerSpectrum::InputPowerSpectrum(
+                const std::string& input_ps_filename,
+                double input_ps_rescale,
+                double q_min,
+                double q_max,
+                bool ir_resum,
+                const IRresumSettings& ir_settings,
+                bool rsd,
+                double rsd_growth_f
+                ) :
+    q_min(q_min), q_max(q_max), ir_resum(ir_resum), rsd(rsd),
+    rsd_growth_f(rsd_growth_f)
+{
+    ps = Interpolation1D(input_ps_filename, input_ps_rescale);
+
+    if (rsd) {
+        Sigma2_tot = [this](double mu) { return Sigma2_total_rsd(mu); };
+    }
+    else {
+        Sigma2_tot = [this](double mu) { UNUSED(mu); return Sigma2; };
+    }
+
+    if (ir_resum) {
+        remove_BAO_wiggles(ps, ps_nw, ir_settings);
+        compute_ir_damping(ps_nw, Sigma2, delta_Sigma2, ir_settings);
+
+        switch (ir_settings.pt_order - ir_settings.n_loops) {
+            case 0:
+                evaluate = [this](double q, double mu) { return IR_resum_n0(q, mu); };
+                break;
+            case 1:
+                evaluate = [this](double q, double mu) { return IR_resum_n1(q,mu); };
+                break;
+            case 2:
+                evaluate = [this](double q, double mu) { return IR_resum_n2(q,mu); };
+                break;
+            default:
+                throw std::runtime_error("IRresumSettings.IR_order is not equal to 0,1,2");
+        }
+    }
+    else {
+        evaluate = [this](double q, double mu) { UNUSED(mu); return ps(q); };
+    }
+}
 
 
 namespace ps {
@@ -162,7 +210,7 @@ void diagram_term(
                     term_results);
 
             for (auto& el : term_results) {
-                el *= heaviside_theta * input.input_ps(q_m1);
+                el *= heaviside_theta * input.ps(q_m1, tables.vars.mu_los);
             }
             for (size_t a = 0; a < n_comp; ++a) {
                 diagram_results.at(a) += term_results.at(a);
@@ -321,28 +369,27 @@ void diagram_term(
                  * x is not between min and max */
                 if (diagram.n_ab > 0) {
                     for (auto& el : term_results) {
-                        el *= input.input_ps(q_xy1.a(), input.q_min,
-                                input.q_max);
+                        el *= input.ps(q_xy1.a(), tables.vars.mu_los);
                     }
                 }
                 if (diagram.n_bc > 0) {
                     for (auto& el : term_results) {
-                        el *= input.input_ps(q_xy1.b(), input.q_min,
-                                input.q_max);
+                        el *= input.ps(q_xy1.b(), tables.vars.mu_los);
                     }
                 }
                 if (diagram.n_ca > 0) {
                     for (auto& el : term_results) {
-                        el *= input.input_ps(q_xy1.c(), input.q_min,
-                                input.q_max);
+                        el *= input.ps(q_xy1.c(), tables.vars.mu_los);
                     }
                 }
                 /* For overall-loop diagrams: divide by pLin(rearr(Q)) which is
                  * multiplied also in bs::integrand() */
                 if (diagram.overall_loop()) {
                     for (auto& el : term_results) {
-                        el /= input.input_ps(
-                            diagram.q1_magnitude(i, tables.vars.magnitudes));
+                        el /= input.ps(
+                                diagram.q1_magnitude(i, tables.vars.magnitudes),
+                                tables.vars.mu_los
+                                );
                     }
                 }
                 for (auto& el : term_results) {
@@ -499,8 +546,10 @@ int integrand(
         if (input.single_hard_limit) ++i;
         for (; i < tables.loop_params.n_loops(); ++i) {
             for (auto& el : results) {
-                el *= input.input_ps(
-                    tables.vars.magnitudes.at(static_cast<size_t>(i)));
+                el *= input.ps(
+                        tables.vars.magnitudes.at(static_cast<size_t>(i)),
+                        tables.vars.mu_los
+                        );
             }
         }
 
