@@ -156,12 +156,7 @@ Config::Config(const std::string& ini_file,
             k_osc_ = static_cast<double>(k_osc_int);
         }
 
-        int pt_order_int;
         if (cfg.lookupValue("pt_order", pt_order_)) {}
-        /* If not found as double, try int */
-        else if (cfg.lookupValue("pt_order", pt_order_int)) {
-            pt_order_ = static_cast<double>(pt_order_int);
-        }
         else {
             throw ConfigException("No pt_order parameter read, needed for \
                     ir_resum = true.");
