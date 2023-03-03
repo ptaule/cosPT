@@ -123,7 +123,7 @@ void remove_BAO_wiggles(
         )
 {
     /* Wiggle/non-wiggle split as in 2004.10607 */
-    int N = pow(2,settings.N_power);
+    size_t N = static_cast<size_t>(pow(2,settings.N_power));
 
     Vec1D<double> k_grid(N);
     Vec1D<double> logkPk(N);
@@ -134,7 +134,8 @@ void remove_BAO_wiggles(
 
     /* Create grid of ln(k*Pk) */
     for (size_t i = 0; i < N; ++i) {
-        double k = k_min + (k_max - k_min) * i / (N - 1);
+        double k = k_min + (k_max - k_min)
+            * static_cast<double>(i) / static_cast<double>(N - 1);
         k_grid.at(i) = k;
         logkPk.at(i) = log(k * ps(k));
     }
@@ -164,8 +165,8 @@ void remove_BAO_wiggles(
 
     Vec1D<double> logkPk_BAO_removed(N);
     for (size_t i = 0; i < N/2; ++i) {
-        logkPk_BAO_removed.at(2*i)     = even_removed(i);
-        logkPk_BAO_removed.at(2*i + 1) = odd_removed(i);
+        logkPk_BAO_removed.at(2*i)     = even_removed(static_cast<double>(i));
+        logkPk_BAO_removed.at(2*i + 1) = odd_removed(static_cast<double>(i));
     }
 
     /* Back transform power spectrum with BAO wiggles removed */
