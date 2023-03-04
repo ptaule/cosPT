@@ -23,6 +23,10 @@ class IRresumSettings;
 
 class InputPowerSpectrum {
     private:
+        int loop_order_  = 0; /* Which loop order */
+        int pt_order_ = 0; /* At which PT order are we working? To avoid
+                              overcounting of soft loops */
+
         Interpolation1D ps;
         Interpolation1D ps_nw;
 
@@ -35,14 +39,30 @@ class InputPowerSpectrum {
         double Sigma2 = 0;
         double delta_Sigma2 = 0;
 
-        std::function<double(double)> Sigma2_tot;
-        std::function<double(double, double)> evaluate;
-
         double Sigma2_total_rsd(double mu) const {
             double mu2 = mu*mu;
             return (1 + rsd_growth_f * mu2 * (2 + rsd_growth_f)) * Sigma2 +
                 rsd_growth_f * rsd_growth_f * mu2 * (mu2 - 1) * delta_Sigma2;
         };
+
+        std::function<double(double)> Sigma2_tot;
+        std::function<double(double, double)> evaluate;
+    public:
+        InputPowerSpectrum(
+                const std::string& input_ps_filename,
+                double input_ps_rescale,
+                double q_min,
+                double q_max,
+                bool ir_resum,
+                const IRresumSettings& ir_settings,
+                int loop_order,
+                int pt_order,
+                bool rsd,
+                double rsd_growth_f
+                );
+        InputPowerSpectrum(const InputPowerSpectrum& other) = delete;
+
+        double operator()(double q, double mu) const { return evaluate(q, mu); }
 
         /* _n0 to _n2 functions differ due to different correction of overcounting
          * of IR contributions at different PT and loop orders */
@@ -65,20 +85,6 @@ class InputPowerSpectrum {
             return ps_nw_q +
                 (1 + k2S2 + 0.5 * k2S2 * k2S2) * std::exp(-k2S2) * ps_w_q;
         }
-    public:
-        InputPowerSpectrum(
-                const std::string& input_ps_filename,
-                double input_ps_rescale,
-                double q_min,
-                double q_max,
-                bool ir_resum,
-                const IRresumSettings& ir_settings,
-                bool rsd,
-                double rsd_growth_f
-                );
-        InputPowerSpectrum(const InputPowerSpectrum& other) = delete;
-
-        double operator()(double q, double mu) const { return evaluate(q, mu); }
 };
 
 

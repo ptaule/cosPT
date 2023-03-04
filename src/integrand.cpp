@@ -41,11 +41,13 @@ InputPowerSpectrum::InputPowerSpectrum(
                 double q_max,
                 bool ir_resum,
                 const IRresumSettings& ir_settings,
+                int loop_order,
+                int pt_order,
                 bool rsd,
                 double rsd_growth_f
                 ) :
-    q_min(q_min), q_max(q_max), ir_resum(ir_resum), rsd(rsd),
-    rsd_growth_f(rsd_growth_f)
+    loop_order_(loop_order), pt_order_(pt_order), q_min(q_min), q_max(q_max),
+    ir_resum(ir_resum), rsd(rsd), rsd_growth_f(rsd_growth_f)
 {
     ps = Interpolation1D(input_ps_filename, input_ps_rescale);
 
@@ -60,7 +62,13 @@ InputPowerSpectrum::InputPowerSpectrum(
         remove_BAO_wiggles(ps, ps_nw, ir_settings);
         compute_ir_damping(ps_nw, Sigma2, delta_Sigma2, ir_settings);
 
-        switch (ir_settings.pt_order - ir_settings.n_loops) {
+#if DEBUG > 1
+        std::cout << "IR damping factor Sigma^2 = " << Sigma2 << std::endl;
+        std::cout << "IR damping factor delta_Sigma^2 = "
+            << delta_Sigma2 << std::endl;
+#endif
+
+        switch (pt_order_ - loop_order_) {
             case 0:
                 evaluate = [this](double q, double mu) { return IR_resum_n0(q, mu); };
                 break;

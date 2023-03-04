@@ -22,10 +22,6 @@ void DST_III(Vec1D<double>& data);
 
 
 struct IRresumSettings {
-    int n_loops = 1;  /* Loop correction */
-    int pt_order = 1; /* At which order are we working? To avoid overcounting
-                         of soft loops */
-
     /* Wiggly/non-wiggly split */
     double k_max = 10;
     int N_power = 16;
