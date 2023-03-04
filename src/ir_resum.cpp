@@ -29,6 +29,7 @@
 using std::size_t;
 using std::pow;
 using std::sqrt;
+using std::exp;
 using std::log;
 using std::sin;
 using std::cos;
@@ -171,6 +172,11 @@ void remove_BAO_wiggles(
 
     /* Back transform power spectrum with BAO wiggles removed */
     DST_III(logkPk_BAO_removed);
+
+    /* log (kPk) -> Pk */
+    for (size_t i = 0; i < N; ++i) {
+        logkPk_BAO_removed.at(i) = exp(logkPk_BAO_removed.at(i)) / k_grid.at(i);
+    }
 
     /* Interpolate non-wiggly spectrum */
     ps_nw = Interpolation1D(k_grid, logkPk_BAO_removed);
