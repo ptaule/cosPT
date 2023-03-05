@@ -6,15 +6,141 @@
 */
 
 #include <cmath>
+#include <cstddef>
 
+#include <gsl/gsl_integration.h>
 #include <gsl/gsl_sf.h>
 
 #include "../include/combinatorics.hpp"
 #include "../include/kernel_evolution.hpp"
+#include "../include/integrand.hpp"
 #include "../include/parameters.hpp"
 #include "../include/spt_kernels.hpp"
 #include "../include/tables.hpp"
 #include "../include/rsd.hpp"
+
+/* Turn off vector bounds check if not in debug-mode */
+#if DEBUG == 0
+#define at(x) operator[](x)
+#endif
+
+
+struct RSDIntegrationParameters {
+    double k;
+    const InputPowerSpectrum& ps;
+};
+
+
+
+double rsd_tree_level_integrand_l0(double mu, void* parameters)
+{
+    RSDIntegrationParameters params =
+        *static_cast<RSDIntegrationParameters*>(parameters);
+    return params.ps(params.k, mu);
+}
+
+
+
+double rsd_tree_level_integrand_l2(double mu, void* parameters)
+{
+    RSDIntegrationParameters params =
+        *static_cast<RSDIntegrationParameters*>(parameters);
+    return 0.5 * (3*mu*mu - 1) * params.ps(params.k, mu);
+}
+
+
+
+double rsd_tree_level_integrand_l4(double mu, void* parameters)
+{
+    RSDIntegrationParameters params =
+        *static_cast<RSDIntegrationParameters*>(parameters);
+    return params.ps(params.k, mu)
+        * 0.125 * (35 * POW4(mu) - 30 * mu * mu + 3);
+}
+
+
+
+Vec1D<double> rsd_tree_level(
+    double k,
+    const InputPowerSpectrum& ps,
+    size_t integrate_sub_regions,
+    double integrate_atol,
+    double integrate_rtol,
+    int integrate_key
+)
+{
+    Vec1D<double> results(3);
+    double rsd_growth_f = ps.rsd_growth_f();
+
+    if (!ps.ir_resum()) {
+        for (auto& el : results) el = ps(k, 0);
+        /* Linear monopole */
+        results.at(0) *= (
+            1 + 2.0/3.0 * rsd_growth_f +
+            1.0/5.0 * SQUARE(rsd_growth_f)
+        );
+        /* Linear quadrupole */
+        results.at(1) *= (
+            4.0/3.0 * rsd_growth_f
+            + 4.0/7.0 * SQUARE(rsd_growth_f)
+        );
+        /* Linear hexadecapole */
+        results.at(2) *= (8.0/35.0 * SQUARE(rsd_growth_f));
+    }
+    else {
+        gsl_integration_workspace* workspace =
+            gsl_integration_workspace_alloc(integrate_sub_regions);
+        gsl_function F;
+        double error;
+        int status;
+
+        RSDIntegrationParameters params = { .k = k, .ps = ps };
+
+        /* l=0 integration */
+        F.function = rsd_tree_level_integrand_l0;
+        F.params = static_cast<void*>(&params);
+
+        status = gsl_integration_qag(&F, 0, 1, integrate_atol,
+                                         integrate_rtol,
+                                         integrate_sub_regions, integrate_key,
+                                         workspace, &results.at(0), &error);
+
+        if (status != 0) {
+            throw std::runtime_error("RSD tree-level integration l=0 failed \
+                    with error code" + std::to_string(status));
+        }
+
+        /* l=2 integration */
+        F.function = rsd_tree_level_integrand_l2;
+        status = gsl_integration_qag(&F, 0, 1, integrate_atol,
+                                         integrate_rtol,
+                                         integrate_sub_regions, integrate_key,
+                                         workspace, &results.at(1), &error);
+
+        if (status != 0) {
+            throw std::runtime_error("RSD tree-level integration l=2 failed \
+                    with error code" + std::to_string(status));
+        }
+
+        /* l=4 integration */
+        F.function = rsd_tree_level_integrand_l4;
+        status = gsl_integration_qag(&F, 0, 1, integrate_atol,
+                                         integrate_rtol,
+                                         integrate_sub_regions, integrate_key,
+                                         workspace, &results.at(2), &error);
+
+        if (status != 0) {
+            throw std::runtime_error("RSD tree-level integration l=4 failed \
+                    with error code" + std::to_string(status));
+        }
+
+        /* Multiply by two for integration mu=[-1,0] (integrands are even) */
+        for (auto& el : results) el *= 2;
+
+    }
+    return results;
+}
+
 
 
 /* RSD factor from coordinate transformation */
