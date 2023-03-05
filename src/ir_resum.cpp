@@ -219,8 +219,8 @@ void compute_ir_damping(
         const IRresumSettings& settings
         )
 {
-    gsl_integration_workspace* workspace;
-    workspace = gsl_integration_workspace_alloc(settings.integrate_sub_regions);
+    gsl_integration_workspace* workspace =
+        gsl_integration_workspace_alloc(settings.integrate_sub_regions);
 
     IRDampingIntParams params{.ps_nw = ps_nw, .k_osc = settings.k_osc};
 
