@@ -8,13 +8,13 @@
 #include <cmath>
 #include <stdexcept>
 
-#include "../include/interpolation.hpp"
+#include "../include/bispectrum_tree_level.hpp"
 #include "../include/diagrams.hpp"
+#include "../include/integrand.hpp"
 #include "../include/kernel_evolution.hpp"
 #include "../include/parameters.hpp"
 #include "../include/tables.hpp"
 #include "../include/spt_kernels.hpp"
-#include "../include/bispectrum_tree_level.hpp"
 
 using std::size_t;
 
@@ -106,7 +106,7 @@ Triple<ArgumentConfiguration> kernel_arguments(
 void diagram_term(
         int diagram_idx,
         IntegrandTables& tables,
-        const Interpolation1D& input_ps,
+        const InputPowerSpectrum& ps,
         const Vec1D<Triple<int>>& triple_correlations,
         Vec1D<double>& diagram_results /* out */
         )
@@ -189,16 +189,16 @@ void diagram_term(
 
         switch (diagram_idx) {
             case 0:
-                diagram_results.at(i) *= input_ps(k_a);
-                diagram_results.at(i) *= input_ps(k_c);
+                diagram_results.at(i) *= ps(k_a, 0);
+                diagram_results.at(i) *= ps(k_c, 0);
               break;
             case 1:
-                diagram_results.at(i) *= input_ps(k_b);
-                diagram_results.at(i) *= input_ps(k_c);
+                diagram_results.at(i) *= ps(k_b, 0);
+                diagram_results.at(i) *= ps(k_c, 0);
                 break;
             case 2:
-                diagram_results.at(i) *= input_ps(k_a);
-                diagram_results.at(i) *= input_ps(k_b);
+                diagram_results.at(i) *= ps(k_a, 0);
+                diagram_results.at(i) *= ps(k_b, 0);
                 break;
             default:
                 throw(std::logic_error(
@@ -211,7 +211,7 @@ void diagram_term(
 
 void tree_level_bispectrum(
         IntegrandTables& tables,
-        const Interpolation1D& input_ps,
+        const InputPowerSpectrum& ps,
         const Vec1D<Triple<int>>& triple_correlations,
         Vec1D<double>& results /* out */
         )
@@ -230,7 +230,7 @@ void tree_level_bispectrum(
     /* Three diagrams: 000110, 000101, 000011 */
     for (int i = 0; i < 3; ++i) {
         Vec1D<double> diagram_results(triple_correlations.size(), 0.0);
-        diagram_term(i, tables, input_ps, triple_correlations, diagram_results);
+        diagram_term(i, tables, ps, triple_correlations, diagram_results);
 
         for (size_t j = 0; j < triple_correlations.size(); ++j) {
             results.at(j) += diagram_results.at(j);

@@ -12,10 +12,11 @@
 
 class Interpolation1D;
 class IntegrandTables;
+class InputPowerSpectrum;
 
 void tree_level_bispectrum(
         IntegrandTables& tables,
-        const Interpolation1D& input_ps,
+        const InputPowerSpectrum& ps,
         const Vec1D<Triple<int>>& triple_correlations,
         Vec1D<double>& results /* out */
         );

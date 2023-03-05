@@ -15,15 +15,17 @@
 #include <gsl/gsl_sf.h>
 #include <cuba.h>
 
-#include "include/utilities.hpp"
 #include "include/bispectrum_tree_level.hpp"
 #include "include/diagrams.hpp"
 #include "include/kernel_evolution.hpp"
 #include "include/integrand.hpp"
 #include "include/interpolation.hpp"
 #include "include/io.hpp"
+#include "include/ir_resum.hpp"
 #include "include/parameters.hpp"
+#include "include/rsd.hpp"
 #include "include/tables.hpp"
+#include "include/utilities.hpp"
 
 using std::pow;
 
@@ -98,11 +100,23 @@ int main(int argc, char* argv[]) {
         LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
         SumTable sum_table(loop_params);
 
-        IntegrationInput input(cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
+        IRresumSettings ir_settings = {
+            .k_s = cfg.k_s(),
+            .k_osc = cfg.k_osc(),
+        };
+        InputPowerSpectrum ps(cfg.input_ps_file(), cfg.input_ps_rescale(),
+                              cfg.q_min(), cfg.q_max(), cfg.ir_resum(),
+                              ir_settings, n_loops, cfg.pt_order(), cfg.rsd(),
+                              cfg.rsd_growth_f());
+
+        IntegrationInput input = {
+            .ps = ps,
+            .q_min = cfg.q_min(),
+            .q_max = cfg.q_max(),
+            .single_hard_limit = cfg.single_hard_limit(),
+        };
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
-
-        input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
         if (cfg.dynamics() == EVOLVE_IC_EDS) {
             if (COMPONENTS != 2) {
@@ -189,24 +203,13 @@ int main(int argc, char* argv[]) {
 
         if (cfg.spectrum() == POWERSPECTRUM) {
             /* Linear power spectrum */
-            for (auto& el : tree_level_result) {
-                el = input.input_ps(cfg.k_a());
-            }
             if (cfg.rsd()) {
-                /* Linear monopole */
-                tree_level_result.at(0) *= (
-                        1 + 2.0/3.0 * cfg.rsd_growth_f() +
-                        1.0/5.0 * SQUARE(cfg.rsd_growth_f())
-                        );
-                /* Linear quadrupole */
-                tree_level_result.at(1) *= (
-                        4.0/3.0 * cfg.rsd_growth_f()
-                        + 4.0/7.0 * SQUARE(cfg.rsd_growth_f())
-                        );
-                /* Linear hexadecapole */
-                tree_level_result.at(2) *= (
-                        8.0/35.0 * SQUARE(cfg.rsd_growth_f()));
+                tree_level_result = rsd_tree_level(cfg.k_a(), ps);
             }
+            else {
+                for (auto& el : tree_level_result) el = ps(cfg.k_a(), 0);
+            }
+
             if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
                 Vec1D<double> F1_eta_ini(COMPONENTS, 0);
                 Vec1D<double> F1_eta_fin(COMPONENTS, 0);
@@ -226,8 +229,8 @@ int main(int argc, char* argv[]) {
             /* Tree level bispectrum */
             IntegrandTables tables(cfg.k_a(), cfg.k_b(), cfg.cos_ab(),
                     0, loop_params, sum_table, ev_params, eta_grid);
-            tree_level_bispectrum(tables, input.input_ps,
-                    input.triple_correlations, tree_level_result);
+            tree_level_bispectrum(tables, ps, input.triple_correlations,
+                                  tree_level_result);
         }
 
         /* Single hard limit */
