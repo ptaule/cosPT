@@ -128,7 +128,7 @@ class Config {
         bool ir_resum() const {return ir_resum_;}
         double k_s() const {return k_s_;}
         double k_osc() const {return k_osc_;}
-        double pt_order() const {return pt_order_;}
+        int pt_order() const {return pt_order_;}
 
         double q_min() const {return q_min_;}
         double q_max() const {return q_max_;}
