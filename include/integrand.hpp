@@ -33,16 +33,16 @@ class InputPowerSpectrum {
         double q_min = 0;
         double q_max = 0;
 
-        double ir_resum = false;
-        double rsd = false;
-        double rsd_growth_f = 0;
+        bool ir_resum_ = false;
+        bool rsd_ = false;
+        double rsd_growth_f_ = 0;
         double Sigma2 = 0;
         double delta_Sigma2 = 0;
 
         double Sigma2_total_rsd(double mu) const {
             double mu2 = mu*mu;
-            return (1 + rsd_growth_f * mu2 * (2 + rsd_growth_f)) * Sigma2 +
-                rsd_growth_f * rsd_growth_f * mu2 * (mu2 - 1) * delta_Sigma2;
+            return (1 + rsd_growth_f_ * mu2 * (2 + rsd_growth_f_)) * Sigma2 +
+                rsd_growth_f_ * rsd_growth_f_ * mu2 * (mu2 - 1) * delta_Sigma2;
         };
 
         std::function<double(double)> Sigma2_tot;
@@ -63,6 +63,11 @@ class InputPowerSpectrum {
         InputPowerSpectrum(const InputPowerSpectrum& other) = delete;
 
         double operator()(double q, double mu) const { return evaluate(q, mu); }
+
+        /* Getters */
+        bool ir_resum() const { return ir_resum_; }
+        bool rsd() const { return rsd_; }
+        double rsd_growth_f() const { return rsd_growth_f_; }
 
         /* _n0 to _n2 functions differ due to different correction of overcounting
          * of IR contributions at different PT and loop orders */
@@ -89,10 +94,10 @@ class InputPowerSpectrum {
 
 
 struct IntegrationInput {
+    const InputPowerSpectrum& ps;
+
     const double q_min = 0;
     const double q_max = 0;
-
-    const InputPowerSpectrum& ps;
 
     bool single_hard_limit;
 

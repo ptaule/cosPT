@@ -47,7 +47,7 @@ InputPowerSpectrum::InputPowerSpectrum(
                 double rsd_growth_f
                 ) :
     loop_order_(loop_order), pt_order_(pt_order), q_min(q_min), q_max(q_max),
-    ir_resum(ir_resum), rsd(rsd), rsd_growth_f(rsd_growth_f)
+    ir_resum_(ir_resum), rsd_(rsd), rsd_growth_f_(rsd_growth_f)
 {
     ps = Interpolation1D(input_ps_filename, input_ps_rescale);
 
