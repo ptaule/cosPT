@@ -109,7 +109,7 @@ class IntegrandTables {
         double k_b    = 0.0; // For bispectrum
         double cos_ab = 0.0; // For bispectrum
 
-        double rsd_f; // Growth factor (at observation redshift) for L.o.S.
+        double rsd_f; /* Growth factor (at observation redshift) for L.o.S. */
 
         /* Helper vectors for compute_scalar_products() */
         Vec1D<int> a_coeffs;

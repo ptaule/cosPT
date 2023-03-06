@@ -36,6 +36,8 @@ struct IRresumSettings {
     double integrate_atol = 0;
     double integrate_rtol = 1e-6;
     int integrate_key = GSL_INTEG_GAUSS61;
+
+    IRresumSettings(double k_s, double k_osc) : k_s(k_s), k_osc(k_osc) {}
 };
 
 

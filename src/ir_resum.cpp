@@ -222,7 +222,7 @@ void compute_ir_damping(
     gsl_integration_workspace* workspace =
         gsl_integration_workspace_alloc(settings.integrate_sub_regions);
 
-    IRDampingIntParams params{.ps_nw = ps_nw, .k_osc = settings.k_osc};
+    IRDampingIntParams params = {ps_nw, settings.k_osc};
 
     gsl_function F;
     F.function = ir_Sigma_integrand;

@@ -13,12 +13,11 @@
 #include <string>
 #include <utility>
 
-#include "utilities.hpp"
+#include "diagrams.hpp"
 #include "interpolation.hpp"
+#include "utilities.hpp"
 
 class IntegrandTables;
-class PowerSpectrumDiagram;
-class BiSpectrumDiagram;
 class IRresumSettings;
 
 class InputPowerSpectrum {
@@ -109,6 +108,14 @@ struct IntegrationInput {
     /* For bispectrum */
     Vec1D<BiSpectrumDiagram> bs_diagrams;
     Vec1D<Triple<int>> triple_correlations;
+
+    IntegrationInput(
+            const InputPowerSpectrum& ps,
+            double q_min,
+            double q_max,
+            bool single_hard_limit
+            ) : ps(ps), q_min(q_min), q_max(q_max),
+    single_hard_limit(single_hard_limit) {}
 };
 
 

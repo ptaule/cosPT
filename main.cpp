@@ -100,21 +100,15 @@ int main(int argc, char* argv[]) {
         LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
         SumTable sum_table(loop_params);
 
-        IRresumSettings ir_settings = {
-            .k_s = cfg.k_s(),
-            .k_osc = cfg.k_osc(),
-        };
+        IRresumSettings ir_settings(cfg.k_s(), cfg.k_osc());
+
         InputPowerSpectrum ps(cfg.input_ps_file(), cfg.input_ps_rescale(),
                               cfg.q_min(), cfg.q_max(), cfg.ir_resum(),
                               ir_settings, n_loops, cfg.pt_order(), cfg.rsd(),
                               cfg.rsd_growth_f());
 
-        IntegrationInput input = {
-            .ps = ps,
-            .q_min = cfg.q_min(),
-            .q_max = cfg.q_max(),
-            .single_hard_limit = cfg.single_hard_limit(),
-        };
+        IntegrationInput input(ps, cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
+
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
 

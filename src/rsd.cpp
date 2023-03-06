@@ -94,7 +94,7 @@ Vec1D<double> rsd_tree_level(
         double error;
         int status;
 
-        RSDIntegrationParameters params = { .k = k, .ps = ps };
+        RSDIntegrationParameters params = {k, ps};
 
         /* l=0 integration */
         F.function = rsd_tree_level_integrand_l0;
