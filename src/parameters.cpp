@@ -158,8 +158,8 @@ Config::Config(const std::string& ini_file,
 
         if (cfg.lookupValue("pt_order", pt_order_)) {}
         else {
-            throw ConfigException("No pt_order parameter read, needed for \
-                    ir_resum = true.");
+            throw ConfigException("No pt_order parameter read, needed for "
+                    "ir_resum = true.");
         }
     }
 

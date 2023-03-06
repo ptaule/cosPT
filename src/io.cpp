@@ -98,8 +98,8 @@ void write_results(
             for (auto& el : cfg.pair_correlations()) {
                 out << setw(13) << "P_L0 " << el;
                 if (cfg.n_loops() > 0) {
-                    out << setw(13)  << "P_L"   << cfg.n_loops() << " " << el;
-                    out << setw(13)  << "err_L" << cfg.n_loops() << " " << el;
+                    out << setw(11)  << "P_L"   << cfg.n_loops() << " " << el;
+                    out << setw(11)  << "err_L" << cfg.n_loops() << " " << el;
                 }
             }
         }
