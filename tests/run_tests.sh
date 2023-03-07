@@ -66,7 +66,7 @@ mkdir -p "$tempdir"/tests
 
 cp -r -t "$tempdir" "$sourcedir"/src "$sourcedir"/include \
     "$sourcedir"/main.cpp "$sourcedir"/Makefile
-cp -r -t "$tempdir"/ini "$sourcedir"/ini/tests/*
+cp -r -t "$tempdir"/ini "$sourcedir"/tests/ini/*
 cp -r -t "$tempdir"/tests "$sourcedir"/tests/data
 
 # Remember git sha from source directory
