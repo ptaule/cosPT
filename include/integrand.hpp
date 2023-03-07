@@ -22,8 +22,8 @@ class IRresumSettings;
 
 class InputPowerSpectrum {
     private:
-        int loop_order_  = 0; /* Which loop order */
-        int pt_order_ = 0; /* At which PT order are we working? To avoid
+        int loop_order  = 0; /* Which loop order */
+        int pt_order = 0; /* At which PT order are we working? To avoid
                               overcounting of soft loops */
 
         Interpolation1D ps;
@@ -43,30 +43,6 @@ class InputPowerSpectrum {
             return (1 + rsd_growth_f_ * mu2 * (2 + rsd_growth_f_)) * Sigma2 +
                 rsd_growth_f_ * rsd_growth_f_ * mu2 * (mu2 - 1) * delta_Sigma2;
         };
-
-        std::function<double(double)> Sigma2_tot;
-        std::function<double(double, double)> evaluate;
-    public:
-        InputPowerSpectrum(
-                const std::string& input_ps_filename,
-                double input_ps_rescale,
-                double q_min,
-                double q_max,
-                bool ir_resum,
-                const IRresumSettings& ir_settings,
-                int loop_order,
-                int pt_order,
-                bool rsd,
-                double rsd_growth_f
-                );
-        InputPowerSpectrum(const InputPowerSpectrum& other) = delete;
-
-        double operator()(double q, double mu) const { return evaluate(q, mu); }
-
-        /* Getters */
-        bool ir_resum() const { return ir_resum_; }
-        bool rsd() const { return rsd_; }
-        double rsd_growth_f() const { return rsd_growth_f_; }
 
         /* _n0 to _n2 functions differ due to different correction of overcounting
          * of IR contributions at different PT and loop orders */
@@ -89,6 +65,34 @@ class InputPowerSpectrum {
             return ps_nw_q +
                 (1 + k2S2 + 0.5 * k2S2 * k2S2) * std::exp(-k2S2) * ps_w_q;
         }
+
+        std::function<double(double)> Sigma2_tot;
+        std::function<double(double, double)> evaluate;
+    public:
+        InputPowerSpectrum(
+                const std::string& input_ps_filename,
+                double input_ps_rescale,
+                double q_min,
+                double q_max,
+                bool ir_resum,
+                const IRresumSettings& ir_settings,
+                int loop_order,
+                int pt_order,
+                bool rsd,
+                double rsd_growth_f
+                );
+        InputPowerSpectrum(const InputPowerSpectrum& other) = delete;
+
+        /* Power spectrum that is input to loop calculations */
+        double operator()(double q, double mu) const { return evaluate(q, mu); }
+
+        /* Tree-level power spectrum (depends also on pt_order) */
+        double tree_level(double q, double mu) const;
+
+        /* Getters */
+        bool ir_resum() const { return ir_resum_; }
+        bool rsd() const { return rsd_; }
+        double rsd_growth_f() const { return rsd_growth_f_; }
 };
 
 

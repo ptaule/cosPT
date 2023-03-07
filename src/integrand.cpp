@@ -45,7 +45,7 @@ InputPowerSpectrum::InputPowerSpectrum(
                 bool rsd,
                 double rsd_growth_f
                 ) :
-    loop_order_(loop_order), pt_order_(pt_order), q_min(q_min), q_max(q_max),
+    loop_order(loop_order), pt_order(pt_order), q_min(q_min), q_max(q_max),
     ir_resum_(ir_resum), rsd_(rsd), rsd_growth_f_(rsd_growth_f)
 {
     ps = Interpolation1D(input_ps_filename, input_ps_rescale);
@@ -67,7 +67,7 @@ InputPowerSpectrum::InputPowerSpectrum(
             << delta_Sigma2 << std::endl;
 #endif
 
-        switch (pt_order_ - loop_order_) {
+        switch (pt_order - loop_order) {
             case 0:
                 evaluate = [this](double q, double mu) { return IR_resum_n0(q, mu); };
                 break;
@@ -78,13 +78,35 @@ InputPowerSpectrum::InputPowerSpectrum(
                 evaluate = [this](double q, double mu) { return IR_resum_n2(q,mu); };
                 break;
             default:
-                throw std::runtime_error("IRresumSettings.IR_order is not equal to 0,1,2");
+                throw std::runtime_error(
+                    "InputPowerSpectrum: pt_order is not equal to 0,1,2");
         }
     }
     else {
         evaluate = [this](double q, double mu) { UNUSED(mu); return ps(q); };
     }
 }
+
+
+
+double InputPowerSpectrum::tree_level(double q, double mu) const
+{
+    switch (pt_order) {
+        case 0:
+            return IR_resum_n0(q, mu);
+            break;
+        case 1:
+            return IR_resum_n1(q, mu);
+            break;
+        case 2:
+            return IR_resum_n2(q, mu);
+            break;
+        default:
+            throw std::runtime_error(
+                "InputPowerSpectrum: pt_order is not equal to 0,1,2");
+    }
+}
+
 
 
 namespace ps {
