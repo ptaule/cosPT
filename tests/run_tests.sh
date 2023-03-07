@@ -60,14 +60,15 @@ sourcedir=$(pwd)
 tempdir="$(mktemp -d -t cosPT_XXXXXXXXXX)"
 
 mkdir -p "$tempdir"/local
+mkdir -p "$tempdir"/input
 mkdir -p "$tempdir"/output
 mkdir -p "$tempdir"/ini
 mkdir -p "$tempdir"/tests
 
 cp -r -t "$tempdir" "$sourcedir"/src "$sourcedir"/include \
     "$sourcedir"/main.cpp "$sourcedir"/Makefile
-cp -r -t "$tempdir"/ini "$sourcedir"/tests/ini/*
-cp -r -t "$tempdir"/tests "$sourcedir"/tests/data
+cp -r -t "$tempdir" "$sourcedir"/tests "$sourcedir"/input/k_a_bao_zoom.dat
+cp -t "$tempdir"/input "$sourcedir"/input/k_*.dat
 
 # Remember git sha from source directory
 cd "$sourcedir"
@@ -96,18 +97,18 @@ mkdir -p "$tempdir"/output/eds_spt_bs/L2
 
 for k_a in {000,005,010,015,020,025,030,035,040,045,050,055}; do
     {
-        "$tempdir"/"$exe" --k_a_idx $k_a --n_cores $n_cores "$tempdir"/ini/eds_spt_ps_L1.cfg
-        "$tempdir"/"$exe" --k_a_idx $k_a --n_cores $n_cores "$tempdir"/ini/eds_spt_ps_L2.cfg
-        "$tempdir"/"$exe" --k_a_idx $k_a --n_cores $n_cores "$tempdir"/ini/eds_spt_ps_L2_sh.cfg
+        "$exe" --k_a_idx $k_a --n_cores $n_cores "$tempdir"/tests/ini/eds_spt_ps_L1.cfg
+        "$exe" --k_a_idx $k_a --n_cores $n_cores "$tempdir"/tests/ini/eds_spt_ps_L2.cfg
+        "$exe" --k_a_idx $k_a --n_cores $n_cores "$tempdir"/tests/ini/eds_spt_ps_L2_sh.cfg
     } >> "$log_file"
 done
 
 for k_a in {000,010,020,030,040,050,060,070,080,090,100}; do
     {
-        "$tempdir"/"$exe" --k_a_idx $k_a --k_b_idx $k_a --k_c_idx $k_a --n_cores $n_cores \
-            "$tempdir"/ini/eds_spt_bs_L1.cfg
-        "$tempdir"/"$exe" --k_a_idx $k_a --k_b_idx $k_a --k_c_idx $k_a --n_cores $n_cores \
-            "$tempdir"/ini/eds_spt_bs_L2.cfg
+        "$exe" --k_a_idx $k_a --k_b_idx $k_a --k_c_idx $k_a --n_cores $n_cores \
+            "$tempdir"/tests/ini/eds_spt_bs_L1.cfg
+        "$exe" --k_a_idx $k_a --k_b_idx $k_a --k_c_idx $k_a --n_cores $n_cores \
+            "$tempdir"/tests/ini/eds_spt_bs_L2.cfg
     } >> "$log_file"
 done
 
@@ -116,14 +117,14 @@ for f in output/*/*/; do
 done
 
 {
-    julia "$sourcedir/$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
+    julia "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
         "$tempdir"/tests/data/eds_spt_ps/L1/total.dat "$tempdir"/output/eds_spt_ps/L1/total.dat
-    julia "$sourcedir/$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
+    julia "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
         "$tempdir"/tests/data/eds_spt_ps/L2/total.dat "$tempdir"/output/eds_spt_ps/L2/total.dat
-    julia "$sourcedir/$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
+    julia "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
         "$tempdir"/tests/data/eds_spt_ps/L2_sh/total.dat "$tempdir"/output/eds_spt_ps/L2_sh/total.dat
-    julia "$sourcedir/$isapprox" --col_A 5 --col_err_A 6 --col_B 5 --col_err_B 6 \
+    julia "$isapprox" --col_A 5 --col_err_A 6 --col_B 5 --col_err_B 6 \
         "$tempdir"/tests/data/eds_spt_bs/L1/total.dat "$tempdir"/output/eds_spt_bs/L1/total.dat
-    julia "$sourcedir/$isapprox" --col_A 5 --col_err_A 6 --col_B 5 --col_err_B 6 \
+    julia "$isapprox" --col_A 5 --col_err_A 6 --col_B 5 --col_err_B 6 \
         "$tempdir"/tests/data/eds_spt_bs/L2/total.dat "$tempdir"/output/eds_spt_bs/L2/total.dat
 } >> "$log_file"
