@@ -220,7 +220,7 @@ void compute_ir_damping(
         )
 {
     gsl_integration_workspace* workspace =
-        gsl_integration_workspace_alloc(settings.integrate_sub_regions);
+        gsl_integration_workspace_alloc(settings.integration_sub_regions);
 
     IRDampingIntParams params = {ps_nw, settings.k_osc};
 
@@ -230,8 +230,8 @@ void compute_ir_damping(
 
     double error;
     int status = gsl_integration_qag(&F, settings.k_min, settings.k_s,
-            settings.integrate_atol, settings.integrate_rtol,
-            settings.integrate_sub_regions, settings.integrate_key, workspace, &Sigma2,
+            settings.integration_atol, settings.integration_rtol,
+            settings.integration_sub_regions, settings.integration_key, workspace, &Sigma2,
             &error);
     Sigma2 *= 4.0 * PI / 3.0;
 
@@ -242,8 +242,8 @@ void compute_ir_damping(
 
     F.function = ir_delta_Sigma_integrand;
     status = gsl_integration_qag(&F, settings.k_min, settings.k_s,
-            settings.integrate_atol, settings.integrate_rtol,
-            settings.integrate_sub_regions, settings.integrate_key, workspace,
+            settings.integration_atol, settings.integration_rtol,
+            settings.integration_sub_regions, settings.integration_key, workspace,
             &delta_Sigma2, &error);
     delta_Sigma2 *= 4.0 * PI;
 

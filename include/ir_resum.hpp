@@ -32,10 +32,10 @@ struct IRresumSettings {
     double k_min = 1e-4;
     double k_s = 0.2;
     double k_osc = 1.0/110.0;
-    std::size_t integrate_sub_regions = 10000;
-    double integrate_atol = 0;
-    double integrate_rtol = 1e-6;
-    int integrate_key = GSL_INTEG_GAUSS61;
+    std::size_t integration_sub_regions = 10000;
+    double integration_atol = 0;
+    double integration_rtol = 1e-6;
+    int integration_key = GSL_INTEG_GAUSS61;
 
     IRresumSettings(double k_s, double k_osc) : k_s(k_s), k_osc(k_osc) {}
 };
