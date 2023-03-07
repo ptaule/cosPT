@@ -29,7 +29,7 @@ static void BM_PS_EdS_integrand_1loop(benchmark::State& state) {
         int n_loops = 1;
         int n_dims = 3 * n_loops - 1;
 
-        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
+        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
         SumTable sum_table(loop_params);
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
@@ -41,8 +41,9 @@ static void BM_PS_EdS_integrand_1loop(benchmark::State& state) {
         input.pair_correlations = cfg.pair_correlations();
         input.ps_diagrams = ps::construct_diagrams(loop_params);
 
-        input.tables_vec.emplace_back(cfg.k_a(), loop_params, sum_table, ev_params,
-                eta_grid);
+        input.tables_vec.emplace_back(cfg.k_a(), 0, 0, cfg.rsd_growth_f(),
+                                      loop_params, sum_table, ev_params,
+                                      eta_grid);
 
         int n_correlations = static_cast<int>(input.pair_correlations.size());
 
@@ -58,7 +59,7 @@ static void BM_PS_EdS_integrand_1loop(benchmark::State& state) {
             int nvec = 1;
             /* core = -1 in accordance with ps::integrand() or bs::integrand() */
             int core = -1;
-            ps::integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
+            integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
         }
 
         delete[] xx;
@@ -84,7 +85,7 @@ static void BM_PS_EdS_integrand_2loop(benchmark::State& state) {
         int n_loops = 2;
         int n_dims = 3 * n_loops - 1;
 
-        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
+        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
         SumTable sum_table(loop_params);
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
@@ -96,8 +97,9 @@ static void BM_PS_EdS_integrand_2loop(benchmark::State& state) {
         input.pair_correlations = cfg.pair_correlations();
         input.ps_diagrams = ps::construct_diagrams(loop_params);
 
-        input.tables_vec.emplace_back(cfg.k_a(), loop_params, sum_table, ev_params,
-                eta_grid);
+        input.tables_vec.emplace_back(cfg.k_a(), 0, 0, cfg.rsd_growth_f(),
+                                      loop_params, sum_table, ev_params,
+                                      eta_grid);
 
         int n_correlations = static_cast<int>(input.pair_correlations.size());
 
@@ -113,7 +115,7 @@ static void BM_PS_EdS_integrand_2loop(benchmark::State& state) {
             int nvec = 1;
             /* core = -1 in accordance with ps::integrand() or bs::integrand() */
             int core = -1;
-            ps::integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
+            integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
         }
 
         delete[] xx;
@@ -138,7 +140,7 @@ static void BM_BS_EdS_integrand_1loop(benchmark::State& state) {
         int n_loops = 1;
         int n_dims = 3 * n_loops;
 
-        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
+        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
         SumTable sum_table(loop_params);
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
@@ -150,8 +152,9 @@ static void BM_BS_EdS_integrand_1loop(benchmark::State& state) {
         input.pair_correlations = cfg.pair_correlations();
         input.bs_diagrams = bs::construct_diagrams(loop_params);
 
-        input.tables_vec.emplace_back(cfg.k_a(), cfg.k_b(), cfg.cos_ab(), loop_params,
-                sum_table, ev_params, eta_grid);
+        input.tables_vec.emplace_back(cfg.k_a(), cfg.k_b(), cfg.cos_ab(),
+                                      cfg.rsd_growth_f(), loop_params,
+                                      sum_table, ev_params, eta_grid);
 
         int n_correlations = static_cast<int>(input.pair_correlations.size());
 
@@ -167,7 +170,7 @@ static void BM_BS_EdS_integrand_1loop(benchmark::State& state) {
             int nvec = 1;
             /* core = -1 in accordance with bs::integrand() or bs::integrand() */
             int core = -1;
-            bs::integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
+            integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
         }
 
         delete[] xx;
@@ -193,7 +196,7 @@ static void BM_BS_EdS_integrand_2loop(benchmark::State& state) {
         int n_loops = 2;
         int n_dims = 3 * n_loops;
 
-        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
+        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
         SumTable sum_table(loop_params);
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
@@ -205,8 +208,9 @@ static void BM_BS_EdS_integrand_2loop(benchmark::State& state) {
         input.pair_correlations = cfg.pair_correlations();
         input.bs_diagrams = bs::construct_diagrams(loop_params);
 
-        input.tables_vec.emplace_back(cfg.k_a(), cfg.k_b(), cfg.cos_ab(), loop_params,
-                sum_table, ev_params, eta_grid);
+        input.tables_vec.emplace_back(cfg.k_a(), cfg.k_b(), cfg.cos_ab(),
+                                      cfg.rsd_growth_f(), loop_params,
+                                      sum_table, ev_params, eta_grid);
 
         int n_correlations = static_cast<int>(input.pair_correlations.size());
 
@@ -222,7 +226,7 @@ static void BM_BS_EdS_integrand_2loop(benchmark::State& state) {
             int nvec = 1;
             /* core = -1 in accordance with bs::integrand() or bs::integrand() */
             int core = -1;
-            bs::integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
+            integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
         }
 
         delete[] xx;
@@ -248,7 +252,7 @@ static void BM_PS_2fluid_integrand_1loop(benchmark::State& state) {
         int n_loops = 1;
         int n_dims = 3 * n_loops - 1;
 
-        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
+        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
         SumTable sum_table(loop_params);
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
@@ -269,8 +273,9 @@ static void BM_PS_2fluid_integrand_1loop(benchmark::State& state) {
         input.pair_correlations = cfg.pair_correlations();
         input.ps_diagrams = ps::construct_diagrams(loop_params);
 
-        input.tables_vec.emplace_back(cfg.k_a(), loop_params, sum_table, ev_params,
-                eta_grid);
+        input.tables_vec.emplace_back(cfg.k_a(), 0, 0, cfg.rsd_growth_f(),
+                                      loop_params, sum_table, ev_params,
+                                      eta_grid);
 
         int n_correlations = static_cast<int>(input.pair_correlations.size());
 
@@ -286,7 +291,7 @@ static void BM_PS_2fluid_integrand_1loop(benchmark::State& state) {
             int nvec = 1;
             /* core = -1 in accordance with ps::integrand() or bs::integrand() */
             int core = -1;
-            ps::integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
+            integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
         }
 
         delete[] xx;
@@ -312,7 +317,7 @@ static void BM_PS_2fluid_integrand_2loop(benchmark::State& state) {
         int n_loops = 2;
         int n_dims = 3 * n_loops - 1;
 
-        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics());
+        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
         SumTable sum_table(loop_params);
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
@@ -333,8 +338,9 @@ static void BM_PS_2fluid_integrand_2loop(benchmark::State& state) {
         input.pair_correlations = cfg.pair_correlations();
         input.ps_diagrams = ps::construct_diagrams(loop_params);
 
-        input.tables_vec.emplace_back(cfg.k_a(), loop_params, sum_table, ev_params,
-                eta_grid);
+        input.tables_vec.emplace_back(cfg.k_a(), 0, 0, cfg.rsd_growth_f(),
+                                      loop_params, sum_table, ev_params,
+                                      eta_grid);
 
         int n_correlations = static_cast<int>(input.pair_correlations.size());
 
@@ -350,7 +356,7 @@ static void BM_PS_2fluid_integrand_2loop(benchmark::State& state) {
             int nvec = 1;
             /* core = -1 in accordance with ps::integrand() or bs::integrand() */
             int core = -1;
-            ps::integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
+            integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
         }
 
         delete[] xx;
