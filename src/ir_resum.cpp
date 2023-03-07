@@ -113,6 +113,50 @@ double InputPowerSpectrum::tree_level(double q, double mu) const
 
 
 
+double InputPowerSpectrum::integral(
+            double a,
+            double b,
+            std::size_t integration_sub_regions,
+            double integration_atol,
+            double integration_rtol,
+            int integration_key
+) const
+{
+    /* Check that a and b are within interpolation limits */
+    if (a < ps.x_minimum() || a > ps.x_maximum()) {
+        throw std::invalid_argument("InputPowerSpectrum::integral(): a is "
+            "outside power spectrum interpolation limits.");
+    }
+    if (b < ps.x_minimum() || b > ps.x_maximum()) {
+        throw std::invalid_argument("InputPowerSpectrum::integral(): b is "
+            "outside power spectrum interpolation limits.");
+    }
+    gsl_integration_workspace* workspace =
+        gsl_integration_workspace_alloc(integration_sub_regions);
+
+    /* (*this)(q, 0) is a call to operator() on this, i.e. an evaluation of the
+     * input power spectrum to loop calculations */
+    auto integral = [this](double q) { return (*this)(q, 0); };
+
+    gsl_function F;
+    F.function = [] (double x, void* p) { return (*(decltype(integral)*)p)(x); };
+    F.params = &integral;
+
+    double result, abserr;
+    int status = gsl_integration_qag(&F, a, b, integration_atol, integration_rtol,
+                        integration_sub_regions, integration_key, workspace,
+                        &result, &abserr);
+
+    if (status != 0) {
+        throw std::runtime_error("InputPowerSpectrum::integral(): "
+                                 "integration failed with error code" +
+                                 std::to_string(status));
+    }
+    return result;
+}
+
+
+
 /* Discrete sine transform II */
 void DST_II(Vec1D<double>& data) {
     size_t N = data.size();

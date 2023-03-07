@@ -114,6 +114,17 @@ class InputPowerSpectrum {
         /* Tree-level power spectrum (depends also on pt_order) */
         double tree_level(double q, double mu) const;
 
+        /* Integral of loop-level power spectrum from a to b (not exceeding
+         * interpolation limits) */
+        double integral(
+            double a,
+            double b,
+            std::size_t integration_sub_regions = 10000,
+            double integration_atol = 0,
+            double integration_rtol = 1e-6,
+            int integration_key = GSL_INTEG_GAUSS61
+        ) const;
+
         /* Getters */
         bool ir_resum() const { return ir_resum_; }
         bool rsd() const { return rsd_; }
