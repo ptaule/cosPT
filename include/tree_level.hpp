@@ -1,12 +1,12 @@
 /*
-   bispectrum_tree_level.hpp
+   tree_level.hpp
 
    Created by Petter Taule on 19.12.2020
    Copyright (c) 2020 Petter Taule. All rights reserved.
 */
 
-#ifndef BISPECTRUM_TREE_LEVEL_HPP
-#define BISPECTRUM_TREE_LEVEL_HPP
+#ifndef TREE_LEVEL_HPP
+#define TREE_LEVEL_HPP
 
 #include "utilities.hpp"
 
@@ -21,4 +21,4 @@ void tree_level_bispectrum(
         Vec1D<double>& results /* out */
         );
 
-#endif /* ifndef BISPECTRUM_TREE_LEVEL_HPP */
+#endif /* ifndef TREE_LEVEL_HPP */

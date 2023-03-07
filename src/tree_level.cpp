@@ -1,5 +1,5 @@
 /*
-   bispectrum_tree_level.cpp
+   tree_level.cpp
 
    Created by Petter Taule on 19.12.2020
    Copyright (c) 2020 Petter Taule. All rights reserved.

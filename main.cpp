@@ -15,7 +15,7 @@
 #include <gsl/gsl_sf.h>
 #include <cuba.h>
 
-#include "include/bispectrum_tree_level.hpp"
+#include "include/tree_level.hpp"
 #include "include/diagrams.hpp"
 #include "include/kernel_evolution.hpp"
 #include "include/integrand.hpp"

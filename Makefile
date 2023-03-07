@@ -7,7 +7,7 @@ EXE           = $(BUILD_DIR)/cosPT
 DEBUG_EXE     = $(BUILD_DIR)/debug
 BENCHMARK_EXE = $(BUILD_DIR)/bench
 
-SRC_FILES = bispectrum_tree_level.cpp combinatorics.cpp diagrams.cpp \
+SRC_FILES = tree_level.cpp combinatorics.cpp diagrams.cpp \
 		integrand.cpp interpolation.cpp io.cpp ir_resum.cpp kernel_evolution.cpp \
 		parameters.cpp rsd.cpp spt_kernels.cpp tables.cpp utilities.cpp version.cpp
 SRC = $(addprefix $(SRC_DIR)/, $(SRC_FILES))
