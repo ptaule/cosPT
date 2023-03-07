@@ -11,7 +11,7 @@
 #include <gsl/gsl_integration.h>
 
 #include "../include/diagrams.hpp"
-#include "../include/integrand.hpp"
+#include "../include/ir_resum.hpp"
 #include "../include/kernel_evolution.hpp"
 #include "../include/parameters.hpp"
 #include "../include/tables.hpp"
