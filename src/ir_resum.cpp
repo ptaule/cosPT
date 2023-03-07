@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
-#include <exception>
+#include <stdexcept>
 #include <numeric>
 #include <string>
 

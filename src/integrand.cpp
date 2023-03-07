@@ -6,7 +6,6 @@
 */
 
 #include <cmath>
-#include <exception>
 #include <iostream>
 #include <stdexcept>
 #include <string>
