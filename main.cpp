@@ -15,16 +15,13 @@
 #include <gsl/gsl_sf.h>
 #include <cuba.h>
 
-#include "include/tree_level.hpp"
 #include "include/diagrams.hpp"
-#include "include/kernel_evolution.hpp"
 #include "include/integrand.hpp"
-#include "include/interpolation.hpp"
 #include "include/io.hpp"
 #include "include/ir_resum.hpp"
 #include "include/parameters.hpp"
-#include "include/rsd.hpp"
 #include "include/tables.hpp"
+#include "include/tree_level.hpp"
 #include "include/utilities.hpp"
 
 using std::pow;
@@ -175,7 +172,6 @@ int main(int argc, char* argv[]) {
 
             if (n_loops > 0) {
                 n_dims = 3 * n_loops;
-
                 input.bs_diagrams = bs::construct_diagrams(loop_params);
 
                 /* (Master + n_cores) instances of IntegrandTables */
@@ -195,36 +191,20 @@ int main(int argc, char* argv[]) {
         Vec1D<double> loop_result(n_comp, 0);
         Vec1D<double> errors(n_comp, 0);
 
+        /* Tree-level results */
         if (cfg.spectrum() == POWERSPECTRUM) {
-            /* Linear power spectrum */
-            if (cfg.rsd()) {
-                tree_level_result = rsd_tree_level(cfg.k_a(), ps);
-            }
-            else {
-                for (auto& el : tree_level_result) el = ps(cfg.k_a(), 0);
-            }
-
-            if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
-                Vec1D<double> F1_eta_ini(COMPONENTS, 0);
-                Vec1D<double> F1_eta_fin(COMPONENTS, 0);
-                compute_F1(cfg.k_a(), ev_params, eta_grid, F1_eta_ini,
-                        F1_eta_fin);
-
-                for (size_t i = 0; i < n_comp; ++i) {
-                    tree_level_result.at(i) *=
-                        F1_eta_fin.at(static_cast<size_t>(
-                            input.pair_correlations.at(i).first())) *
-                        F1_eta_fin.at(static_cast<size_t>(
-                            input.pair_correlations.at(i).second()));
-                }
-            }
+            ps::tree_level(cfg.k_a(), cfg.dynamics(), ps, eta_grid, ev_params,
+                           input.pair_correlations, tree_level_result);
         }
-        else {
+        else if (cfg.spectrum() == BISPECTRUM) {
             /* Tree level bispectrum */
             IntegrandTables tables(cfg.k_a(), cfg.k_b(), cfg.cos_ab(),
                     0, loop_params, sum_table, ev_params, eta_grid);
-            tree_level_bispectrum(tables, ps, input.triple_correlations,
+            bs::tree_level(tables, ps, input.triple_correlations,
                                   tree_level_result);
+        }
+        else {
+            throw ConfigException("Unknown spectrum.");
         }
 
         /* Single hard limit */

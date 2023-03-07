@@ -33,6 +33,7 @@
 
 using std::size_t;
 
+
 InputPowerSpectrum::InputPowerSpectrum(
                 const std::string& input_ps_filename,
                 double input_ps_rescale,
