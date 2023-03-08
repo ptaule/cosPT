@@ -95,6 +95,9 @@ InputPowerSpectrum::InputPowerSpectrum(
 
 double InputPowerSpectrum::tree_level(double q, double mu) const
 {
+    if (!ir_resum_) {
+        return ps(q);
+    }
     switch (pt_order) {
         case 0:
             return IR_resum_n0(q, mu);
