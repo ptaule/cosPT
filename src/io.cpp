@@ -81,9 +81,8 @@ void write_results(
     out << cfg;
 
     /* A column consists of 14 characters; 4 whitespaces in between each column */
-
     if (cfg.spectrum() == POWERSPECTRUM) {
-        out << "#\n#" << setw(17) << "k";
+        out << "#" << setw(17) << "k";
 
         if (cfg.rsd()) {
             for (int i = 0; i < 3; ++i) {
@@ -105,7 +104,7 @@ void write_results(
         }
     }
     else {
-        out << "#\n#" << setw(17) << "k_a";
+        out << "#" << setw(17) << "k_a";
         out << setw(18) << "k_b";
         out << setw(18) << "k_c";
 

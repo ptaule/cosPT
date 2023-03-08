@@ -49,6 +49,10 @@ class Config {
          * of IR contribution */
         int pt_order_ = 1;
 
+        bool compute_eft_displacement_dispersion_ = false;
+        double eft_displacement_dispersion_ = 0;
+        double eft_displacement_dispersion_infty_ = 10;
+
         double q_min_ = 1e-4;
         double q_max_ = 1;
 
@@ -129,6 +133,15 @@ class Config {
         double k_s() const {return k_s_;}
         double k_osc() const {return k_osc_;}
         int pt_order() const {return pt_order_;}
+
+        bool compute_eft_displacement_dispersion() const
+            {return compute_eft_displacement_dispersion_;}
+        double eft_displacement_dispersion() const
+            {return eft_displacement_dispersion_;}
+        double& eft_displacement_dispersion()
+            {return eft_displacement_dispersion_;}
+        double eft_displacement_dispersion_infty() const
+            {return eft_displacement_dispersion_infty_;}
 
         double q_min() const {return q_min_;}
         double q_max() const {return q_max_;}

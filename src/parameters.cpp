@@ -163,6 +163,26 @@ Config::Config(const std::string& ini_file,
         }
     }
 
+    /* Compute eft_displacement_dispersion? */
+    if (cfg.lookupValue("compute_eft_displacement_dispersion",
+                        compute_eft_displacement_dispersion_)) {
+        int eft_displacement_dispersion_infty_int;
+        if (cfg.lookupValue("eft_displacement_dispersion_infty",
+                            eft_displacement_dispersion_infty_)) {}
+        /* If not found as double, try int */
+        else if (cfg.lookupValue("eft_displacement_dispersion",
+                                 eft_displacement_dispersion_infty_int)) {
+            eft_displacement_dispersion_infty_ =
+            static_cast<double>(eft_displacement_dispersion_infty_int);
+        }
+        else {
+            std::cout <<
+                "Info: No value for eft_displacement_dispersion_infty read, "
+                "setting the value to " << eft_displacement_dispersion_infty_
+                << "."<< std::endl;
+        }
+    }
+
     set_spectrum(cfg);
     set_dynamics(cfg);
 
@@ -939,6 +959,14 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
     }
     out << "#\t Num. evaluations = " << cfg.cuba_evals() << "\n";
     out << "#\t Num. subregions  = " << cfg.cuba_subregions() << "\n";
+
+    if (cfg.compute_eft_displacement_dispersion()) {
+        out << "#\n# Small scale displacement dispersion (relevant for EFT):\n";
+        out << "# sigma_d^2 = \\int_{q_max}^{infty} dq P_{input}(q) = " <<
+            cfg.eft_displacement_dispersion() << "\twith infty = " <<
+            cfg.eft_displacement_dispersion_infty() << "\n";
+    }
+    out << "#\n";
 
     return out;
 }

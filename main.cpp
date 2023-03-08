@@ -187,6 +187,13 @@ int main(int argc, char* argv[]) {
             throw ConfigException("Unknown spectrum.");
         }
 
+        if (cfg.compute_eft_displacement_dispersion()) {
+            /* Compute small scale displacement dispersion,
+             * sigma_d^2 = \int_{q_max}^{infty} dq P_{input}(q)
+             * useful for EFT parameter RGEs */
+            cfg.eft_displacement_dispersion() = ps.integral(cfg.q_max(), 10);
+        }
+
         Vec1D<double> tree_level_result(n_comp, 0);
         Vec1D<double> loop_result(n_comp, 0);
         Vec1D<double> errors(n_comp, 0);
