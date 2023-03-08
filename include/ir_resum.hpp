@@ -16,13 +16,12 @@
 #include <gsl/gsl_integration.h>
 
 #include "interpolation.hpp"
-#include "utilities.hpp"
 
 class Interpolation1D;
 
 
-void DST_II(Vec1D<double>& data);
-void DST_III(Vec1D<double>& data);
+void DST_II(std::vector<double>& data);
+void DST_III(std::vector<double>& data);
 
 
 struct IRresumSettings {
