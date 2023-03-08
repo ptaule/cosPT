@@ -22,41 +22,6 @@ using std::size_t;
 
 
 namespace ps {
-struct RSDIntegrationParameters {
-    double k;
-    const InputPowerSpectrum& ps;
-};
-
-
-
-double rsd_tree_level_integrand_l0(double mu, void* parameters)
-{
-    RSDIntegrationParameters params =
-        *static_cast<RSDIntegrationParameters*>(parameters);
-    return params.ps.tree_level(params.k, mu);
-}
-
-
-
-double rsd_tree_level_integrand_l2(double mu, void* parameters)
-{
-    RSDIntegrationParameters params =
-        *static_cast<RSDIntegrationParameters*>(parameters);
-    return 0.5 * (3*mu*mu - 1) * params.ps.tree_level(params.k, mu);
-}
-
-
-
-double rsd_tree_level_integrand_l4(double mu, void* parameters)
-{
-    RSDIntegrationParameters params =
-        *static_cast<RSDIntegrationParameters*>(parameters);
-    return params.ps.tree_level(params.k, mu)
-        * 0.125 * (35 * POW4(mu) - 30 * mu * mu + 3);
-}
-
-
-
 Vec1D<double> rsd_tree_level(
     double k,
     const InputPowerSpectrum& ps,
@@ -87,20 +52,23 @@ Vec1D<double> rsd_tree_level(
     else {
         gsl_integration_workspace* workspace =
             gsl_integration_workspace_alloc(integration_sub_regions);
-        gsl_function F;
-        double error;
-        int status;
-
-        RSDIntegrationParameters params = {k, ps};
 
         /* l=0 integration */
-        F.function = rsd_tree_level_integrand_l0;
-        F.params = static_cast<void*>(&params);
+        auto integral_l0 = [&k, &ps](double mu) {
+            return ps.tree_level(k, mu);
+        };
 
-        status = gsl_integration_qag(&F, 0, 1, integration_atol,
+        gsl_function F;
+        F.function = [] (double x, void* p) {
+            return (*(decltype(integral_l0)*)p)(x);
+        };
+        F.params = &integral_l0;
+
+        double abserr;
+        int status = gsl_integration_qag(&F, 0, 1, integration_atol,
                                          integration_rtol,
                                          integration_sub_regions, integration_key,
-                                         workspace, &results.at(0), &error);
+                                         workspace, &results.at(0), &abserr);
 
         if (status != 0) {
             throw std::runtime_error("RSD tree-level integration l=0 failed \
@@ -108,11 +76,19 @@ Vec1D<double> rsd_tree_level(
         }
 
         /* l=2 integration */
-        F.function = rsd_tree_level_integrand_l2;
+        auto integral_l2 = [&k, &ps](double mu) {
+            return 0.5 * (3*mu*mu - 1) * ps.tree_level(k, mu);
+        };
+
+        F.function = [] (double x, void* p) {
+            return (*(decltype(integral_l2)*)p)(x);
+        };
+        F.params = &integral_l2;
+
         status = gsl_integration_qag(&F, 0, 1, integration_atol,
-                                         integration_rtol,
-                                         integration_sub_regions, integration_key,
-                                         workspace, &results.at(1), &error);
+                                     integration_rtol,
+                                     integration_sub_regions, integration_key,
+                                     workspace, &results.at(1), &abserr);
 
         if (status != 0) {
             throw std::runtime_error("RSD tree-level integration l=2 failed \
@@ -120,11 +96,20 @@ Vec1D<double> rsd_tree_level(
         }
 
         /* l=4 integration */
-        F.function = rsd_tree_level_integrand_l4;
+        auto integral_l4 = [&k, &ps](double mu) {
+            return 0.125 * (35 * POW4(mu) - 30 * mu * mu + 3)
+                * ps.tree_level(k, mu);
+        };
+
+        F.function = [] (double x, void* p) {
+            return (*(decltype(integral_l4)*)p)(x);
+        };
+        F.params = &integral_l4;
+
         status = gsl_integration_qag(&F, 0, 1, integration_atol,
-                                         integration_rtol,
-                                         integration_sub_regions, integration_key,
-                                         workspace, &results.at(2), &error);
+                                     integration_rtol,
+                                     integration_sub_regions, integration_key,
+                                     workspace, &results.at(2), &abserr);
 
         if (status != 0) {
             throw std::runtime_error("RSD tree-level integration l=4 failed \

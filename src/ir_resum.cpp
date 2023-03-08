@@ -146,14 +146,14 @@ double InputPowerSpectrum::integral(
     F.params = &integral;
 
     double result, abserr;
-    int status = gsl_integration_qag(&F, a, b, integration_atol, integration_rtol,
-                        integration_sub_regions, integration_key, workspace,
-                        &result, &abserr);
+    int status = gsl_integration_qag(&F, a, b, integration_atol,
+                                     integration_rtol,
+                                     integration_sub_regions, integration_key,
+                                     workspace, &result, &abserr);
 
     if (status != 0) {
         throw std::runtime_error("InputPowerSpectrum::integral(): "
-                                 "integration failed with error code" +
-                                 std::to_string(status));
+            "integration failed with error code" + std::to_string(status));
     }
     return result;
 }
@@ -309,34 +309,6 @@ void remove_BAO_wiggles(
 
 
 
-struct IRDampingIntParams {
-    const Interpolation1D& ps_nw;
-    double k_osc;
-};
-
-
-
-double ir_Sigma_integrand(double q, void* parameters) {
-    IRDampingIntParams params =
-        *static_cast<IRDampingIntParams*>(parameters);
-    double r = q/params.k_osc;
-
-    return params.ps_nw(q)
-        * (1 - gsl_sf_bessel_j0(r) + 2 * gsl_sf_bessel_j2(r));
-}
-
-
-
-double ir_delta_Sigma_integrand(double q, void* parameters) {
-    IRDampingIntParams params =
-        *static_cast<IRDampingIntParams*>(parameters);
-    double r = q/params.k_osc;
-
-    return params.ps_nw(q) * gsl_sf_bessel_j2(r);
-}
-
-
-
 void compute_ir_damping(
         const Interpolation1D& ps_nw,
         double& Sigma2,        /* out */
@@ -347,35 +319,50 @@ void compute_ir_damping(
     gsl_integration_workspace* workspace =
         gsl_integration_workspace_alloc(settings.integration_sub_regions);
 
-    IRDampingIntParams params = {ps_nw, settings.k_osc};
+    double k_osc = settings.k_osc;
+
+    /* Sigma2 integrand */
+    auto Sigma2_integral = [&k_osc, &ps_nw](double q) {
+        double r = q/k_osc;
+        return ps_nw(q) *
+            (1 - gsl_sf_bessel_j0(r) + 2 * gsl_sf_bessel_j2(r));
+    };
 
     gsl_function F;
-    F.function = ir_Sigma_integrand;
-    F.params = static_cast<void*>(&params);
+    F.function = [] (double x, void* p) { return (*(decltype(Sigma2_integral)*)p)(x); };
+    F.params = &Sigma2_integral;
 
-    double error;
+    double abserr;
     int status = gsl_integration_qag(&F, settings.k_min, settings.k_s,
             settings.integration_atol, settings.integration_rtol,
-            settings.integration_sub_regions, settings.integration_key, workspace, &Sigma2,
-            &error);
+            settings.integration_sub_regions, settings.integration_key,
+            workspace, &Sigma2, &abserr);
     Sigma2 *= 4.0 * PI / 3.0;
 
     if (status != 0) {
-        throw std::runtime_error("IR damping function Sigma^2 integration \
-                failed with error code" + std::to_string(status));
+        throw std::runtime_error("IR damping function Sigma^2 integration "
+            "failed with error code" + std::to_string(status));
     }
 
-    F.function = ir_delta_Sigma_integrand;
+    /* Sigma2 integrand */
+    auto delta_Sigma2_integral = [&k_osc, &ps_nw](double q) {
+        return ps_nw(q) * gsl_sf_bessel_j2(q/k_osc);
+    };
+
+    F.function = [] (double x, void* p) {
+        return (*(decltype(delta_Sigma2_integral)*)p)(x);
+    };
+    F.params = &delta_Sigma2_integral;
+
     status = gsl_integration_qag(&F, settings.k_min, settings.k_s,
             settings.integration_atol, settings.integration_rtol,
             settings.integration_sub_regions, settings.integration_key, workspace,
-            &delta_Sigma2, &error);
+            &delta_Sigma2, &abserr);
     delta_Sigma2 *= 4.0 * PI;
 
     if (status != 0) {
-        throw std::runtime_error("IR damping function deltaSigma^2 \
-                integration failed with error code"
-                + std::to_string(status));
+        throw std::runtime_error("IR damping function deltaSigma^2 "
+            "integration failed with error code" + std::to_string(status));
     }
 
     gsl_integration_workspace_free(workspace);
