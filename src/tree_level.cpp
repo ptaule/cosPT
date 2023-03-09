@@ -22,104 +22,109 @@ using std::size_t;
 
 
 namespace ps {
-Vec1D<double> rsd_tree_level(
+
+void rsd_tree_level(
     double k,
     const InputPowerSpectrum& ps,
+    Vec1D<double>& results /* out */
+    )
+{
+    double rsd_growth_f = ps.rsd_growth_f();
+    for (auto& el : results) el = ps.tree_level(k, 0);
+    /* Linear monopole */
+    results.at(0) *= (
+            1 + 2.0/3.0 * rsd_growth_f +
+            1.0/5.0 * SQUARE(rsd_growth_f)
+            );
+    /* Linear quadrupole */
+    results.at(1) *= (
+            4.0/3.0 * rsd_growth_f
+            + 4.0/7.0 * SQUARE(rsd_growth_f)
+            );
+    /* Linear hexadecapole */
+    results.at(2) *= (8.0/35.0 * SQUARE(rsd_growth_f));
+}
+
+
+
+void rsd_tree_level_ir_resum(
+    double k,
+    const InputPowerSpectrum& ps,
+    Vec1D<double>& results, /* out */
     std::size_t integration_sub_regions = 10000,
     double integration_atol = 0,
     double integration_rtol = 1e-6,
     int integration_key = GSL_INTEG_GAUSS61
     )
 {
-    Vec1D<double> results(3);
-    double rsd_growth_f = ps.rsd_growth_f();
+    gsl_integration_workspace* workspace =
+        gsl_integration_workspace_alloc(integration_sub_regions);
 
-    if (!ps.ir_resum()) {
-        for (auto& el : results) el = ps.tree_level(k, 0);
-        /* Linear monopole */
-        results.at(0) *= (
-            1 + 2.0/3.0 * rsd_growth_f +
-            1.0/5.0 * SQUARE(rsd_growth_f)
-        );
-        /* Linear quadrupole */
-        results.at(1) *= (
-            4.0/3.0 * rsd_growth_f
-            + 4.0/7.0 * SQUARE(rsd_growth_f)
-            );
-        /* Linear hexadecapole */
-        results.at(2) *= (8.0/35.0 * SQUARE(rsd_growth_f));
-    }
-    else {
-        gsl_integration_workspace* workspace =
-            gsl_integration_workspace_alloc(integration_sub_regions);
+    /* l=0 integration */
+    auto integral_l0 = [&k, &ps](double mu) {
+        return ps.tree_level(k, mu);
+    };
 
-        /* l=0 integration */
-        auto integral_l0 = [&k, &ps](double mu) {
-            return ps.tree_level(k, mu);
-        };
+    gsl_function F;
+    F.function = [] (double x, void* p) {
+        return (*(decltype(integral_l0)*)p)(x);
+    };
+    F.params = &integral_l0;
 
-        gsl_function F;
-        F.function = [] (double x, void* p) {
-            return (*(decltype(integral_l0)*)p)(x);
-        };
-        F.params = &integral_l0;
-
-        double abserr;
-        int status = gsl_integration_qag(&F, 0, 1, integration_atol,
-                                         integration_rtol,
-                                         integration_sub_regions, integration_key,
-                                         workspace, &results.at(0), &abserr);
-
-        if (status != 0) {
-            throw std::runtime_error("RSD tree-level integration l=0 failed \
-                    with error code" + std::to_string(status));
-        }
-
-        /* l=2 integration */
-        auto integral_l2 = [&k, &ps](double mu) {
-            return 0.5 * (3*mu*mu - 1) * ps.tree_level(k, mu);
-        };
-
-        F.function = [] (double x, void* p) {
-            return (*(decltype(integral_l2)*)p)(x);
-        };
-        F.params = &integral_l2;
-
-        status = gsl_integration_qag(&F, 0, 1, integration_atol,
+    double abserr;
+    int status = gsl_integration_qag(&F, 0, 1, integration_atol,
                                      integration_rtol,
                                      integration_sub_regions, integration_key,
-                                     workspace, &results.at(1), &abserr);
+                                     workspace, &results.at(0), &abserr);
 
-        if (status != 0) {
-            throw std::runtime_error("RSD tree-level integration l=2 failed \
-                    with error code" + std::to_string(status));
-        }
-
-        /* l=4 integration */
-        auto integral_l4 = [&k, &ps](double mu) {
-            return 0.125 * (35 * POW4(mu) - 30 * mu * mu + 3)
-                * ps.tree_level(k, mu);
-        };
-
-        F.function = [] (double x, void* p) {
-            return (*(decltype(integral_l4)*)p)(x);
-        };
-        F.params = &integral_l4;
-
-        status = gsl_integration_qag(&F, 0, 1, integration_atol,
-                                     integration_rtol,
-                                     integration_sub_regions, integration_key,
-                                     workspace, &results.at(2), &abserr);
-
-        if (status != 0) {
-            throw std::runtime_error("RSD tree-level integration l=4 failed \
-                    with error code" + std::to_string(status));
-        }
-
-        /* Multiply by two for integration mu=[-1,0] (integrands are even) */
-        for (auto& el : results) el *= 2;
+    if (status != 0) {
+        throw std::runtime_error("RSD tree-level integration l=0 failed \
+                with error code" + std::to_string(status));
     }
-    return results;
+
+    /* l=2 integration */
+    auto integral_l2 = [&k, &ps](double mu) {
+        return 0.5 * (3*mu*mu - 1) * ps.tree_level(k, mu);
+    };
+
+    F.function = [] (double x, void* p) {
+        return (*(decltype(integral_l2)*)p)(x);
+    };
+    F.params = &integral_l2;
+
+    status = gsl_integration_qag(&F, 0, 1, integration_atol,
+                                 integration_rtol,
+                                 integration_sub_regions, integration_key,
+                                 workspace, &results.at(1), &abserr);
+
+    if (status != 0) {
+        throw std::runtime_error("RSD tree-level integration l=2 failed \
+                with error code" + std::to_string(status));
+    }
+
+    /* l=4 integration */
+    auto integral_l4 = [&k, &ps](double mu) {
+        return 0.125 * (35 * POW4(mu) - 30 * mu * mu + 3)
+            * ps.tree_level(k, mu);
+    };
+
+    F.function = [] (double x, void* p) {
+        return (*(decltype(integral_l4)*)p)(x);
+    };
+    F.params = &integral_l4;
+
+    status = gsl_integration_qag(&F, 0, 1, integration_atol,
+                                 integration_rtol,
+                                 integration_sub_regions, integration_key,
+                                 workspace, &results.at(2), &abserr);
+
+    if (status != 0) {
+        throw std::runtime_error("RSD tree-level integration l=4 failed \
+                with error code" + std::to_string(status));
+    }
+
+    /* Multiply by two for integration mu=[-1,0] (integrands are even) */
+    for (auto& el : results) el *= 2;
 }
 
 
@@ -135,7 +140,18 @@ void tree_level(
 )
 {
     if (ps.rsd()) {
-        results = ps::rsd_tree_level(k_a, ps);
+        if (ps.ir_resum()) {
+            size_t sub_regions = 10000;
+            double atol = std::min(1e-10, ps(k_a,0));
+            double rtol = 1e-6;
+            int integration_key = GSL_INTEG_GAUSS61;
+
+            ps::rsd_tree_level_ir_resum(k_a, ps, results, sub_regions, atol,
+                    rtol, integration_key);
+        }
+        else {
+            ps::rsd_tree_level(k_a, ps, results);
+        }
     }
     else {
         for (auto& el : results) el = ps.tree_level(k_a, 0);
