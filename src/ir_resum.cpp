@@ -40,8 +40,6 @@ using std::cos;
 InputPowerSpectrum::InputPowerSpectrum(
                 const std::string& input_ps_filename,
                 double input_ps_rescale,
-                double q_min,
-                double q_max,
                 bool ir_resum,
                 const IRresumSettings& ir_settings,
                 int loop_order,
@@ -49,8 +47,8 @@ InputPowerSpectrum::InputPowerSpectrum(
                 bool rsd,
                 double rsd_growth_f
                 ) :
-    loop_order(loop_order), pt_order(pt_order), q_min(q_min), q_max(q_max),
-    ir_resum_(ir_resum), rsd_(rsd), rsd_growth_f_(rsd_growth_f)
+    loop_order(loop_order), pt_order(pt_order), ir_resum_(ir_resum), rsd_(rsd),
+    rsd_growth_f_(rsd_growth_f)
 {
     ps = Interpolation1D(input_ps_filename, input_ps_rescale);
 

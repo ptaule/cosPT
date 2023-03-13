@@ -22,7 +22,7 @@ struct IntegrationInput {
     const double q_min = 0;
     const double q_max = 0;
 
-    bool single_hard_limit;
+    const bool single_hard_limit;
 
     Vec1D<IntegrandTables> tables_vec;
 

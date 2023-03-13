@@ -148,7 +148,7 @@ void diagram_term(
             int heaviside_theta = diagram.heaviside_theta(q_m1, i,
                     tables.vars.magnitudes);
 
-            /* We set P(k < q_min) and P(k > q_max) to zero, which means we can
+            /* We set P(k < q_min) and P(k > q_max) to zero, hence we
              * skip this configuration if q_m1 < qmin or q_m1 > q_max.
              * Furthermore if heaviside_theta == 0, we can also skip. */
             if (heaviside_theta == 0 || q_m1 < input.q_min ||
@@ -319,19 +319,38 @@ void diagram_term(
                         input.triple_correlations, tables, term_results);
 
                 /* Multiply by P_lin(q_xy1) if xy connecting line is present.
-                 * Use Interpolation1D::eval(x, min, max) which returns 0 when
-                 * x is not between min and max */
+                 * In addition, if q_xy1 is outside integration range [q_min,
+                 * q_max], we set P_lin to zero, i.e. no contribution from this
+                 * term. */
                 if (diagram.n_ab > 0) {
+                    if (q_xy1.a() < input.q_min || q_xy1.a() > input.q_max) {
+#if DEBUG >= 2
+                        std::cout << "\t" << 0 << std::endl;
+#endif
+                        continue;
+                    }
                     for (auto& el : term_results) {
                         el *= input.ps(q_xy1.a(), tables.vars.mu_los);
                     }
                 }
                 if (diagram.n_bc > 0) {
+                    if (q_xy1.b() < input.q_min || q_xy1.b() > input.q_max) {
+#if DEBUG >= 2
+                        std::cout << "\t" << 0 << std::endl;
+#endif
+                        continue;
+                    }
                     for (auto& el : term_results) {
                         el *= input.ps(q_xy1.b(), tables.vars.mu_los);
                     }
                 }
                 if (diagram.n_ca > 0) {
+                    if (q_xy1.c() < input.q_min || q_xy1.c() > input.q_max) {
+#if DEBUG >= 2
+                        std::cout << "\t" << 0 << std::endl;
+#endif
+                        continue;
+                    }
                     for (auto& el : term_results) {
                         el *= input.ps(q_xy1.c(), tables.vars.mu_los);
                     }

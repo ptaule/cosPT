@@ -100,9 +100,8 @@ int main(int argc, char* argv[]) {
         IRresumSettings ir_settings(cfg.k_s(), cfg.k_osc());
 
         InputPowerSpectrum ps(cfg.input_ps_file(), cfg.input_ps_rescale(),
-                              cfg.q_min(), cfg.q_max(), cfg.ir_resum(),
-                              ir_settings, n_loops, cfg.pt_order(), cfg.rsd(),
-                              cfg.rsd_growth_f());
+                cfg.ir_resum(), ir_settings, n_loops, cfg.pt_order(),
+                cfg.rsd(), cfg.rsd_growth_f());
 
         IntegrationInput input(ps, cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
 

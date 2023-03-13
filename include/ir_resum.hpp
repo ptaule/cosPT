@@ -53,9 +53,6 @@ class InputPowerSpectrum {
         Interpolation1D ps;
         Interpolation1D ps_nw;
 
-        double q_min = 0;
-        double q_max = 0;
-
         bool ir_resum_ = false;
         bool rsd_ = false;
         double rsd_growth_f_ = 0;
@@ -71,20 +68,20 @@ class InputPowerSpectrum {
         /* _n0 to _n2 functions differ due to different correction of overcounting
          * of IR contributions at different PT and loop orders */
         double IR_resum_n0(double q, double mu) const {
-            double ps_nw_q = ps_nw(q, q_min, q_max);
-            double ps_w_q = ps(q, q_min, q_max) - ps_nw_q;
+            double ps_nw_q = ps_nw(q);
+            double ps_w_q = ps(q) - ps_nw_q;
             double k2S2 = q * q * Sigma2_tot(mu);
             return ps_nw_q + std::exp(-k2S2) * ps_w_q;
         }
         double IR_resum_n1(double q, double mu) const {
-            double ps_nw_q = ps_nw(q, q_min, q_max);
-            double ps_w_q = ps(q, q_min, q_max) - ps_nw_q;
+            double ps_nw_q = ps_nw(q);
+            double ps_w_q = ps(q) - ps_nw_q;
             double k2S2 = q * q * Sigma2_tot(mu);
             return ps_nw_q + (1 + k2S2) * std::exp(-k2S2) * ps_w_q;
         }
         double IR_resum_n2(double q, double mu) const {
-            double ps_nw_q = ps_nw(q, q_min, q_max);
-            double ps_w_q = ps(q, q_min, q_max) - ps_nw_q;
+            double ps_nw_q = ps_nw(q);
+            double ps_w_q = ps(q) - ps_nw_q;
             double k2S2 = q * q * Sigma2_tot(mu);
             return ps_nw_q +
                 (1 + k2S2 + 0.5 * k2S2 * k2S2) * std::exp(-k2S2) * ps_w_q;
@@ -96,8 +93,6 @@ class InputPowerSpectrum {
         InputPowerSpectrum(
                 const std::string& input_ps_filename,
                 double input_ps_rescale,
-                double q_min,
-                double q_max,
                 bool ir_resum,
                 const IRresumSettings& ir_settings,
                 int loop_order,
