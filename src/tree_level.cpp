@@ -57,9 +57,10 @@ void rsd_tree_level_ir_resum(
     gsl_integration_workspace* workspace =
         gsl_integration_workspace_alloc(integration_sub_regions);
 
-    /* l=0 integration */
+    /* l=0 integration, RSD kernel Z1 = (1 + f mu^2)  */
     auto integral_l0 = [&k, &ps](double mu) {
-        return ps.tree_level(k, mu);
+        double f = ps.rsd_growth_f();
+        return SQUARE(1 + f*mu*mu) * ps.tree_level(k, mu);
     };
 
     gsl_function F;
@@ -81,7 +82,10 @@ void rsd_tree_level_ir_resum(
 
     /* l=2 integration */
     auto integral_l2 = [&k, &ps](double mu) {
-        return 0.5 * (3*mu*mu - 1) * ps.tree_level(k, mu);
+        double f = ps.rsd_growth_f();
+        return SQUARE(1 + f*mu*mu) *
+            0.5 * (3 * SQUARE(mu) - 1) *
+            ps.tree_level(k, mu);
     };
 
     F.function = [] (double x, void* p) {
@@ -101,8 +105,10 @@ void rsd_tree_level_ir_resum(
 
     /* l=4 integration */
     auto integral_l4 = [&k, &ps](double mu) {
-        return 0.125 * (35 * POW4(mu) - 30 * mu * mu + 3)
-            * ps.tree_level(k, mu);
+        double f = ps.rsd_growth_f();
+        return SQUARE(1 + f*mu*mu) *
+            0.125 * (35 * POW4(mu) - 30 * mu * mu + 3) *
+            ps.tree_level(k, mu);
     };
 
     F.function = [] (double x, void* p) {
@@ -120,8 +126,7 @@ void rsd_tree_level_ir_resum(
                 with error code" + std::to_string(status));
     }
 
-    /* Multiply by two for integration mu=[-1,0] (integrands are even) */
-    for (auto& el : results) el *= 2;
+    gsl_integration_workspace_free(workspace);
 }
 
 
