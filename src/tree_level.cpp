@@ -29,20 +29,17 @@ void rsd_tree_level(
     Vec1D<double>& results /* out */
     )
 {
-    double rsd_growth_f = ps.rsd_growth_f();
+    double f = ps.rsd_growth_f();
+    double f2 = SQUARE(f);
+
     for (auto& el : results) el = ps.tree_level(k, 0);
+
     /* Linear monopole */
-    results.at(0) *= (
-            1 + 2.0/3.0 * rsd_growth_f +
-            1.0/5.0 * SQUARE(rsd_growth_f)
-            );
+    results.at(0) *= ( 1 + 2.0/3.0 * f + 1.0/5.0 * f2);
     /* Linear quadrupole */
-    results.at(1) *= (
-            4.0/3.0 * rsd_growth_f
-            + 4.0/7.0 * SQUARE(rsd_growth_f)
-            );
+    results.at(1) *= ( 4.0/3.0 * f + 4.0/7.0 * f2);
     /* Linear hexadecapole */
-    results.at(2) *= (8.0/35.0 * SQUARE(rsd_growth_f));
+    results.at(2) *= (8.0/35.0 * f2);
 }
 
 
