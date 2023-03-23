@@ -126,6 +126,10 @@ void rsd_tree_level_ir_resum(
                 with error code" + std::to_string(status));
     }
 
+    /* Multiply by (2l+1) prefactors */
+    results.at(1) *= 5;
+    results.at(2) *= 9;
+
     gsl_integration_workspace_free(workspace);
 }
 
