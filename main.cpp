@@ -139,13 +139,18 @@ int main(int argc, char* argv[]) {
         if (cfg.spectrum() == POWERSPECTRUM) {
             input.pair_correlations = cfg.pair_correlations();
 
+            if (loop_params.rsd()) {
+                n_comp = 3; /* Monopole, quadrupole, hexadecapole */
+            }
+            else {
+                n_comp = input.pair_correlations.size();
+            }
+
             if (n_loops > 0) {
                 if (loop_params.rsd()) {
-                    n_comp = 3; /* Monopole, quadrupole, hexadecapole */
                     n_dims = 3 * n_loops + 1;
                 }
                 else {
-                    n_comp = input.pair_correlations.size();
                     n_dims = 3 * n_loops - 1;
                 }
 
