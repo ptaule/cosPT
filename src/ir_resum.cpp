@@ -206,7 +206,7 @@ void DST_III(Vec1D<double>& data) {
     Vec1D<double> input(data);
     /* Change last element to 0 and make four times as long by adding zeros.
      * (See https://en.wikipedia.org/wiki/Discrete_sine_transform ; to convert
-     * the expression to the equivalent FFT sum, we need twice as long an
+     * the expression to the equivalent FFT sum, we need four times as long an
      * input) */
     input.back() = 0;
     input.insert(input.end(), 3*N, 0);
