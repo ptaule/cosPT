@@ -6,23 +6,25 @@
 */
 
 #include <cmath>
-#include <exception>
 #include <iostream>
 #include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include <cuba.h>
 
-#include "../include/utilities.hpp"
-#include "../include/parameters.hpp"
-#include "../include/tables.hpp"
-#include "../include/spt_kernels.hpp"
-#include "../include/kernel_evolution.hpp"
 #include "../include/diagrams.hpp"
+#include "../include/kernel_evolution.hpp"
 #include "../include/interpolation.hpp"
-#include "../include/integrand.hpp"
+#include "../include/ir_resum.hpp"
+#include "../include/parameters.hpp"
 #include "../include/rsd.hpp"
+#include "../include/spt_kernels.hpp"
+#include "../include/tables.hpp"
+#include "../include/utilities.hpp"
+
+#include "../include/integrand.hpp"
 
 /* Turn off vector bounds check if not in debug-mode */
 #if DEBUG == 0
@@ -146,7 +148,7 @@ void diagram_term(
             int heaviside_theta = diagram.heaviside_theta(q_m1, i,
                     tables.vars.magnitudes);
 
-            /* We set P(k < q_min) and P(k > q_max) to zero, which means we can
+            /* We set P(k < q_min) and P(k > q_max) to zero, hence we
              * skip this configuration if q_m1 < qmin or q_m1 > q_max.
              * Furthermore if heaviside_theta == 0, we can also skip. */
             if (heaviside_theta == 0 || q_m1 < input.q_min ||
@@ -162,7 +164,7 @@ void diagram_term(
                     term_results);
 
             for (auto& el : term_results) {
-                el *= heaviside_theta * input.input_ps(q_m1);
+                el *= heaviside_theta * input.ps(q_m1, tables.vars.mu_los);
             }
             for (size_t a = 0; a < n_comp; ++a) {
                 diagram_results.at(a) += term_results.at(a);
@@ -317,32 +319,50 @@ void diagram_term(
                         input.triple_correlations, tables, term_results);
 
                 /* Multiply by P_lin(q_xy1) if xy connecting line is present.
-                 * Use Interpolation1D::eval(x, min, max) which returns 0 when
-                 * x is not between min and max */
+                 * In addition, if q_xy1 is outside integration range [q_min,
+                 * q_max], we set P_lin to zero, i.e. no contribution from this
+                 * term. */
                 if (diagram.n_ab > 0) {
+                    if (q_xy1.a() < input.q_min || q_xy1.a() > input.q_max) {
+#if DEBUG >= 2
+                        std::cout << "\t" << 0 << std::endl;
+#endif
+                        continue;
+                    }
                     for (auto& el : term_results) {
-                        el *= input.input_ps(q_xy1.a(), input.q_min,
-                                input.q_max);
+                        el *= input.ps(q_xy1.a(), tables.vars.mu_los);
                     }
                 }
                 if (diagram.n_bc > 0) {
+                    if (q_xy1.b() < input.q_min || q_xy1.b() > input.q_max) {
+#if DEBUG >= 2
+                        std::cout << "\t" << 0 << std::endl;
+#endif
+                        continue;
+                    }
                     for (auto& el : term_results) {
-                        el *= input.input_ps(q_xy1.b(), input.q_min,
-                                input.q_max);
+                        el *= input.ps(q_xy1.b(), tables.vars.mu_los);
                     }
                 }
                 if (diagram.n_ca > 0) {
+                    if (q_xy1.c() < input.q_min || q_xy1.c() > input.q_max) {
+#if DEBUG >= 2
+                        std::cout << "\t" << 0 << std::endl;
+#endif
+                        continue;
+                    }
                     for (auto& el : term_results) {
-                        el *= input.input_ps(q_xy1.c(), input.q_min,
-                                input.q_max);
+                        el *= input.ps(q_xy1.c(), tables.vars.mu_los);
                     }
                 }
                 /* For overall-loop diagrams: divide by pLin(rearr(Q)) which is
                  * multiplied also in bs::integrand() */
                 if (diagram.overall_loop()) {
                     for (auto& el : term_results) {
-                        el /= input.input_ps(
-                            diagram.q1_magnitude(i, tables.vars.magnitudes));
+                        el /= input.ps(
+                                diagram.q1_magnitude(i, tables.vars.magnitudes),
+                                tables.vars.mu_los
+                                );
                     }
                 }
                 for (auto& el : term_results) {
@@ -375,15 +395,19 @@ void diagram_term(
 
 
 int integrand(
-        __attribute__((unused)) const int *ndim,
+        const int *ndim,
         const cubareal xx[],
-        __attribute__((unused)) const int *ncomp,
+        const int *ncomp,
         cubareal ff[],
         void *userdata,
-        __attribute__((unused)) const int *nvec,
+        const int *nvec,
         const int *core
         )
 {
+    UNUSED(ndim);
+    UNUSED(ncomp);
+    UNUSED(nvec);
+
     IntegrationInput& input = *static_cast<IntegrationInput*>(userdata);
 
     /*  For thread <*core + 1> (index 0 is reserved for master), we use the */
@@ -495,8 +519,10 @@ int integrand(
         if (input.single_hard_limit) ++i;
         for (; i < tables.loop_params.n_loops(); ++i) {
             for (auto& el : results) {
-                el *= input.input_ps(
-                    tables.vars.magnitudes.at(static_cast<size_t>(i)));
+                el *= input.ps(
+                        tables.vars.magnitudes.at(static_cast<size_t>(i)),
+                        tables.vars.mu_los
+                        );
             }
         }
 

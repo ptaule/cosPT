@@ -12,12 +12,12 @@
 
 #include <benchmark/benchmark.h>
 
-#include "include/utilities.hpp"
+#include "include/diagrams.hpp"
+#include "include/integrand.hpp"
+#include "include/ir_resum.hpp"
 #include "include/parameters.hpp"
 #include "include/tables.hpp"
-#include "include/diagrams.hpp"
-#include "include/interpolation.hpp"
-#include "include/integrand.hpp"
+#include "include/utilities.hpp"
 
 using std::size_t;
 
@@ -31,12 +31,17 @@ static void BM_PS_EdS_integrand_1loop(benchmark::State& state) {
 
         LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
         SumTable sum_table(loop_params);
+
+        IRresumSettings ir_settings(cfg.k_s(), cfg.k_osc());
+
+        InputPowerSpectrum ps(cfg.input_ps_file(), cfg.input_ps_rescale(),
+                              cfg.ir_resum(), ir_settings, n_loops,
+                              cfg.pt_order(), cfg.rsd(), cfg.rsd_growth_f());
+
+        IntegrationInput input(ps, cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
+
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
-
-        IntegrationInput input(cfg.q_min(), cfg.q_max(), false);
-
-        input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
         input.pair_correlations = cfg.pair_correlations();
         input.ps_diagrams = ps::construct_diagrams(loop_params);
@@ -87,12 +92,17 @@ static void BM_PS_EdS_integrand_2loop(benchmark::State& state) {
 
         LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
         SumTable sum_table(loop_params);
+
+        IRresumSettings ir_settings(cfg.k_s(), cfg.k_osc());
+
+        InputPowerSpectrum ps(cfg.input_ps_file(), cfg.input_ps_rescale(),
+                              cfg.ir_resum(), ir_settings, n_loops,
+                              cfg.pt_order(), cfg.rsd(), cfg.rsd_growth_f());
+
+        IntegrationInput input(ps, cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
+
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
-
-        IntegrationInput input(cfg.q_min(), cfg.q_max(), false);
-
-        input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
         input.pair_correlations = cfg.pair_correlations();
         input.ps_diagrams = ps::construct_diagrams(loop_params);
@@ -142,12 +152,17 @@ static void BM_BS_EdS_integrand_1loop(benchmark::State& state) {
 
         LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
         SumTable sum_table(loop_params);
+
+        IRresumSettings ir_settings(cfg.k_s(), cfg.k_osc());
+
+        InputPowerSpectrum ps(cfg.input_ps_file(), cfg.input_ps_rescale(),
+                              cfg.ir_resum(), ir_settings, n_loops,
+                              cfg.pt_order(), cfg.rsd(), cfg.rsd_growth_f());
+
+        IntegrationInput input(ps, cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
+
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
-
-        IntegrationInput input(cfg.q_min(), cfg.q_max(), false);
-
-        input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
         input.pair_correlations = cfg.pair_correlations();
         input.bs_diagrams = bs::construct_diagrams(loop_params);
@@ -198,12 +213,17 @@ static void BM_BS_EdS_integrand_2loop(benchmark::State& state) {
 
         LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
         SumTable sum_table(loop_params);
+
+        IRresumSettings ir_settings(cfg.k_s(), cfg.k_osc());
+
+        InputPowerSpectrum ps(cfg.input_ps_file(), cfg.input_ps_rescale(),
+                              cfg.ir_resum(), ir_settings, n_loops,
+                              cfg.pt_order(), cfg.rsd(), cfg.rsd_growth_f());
+
+        IntegrationInput input(ps, cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
+
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
-
-        IntegrationInput input(cfg.q_min(), cfg.q_max(), false);
-
-        input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
         input.pair_correlations = cfg.pair_correlations();
         input.bs_diagrams = bs::construct_diagrams(loop_params);
@@ -254,6 +274,15 @@ static void BM_PS_2fluid_integrand_1loop(benchmark::State& state) {
 
         LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
         SumTable sum_table(loop_params);
+
+        IRresumSettings ir_settings(cfg.k_s(), cfg.k_osc());
+
+        InputPowerSpectrum ps(cfg.input_ps_file(), cfg.input_ps_rescale(),
+                              cfg.ir_resum(), ir_settings, n_loops,
+                              cfg.pt_order(), cfg.rsd(), cfg.rsd_growth_f());
+
+        IntegrationInput input(ps, cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
+
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
 
@@ -265,10 +294,6 @@ static void BM_PS_2fluid_integrand_1loop(benchmark::State& state) {
                 cfg.ode_hstart());
         eta_grid = EtaGrid(cfg.pre_time_steps(), cfg.time_steps(), cfg.eta_ini(),
                 cfg.eta_fin(), cfg.eta_asymp());
-
-        IntegrationInput input(cfg.q_min(), cfg.q_max(), false);
-
-        input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
         input.pair_correlations = cfg.pair_correlations();
         input.ps_diagrams = ps::construct_diagrams(loop_params);
@@ -319,6 +344,15 @@ static void BM_PS_2fluid_integrand_2loop(benchmark::State& state) {
 
         LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
         SumTable sum_table(loop_params);
+
+        IRresumSettings ir_settings(cfg.k_s(), cfg.k_osc());
+
+        InputPowerSpectrum ps(cfg.input_ps_file(), cfg.input_ps_rescale(),
+                              cfg.ir_resum(), ir_settings, n_loops,
+                              cfg.pt_order(), cfg.rsd(), cfg.rsd_growth_f());
+
+        IntegrationInput input(ps, cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
+
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
 
@@ -330,10 +364,6 @@ static void BM_PS_2fluid_integrand_2loop(benchmark::State& state) {
                 cfg.ode_hstart());
         eta_grid = EtaGrid(cfg.pre_time_steps(), cfg.time_steps(), cfg.eta_ini(),
                 cfg.eta_fin(), cfg.eta_asymp());
-
-        IntegrationInput input(cfg.q_min(), cfg.q_max(), false);
-
-        input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
         input.pair_correlations = cfg.pair_correlations();
         input.ps_diagrams = ps::construct_diagrams(loop_params);

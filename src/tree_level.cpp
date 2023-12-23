@@ -1,5 +1,5 @@
 /*
-   bispectrum_tree_level.cpp
+   tree_level.cpp
 
    Created by Petter Taule on 19.12.2020
    Copyright (c) 2020 Petter Taule. All rights reserved.
@@ -8,16 +8,180 @@
 #include <cmath>
 #include <stdexcept>
 
-#include "../include/interpolation.hpp"
+#include <gsl/gsl_integration.h>
+
 #include "../include/diagrams.hpp"
+#include "../include/ir_resum.hpp"
 #include "../include/kernel_evolution.hpp"
 #include "../include/parameters.hpp"
 #include "../include/tables.hpp"
+#include "../include/tree_level.hpp"
 #include "../include/spt_kernels.hpp"
-#include "../include/bispectrum_tree_level.hpp"
 
 using std::size_t;
 
+
+namespace ps {
+
+void rsd_tree_level(
+    double k,
+    const InputPowerSpectrum& ps,
+    Vec1D<double>& results /* out */
+    )
+{
+    double f = ps.rsd_growth_f();
+    double f2 = SQUARE(f);
+
+    for (auto& el : results) el = ps.tree_level(k, 0);
+
+    /* Linear monopole */
+    results.at(0) *= ( 1 + 2.0/3.0 * f + 1.0/5.0 * f2);
+    /* Linear quadrupole */
+    results.at(1) *= ( 4.0/3.0 * f + 4.0/7.0 * f2);
+    /* Linear hexadecapole */
+    results.at(2) *= (8.0/35.0 * f2);
+}
+
+
+
+void rsd_tree_level_ir_resum(
+    double k,
+    const InputPowerSpectrum& ps,
+    Vec1D<double>& results, /* out */
+    std::size_t integration_sub_regions = 10000,
+    double integration_atol = 0,
+    double integration_rtol = 1e-6,
+    int integration_key = GSL_INTEG_GAUSS61
+    )
+{
+    gsl_integration_workspace* workspace =
+        gsl_integration_workspace_alloc(integration_sub_regions);
+
+    /* l=0 integration, RSD kernel Z1 = (1 + f mu^2)  */
+    auto integral_l0 = [&k, &ps](double mu) {
+        double f = ps.rsd_growth_f();
+        return SQUARE(1 + f*mu*mu) * ps.tree_level(k, mu);
+    };
+
+    gsl_function F;
+    F.function = [] (double x, void* p) {
+        return (*(decltype(integral_l0)*)p)(x);
+    };
+    F.params = &integral_l0;
+
+    double abserr;
+    int status = gsl_integration_qag(&F, 0, 1, integration_atol,
+                                     integration_rtol,
+                                     integration_sub_regions, integration_key,
+                                     workspace, &results.at(0), &abserr);
+
+    if (status != 0) {
+        throw std::runtime_error("RSD tree-level integration l=0 failed \
+                with error code" + std::to_string(status));
+    }
+
+    /* l=2 integration */
+    auto integral_l2 = [&k, &ps](double mu) {
+        double f = ps.rsd_growth_f();
+        return SQUARE(1 + f*mu*mu) *
+            0.5 * (3 * SQUARE(mu) - 1) *
+            ps.tree_level(k, mu);
+    };
+
+    F.function = [] (double x, void* p) {
+        return (*(decltype(integral_l2)*)p)(x);
+    };
+    F.params = &integral_l2;
+
+    status = gsl_integration_qag(&F, 0, 1, integration_atol,
+                                 integration_rtol,
+                                 integration_sub_regions, integration_key,
+                                 workspace, &results.at(1), &abserr);
+
+    if (status != 0) {
+        throw std::runtime_error("RSD tree-level integration l=2 failed \
+                with error code" + std::to_string(status));
+    }
+
+    /* l=4 integration */
+    auto integral_l4 = [&k, &ps](double mu) {
+        double f = ps.rsd_growth_f();
+        return SQUARE(1 + f*mu*mu) *
+            0.125 * (35 * POW4(mu) - 30 * mu * mu + 3) *
+            ps.tree_level(k, mu);
+    };
+
+    F.function = [] (double x, void* p) {
+        return (*(decltype(integral_l4)*)p)(x);
+    };
+    F.params = &integral_l4;
+
+    status = gsl_integration_qag(&F, 0, 1, integration_atol,
+                                 integration_rtol,
+                                 integration_sub_regions, integration_key,
+                                 workspace, &results.at(2), &abserr);
+
+    if (status != 0) {
+        throw std::runtime_error("RSD tree-level integration l=4 failed \
+                with error code" + std::to_string(status));
+    }
+
+    /* Multiply by (2l+1) prefactors */
+    results.at(1) *= 5;
+    results.at(2) *= 9;
+
+    gsl_integration_workspace_free(workspace);
+}
+
+
+
+void tree_level(
+    double k_a,
+    Dynamics dynamics,
+    const InputPowerSpectrum& ps,
+    const EtaGrid& eta_grid,
+    const EvolutionParameters& ev_params,
+    const Vec1D<Pair<int>>& pair_correlations,
+    Vec1D<double>& results /* out */
+)
+{
+    if (ps.rsd()) {
+        if (ps.ir_resum()) {
+            size_t sub_regions = 10000;
+            double atol = std::min(1e-10, ps(k_a,0));
+            double rtol = 1e-6;
+            int integration_key = GSL_INTEG_GAUSS61;
+
+            ps::rsd_tree_level_ir_resum(k_a, ps, results, sub_regions, atol,
+                    rtol, integration_key);
+        }
+        else {
+            ps::rsd_tree_level(k_a, ps, results);
+        }
+    }
+    else {
+        for (auto& el : results) el = ps.tree_level(k_a, 0);
+    }
+
+    if (dynamics == EVOLVE_IC_ASYMP) {
+        Vec1D<double> F1_eta_ini(COMPONENTS, 0);
+        Vec1D<double> F1_eta_fin(COMPONENTS, 0);
+        compute_F1(k_a, ev_params, eta_grid, F1_eta_ini,
+                   F1_eta_fin);
+
+        for (size_t i = 0; i < results.size(); ++i) {
+            results.at(i) *=
+                F1_eta_fin.at(static_cast<size_t>(
+                    pair_correlations.at(i).first())) *
+                F1_eta_fin.at(static_cast<size_t>(
+                    pair_correlations.at(i).second()));
+        }
+    }
+}
+} /* namespace ps */
+
+
+namespace bs {
 Triple<ArgumentConfiguration> kernel_arguments(
         int diagram_idx,
         const LoopParameters& loop_params
@@ -92,11 +256,11 @@ Triple<ArgumentConfiguration> kernel_arguments(
     }
 
     arg_config.a().kernel_index =
-        loop_params.arguments_2_kernel_index(arg_config.a().args);
+        loop_params.args_2_kernel_index(arg_config.a().args.data());
     arg_config.b().kernel_index =
-        loop_params.arguments_2_kernel_index(arg_config.b().args);
+        loop_params.args_2_kernel_index(arg_config.b().args.data());
     arg_config.c().kernel_index =
-        loop_params.arguments_2_kernel_index(arg_config.c().args);
+        loop_params.args_2_kernel_index(arg_config.c().args.data());
 
     return arg_config;
 }
@@ -106,7 +270,7 @@ Triple<ArgumentConfiguration> kernel_arguments(
 void diagram_term(
         int diagram_idx,
         IntegrandTables& tables,
-        const Interpolation1D& input_ps,
+        const InputPowerSpectrum& ps,
         const Vec1D<Triple<int>>& triple_correlations,
         Vec1D<double>& diagram_results /* out */
         )
@@ -189,16 +353,16 @@ void diagram_term(
 
         switch (diagram_idx) {
             case 0:
-                diagram_results.at(i) *= input_ps(k_a);
-                diagram_results.at(i) *= input_ps(k_c);
+                diagram_results.at(i) *= ps(k_a, 0);
+                diagram_results.at(i) *= ps(k_c, 0);
               break;
             case 1:
-                diagram_results.at(i) *= input_ps(k_b);
-                diagram_results.at(i) *= input_ps(k_c);
+                diagram_results.at(i) *= ps(k_b, 0);
+                diagram_results.at(i) *= ps(k_c, 0);
                 break;
             case 2:
-                diagram_results.at(i) *= input_ps(k_a);
-                diagram_results.at(i) *= input_ps(k_b);
+                diagram_results.at(i) *= ps(k_a, 0);
+                diagram_results.at(i) *= ps(k_b, 0);
                 break;
             default:
                 throw(std::logic_error(
@@ -209,9 +373,9 @@ void diagram_term(
 
 
 
-void tree_level_bispectrum(
+void tree_level(
         IntegrandTables& tables,
-        const Interpolation1D& input_ps,
+        const InputPowerSpectrum& ps,
         const Vec1D<Triple<int>>& triple_correlations,
         Vec1D<double>& results /* out */
         )
@@ -230,7 +394,7 @@ void tree_level_bispectrum(
     /* Three diagrams: 000110, 000101, 000011 */
     for (int i = 0; i < 3; ++i) {
         Vec1D<double> diagram_results(triple_correlations.size(), 0.0);
-        diagram_term(i, tables, input_ps, triple_correlations, diagram_results);
+        diagram_term(i, tables, ps, triple_correlations, diagram_results);
 
         for (size_t j = 0; j < triple_correlations.size(); ++j) {
             results.at(j) += diagram_results.at(j);
@@ -241,3 +405,4 @@ void tree_level_bispectrum(
      * corrupt futher computations */
     tables.reset();
 }
+} /* namespace bs */

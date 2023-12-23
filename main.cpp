@@ -15,15 +15,14 @@
 #include <gsl/gsl_sf.h>
 #include <cuba.h>
 
-#include "include/utilities.hpp"
-#include "include/bispectrum_tree_level.hpp"
 #include "include/diagrams.hpp"
-#include "include/kernel_evolution.hpp"
 #include "include/integrand.hpp"
-#include "include/interpolation.hpp"
 #include "include/io.hpp"
+#include "include/ir_resum.hpp"
 #include "include/parameters.hpp"
 #include "include/tables.hpp"
+#include "include/tree_level.hpp"
+#include "include/utilities.hpp"
 
 using std::pow;
 
@@ -98,11 +97,16 @@ int main(int argc, char* argv[]) {
         LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
         SumTable sum_table(loop_params);
 
-        IntegrationInput input(cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
+        IRresumSettings ir_settings(cfg.k_s(), cfg.k_osc());
+
+        InputPowerSpectrum ps(cfg.input_ps_file(), cfg.input_ps_rescale(),
+                cfg.ir_resum(), ir_settings, n_loops, cfg.pt_order(),
+                cfg.rsd(), cfg.rsd_growth_f());
+
+        IntegrationInput input(ps, cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
+
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
-
-        input.input_ps = Interpolation1D(cfg.input_ps_file(), cfg.input_ps_rescale());
 
         if (cfg.dynamics() == EVOLVE_IC_EDS) {
             if (COMPONENTS != 2) {
@@ -135,13 +139,18 @@ int main(int argc, char* argv[]) {
         if (cfg.spectrum() == POWERSPECTRUM) {
             input.pair_correlations = cfg.pair_correlations();
 
+            if (loop_params.rsd()) {
+                n_comp = 3; /* Monopole, quadrupole, hexadecapole */
+            }
+            else {
+                n_comp = input.pair_correlations.size();
+            }
+
             if (n_loops > 0) {
                 if (loop_params.rsd()) {
-                    n_comp = 3; /* Monopole, quadrupole, hexadecapole */
                     n_dims = 3 * n_loops + 1;
                 }
                 else {
-                    n_comp = input.pair_correlations.size();
                     n_dims = 3 * n_loops - 1;
                 }
 
@@ -167,7 +176,6 @@ int main(int argc, char* argv[]) {
 
             if (n_loops > 0) {
                 n_dims = 3 * n_loops;
-
                 input.bs_diagrams = bs::construct_diagrams(loop_params);
 
                 /* (Master + n_cores) instances of IntegrandTables */
@@ -183,51 +191,31 @@ int main(int argc, char* argv[]) {
             throw ConfigException("Unknown spectrum.");
         }
 
+        if (cfg.compute_eft_displacement_dispersion()) {
+            /* Compute small scale displacement dispersion,
+             * sigma_d^2 = \int_{q_max}^{infty} dq P_{input}(q)
+             * useful for EFT parameter RGEs */
+            cfg.eft_displacement_dispersion() = ps.integral(cfg.q_max(), 10);
+        }
+
         Vec1D<double> tree_level_result(n_comp, 0);
         Vec1D<double> loop_result(n_comp, 0);
         Vec1D<double> errors(n_comp, 0);
 
+        /* Tree-level results */
         if (cfg.spectrum() == POWERSPECTRUM) {
-            /* Linear power spectrum */
-            for (auto& el : tree_level_result) {
-                el = input.input_ps(cfg.k_a());
-            }
-            if (cfg.rsd()) {
-                /* Linear monopole */
-                tree_level_result.at(0) *= (
-                        1 + 2.0/3.0 * cfg.rsd_growth_f() +
-                        1.0/5.0 * SQUARE(cfg.rsd_growth_f())
-                        );
-                /* Linear quadrupole */
-                tree_level_result.at(1) *= (
-                        4.0/3.0 * cfg.rsd_growth_f()
-                        + 4.0/7.0 * SQUARE(cfg.rsd_growth_f())
-                        );
-                /* Linear hexadecapole */
-                tree_level_result.at(2) *= (
-                        8.0/35.0 * SQUARE(cfg.rsd_growth_f()));
-            }
-            if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
-                Vec1D<double> F1_eta_ini(COMPONENTS, 0);
-                Vec1D<double> F1_eta_fin(COMPONENTS, 0);
-                compute_F1(cfg.k_a(), ev_params, eta_grid, F1_eta_ini,
-                        F1_eta_fin);
-
-                for (size_t i = 0; i < n_comp; ++i) {
-                    tree_level_result.at(i) *=
-                        F1_eta_fin.at(static_cast<size_t>(
-                            input.pair_correlations.at(i).first())) *
-                        F1_eta_fin.at(static_cast<size_t>(
-                            input.pair_correlations.at(i).second()));
-                }
-            }
+            ps::tree_level(cfg.k_a(), cfg.dynamics(), ps, eta_grid, ev_params,
+                           input.pair_correlations, tree_level_result);
         }
-        else {
+        else if (cfg.spectrum() == BISPECTRUM) {
             /* Tree level bispectrum */
             IntegrandTables tables(cfg.k_a(), cfg.k_b(), cfg.cos_ab(),
                     0, loop_params, sum_table, ev_params, eta_grid);
-            tree_level_bispectrum(tables, input.input_ps,
-                    input.triple_correlations, tree_level_result);
+            bs::tree_level(tables, ps, input.triple_correlations,
+                                  tree_level_result);
+        }
+        else {
+            throw ConfigException("Unknown spectrum.");
         }
 
         /* Single hard limit */

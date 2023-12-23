@@ -8,9 +8,10 @@
 #ifndef DIAGRAMS_HPP
 #define DIAGRAMS_HPP
 
-#include <vector>
-#include <iosfwd>
 #include <cmath>
+#include <iosfwd>
+#include <stdexcept>
+#include <vector>
 
 #include "utilities.hpp"
 

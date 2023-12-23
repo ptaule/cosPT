@@ -20,13 +20,14 @@
 #define COMPONENTS 4
 
 /* Constants: */
+#define SQRT2 1.41421356237
 #define PI    3.14159265359
 #define TWOPI 6.28318530718
 
 /* Macros for performant powers */
-#define SQUARE(x) (x*x)
-#define CUBE(x) (x*x*x)
-#define POW4(x) (x*x*x*x)
+#define SQUARE(x) (x)*(x)
+#define CUBE(x) (x)*(x)*(x)
+#define POW4(x) (x)*(x)*(x)*(x)
 
 /* Debug modes (if not set by compile options): */
 /* 1: Perform additional checks during runtime. */
@@ -47,6 +48,9 @@
 #define COLOR_MAGENTA "\x1b[35m"
 #define COLOR_CYAN    "\x1b[36m"
 #define COLOR_RESET   "\x1b[0m"
+
+/* Unused parameters (to silence gcc warnings) */
+#define UNUSED(x) (void)(x)
 
 /* Vector aliases */
 template <class T>

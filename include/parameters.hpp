@@ -8,6 +8,7 @@
 #ifndef PARAMETERS_HPP
 #define PARAMETERS_HPP
 
+#include <functional>
 #include <stdexcept>
 #include <string>
 
@@ -39,6 +40,18 @@ class Config {
 
         bool rsd_ = false;
         double rsd_growth_f_ = 0;
+
+        bool ir_resum_ = false;
+        /* Values from 1605.02149 */
+        double k_s_ = 0.2;
+        double k_osc_ = 1.0/110.0;
+        /* Which PT order are we working at? Relevant for avoiding overcounting
+         * of IR contribution */
+        int pt_order_ = 1;
+
+        bool compute_eft_displacement_dispersion_ = false;
+        double eft_displacement_dispersion_ = 0;
+        double eft_displacement_dispersion_infty_ = 10;
 
         double q_min_ = 1e-4;
         double q_max_ = 1;
@@ -114,7 +127,21 @@ class Config {
         double cos_ab() const {return cos_ab_;}
 
         bool rsd() const {return rsd_;}
-        double rsd_growth_f() const {return rsd_growth_f_; }
+        double rsd_growth_f() const {return rsd_growth_f_;}
+
+        bool ir_resum() const {return ir_resum_;}
+        double k_s() const {return k_s_;}
+        double k_osc() const {return k_osc_;}
+        int pt_order() const {return pt_order_;}
+
+        bool compute_eft_displacement_dispersion() const
+            {return compute_eft_displacement_dispersion_;}
+        double eft_displacement_dispersion() const
+            {return eft_displacement_dispersion_;}
+        double& eft_displacement_dispersion()
+            {return eft_displacement_dispersion_;}
+        double eft_displacement_dispersion_infty() const
+            {return eft_displacement_dispersion_infty_;}
 
         double q_min() const {return q_min_;}
         double q_max() const {return q_max_;}
@@ -203,8 +230,8 @@ class LoopParameters {
 
         int first_composite_block_size = 0; /* Bispectrum */
 
-        int ps_arguments_2_kernel_index(const int arguments[]) const;
-        int bs_arguments_2_kernel_index(const int arguments[]) const;
+        int ps_args_2_kernel_index(const int arguments[]) const;
+        int bs_args_2_kernel_index(const int arguments[]) const;
 
     public:
         LoopParameters(int n_loops, Spectrum spectrum, Dynamics dynamics,
@@ -221,21 +248,7 @@ class LoopParameters {
         std::size_t n_kernel_args() const { return n_kernel_args_; }
         int zero_label() const { return zero_label_; }
 
-        int arguments_2_kernel_index(const int arguments[]) const {
-            if (spectrum_ == POWERSPECTRUM)
-                return ps_arguments_2_kernel_index(arguments);
-            else if (spectrum_ == BISPECTRUM)
-                return bs_arguments_2_kernel_index(arguments);
-            else
-                throw(std::logic_error(
-                    "Parameters::arguments_2_kernel_index(): invalid spectrum."));
-        }
-
-        /* std::vector argument wrapper function */
-        int arguments_2_kernel_index(const std::vector<int> arguments) const
-        {
-            return arguments_2_kernel_index(arguments.data());
-        }
+        std::function<int(const int[])> args_2_kernel_index;
 };
 
 

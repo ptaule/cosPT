@@ -8,22 +8,22 @@
 #ifndef INTEGRAND_HPP
 #define INTEGRAND_HPP
 
-#include <utility>
-
+#include "diagrams.hpp"
 #include "utilities.hpp"
-#include "interpolation.hpp"
+
 
 class IntegrandTables;
-class PowerSpectrumDiagram;
-class BiSpectrumDiagram;
+class InputPowerSpectrum;
+
 
 struct IntegrationInput {
+    const InputPowerSpectrum& ps;
+
     const double q_min = 0;
     const double q_max = 0;
 
-    bool single_hard_limit;
+    const bool single_hard_limit;
 
-    Interpolation1D input_ps;
     Vec1D<IntegrandTables> tables_vec;
 
     /* For power spectrum */
@@ -33,18 +33,23 @@ struct IntegrationInput {
     Vec1D<BiSpectrumDiagram> bs_diagrams;
     Vec1D<Triple<int>> triple_correlations;
 
-    IntegrationInput(double q_min, double q_max, bool single_hard_limit)
-    : q_min(q_min), q_max(q_max), single_hard_limit(single_hard_limit) {}
+    IntegrationInput(
+            const InputPowerSpectrum& ps,
+            double q_min,
+            double q_max,
+            bool single_hard_limit
+            ) : ps(ps), q_min(q_min), q_max(q_max),
+    single_hard_limit(single_hard_limit) {}
 };
 
 
 int integrand(
-        __attribute__((unused)) const int *ndim,
+        const int *ndim,
         const double xx[],
-        __attribute__((unused)) const int *ncomp,
+        const int *ncomp,
         double ff[],
         void *userdata,
-        __attribute__((unused)) const int *nvec,
+        const int *nvec,
         const int *core
         );
 

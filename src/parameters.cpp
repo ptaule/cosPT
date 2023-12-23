@@ -5,14 +5,15 @@
    Copyright (c) 2020 Petter Taule. All rights reserved.
 */
 
+#include <algorithm>
+#include <cmath>
+#include <functional>
 #include <iostream>
 #include <iomanip>
-#include <cmath>
 #include <vector>
 #include <string>
 #include <sstream>
 #include <stdexcept>
-#include <algorithm>
 #include <utility>
 
 #if (__cplusplus >= 201703L)
@@ -138,9 +139,52 @@ Config::Config(const std::string& ini_file,
                 << rsd_growth_f_ << "."<< std::endl;
         }
     }
+
+    /* IR resummation */
+    if (cfg.lookupValue("ir_resum", ir_resum_)) {
+        int k_s_int;
+        if (cfg.lookupValue("k_s", k_s_)) {}
+        /* If not found as double, try int */
+        else if (cfg.lookupValue("k_s", k_s_int)) {
+            k_s_ = static_cast<double>(k_s_int);
+        }
+
+        int k_osc_int;
+        if (cfg.lookupValue("k_osc", k_osc_)) {}
+        /* If not found as double, try int */
+        else if (cfg.lookupValue("k_osc", k_osc_int)) {
+            k_osc_ = static_cast<double>(k_osc_int);
+        }
+
+        if (cfg.lookupValue("pt_order", pt_order_)) {}
+        else {
+            throw ConfigException("No pt_order parameter read, needed for "
+                    "ir_resum = true.");
+        }
+    }
+
+    /* Compute eft_displacement_dispersion? */
+    if (cfg.lookupValue("compute_eft_displacement_dispersion",
+                        compute_eft_displacement_dispersion_)) {
+        int eft_displacement_dispersion_infty_int;
+        if (cfg.lookupValue("eft_displacement_dispersion_infty",
+                            eft_displacement_dispersion_infty_)) {}
+        /* If not found as double, try int */
+        else if (cfg.lookupValue("eft_displacement_dispersion",
+                                 eft_displacement_dispersion_infty_int)) {
+            eft_displacement_dispersion_infty_ =
+            static_cast<double>(eft_displacement_dispersion_infty_int);
+        }
+        else {
+            std::cout <<
+                "Info: No value for eft_displacement_dispersion_infty read, "
+                "setting the value to " << eft_displacement_dispersion_infty_
+                << "."<< std::endl;
+        }
+    }
+
     set_spectrum(cfg);
     set_dynamics(cfg);
-
 
     /* Compute single hard limit? */
     if (cfg.lookupValue("single_hard_limit", single_hard_limit_)) {
@@ -853,6 +897,13 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
     if (cfg.rsd()) {
         out << "# (RSD) growth_f = " << cfg.rsd_growth_f() << "\n#\n";
     }
+    if (cfg.ir_resum()) {
+        out << "# IR resummation on, working at PT order N = " <<
+            cfg.pt_order() << "\n";
+        out << "#\tk_s   = " << cfg.k_s() << "\n";
+        out << "#\tk_osc = " << cfg.k_osc() << "\n";
+        out << "#\n";
+    }
 
     if (cfg.dynamics() == EVOLVE_IC_ASYMP || cfg.dynamics() == EVOLVE_IC_EDS) {
         out << "# ODE settings:\n";
@@ -909,6 +960,14 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg) {
     out << "#\t Num. evaluations = " << cfg.cuba_evals() << "\n";
     out << "#\t Num. subregions  = " << cfg.cuba_subregions() << "\n";
 
+    if (cfg.compute_eft_displacement_dispersion()) {
+        out << "#\n# Small scale displacement dispersion (relevant for EFT):\n";
+        out << "# sigma_d^2 = \\int_{q_max}^{infty} dq P_{input}(q) = " <<
+            cfg.eft_displacement_dispersion() << "\twith infty = " <<
+            cfg.eft_displacement_dispersion_infty() << "\n";
+    }
+    out << "#\n";
+
     return out;
 }
 
@@ -946,6 +1005,11 @@ LoopParameters::LoopParameters(int n_loops, Spectrum spectrum,
         /* Max/min single_loops labels */
         single_loop_label_min = static_cast<int>(n_configs_) / 3;
         single_loop_label_max = 2 * static_cast<int>(n_configs_) / 3 - 1;
+
+        /* Set argument-to-kernel index converter to a lambda function for the PS case */
+        args_2_kernel_index = [=](const int args[]) {
+            return this->ps_args_2_kernel_index(args);
+        };
     }
     else if (spectrum_ == BISPECTRUM) {
         n_coeffs_  = static_cast<size_t>(n_loops_) + 2;
@@ -963,6 +1027,11 @@ LoopParameters::LoopParameters(int n_loops, Spectrum spectrum,
          * (applicable for overall loop diagram) */
         first_composite_block_size = (static_cast<int>(n_configs_) + 1) *
             single_loop_block_size;
+
+        /* Set argument-to-kernel index converter to a lambda function for the BS case */
+        args_2_kernel_index = [=](const int args[]) {
+            return this->bs_args_2_kernel_index(args);
+        };
     }
     else {
         throw(std::invalid_argument(
@@ -988,7 +1057,7 @@ LoopParameters::LoopParameters(int n_loops, Spectrum spectrum,
 
 
 
-int LoopParameters::ps_arguments_2_kernel_index(const int arguments[]) const
+int LoopParameters::ps_args_2_kernel_index(const int arguments[]) const
 {
    /* Precompute powers of two for speedup */
     int pow2[] = {1,2,4,8,16,32,64,128};
@@ -997,7 +1066,7 @@ int LoopParameters::ps_arguments_2_kernel_index(const int arguments[]) const
 #if DEBUG >= 1
     if (!unique_elements(arguments, n_kernel_args_, zero_label_))
         throw(std::logic_error(
-            "LoopParameters::ps_arguments_2_kernel_index(): duplicate "
+            "LoopParameters::ps_args_2_kernel_index(): duplicate "
             "vector arguments passed."));
     int n_k_labels = 0;
 #endif
@@ -1021,7 +1090,7 @@ int LoopParameters::ps_arguments_2_kernel_index(const int arguments[]) const
 #if DEBUG >= 1
         /* We should not get -k in power spectrum computation */
         else if (arguments[i] < single_loop_label_min) {
-            throw(std::logic_error("LoopParameters::ps_arguments_2_kernel_index()"
+            throw(std::logic_error("LoopParameters::ps_args_2_kernel_index()"
                                    ": got argument with -k."));
         }
 #endif
@@ -1037,14 +1106,14 @@ int LoopParameters::ps_arguments_2_kernel_index(const int arguments[]) const
             /* Check that this is in fact a single loop vector */
             if(!single_loop_label(arguments[i], n_coeffs_, spectrum_))
                 throw(std::logic_error(
-                    "LoopParameters::ps_arguments_2_kernel_index(): argument is "
+                    "LoopParameters::ps_args_2_kernel_index(): argument is "
                     "neither 0, composite type, or single loop."));
 #endif
         }
     }
 #if DEBUG >= 1
     if (n_k_labels > 1)
-        throw(std::logic_error("LoopParameters::ps_arguments_2_kernel_index(): "
+        throw(std::logic_error("LoopParameters::ps_args_2_kernel_index(): "
                                "more than one argument is of composite type."));
 #endif
 
@@ -1053,7 +1122,7 @@ int LoopParameters::ps_arguments_2_kernel_index(const int arguments[]) const
 
 
 
-int LoopParameters::bs_arguments_2_kernel_index(const int arguments[]) const
+int LoopParameters::bs_args_2_kernel_index(const int arguments[]) const
 {
    /* Precompute powers of two for speedup */
     int pow2[] = {1,2,4,8,16,32,64,128};
@@ -1062,7 +1131,7 @@ int LoopParameters::bs_arguments_2_kernel_index(const int arguments[]) const
 #if DEBUG >= 1
     if (!unique_elements(arguments, n_kernel_args_, zero_label_))
         throw(std::logic_error(
-            "LoopParameters::bs_arguments_2_kernel_index(): duplicate "
+            "LoopParameters::bs_args_2_kernel_index(): duplicate "
             "vector arguments passed."));
 #endif
 
@@ -1111,7 +1180,7 @@ found_single_loop: ;
 #if DEBUG >= 1
     if (n_composite > 2)
         throw(std::logic_error(
-            "LoopParameters::bs_arguments_2_kernel_index(): more than two "
+            "LoopParameters::bs_args_2_kernel_index(): more than two "
             "arguments is of composite type."));
 #endif
 

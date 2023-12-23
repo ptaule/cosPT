@@ -457,7 +457,7 @@ int compute_gen_kernels(
 
     /* If kernel_index is not known, -1 is sent as argument */
     if (kernel_index == -1) {
-        kernel_index = tables.loop_params.arguments_2_kernel_index(arguments);
+        kernel_index = tables.loop_params.args_2_kernel_index(arguments);
     }
 
     /* Alias reference to kernel we are working with for convenience/readability */

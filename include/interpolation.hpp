@@ -43,7 +43,6 @@ class Interpolation1D {
         /* Optional arguments:
          * - factor which multiplies y-values before interpolation
          * - gsl_interp_type: GSL interpolation type */
-
         Interpolation1D(
                 const std::vector<double>& x,
                 const std::vector<double>& y,
@@ -60,6 +59,8 @@ class Interpolation1D {
         Interpolation1D(Interpolation1D&& other);
         Interpolation1D& operator=(Interpolation1D&& other);
 
+        double x_minimum() const { return x_min; }
+        double x_maximum() const { return x_max; }
 
         /* Evaluate spline */
         double operator()(double x) const {

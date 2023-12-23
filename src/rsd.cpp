@@ -6,16 +6,23 @@
 */
 
 #include <cmath>
+#include <cstddef>
 
 #include <gsl/gsl_sf.h>
 
 #include "../include/combinatorics.hpp"
 #include "../include/kernel_evolution.hpp"
 #include "../include/parameters.hpp"
+#include "../include/rsd.hpp"
 #include "../include/spt_kernels.hpp"
 #include "../include/tables.hpp"
-#include "../include/rsd.hpp"
 
+using std::size_t;
+
+/* Turn off vector bounds check if not in debug-mode */
+#if DEBUG == 0
+#define at(x) operator[](x)
+#endif
 
 /* RSD factor from coordinate transformation */
 inline double rsd_coord_transformation(
@@ -101,7 +108,7 @@ int rsd_velocity_power(
 #endif
     // If kernel_index is not known, -1 is sent as argument
     if (kernel_index == -1) {
-        kernel_index = tables.loop_params.arguments_2_kernel_index(arguments);
+        kernel_index = tables.loop_params.args_2_kernel_index(arguments);
     }
 
     /* If N < 1 or there are more factors N than wavenumbers, do nothing */
@@ -228,7 +235,7 @@ double compute_rsd_kernels(
 
     // If kernel_index is not known, -1 is sent as argument
     if (kernel_index == -1) {
-        kernel_index = tables.loop_params.arguments_2_kernel_index(arguments);
+        kernel_index = tables.loop_params.args_2_kernel_index(arguments);
     }
 
     // Alias reference to kernel we are working with for convenience/readability
