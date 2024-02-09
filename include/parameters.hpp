@@ -3,6 +3,8 @@
 
 #include <functional>
 #include <string>
+#include <map>
+#include <any>
 
 #include "utilities.hpp"
 #include "interpolation.hpp"
@@ -12,185 +14,6 @@ class Config;
 class Setting;
 }
 
-class Config {
-    private:
-        int n_loops_;
-        Dynamics dynamics_;
-        Spectrum spectrum_;
-
-        bool single_hard_limit_ = false;
-        double sh_Q1_ = 0;
-
-        int k_a_idx = -1;
-        int k_b_idx = -1;
-        int k_c_idx = -1;
-
-        double k_a_;
-        double k_b_ = 0;
-        double k_c_ = 0;
-        double cos_ab_ = 0;
-
-        bool rsd_ = false;
-        double rsd_growth_f_ = 0;
-
-        bool ir_resum_ = false;
-        /* Values from 1605.02149 */
-        double k_s_ = 0.2;
-        double k_osc_ = 1.0/110.0;
-        /* Which PT order are we working at? Relevant for avoiding overcounting
-         * of IR contribution */
-        int pt_order_ = 1;
-
-        bool compute_eft_displacement_dispersion_ = false;
-        double eft_displacement_dispersion_ = 0;
-        double eft_displacement_dispersion_infty_ = 10;
-
-        double q_min_ = 1e-4;
-        double q_max_ = 1;
-
-        Vec1D<Pair<int>> pair_correlations_;     /* Power spectrum */
-        Vec1D<Triple<int>> triple_correlations_; /* Bispectrum */
-
-        double cuba_atol_           = 1e-12;
-        double cuba_rtol_           = 1e-4;
-        int cuba_maxevals_          = 0;
-        int cuba_verbose_           = 1;
-        int cuba_cores_             = 0;
-        bool cuba_retain_statefile_ = false;
-        std::string cuba_statefile_;
-        std::string cuba_statefile_path;
-
-        /* Information from CUBA integration */
-        int cuba_evals_      = 0;
-        int cuba_fail_       = 0;
-        int cuba_subregions_ = 0;
-
-        std::string description_;
-
-        double ode_atol_   = 1e-6;
-        double ode_rtol_   = 1e-4;
-        double ode_hstart_ = 1e-3;
-
-        std::string input_ps_file_;
-        double input_ps_rescale_num = 1;
-        std::string input_ps_rescale_str_;
-
-        std::string output_path;
-        std::string output_file_;
-
-        std::size_t time_steps_     = 0;
-        std::size_t pre_time_steps_ = 0;
-        double eta_asymp_   = 0;
-        double eta_ini_     = 0;
-        double eta_fin_     = 0;
-
-        double f_nu_ = 0;
-        double omega_m_0_ = 0;
-
-        std::string zeta_file_;
-        std::string redshift_file_;
-        std::string omega_eigenvalues_file_;
-        Vec1D<std::string> F1_ic_files_;
-        std::string effcs2_x_grid_;
-        std::string effcs2_y_grid_;
-        std::string effcs2_data_;
-
-        void set_spectrum(const libconfig::Config& cfg);
-        void set_dynamics(const libconfig::Config& cfg);
-        void set_output_file(const libconfig::Config& cfg);
-        void set_cuba_statefile(const libconfig::Setting& cuba_settings);
-    public:
-        Config(const std::string& ini_file,
-                int k_a_idx = -1,
-                int k_b_idx = -1,
-                int k_c_idx = -1,
-                int cuba_maxevals = 0,
-                int cuba_cores = -1
-                );
-        int n_loops() const {return n_loops_;}
-        Dynamics dynamics() const {return dynamics_;}
-        Spectrum spectrum() const {return spectrum_;}
-        bool single_hard_limit() const {return single_hard_limit_;}
-        double sh_Q1() const {return sh_Q1_;}
-
-        double k_a() const {return k_a_;}
-        double k_b() const {return k_b_;}
-        double k_c() const {return k_c_;}
-        double cos_ab() const {return cos_ab_;}
-
-        bool rsd() const {return rsd_;}
-        double rsd_growth_f() const {return rsd_growth_f_;}
-
-        bool ir_resum() const {return ir_resum_;}
-        double k_s() const {return k_s_;}
-        double k_osc() const {return k_osc_;}
-        int pt_order() const {return pt_order_;}
-
-        bool compute_eft_displacement_dispersion() const
-            {return compute_eft_displacement_dispersion_;}
-        double eft_displacement_dispersion() const
-            {return eft_displacement_dispersion_;}
-        double& eft_displacement_dispersion()
-            {return eft_displacement_dispersion_;}
-        double eft_displacement_dispersion_infty() const
-            {return eft_displacement_dispersion_infty_;}
-
-        double q_min() const {return q_min_;}
-        double q_max() const {return q_max_;}
-
-        Vec1D<Pair<int>> pair_correlations() const {return pair_correlations_;}
-        Vec1D<Triple<int>> triple_correlations() const {return triple_correlations_;}
-
-        double cuba_atol() const {return cuba_atol_ ;}
-        double cuba_rtol() const {return cuba_rtol_;}
-        int cuba_maxevals() const {return cuba_maxevals_;}
-        int cuba_verbose() const {return cuba_verbose_;}
-        int cuba_cores() const {return cuba_cores_;}
-        bool cuba_retain_statefile() const {return cuba_retain_statefile_;}
-        std::string cuba_statefile() const {return cuba_statefile_;}
-
-        int cuba_subregions() const {return cuba_subregions_;}
-        int cuba_evals() const {return cuba_evals_;}
-        int cuba_fail() const {return cuba_fail_;}
-
-        /* Functions to write MC integration info */
-        int& cuba_subregions() {return cuba_subregions_;}
-        int& cuba_evals() {return cuba_evals_;}
-        int& cuba_fail() {return cuba_fail_;}
-
-        std::string description() const {return description_;}
-        std::string& description() {return description_;}
-
-        double ode_atol() const {return ode_atol_ ;}
-        double ode_rtol() const {return ode_rtol_;}
-        double ode_hstart() const {return ode_hstart_;}
-
-        std::string input_ps_file() const {return input_ps_file_;}
-        double input_ps_rescale() const {return input_ps_rescale_num;}
-        std::string input_ps_rescale_str() const {return input_ps_rescale_str_;}
-
-        std::string output_file() const {return output_file_;}
-
-        std::size_t time_steps() const {return time_steps_;}
-        std::size_t pre_time_steps() const {return pre_time_steps_;}
-        double eta_asymp() const {return eta_asymp_;}
-        double eta_ini() const {return eta_ini_;}
-        double eta_fin() const {return eta_fin_;}
-
-        double f_nu() const {return f_nu_;}
-        double omega_m_0() const {return omega_m_0_;}
-
-        std::string zeta_file() const {return zeta_file_;}
-        std::string redshift_file() const {return redshift_file_;}
-        std::string omega_eigenvalues_file() const {return omega_eigenvalues_file_;}
-        Vec1D<std::string> F1_ic_files() const {return F1_ic_files_;}
-        std::string effcs2_x_grid() const {return effcs2_x_grid_;}
-        std::string effcs2_y_grid() const {return effcs2_y_grid_;}
-        std::string effcs2_data() const {return effcs2_data_;}
-};
-
-std::ostream& operator<<(std::ostream& out, const Config& cfg);
-
 
 class ConfigException : std::exception {
     private:
@@ -199,6 +22,115 @@ class ConfigException : std::exception {
         ConfigException (const std::string& ex) : ex(ex) {}
         const char* what() const noexcept {return ex.c_str();}
 };
+
+
+class Config {
+    private:
+        std::map<std::string, std::any> params;
+
+        /* External wavenumber indices */
+        int k_a_idx = -1;
+        int k_b_idx = -1;
+        int k_c_idx = -1;
+
+        /* Information from CUBA integration */
+        int cuba_evals_      = 0;
+        int cuba_fail_       = 0;
+        int cuba_subregions_ = 0;
+
+        /* Correlations to compute */
+        Vec1D<Pair<int>> pair_correlations_;     /* Power spectrum */
+        Vec1D<Triple<int>> triple_correlations_; /* Bispectrum */
+
+        Vec1D<std::string> F1_ic_files_;
+
+        /* T is the type of the parameter */
+        template<typename T>
+        bool set_param_value(
+            const libconfig::Config& cfg,
+            const std::string& param,
+            bool required = false
+            );
+        template<typename T>
+        bool set_param_value(
+            const libconfig::Setting& cfg,
+            const std::string& prefix,
+            const std::string& param,
+            bool required = false
+            );
+
+        template<typename T>
+        T get_param_value(
+            const libconfig::Config& cfg,
+            const std::string& param,
+            bool required = false
+            );
+
+        void set_spectrum(const libconfig::Config& cfg);
+        void set_bispectrum_ext_momenta(const libconfig::Config& cfg);
+
+        void set_input_ps(const libconfig::Config& cfg);
+        void set_output_file(const libconfig::Config& cfg);
+
+        void set_dynamics(const libconfig::Config& cfg);
+
+        void set_cuba_config(
+            const libconfig::Setting& cuba_settings,
+            int cuba_maxevals = 0,
+            int cuba_cores = -1
+            );
+        void set_cuba_statefile(const libconfig::Setting& cuba_settings);
+        std::string create_filename_from_wavenumbers(
+            const std::string& base_path,
+            const std::string& file_extension
+        );
+   public:
+        Config();
+        Config(const std::string& ini_file,
+                int k_a_idx = -1,
+                int k_b_idx = -1,
+                int k_c_idx = -1,
+                int cuba_maxevals = 0,
+                int cuba_cores = -1
+                );
+
+        Vec1D<Pair<int>> pair_correlations() const {return pair_correlations_;}
+        Vec1D<Triple<int>> triple_correlations() const {return triple_correlations_;}
+
+        Vec1D<std::string> F1_ic_files() const {return F1_ic_files_;}
+
+        /* Read CUBA info */
+        int cuba_evals() const {return cuba_evals_;}
+        int cuba_fail() const {return cuba_fail_;}
+        int cuba_subregions() const {return cuba_subregions_;}
+
+        /* Write CUBA info */
+        int& cuba_evals() {return cuba_evals_;}
+        int& cuba_fail() {return cuba_fail_;}
+        int& cuba_subregions() {return cuba_subregions_;}
+
+        /* Setters/getters for params map */
+        template<typename T>
+        void set(const std::string& key, const T& value) {
+            params[key] = value;
+        }
+
+        template<typename T>
+        T get(const std::string& key) const {
+            auto it = params.find(key);
+            if (it != params.end()) {
+                try {
+                    return std::any_cast<T>(it->second);
+                } catch (const std::bad_any_cast&) {
+                    throw ConfigException("Bad cast in Config::get()");
+                }
+            }
+            return T(); // Return default value if key not found or casting fails
+        }
+};
+
+
+std::ostream& operator<<(std::ostream& out, const Config& cfg);
 
 
 class LoopParameters {

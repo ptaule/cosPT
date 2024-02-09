@@ -17,6 +17,7 @@ extern "C" {
 #include "include/utilities.hpp"
 
 using std::pow;
+using std::string;
 
 void print_help();
 
@@ -28,7 +29,7 @@ int main(int argc, char* argv[]) {
     int k_c_idx = -1;
     int cuba_maxevals = 0;
     int cuba_cores = -1;
-    std::string config_file;
+    string config_file;
 
     static struct option long_options[] = {
           {"k_a_idx", required_argument, 0, 'a'},
@@ -76,59 +77,78 @@ int main(int argc, char* argv[]) {
             << "Use --help to see instructions.\nExiting." << std::endl;
         return EXIT_FAILURE;
     }
-    config_file = std::string(argv[optind]);
+    config_file = string(argv[optind]);
 
     try {
         std::cout << "Reading configuration file \"" << config_file << "\"." << std::endl;
         Config cfg(config_file, k_a_idx, k_b_idx, k_c_idx, cuba_maxevals, cuba_cores);
 
-        int n_loops = cfg.n_loops();
+        int n_loops = cfg.get<int>("n_loops");
         int n_dims = 0; /* Dimension of integral measure */
         size_t n_comp = 0; /* Integrand dimension */
 
-        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
+        LoopParameters loop_params(n_loops, cfg.get<Spectrum>("spectrum"),
+                                   cfg.get<Dynamics>("dynamics"),
+                                   cfg.get<bool>("rsd"));
         SumTable sum_table(loop_params);
 
-        IRresumSettings ir_settings(cfg.k_s(), cfg.k_osc());
+        IRresumSettings ir_settings(cfg.get<double>("k_s"), cfg.get<double>("k_osc"));
 
-        InputPowerSpectrum ps(cfg.input_ps_file(), cfg.input_ps_rescale(),
-                cfg.ir_resum(), ir_settings, n_loops, cfg.pt_order(),
-                cfg.rsd(), cfg.rsd_growth_f());
+        InputPowerSpectrum ps(cfg.get<string>("input_ps_file"),
+                              cfg.get<double>("input_ps_rescale_num"),
+                              cfg.get<bool>("ir_resum"), ir_settings, n_loops,
+                              cfg.get<int>("pt_order"), cfg.get<bool>("rsd"),
+                              cfg.get<double>("rsd_growth_f"));
 
-        IntegrationInput input(ps, cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
+        IntegrationInput input(ps, cfg.get<double>("q_min"),
+                               cfg.get<double>("q_max"),
+                               cfg.get<bool>("single_hard_limit"));
 
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
 
-        if (cfg.dynamics() == EVOLVE_IC_EDS) {
+        if (cfg.get<Dynamics>("dynamics") == EVOLVE_IC_EDS) {
             if (COMPONENTS != 2) {
                 std::cerr <<
                     "Dynamics = EVOLVE_IC_EDS not implemented for COMPONENTS != 2"
                     << std::endl;
                 return EXIT_FAILURE;
             }
-            ev_params = EvolutionParameters(cfg.zeta_file(), cfg.ode_atol(),
-                    cfg.ode_rtol(), cfg.ode_hstart());
-            eta_grid = EtaGrid(cfg.time_steps(), cfg.eta_ini(), cfg.eta_fin());
+            ev_params = EvolutionParameters(cfg.get<string>("zeta_file"),
+                                            cfg.get<double>("ode_atol"),
+                                            cfg.get<double>("ode_rtol"),
+                                            cfg.get<double>("ode_hstart"));
+            eta_grid = EtaGrid(cfg.get<size_t>("time_steps"),
+                               cfg.get<double>("eta_ini"),
+                               cfg.get<double>("eta_fin"));
         }
-        else if (cfg.dynamics() == EVOLVE_IC_ASYMP) {
+        else if (cfg.get<Dynamics>("dynamics") == EVOLVE_IC_ASYMP) {
             if (COMPONENTS != 4) {
                 std::cerr <<
                     "Dynamics = EVOLVE_IC_EDS not implemented for COMPONENTS != 2"
                     << std::endl;
                 return EXIT_FAILURE;
             }
-            ev_params = EvolutionParameters(cfg.f_nu(), cfg.omega_m_0(),
-                    cfg.zeta_file(), cfg.redshift_file(),
-                    cfg.omega_eigenvalues_file(), cfg.F1_ic_files(),
-                    cfg.effcs2_x_grid(), cfg.effcs2_y_grid(),
-                    cfg.effcs2_data(), cfg.ode_atol(), cfg.ode_rtol(),
-                    cfg.ode_hstart());
-            eta_grid = EtaGrid(cfg.pre_time_steps(), cfg.time_steps(),
-                    cfg.eta_ini(), cfg.eta_fin(), cfg.eta_asymp());
+            ev_params = EvolutionParameters(cfg.get<double>("f_nu"),
+                                            cfg.get<double>("omega_m_0"),
+                                            cfg.get<string>("zeta_file"),
+                                            cfg.get<string>("redshift_file"),
+                                            cfg.get<string>("omega_eigenvalues_file"),
+                                            cfg.F1_ic_files(),
+                                            cfg.get<string>("effcs2_x_grid"),
+                                            cfg.get<string>("effcs2_y_grid"),
+                                            cfg.get<string>("effcs2_data"),
+                                            cfg.get<double>("ode_atol"),
+                                            cfg.get<double>("ode_rtol"),
+                                            cfg.get<double>("ode_hstart"));
+            eta_grid = EtaGrid(cfg.get<size_t>("pre_time_steps"),
+                               cfg.get<size_t>("time_steps"),
+                               cfg.get<double>("eta_ini"),
+                               cfg.get<double>("eta_fin"),
+                               cfg.get<double>("eta_asymp"));
         }
 
-        if (cfg.spectrum() == POWERSPECTRUM) {
+        if (cfg.get<Spectrum>("spectrum") == POWERSPECTRUM) {
             input.pair_correlations = cfg.pair_correlations();
 
             if (loop_params.rsd()) {
@@ -149,18 +169,19 @@ int main(int argc, char* argv[]) {
                 input.ps_diagrams = ps::construct_diagrams(loop_params);
 
                 /* (Master + n_cores) instances of IntegrandTables */
-                for (int i = 0; i < cfg.cuba_cores() + 1; ++i) {
-                    input.tables_vec.emplace_back(cfg.k_a(), 0, 0,
-                            cfg.rsd_growth_f(), loop_params, sum_table,
-                            ev_params, eta_grid);
+                for (int i = 0; i < cfg.get<int>("cuba_cores") + 1; ++i) {
+                    input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
+                                                  cfg.get<double>("rsd_growth_f"),
+                                                  loop_params, sum_table,
+                                                  ev_params, eta_grid);
                 }
             }
         }
-        else if (cfg.spectrum() == BISPECTRUM) {
+        else if (cfg.get<Spectrum>("spectrum") == BISPECTRUM) {
             input.triple_correlations = cfg.triple_correlations();
             n_comp = input.triple_correlations.size();
 
-            if (cfg.rsd()) {
+            if (cfg.get<bool>("rsd")) {
                 std::cerr << "RSD is not implemented for bispectrum. Exiting."
                     << std::endl;
                 return EXIT_FAILURE;
@@ -171,11 +192,13 @@ int main(int argc, char* argv[]) {
                 input.bs_diagrams = bs::construct_diagrams(loop_params);
 
                 /* (Master + n_cores) instances of IntegrandTables */
-                for (int i = 0; i < cfg.cuba_cores() + 1; ++i) {
-                    input.tables_vec.emplace_back(cfg.k_a(), cfg.k_b(),
-                            cfg.cos_ab(), cfg.rsd_growth_f(), loop_params,
-                            sum_table, ev_params,
-                            eta_grid);
+                for (int i = 0; i < cfg.get<int>("cuba_cores") + 1; ++i) {
+                    input.tables_vec.emplace_back(cfg.get<double>("k_a"),
+                                                  cfg.get<double>("k_b"),
+                                                  cfg.get<double>("cos_ab"),
+                                                  cfg.get<double>("rsd_growth_f"),
+                                                  loop_params, sum_table,
+                                                  ev_params, eta_grid);
                 }
             }
         }
@@ -183,11 +206,11 @@ int main(int argc, char* argv[]) {
             throw ConfigException("Unknown spectrum.");
         }
 
-        if (cfg.compute_eft_displacement_dispersion()) {
+        if (cfg.get<bool>("compute_eft_displacement_dispersion")) {
             /* Compute small scale displacement dispersion,
              * sigma_d^2 = \int_{q_max}^{infty} dq P_{input}(q)
              * useful for EFT parameter RGEs */
-            cfg.eft_displacement_dispersion() = ps.integral(cfg.q_max(), 10);
+            cfg.set("eft_displacement_dispersion", ps.integral(cfg.get<double>("q_max"), 10));
         }
 
         Vec1D<double> tree_level_result(n_comp, 0);
@@ -195,36 +218,40 @@ int main(int argc, char* argv[]) {
         Vec1D<double> errors(n_comp, 0);
 
         /* Tree-level results */
-        if (cfg.spectrum() == POWERSPECTRUM) {
-            ps::tree_level(cfg.k_a(), cfg.dynamics(), ps, eta_grid, ev_params,
-                           input.pair_correlations, tree_level_result);
+        if (cfg.get<Spectrum>("spectrum") == POWERSPECTRUM) {
+            ps::tree_level(cfg.get<double>("k_a"),
+                           cfg.get<Dynamics>("dynamics"), ps, eta_grid,
+                           ev_params, input.pair_correlations,
+                           tree_level_result);
         }
-        else if (cfg.spectrum() == BISPECTRUM) {
+        else if (cfg.get<Spectrum>("spectrum") == BISPECTRUM) {
             /* Tree level bispectrum */
-            IntegrandTables tables(cfg.k_a(), cfg.k_b(), cfg.cos_ab(),
-                    0, loop_params, sum_table, ev_params, eta_grid);
+            IntegrandTables tables(cfg.get<double>("k_a"),
+                                   cfg.get<double>("k_b"),
+                                   cfg.get<double>("cos_ab"), 0, loop_params,
+                                   sum_table, ev_params, eta_grid);
             bs::tree_level(tables, ps, input.triple_correlations,
-                                  tree_level_result);
+                           tree_level_result);
         }
         else {
             throw ConfigException("Unknown spectrum.");
         }
 
         /* Single hard limit */
-        if (cfg.single_hard_limit()) {
+        if (cfg.get<bool>("single_hard_limit")) {
             n_dims -= 1;
             for (auto& el : input.tables_vec) {
-                el.vars.magnitudes.at(0) = cfg.sh_Q1();
+                el.vars.magnitudes.at(0) = cfg.get<double>("sh_Q1");
             }
         }
 
         if (n_loops > 0) {
-            cuba_cores = cfg.cuba_cores();
+            cuba_cores = cfg.get<int>("cuba_cores");
             int cuba_points = 10000;
             cubacores(&cuba_cores, &cuba_points);
             int cuba_retain_statefile = 0;
-            std::string cuba_statefile = cfg.cuba_statefile();
-            if (cfg.cuba_retain_statefile()) {
+            string cuba_statefile = cfg.get<string>("cuba_statefile");
+            if (cfg.get<bool>("cuba_retain_statefile")) {
                 cuba_retain_statefile = 16;
             }
 
@@ -239,15 +266,29 @@ int main(int argc, char* argv[]) {
 #define CUBA_NNEW 1000
 #define CUBA_NMIN 2
 #define CUBA_FLATNESS 25.
-            Suave(n_dims, static_cast<int>(n_comp), (integrand_t)integrand, &input,
-                  CUBA_NVEC, cfg.cuba_rtol(), cfg.cuba_atol(),
-                  (cfg.cuba_verbose() | CUBA_LAST | cuba_retain_statefile),
-                  CUBA_SEED, CUBA_MINEVAL, cfg.cuba_maxevals(), CUBA_NNEW,
-                  CUBA_NMIN, CUBA_FLATNESS,
+            Suave(n_dims,
+                  static_cast<int>(n_comp),
+                  (integrand_t)integrand,
+                  &input,
+                  CUBA_NVEC,
+                  cfg.get<double>("cuba_rtol"),
+                  cfg.get<double>("cuba_atol"),
+                  (cfg.get<int>("cuba_verbose") | CUBA_LAST | cuba_retain_statefile),
+                  CUBA_SEED,
+                  CUBA_MINEVAL,
+                  cfg.get<int>("cuba_maxevals"),
+                  CUBA_NNEW,
+                  CUBA_NMIN,
+                  CUBA_FLATNESS,
                   (cuba_statefile.empty() ? nullptr : cuba_statefile.c_str()),
-                  CUBA_SPIN, &cfg.cuba_subregions(), &cfg.cuba_evals(),
-                  &cfg.cuba_fail(), integration_results.data(),
-                  integration_errors.data(), integration_probs.data());
+                  CUBA_SPIN,
+                  &cfg.cuba_subregions(),
+                  &cfg.cuba_evals(),
+                  &cfg.cuba_fail(),
+                  integration_results.data(),
+                  integration_errors.data(),
+                  integration_probs.data()
+                  );
 
             /* Overall factors:
              * - Only integrating over cos_theta_i between 0 and
@@ -257,7 +298,7 @@ int main(int argc, char* argv[]) {
              *   (powerspectrum) */
             double overall_factor =
                 pow(2, n_loops) * gsl_sf_fact(static_cast<unsigned>(n_loops));
-            if (cfg.spectrum() == POWERSPECTRUM && !cfg.rsd()) {
+            if (cfg.get<Spectrum>("spectrum") == POWERSPECTRUM && !cfg.get<bool>("rsd")) {
                 overall_factor *= TWOPI;
             }
 
@@ -268,11 +309,11 @@ int main(int argc, char* argv[]) {
                     static_cast<double>(integration_errors.at(i));
 
                 if (input.single_hard_limit) {
-                    loop_result.at(i) *= SQUARE(cfg.sh_Q1());
-                    errors.at(i)      *= SQUARE(cfg.sh_Q1());
+                    loop_result.at(i) *= SQUARE(cfg.get<double>("sh_Q1"));
+                    errors.at(i)      *= SQUARE(cfg.get<double>("sh_Q1"));
                 }
 
-                if (cfg.rsd()) {
+                if (cfg.get<bool>("rsd")) {
                     loop_result.at(i) *= 4 * static_cast<double>(i) + 1;
                     errors.at(i)      *= 4 * static_cast<double>(i) + 1;
                 }
@@ -286,7 +327,8 @@ int main(int argc, char* argv[]) {
         }
 
         write_results(cfg, tree_level_result, loop_result, errors);
-        std::cout << "Results written to " << cfg.output_file() << "." << std::endl;
+        std::cout << "Results written to " << cfg.get<string>("output_file")
+            << "." << std::endl;
     }
     catch (const ConfigException& e) {
         std::cerr << e.what() << "\nExiting." << std::endl;
