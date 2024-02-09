@@ -1,10 +1,3 @@
-/*
-   diagrams.hpp
-
-   Created by Petter Taule on 30.08.2020
-   Copyright (c) 2020 Petter Taule. All rights reserved.
-   */
-
 #ifndef DIAGRAMS_HPP
 #define DIAGRAMS_HPP
 

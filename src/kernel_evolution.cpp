@@ -1,10 +1,3 @@
-/*
-   kernel_evolution.cpp
-
-   Created by Petter Taule on 02.10.2020
-   Copyright (c) 2020 Petter Taule. All rights reserved.
-*/
-
 #include <algorithm>
 #include <array>
 #include <cmath>

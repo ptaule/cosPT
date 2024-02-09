@@ -1,10 +1,3 @@
-/*
-   combinatorics.cpp
-
-   Created by Petter Taule on 08.09.2020
-   Copyright (c) 2020 Petter Taule. All rights reserved.
-*/
-
 #include <ostream>
 #include <vector>
 #include <numeric>

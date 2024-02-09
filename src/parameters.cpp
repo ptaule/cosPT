@@ -1,10 +1,3 @@
-/*
-   parameters.cpp
-
-   Created by Petter Taule on 04.10.2020
-   Copyright (c) 2020 Petter Taule. All rights reserved.
-*/
-
 #include <algorithm>
 #include <cmath>
 #include <functional>

@@ -1,10 +1,3 @@
-/*
-   kernel_evolution.hpp
-
-   Created by Petter Taule on 02.10.2020
-   Copyright (c) 2020 Petter Taule. All rights reserved.
-*/
-
 #ifndef KERNEL_EVOLUTION_HPP
 #define KERNEL_EVOLUTION_HPP
 

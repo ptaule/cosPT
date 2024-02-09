@@ -1,10 +1,3 @@
-/*
-   tree_level.hpp
-
-   Created by Petter Taule on 19.12.2020
-   Copyright (c) 2020 Petter Taule. All rights reserved.
-*/
-
 #ifndef TREE_LEVEL_HPP
 #define TREE_LEVEL_HPP
 

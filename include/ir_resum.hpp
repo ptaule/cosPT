@@ -1,10 +1,3 @@
-/*
-   ir_resum.hpp
-
-   Created by Petter Taule on 15.02.2023
-   Copyright (c) 2023 Petter Taule. All rights reserved.
-*/
-
 #ifndef IR_RESUM_HPP
 #define IR_RESUM_HPP
 

@@ -1,10 +1,3 @@
-/*
-   spt_kernels.cpp
-
-   Created by Petter Taule on 04.09.2020
-   Copyright (c) 2020 Petter Taule. All rights reserved.
-*/
-
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>

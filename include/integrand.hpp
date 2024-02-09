@@ -1,10 +1,3 @@
-/*
-   integrand.hpp
-
-   Created by Petter Taule on 04.09.2020
-   Copyright (c) 2020 Petter Taule. All rights reserved.
-*/
-
 #ifndef INTEGRAND_HPP
 #define INTEGRAND_HPP
 
@@ -22,7 +15,7 @@ struct IntegrationInput {
     const double q_min = 0;
     const double q_max = 0;
 
-    const bool single_hard_limit;
+    bool single_hard_limit;
 
     Vec1D<IntegrandTables> tables_vec;
 

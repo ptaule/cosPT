@@ -13,14 +13,14 @@ In addition to the standard Einstein-de-Sitter Standard Perturbation Theory
 equation of motion, see [2008.00013](http://www.arxiv.org/abs/2008.00013) for
 further explanation and example usage for a cosmology with massive neutrinos.
 
+Anybody is free to use the software, but please cite at least
+[2008.00013](http://www.arxiv.org/abs/2008.00013) in publications.
+
 ## Dependencies
 
 - [GNU Scientific Library (GSL)](https://www.gnu.org/software/gsl/) used to solve ODEs numerically
 - [The CUBA library](http://www.feynarts.de/cuba/) library for Monte Carlo integration
 - [libconfig](https://hyperrealm.github.io/libconfig/) for reading configuration files
-
-The path to include- and library-files of the above dependencies must be
-provided to the `-I` and `-L` options to the compiler in the Makefile.
 
 ## Building and running the program
 

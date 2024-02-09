@@ -1,15 +1,7 @@
-/*
-   parameters.hpp
-
-   Created by Petter Taule on 04.10.2020
-   Copyright (c) 2020 Petter Taule. All rights reserved.
-*/
-
 #ifndef PARAMETERS_HPP
 #define PARAMETERS_HPP
 
 #include <functional>
-#include <stdexcept>
 #include <string>
 
 #include "utilities.hpp"

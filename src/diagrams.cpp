@@ -1,10 +1,3 @@
-/*
-   diagrams.cpp
-
-   Created by Petter Taule on 30.08.2020
-   Copyright (c) 2020 Petter Taule. All rights reserved.
-   */
-
 #include <iostream>
 #include <algorithm>
 #include <numeric>

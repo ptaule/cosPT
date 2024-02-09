@@ -1,10 +1,3 @@
-/*
-   utilities.cpp
-
-   Created by Petter Taule on 28.08.2020
-   Copyright (c) 2020 Petter Taule. All rights reserved.
-*/
-
 #include <cstddef>
 #include <ostream>
 #include <cmath>

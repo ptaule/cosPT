@@ -1,10 +1,3 @@
-/*
-   spt_kernels.hpp
-
-   Created by Petter Taule on 03.09.2020
-   Copyright (c) 2020 Petter Taule. All rights reserved.
-*/
-
 #ifndef SPT_KERNELS_HPP
 #define SPT_KERNELS_HPP
 

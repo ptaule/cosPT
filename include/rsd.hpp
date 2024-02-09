@@ -1,10 +1,3 @@
-/*
-   rsd.hpp
-
-   Created by Petter Taule on 23.09.2022
-   Copyright (c) 2022 Petter Taule. All rights reserved.
-*/
-
 #ifndef RSD_HPP
 #define RSD_HPP
 

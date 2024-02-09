@@ -1,10 +1,3 @@
-/*
-   tables.hpp
-
-   Created by Petter Taule on 29.08.2020
-   Copyright (c) 2020 Petter Taule. All rights reserved.
-*/
-
 #ifndef TABLES_HPP
 #define TABLES_HPP
 

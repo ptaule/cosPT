@@ -1,10 +1,3 @@
-/*
-   ir_resum.cpp
-
-   Created by Petter Taule on 15.02.2023
-   Copyright (c) 2023 Petter Taule. All rights reserved.
-*/
-
 #include <algorithm>
 #include <cmath>
 #include <cstddef>

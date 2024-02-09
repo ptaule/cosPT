@@ -1,10 +1,3 @@
-/*
-   combinatorics.hpp
-
-   Created by Petter Taule on 08.09.2020
-   Copyright (c) 2020 Petter Taule. All rights reserved.
-*/
-
 #ifndef COMBINATORICS_HPP
 #define COMBINATORICS_HPP
 

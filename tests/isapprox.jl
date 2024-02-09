@@ -1,10 +1,3 @@
-#!/usr/bin/env julia
-
-#   isapprox.jl
-#
-#   Created by Petter Taule on 21.12.2020
-#   Copyright (c) 2020 Petter Taule. All rights reserved.
-
 using DelimitedFiles, ArgParse, Measurements
 
 
