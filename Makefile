@@ -21,13 +21,13 @@ CXXFLAGS += -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion \
 		-Wcast-align -Wunused -Wlogical-op -Wnull-dereference \
 		-std=c++17
 
-all: CPPFLAGS += -DDEBUG=0 -DHAVE_INLINE -I/space/ge52sir/local/include/
+all: CPPFLAGS += -DDEBUG=0 -DHAVE_INLINE #-I
 all: CXXFLAGS += -O3
-all: LDFLAGS  += -L/space/ge52sir/local/lib/
+all: LDFLAGS  += #-L
 
-debug: CPPFLAGS   += -D_GLIBCXX_DEBUG -DDEBUG=2 -I/space/ge52sir/local/include/
+debug: CPPFLAGS   += -D_GLIBCXX_DEBUG -DDEBUG=2 #-I
 debug: CXXFLAGS   += -g -O0
-debug: LDFLAGS    += -L/space/ge52sir/local/lib/
+debug: LDFLAGS    += #-L
 
 benchmark: CPPFLAGS += -DHAVE_INLINE
 benchmark: CXXFLAGS += -O3
