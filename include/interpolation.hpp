@@ -154,6 +154,15 @@ class Interpolation2D {
                 double factor = 1,
                 const gsl_interp2d_type* type = gsl_interp2d_bicubic
                 );
+
+        /* Constructor reading *one* file, first line should be x-grid, second
+         * line y-grid and the rest is the (z-) data */
+        Interpolation2D(
+                const std::string& data_file,
+                double factor = 1,
+                const gsl_interp2d_type* type = gsl_interp2d_bicubic
+                );
+
         Interpolation2D(const Interpolation2D&) = delete;
         Interpolation2D& operator=(const Interpolation2D&) = delete;
         Interpolation2D(Interpolation2D&&) noexcept;

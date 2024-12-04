@@ -335,6 +335,39 @@ Interpolation2D::Interpolation2D(
 
 
 
+Interpolation2D::Interpolation2D(
+        const std::string& data_file,
+        double factor,
+        const gsl_interp2d_type* type
+        ) : type(type)
+{
+    Vec2D<double> data;
+    read_delimited_file(data_file, data);
+
+    Vec1D<double> x = data.at(0);
+    Vec1D<double> y = data.at(1);
+
+    data.erase(data.begin());
+    data.erase(data.begin() + 1);
+
+    if (x.size() != data.size()) {
+        std::cerr << "Interpolation2D::Interpolation2D(): Error: dimension"
+            "mismatch between x-grid and data. Interpolating from file: "
+              << data_file << "." << std::endl;
+    }
+
+    for (size_t i = 0; i < x.size(); ++i) {
+        if (y.size() != data.at(i).size()) {
+            std::cerr << "Interpolation2D::Interpolation2D(): Error: dimension"
+                "mismatch between y-grid and data. Interpolating from file: "
+                  << data_file << "." << std::endl;
+        }
+    }
+    initialize(x, y, data, factor);
+}
+
+
+
 Interpolation2D::Interpolation2D(Interpolation2D&& other) noexcept
     : x_min (exchange(other.x_min, 0)),
     x_max(exchange(other.x_max, 0)),
