@@ -1,10 +1,11 @@
 #ifndef PARAMETERS_HPP
 #define PARAMETERS_HPP
 
+#include <any>
 #include <functional>
+#include <stdexcept>
 #include <string>
 #include <map>
-#include <any>
 
 #include "utilities.hpp"
 #include "interpolation.hpp"
@@ -42,6 +43,9 @@ class Config {
         Vec1D<Pair<int>> pair_correlations_;     /* Power spectrum */
         Vec1D<Triple<int>> triple_correlations_; /* Bispectrum */
 
+        Vec1D<double> kappa_;
+        Vec1D<std::string> zeta_files_;
+        Vec1D<std::string> xi_files_;
         Vec1D<std::string> F1_ic_files_;
 
         /* T is the type of the parameter */
@@ -99,6 +103,9 @@ class Config {
         Vec1D<Pair<int>> pair_correlations() const {return pair_correlations_;}
         Vec1D<Triple<int>> triple_correlations() const {return triple_correlations_;}
 
+        Vec1D<double> kappa() const {return kappa_;}
+        Vec1D<std::string> zeta_files() const {return zeta_files_;}
+        Vec1D<std::string> xi_files() const {return xi_files_;}
         Vec1D<std::string> F1_ic_files() const {return F1_ic_files_;}
 
         /* Read CUBA info */
@@ -129,6 +136,9 @@ class Config {
                 }
             }
             return T(); // Return default value if key not found or casting fails
+        }
+        bool exists(const std::string& key) const {
+            return params.find(key) != params.end();
         }
 };
 
@@ -181,18 +191,13 @@ class LoopParameters {
 
 class EvolutionParameters {
     private:
-        double f_nu_       = 0.0;
-        double cs2_factor  = 0.0;
+        Vec1D<double> kappa_ = {0.0};
+        Vec1D<Interpolation1D> zeta_; /* Time-dependent functions */
+        Vec1D<Interpolation2D> xi_;   /* Space- and time-dependent functions */
 
         double ode_atol_   = 0.0;
         double ode_rtol_   = 0.0;
         double ode_hstart_ = 0.0;
-
-        Interpolation1D zeta;
-        Interpolation1D redshift;
-        Interpolation1D omega_eigenvalues;
-        Vec1D<Interpolation1D> F1_ic;
-        Interpolation2D effcs2;
     public:
         EvolutionParameters() = default;
         EvolutionParameters(const EvolutionParameters&) = delete;
@@ -200,47 +205,80 @@ class EvolutionParameters {
         EvolutionParameters(EvolutionParameters&& other) noexcept;
         EvolutionParameters& operator=(EvolutionParameters&& other);
 
-        /* Effective sound speed constructors */
         EvolutionParameters(
-                double f_nu,
-                double omega_m_0,
-                const std::string& zeta_file,
-                const std::string& redshift_file,
-                const std::string& omega_eigenvalues_file,
-                const Vec1D<std::string>& F1_ic_files,
-                const std::string& effcs2_x_file,
-                const std::string& effcs2_y_file,
-                const std::string& effcs2_data_file,
+                const Vec1D<double>& kappa,
+                const Vec1D<std::string>& zeta_files,
+                const Vec1D<std::string>& xi_files,
                 double ode_atol = 1e-6,
                 double ode_rtol = 1e-4,
                 double ode_hstart = 1e-3
                 );
 
-        /* No sound speed constructors */
-        EvolutionParameters(
-                const std::string& zeta_file,
-                double ode_atol = 1e-6,
-                double ode_rtol = 1e-4,
-                double ode_hstart = 1e-3
+        double ode_atol() const { return ode_atol_; }
+        double ode_rtol() const { return ode_rtol_; }
+        double ode_hstart() const { return ode_hstart_; }
+
+        const Vec1D<double>& kappa() const { return kappa_; }
+        const Vec1D<Interpolation1D>& zeta() const { return zeta_; }
+        const Vec1D<Interpolation2D>& xi() const { return xi_; }
+};
+
+
+class OmegaEigenspace {
+    private:
+        Interpolation1D eigenvalue_;
+        Vec1D<Interpolation1D> eigenvectors_;
+
+        double eta_ini = 0;           /* Time eta at which to compute eigenspace */
+        int eigenmode = 0;            /* Which eigenmode to compute [0,COMPONENTS-1] */
+        double imag_threshold = 1e-3; /* Threshold for imaginary part of eigenvalues/eigenvectors */
+        const Dynamics dynamics;
+        const EvolutionParameters& ev_params;
+
+        void omega_eigenspace_at_k(
+            double k,
+            double& eigenvalue,        /* out */
+            Vec1D<double>& eigenvector /* out */
+            );
+    public:
+        OmegaEigenspace() = delete;
+        OmegaEigenspace(const OmegaEigenspace&) = delete;
+        OmegaEigenspace& operator=(const OmegaEigenspace&) = delete;
+        OmegaEigenspace(OmegaEigenspace&& other) noexcept;
+        OmegaEigenspace& operator=(OmegaEigenspace&& other) = delete;
+
+        OmegaEigenspace(
+                const Dynamics dynamics,
+                double eta_ini,                       /* Time eta at which to compute eigenspace */
+                const EvolutionParameters& ev_params,
+                int eigenmode,                        /* Which eigenmode to compute [0,COMPONENTS-1] */
+                double k_min,
+                double k_max,                         /* Over which k-range to compute */
+                int N,                                /* How many grid points to use in interpolation */
+                double imag_threshold = 1e-3          /* Threshold for imaginary part of eigenvalues/eigenvectors */
                 );
 
-        double f_nu() const {return f_nu_;}
-        double ode_atol() const {return ode_atol_;}
-        double ode_rtol() const {return ode_rtol_;}
-        double ode_hstart() const {return ode_hstart_;}
+        const Interpolation1D& eigenvalue() const {
+#if DEBUG > 0
+            if (dynamics != EVOLVE_ASYMPTOTIC_ICS) {
+                throw std::runtime_error("OmegaEigenspace::eigenvalue(): "
+                        "Only for dynamics = EVOLVE_ASYMPTOTIC_ICS is Omega "
+                        "eigenspace computed.");
+            }
+#endif
+            return eigenvalue_;
+        };
 
-        double zeta_at_eta(double eta) const {return zeta(eta);}
-        double omega_eigenvalues_at_k(double k) const {
-            return omega_eigenvalues(k);
-        }
-
-        double F1_ic_at_k(std::size_t i, double k) const {
-            return F1_ic[i](k);
-        }
-
-        double cs2(double eta, double k) const {
-            return cs2_factor * effcs2(eta, k) / (1 + redshift(eta));
-        }
+        const Vec1D<Interpolation1D>& eigenvectors() const {
+#if DEBUG > 0
+            if (dynamics != EVOLVE_ASYMPTOTIC_ICS) {
+                throw std::runtime_error("OmegaEigenspace::eigenvalue(): "
+                        "Only for dynamics = EVOLVE_ASYMPTOTIC_ICS is Omega "
+                        "eigenspace computed.");
+            }
+#endif
+            return eigenvectors_;
+        };
 };
 
 

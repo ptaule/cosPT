@@ -5,6 +5,7 @@
 
 class LoopParameters;
 class EvolutionParameters;
+class OmegaEigenspace;
 
 struct IntegrationVariables {
     Vec1D<double> magnitudes; /* Loop momenta magnitudes */
@@ -54,32 +55,27 @@ class SumTable {
 
 class EtaGrid {
     private:
-        std::size_t pre_time_steps_ = 0;
+        double eta_ini_             = 0;
+        double eta_fin_             = 0;
         std::size_t time_steps_     = 0;
-        double eta_ini_     = 0;
-        double eta_fin_     = 0;
-        double eta_asymp_   = 0;
+        std::size_t pre_time_steps_ = 0;
+        double eta_asymp_           = 0;
 
         Vec1D<double> grid_;
     public:
         EtaGrid() = default;
         EtaGrid(
-                std::size_t pre_time_steps,
-                std::size_t time_steps,
                 double eta_ini,
                 double eta_fin,
+                std::size_t time_steps,
+                std::size_t pre_time_steps,
                 double eta_asymp
                 );
-        EtaGrid(
-                std::size_t time_steps,
-                double eta_ini,
-                double eta_fin
-                );
 
-        std::size_t pre_time_steps() const {return pre_time_steps_;}
-        std::size_t time_steps() const {return time_steps_;}
         double eta_ini() const {return eta_ini_;}
         double eta_fin() const {return eta_fin_;}
+        std::size_t time_steps() const {return time_steps_;}
+        std::size_t pre_time_steps() const {return pre_time_steps_;}
         double eta_asymp() const {return eta_asymp_;}
 
         const Vec1D<double>& grid() const {return grid_;}
@@ -134,6 +130,7 @@ class IntegrandTables {
 
         const EvolutionParameters& ev_params;
         const EtaGrid& eta_grid;
+        const OmegaEigenspace& omega_eigenspace;
 
         IntegrationVariables vars;
 
@@ -143,6 +140,7 @@ class IntegrandTables {
         Vec1D<RSDKernel> rsd_kernels;
         Vec2D<RSDKernel> vel_power_kernels;
 
+        IntegrandTables() = delete;
         IntegrandTables(
                 double k_a,
                 double k_b,
@@ -151,7 +149,8 @@ class IntegrandTables {
                 const LoopParameters& loop_params,
                 const SumTable& sum_table,
                 const EvolutionParameters& ev_params,
-                const EtaGrid& eta_grid
+                const EtaGrid& eta_grid,
+                const OmegaEigenspace& omega_eigenspace
                 );
 
         const Vec2D<double>& bare_dot_products() const { return bare_dot_prod; }
@@ -162,6 +161,7 @@ class IntegrandTables {
         const Vec1D<double>& bare_los_projection() const { return bare_los_projection_; }
         const Vec1D<double>& composite_los_projection() const { return composite_los_projection_; }
 
+        double get_k_a() const { return k_a; }
         double rsd_growth_f() const { return rsd_f; }
 
         void reset();

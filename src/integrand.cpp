@@ -45,7 +45,7 @@ void configuration_term(
 
     /* If dynamics is EdS-SPT or the corresponding kernels are used for initial
      * conditions, compute the EdS-SPT kernels */
-    if (dynamics == EDS_SPT || dynamics == EVOLVE_IC_EDS) {
+    if (dynamics == EDS_SPT || dynamics == EVOLVE_EDS_ICS) {
         compute_SPT_kernels(arg_config_l.args.data(),
                 arg_config_l.kernel_index, 2 * diagram.l + diagram.m, tables);
         compute_SPT_kernels(arg_config_r.args.data(),
@@ -53,10 +53,12 @@ void configuration_term(
     }
     /* If dynamics is not EdS-SPT, solve general ODE system for kernels */
     if (dynamics != EDS_SPT) {
-        compute_gen_kernels(arg_config_l.args.data(), arg_config_l.kernel_index,
-                2 * diagram.l + diagram.m, tables);
-        compute_gen_kernels(arg_config_r.args.data(), arg_config_r.kernel_index,
-                2 * diagram.r + diagram.m, tables);
+        KernelEvolver kernel_evolver(tables);
+
+        kernel_evolver.compute(arg_config_l.args.data(), arg_config_l.kernel_index,
+                2 * diagram.l + diagram.m);
+        kernel_evolver.compute(arg_config_r.args.data(), arg_config_r.kernel_index,
+                2 * diagram.r + diagram.m);
     }
 
     if (rsd) {
@@ -88,12 +90,11 @@ void configuration_term(
                        .values;
     }
     else {
-        size_t time_steps = tables.eta_grid.time_steps();
         values_l = tables.kernels.at(static_cast<size_t>(arg_config_l.kernel_index))
-                       .values.at(time_steps - 1)
+                       .values.back()
                        .data();
         values_r = tables.kernels.at(static_cast<size_t>(arg_config_r.kernel_index))
-                       .values.at(time_steps - 1)
+                       .values.back()
                        .data();
     }
 
@@ -220,10 +221,10 @@ void configuration_term(
                        .at(static_cast<size_t>(arg_config.c().kernel_index))
                        .values;
     }
-    else if (tables.loop_params.dynamics() == EVOLVE_IC_ASYMP ||
-             tables.loop_params.dynamics() == EVOLVE_IC_EDS) {
+    else if (tables.loop_params.dynamics() == EVOLVE_ASYMPTOTIC_ICS ||
+             tables.loop_params.dynamics() == EVOLVE_EDS_ICS) {
         /* If EdS-SPT initial conditions, compute EdS-kernels */
-        if (tables.loop_params.dynamics() == EVOLVE_IC_EDS) {
+        if (tables.loop_params.dynamics() == EVOLVE_EDS_ICS) {
             compute_SPT_kernels(arg_config.a().args.data(),
                     arg_config.a().kernel_index, 2 * diagram.n_a + diagram.n_ab +
                     diagram.n_ca, tables);
@@ -235,28 +236,29 @@ void configuration_term(
                     diagram.n_ca, tables);
         }
 
-        compute_gen_kernels(arg_config.a().args.data(),
-                arg_config.a().kernel_index, 2 * diagram.n_a + diagram.n_ab +
-                diagram.n_ca, tables);
-        compute_gen_kernels(arg_config.b().args.data(),
-                arg_config.b().kernel_index, 2 * diagram.n_b + diagram.n_ab +
-                diagram.n_bc, tables);
-        compute_gen_kernels(arg_config.c().args.data(),
-                arg_config.c().kernel_index, 2 * diagram.n_c + diagram.n_bc +
-                diagram.n_ca, tables);
+        KernelEvolver kernel_evolver(tables);
 
-        size_t time_steps = tables.eta_grid.time_steps();
+        kernel_evolver.compute(arg_config.a().args.data(),
+                arg_config.a().kernel_index, 2 * diagram.n_a + diagram.n_ab +
+                diagram.n_ca);
+        kernel_evolver.compute(arg_config.b().args.data(),
+                arg_config.b().kernel_index, 2 * diagram.n_b + diagram.n_ab +
+                diagram.n_bc);
+        kernel_evolver.compute(arg_config.c().args.data(),
+                arg_config.c().kernel_index, 2 * diagram.n_c + diagram.n_bc +
+                diagram.n_ca);
+
         values_a =
             tables.kernels.at(static_cast<size_t>(arg_config.a().kernel_index))
-                .values.at(time_steps - 1)
+                .values.back()
                 .data();
         values_b =
             tables.kernels.at(static_cast<size_t>(arg_config.b().kernel_index))
-                .values.at(time_steps - 1)
+                .values.back()
                 .data();
         values_c =
             tables.kernels.at(static_cast<size_t>(arg_config.c().kernel_index))
-                .values.at(time_steps - 1)
+                .values.back()
                 .data();
     }
     else {
