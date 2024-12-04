@@ -24,6 +24,63 @@
 
 using std::size_t;
 
+/*Definition of the linear (LHS) part of the ODE system for the kernels, using
+ * kappa, zeta(eta) and xi(eta, k), where eta=ln(D). A factor exp(n eta) is
+ * factorized out of the kernels, thus the system includes terms "n".*/
+#define UPDATE_OMEGA_MATRIX \
+    omega[0][1] += 1; \
+    omega[1][0] += zeta * (1 - kappa); \
+    omega[1][1] += -zeta + 1; \
+    omega[1][2] += zeta * kappa * y[2]; \
+    omega[2][3] += 1; \
+    omega[3][0] += zeta * (1 - kappa); \
+    omega[3][2] += zeta * (kappa - k * k * xi); \
+    omega[3][3] += -zeta + 1; \
+
+/*Alternative definition with only two components and zeta(eta) dependence (EdS
+ * relaxation test)*/
+/*#define UPDATE_OMEGA_MATRIX \*/
+    /*omega[0][1] += 1; \*/
+    /*omega[1][0] += zeta *: \*/
+    /*omega[1][1] += -zeta + 1; \*/
+
+
+int KernelEvolver::ode_system(double eta, const double y[], double f[], void* ode_input) {
+    ODEParameters params = *(static_cast<ODEParameters*>(ode_input));
+
+    double k = params.k;
+    Vec2D<double>& omega = params.omega;
+
+    double kappa = params.ev_params.get_kappa(0);
+    double zeta = params.ev_params.zeta_at_eta(0, eta);
+    double xi  = params.ev_params.xi_at_eta_k(0, eta, k);
+
+    UPDATE_OMEGA_MATRIX
+
+    /* If n == 1, rhs = 0 */
+    if (params.n == 1){
+        for (size_t i = 0; i < COMPONENTS; ++i) {
+            f[i] = 0;
+            for (std::size_t j = 0; j < COMPONENTS; ++j) {
+                f[i] += omega.at(i).at(j) * y[j];
+            }
+        }
+    }
+    /* Otherwise, interpolate */
+    else {
+        for (size_t i = 0; i < COMPONENTS; ++i) {
+            f[i] = params.rhs.at(i)(eta);
+            for (std::size_t j = 0; j < COMPONENTS; ++j) {
+                f[i] += omega.at(i).at(j) * y[j];
+            }
+        }
+    }
+
+    return GSL_SUCCESS;
+}
+
+
+
 void vertex(
         int m_l,
         int m_r,
@@ -198,91 +255,6 @@ void compute_RHS_sum(
 
 
 
-/* Structure which compiles user input to GSL ODE */
-struct ODEInput {
-    public:
-        const int n;
-        const double k;
-        const double eta_ini;
-        const EvolutionParameters& ev_params;
-        const std::array<Interpolation1D, COMPONENTS>& rhs;
-
-        ODEInput(int n,
-                double k,
-                double eta_ini,
-                const EvolutionParameters &ev_params,
-                const std::array<Interpolation1D, COMPONENTS>& rhs
-                )
-            : n(n), k(k), eta_ini(eta_ini), ev_params(ev_params), rhs(rhs) {}
-};
-
-
-
-namespace EvolveICEdS {
-int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
-    ODEInput input = *(static_cast<ODEInput*>(ode_input));
-    int n = input.n;
-
-    /* Interpolate RHS */
-    double rhs[COMPONENTS] = {0.0};
-
-    // If n == 1, rhs = 0
-    if (input.n > 1) {
-        for (size_t i = 0; i < COMPONENTS; ++i) {
-            rhs[i] = input.rhs.at(i)(eta);
-        }
-    }
-
-    double zeta = input.ev_params.zeta_at_eta(0, eta);
-    /* double zeta2 = input.ev_params.zeta_at_eta(1, eta); */
-
-    /* etaD parametrization */
-    f[0] = rhs[0] - n * y[0] + y[1];
-    f[1] = rhs[1] + zeta * y[0] + (-zeta + 1 - n) * y[1];
-
-    return GSL_SUCCESS;
-}
-
-
-
-void solve_kernel_ODE(
-        ODEInput& input,
-        const EtaGrid& eta_grid,
-        Vec2D<double>& kernels /* time_steps*components table of kernels */
-        )
-{
-    const EvolutionParameters& ev_params = input.ev_params;
-    size_t time_steps     = eta_grid.time_steps();
-
-    gsl_odeiv2_system sys = {kernel_gradient, nullptr, COMPONENTS, &input};
-    gsl_odeiv2_driver *driver = gsl_odeiv2_driver_alloc_y_new(
-        &sys, gsl_odeiv2_step_rkf45, ev_params.ode_hstart(),
-        ev_params.ode_rtol(), ev_params.ode_atol());
-
-    double eta_current = eta_grid.at(0);
-
-    // Evolve system
-    for (size_t i = 1; i < time_steps; i++) {
-        /* For calculation of kernels.at(i), the initial condition is
-         * kernels.at(i-1). Hence we copy kernels.at(i-1) to kernels.at(i) */
-        std::copy(kernels.at(i - 1).begin(), kernels.at(i - 1).end(),
-                kernels.at(i).begin());
-        /* Then evolve to index i */
-        int status = gsl_odeiv2_driver_apply(
-                driver, &eta_current, eta_grid.at(i), kernels.at(i).data());
-
-        if (status != GSL_SUCCESS) {
-            throw(std::runtime_error("GLS ODE driver gave error value = " +
-                        std::to_string(status)));
-        }
-    }
-
-    // Free GSL ODE driver
-    gsl_odeiv2_driver_free(driver);
-}
-
-
-
 static void kernel_initial_conditions(
         int kernel_index,
         IntegrandTables& tables
@@ -293,55 +265,10 @@ static void kernel_initial_conditions(
             tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[i];
     }
 }
-}
 
 
 
-namespace EvolveICAsymp {
-int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
-    ODEInput input = *(static_cast<ODEInput*>(ode_input));
-
-    const EvolutionParameters& ev_params = input.ev_params;
-    int n       = input.n;
-    double k    = input.k;
-
-    // Between eta_asymp and eta_i, set eta = eta_i
-    if (eta < input.eta_ini) {
-        eta = input.eta_ini;
-    }
-
-    /* Interpolate RHS */
-    double rhs[COMPONENTS] = {0.0};
-
-    // If n == 1, rhs = 0
-    if (input.n > 1) {
-        for (size_t i = 0; i < COMPONENTS; ++i) {
-            rhs[i] = input.rhs.at(i)(eta);
-        }
-    }
-
-    double kappa = ev_params.get_kappa(0);
-    double zeta = ev_params.zeta_at_eta(0, eta);
-    double xi  = ev_params.xi_at_eta_k(0, eta, k);
-
-    /* etaD parametrization */
-    f[0] = rhs[0] - n * y[0] + y[1];
-    f[1] = rhs[1] + zeta * (1 - kappa) * y[0] + (-zeta + 1 - n) * y[1] +
-           zeta * kappa * y[2];
-    f[2] = rhs[2] - n * y[2] + y[3];
-    f[3] = rhs[3] + zeta * (1 - kappa) * y[0] +
-           zeta * (kappa - k * k * xi) * y[2] + (-zeta + 1 - n) * y[3];
-
-    return GSL_SUCCESS;
-}
-
-
-
-void solve_kernel_ODE(
-        ODEInput& input,
-        const EtaGrid& eta_grid,
-        Vec2D<double>& kernels /* time_steps*components table of kernels */
-        )
+void KernelEvolver::evolve()
 {
     const EvolutionParameters& ev_params = input.ev_params;
     size_t time_steps     = eta_grid.time_steps();
