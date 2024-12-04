@@ -56,32 +56,27 @@ class SumTable {
 
 class EtaGrid {
     private:
-        std::size_t pre_time_steps_ = 0;
+        double eta_ini_             = 0;
+        double eta_fin_             = 0;
         std::size_t time_steps_     = 0;
-        double eta_ini_     = 0;
-        double eta_fin_     = 0;
-        double eta_asymp_   = 0;
+        std::size_t pre_time_steps_ = 0;
+        double eta_asymp_           = 0;
 
         Vec1D<double> grid_;
     public:
         EtaGrid() = default;
         EtaGrid(
-                std::size_t pre_time_steps,
-                std::size_t time_steps,
                 double eta_ini,
                 double eta_fin,
+                std::size_t time_steps,
+                std::size_t pre_time_steps,
                 double eta_asymp
                 );
-        EtaGrid(
-                std::size_t time_steps,
-                double eta_ini,
-                double eta_fin
-                );
 
-        std::size_t pre_time_steps() const {return pre_time_steps_;}
-        std::size_t time_steps() const {return time_steps_;}
         double eta_ini() const {return eta_ini_;}
         double eta_fin() const {return eta_fin_;}
+        std::size_t time_steps() const {return time_steps_;}
+        std::size_t pre_time_steps() const {return pre_time_steps_;}
         double eta_asymp() const {return eta_asymp_;}
 
         const Vec1D<double>& grid() const {return grid_;}

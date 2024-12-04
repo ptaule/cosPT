@@ -80,22 +80,13 @@ Config::Config()
     set("ode_rtol", 1e-4);
     set("ode_hstart", 1e-3);
 
+    set("eta_ini", 0.0);
+    set("eta_fin", 0.0);
     set<size_t>("time_steps", 0);
     set<size_t>("pre_time_steps", 0);
     set("eta_asymp", 0.0);
-    set("eta_ini", 0.0);
-    set("eta_fin", 0.0);
 
-    set("f_nu", 0.0);
-    set("omega_m_0", 0.0);
-
-    set("zeta_file", string());
-    set("redshift_file", string());
     set("omega_eigenvalues_file", string());
-    set("F1_ic_files", Vec1D<string>());
-    set("effcs2_x_grid", string());
-    set("effcs2_y_grid", string());
-    set("effcs2_data", string());
 }
 
 
@@ -556,6 +547,7 @@ void Config::set_dynamics(const libconfig::Config& cfg)
     Dynamics dynamics;
     string dynamics_str = get_param_value<string>(cfg, "dynamics", true);
 
+    /*Convert dynamics_str to lower case for comparison*/
     std::transform(dynamics_str.begin(), dynamics_str.end(),
             dynamics_str.begin(), [](unsigned char c) {return
             tolower(c);});
@@ -599,30 +591,38 @@ void Config::set_dynamics(const libconfig::Config& cfg)
             set_param_value<double>(cfg, "eta_asymp", true);
         }
 
-        /* Read files containing scale/time-dependent functions depending on cosmology.
-         * zeta(eta) depends only on time, effcs2(eta, k) depends also on scale */
-        set_param_value<string>(cfg, "zeta_file", true);
-
+        /* Read files containing scale/time-dependent functions depending on
+         * cosmology. kappa is a constant, zeta(eta) depends only on time,
+         * xi(eta, k) depends also on scale */
         try {
+            const libconfig::Setting& kappa_list = cfg.lookup("kappa");
+            for (int i = 0; i < kappa_list.getLength(); ++i) {
+                kappa_.push_back(kappa_list[i]);
+            }
+
+            const libconfig::Setting& zeta_files_list = cfg.lookup("zeta_files");
+            for (int i = 0; i < zeta_files_list.getLength(); ++i) {
+                zeta_files_.push_back(zeta_files_list[i].c_str());
+            }
+
+            const libconfig::Setting& xi_files_list = cfg.lookup("xi_files");
+            for (int i = 0; i < xi_files_list.getLength(); ++i) {
+                xi_files_.push_back(xi_files_list[i].c_str());
+            }
+
+            /* Files setting asymptotic initial conditions */
             if (dynamics == EVOLVE_IC_ASYMP) {
-                set_param_value<string>(cfg, "redshift_file", true);
                 set_param_value<string>(cfg, "omega_eigenvalues_file_");
 
                 const libconfig::Setting& F1_ic_files_list = cfg.lookup("F1_ic_files");
                 int count = F1_ic_files_list.getLength();
                 if (count != COMPONENTS) {
                     throw ConfigException("There should be " +
-                                          std::to_string(COMPONENTS) + " F1 ic files in the configuration");
+                                          std::to_string(COMPONENTS) +
+                                          " F1 ic files in the configuration");
                 }
                 for (int i = 0; i < count; ++i) {
                     F1_ic_files_.push_back(F1_ic_files_list[i].c_str());
-                }
-
-                if (cfg.exists("effective_cs2_files")) {
-                    const libconfig::Setting& effcs2_files = cfg.lookup("effective_cs2_files");
-                    set<string>("effcs2_x_grid", effcs2_files.lookup("x_grid)"));
-                    set<string>("effcs2_y_grid", effcs2_files.lookup("y_grid)"));
-                    set<string>("effcs2_data", effcs2_files.lookup("data)"));
                 }
             }
         }
@@ -632,10 +632,6 @@ void Config::set_dynamics(const libconfig::Config& cfg)
         }
         catch (const libconfig::SettingTypeException& tex) {
             throw ConfigException("Encountered type exception parsing interpolation files.");
-        }
-        if (dynamics == EVOLVE_IC_ASYMP) {
-            set_param_value<double>(cfg, "f_nu", true);
-            set_param_value<double>(cfg, "omega_m_0", true);
         }
     }
 }
@@ -1118,12 +1114,11 @@ found_single_loop: ;
 
 
 EvolutionParameters::EvolutionParameters(EvolutionParameters&& other) noexcept
-    : f_nu_(other.f_nu_), cs2_factor(other.cs2_factor),
-    ode_atol_(other.ode_atol_), ode_rtol_(other.ode_rtol_),
-    ode_hstart_(other.ode_hstart_),
-    zeta(std::move(other.zeta)), redshift(std::move(other.redshift)),
-    omega_eigenvalues(std::move(other.omega_eigenvalues)),
-    effcs2(std::move(other.effcs2))
+    :   zeta(std::move(other.zeta)),
+        xi(std::move(other.xi)),
+        omega_eigenvalues(std::move(other.omega_eigenvalues)),
+        ode_atol_(other.ode_atol_), ode_rtol_(other.ode_rtol_),
+        ode_hstart_(other.ode_hstart_)
 {
     for (auto&& el : other.F1_ic) {
         F1_ic.emplace_back(std::move(el));
@@ -1135,16 +1130,14 @@ EvolutionParameters::EvolutionParameters(EvolutionParameters&& other) noexcept
 EvolutionParameters& EvolutionParameters::operator=(EvolutionParameters&& other)
 {
     if (this != &other) {
-        f_nu_       = other.f_nu_;
-        cs2_factor  = other.cs2_factor;
         ode_atol_   = other.ode_atol_;
         ode_rtol_   = other.ode_rtol_;
         ode_hstart_ = other.ode_hstart_;
 
+        kappa             = std::move(other.kappa);
         zeta              = std::move(other.zeta);
-        redshift          = std::move(other.redshift);
+        xi                = std::move(other.xi);
         omega_eigenvalues = std::move(other.omega_eigenvalues);
-        effcs2            = std::move(other.effcs2);
 
         for (auto&& el : other.F1_ic) {
             F1_ic.emplace_back(std::move(el));
@@ -1156,48 +1149,29 @@ EvolutionParameters& EvolutionParameters::operator=(EvolutionParameters&& other)
 
 
 EvolutionParameters::EvolutionParameters(
-        double f_nu,
-        double omega_m_0,
-        const string& zeta_file,
-        const string& redshift_file,
-        const string& omega_eigenvalues_file,
-        const Vec1D<string>& F1_ic_files,
-        const string& effcs2_x_file,
-        const string& effcs2_y_file,
-        const string& effcs2_data_file,
+        const Vec1D<double>& kappa,
+        const Vec1D<std::string>& zeta_files,
+        const Vec1D<std::string>& xi_files,
+        const std::string& omega_eigenvalues_file,
+        const Vec1D<std::string>& F1_ic_files,
         double ode_atol,
         double ode_rtol,
         double ode_hstart
         ) :
-    f_nu_(f_nu), ode_atol_(ode_atol), ode_rtol_(ode_rtol),
-    ode_hstart_(ode_hstart), redshift(redshift_file),
-    omega_eigenvalues(omega_eigenvalues_file), effcs2(effcs2_x_file,
-            effcs2_y_file, effcs2_data_file)
+    kappa(kappa),
+    ode_atol_(ode_atol), ode_rtol_(ode_rtol),
+    ode_hstart_(ode_hstart)
 {
-    /* zeta always enters with prefactor 1.5, hence we redefine and multiply
-     * here once */
-    zeta = Interpolation1D(zeta_file, 1.5);
-
-    for (auto& F1_ic_file : F1_ic_files) {
-        F1_ic.emplace_back(F1_ic_file);
+    if (!omega_eigenvalues_file.empty()) {
+        omega_eigenvalues = Interpolation1D(omega_eigenvalues_file);
     }
-
-    /* cs2_factor = 2/3 * 1/(omegaM a^2 H^2) */
-    cs2_factor = 2.0/3.0 * SQUARE(3e3) / omega_m_0;
-}
-
-
-
-EvolutionParameters::EvolutionParameters(
-        const string& zeta_file,
-        double ode_atol,
-        double ode_rtol,
-        double ode_hstart
-        ) :
-    ode_atol_(ode_atol), ode_rtol_(ode_rtol), ode_hstart_(ode_hstart),
-    zeta(zeta_file)
-{
-    /* zeta always enters with prefactor 1.5, hence we redefine and multiply
-     * here once */
-    zeta = Interpolation1D(zeta_file, 1.5);
+    for (auto& el : zeta_files) {
+        zeta.push_back(el);
+    }
+    for (auto& el : xi_files) {
+        xi.push_back(el);
+    }
+    for (auto& el : F1_ic_files) {
+        F1_ic.push_back(el);
+    }
 }

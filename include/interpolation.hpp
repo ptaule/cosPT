@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <string>
-#include <stdexcept>
 
 #include <gsl/gsl_spline.h>
 #include <gsl/gsl_spline2d.h>

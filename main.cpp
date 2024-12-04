@@ -1,8 +1,5 @@
-#include <algorithm>
-#include <array>
 #include <cmath>
 #include <iostream>
-#include <vector>
 
 #include <getopt.h>
 #include <gsl/gsl_sf.h>
@@ -105,8 +102,20 @@ int main(int argc, char* argv[]) {
                                cfg.get<double>("q_max"),
                                cfg.get<bool>("single_hard_limit"));
 
-        EvolutionParameters ev_params;
-        EtaGrid eta_grid;
+        EtaGrid eta_grid(cfg.get<double>("eta_ini"),
+                         cfg.get<double>("eta_fin"),
+                         cfg.get<size_t>("time_steps"),
+                         cfg.get<size_t>("pre_time_steps"),
+                         cfg.get<double>("eta_asymp"));
+        EvolutionParameters ev_params(cfg.kappa(),
+                                      cfg.zeta_files(),
+                                      cfg.xi_files(),
+                                      cfg.get<string>("omega_eigenvalues_file"),
+                                      cfg.F1_ic_files(),
+                                      cfg.get<double>("ode_atol"),
+                                      cfg.get<double>("ode_rtol"),
+                                      cfg.get<double>("ode_hstart"));
+
 
         if (cfg.get<Dynamics>("dynamics") == EVOLVE_IC_EDS) {
             if (COMPONENTS != 2) {
@@ -115,13 +124,6 @@ int main(int argc, char* argv[]) {
                     << std::endl;
                 return EXIT_FAILURE;
             }
-            ev_params = EvolutionParameters(cfg.get<string>("zeta_file"),
-                                            cfg.get<double>("ode_atol"),
-                                            cfg.get<double>("ode_rtol"),
-                                            cfg.get<double>("ode_hstart"));
-            eta_grid = EtaGrid(cfg.get<size_t>("time_steps"),
-                               cfg.get<double>("eta_ini"),
-                               cfg.get<double>("eta_fin"));
         }
         else if (cfg.get<Dynamics>("dynamics") == EVOLVE_IC_ASYMP) {
             if (COMPONENTS != 4) {
@@ -130,23 +132,6 @@ int main(int argc, char* argv[]) {
                     << std::endl;
                 return EXIT_FAILURE;
             }
-            ev_params = EvolutionParameters(cfg.get<double>("f_nu"),
-                                            cfg.get<double>("omega_m_0"),
-                                            cfg.get<string>("zeta_file"),
-                                            cfg.get<string>("redshift_file"),
-                                            cfg.get<string>("omega_eigenvalues_file"),
-                                            cfg.F1_ic_files(),
-                                            cfg.get<string>("effcs2_x_grid"),
-                                            cfg.get<string>("effcs2_y_grid"),
-                                            cfg.get<string>("effcs2_data"),
-                                            cfg.get<double>("ode_atol"),
-                                            cfg.get<double>("ode_rtol"),
-                                            cfg.get<double>("ode_hstart"));
-            eta_grid = EtaGrid(cfg.get<size_t>("pre_time_steps"),
-                               cfg.get<size_t>("time_steps"),
-                               cfg.get<double>("eta_ini"),
-                               cfg.get<double>("eta_fin"),
-                               cfg.get<double>("eta_asymp"));
         }
 
         if (cfg.get<Spectrum>("spectrum") == POWERSPECTRUM) {

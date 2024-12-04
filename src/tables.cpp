@@ -1,5 +1,4 @@
 #include <iostream>
-#include <vector>
 #include <algorithm>
 #include <cmath>
 
@@ -90,14 +89,15 @@ int SumTable::sum_labels(const int labels[], size_t size) const
 
 
 EtaGrid::EtaGrid(
-        size_t pre_time_steps,
-        size_t time_steps,
         double eta_ini,
         double eta_fin,
+        size_t pre_time_steps,
+        size_t time_steps,
         double eta_asymp
        ) :
-    pre_time_steps_(pre_time_steps), time_steps_(time_steps),
-    eta_ini_(eta_ini), eta_fin_(eta_fin), eta_asymp_(eta_asymp)
+    eta_ini_(eta_ini), eta_fin_(eta_fin),
+    time_steps_(time_steps), pre_time_steps_(pre_time_steps),
+    eta_asymp_(eta_asymp)
 {
     grid_.resize(time_steps_);
 
@@ -113,26 +113,6 @@ EtaGrid::EtaGrid(
             static_cast<double>(time_steps_ - pre_time_steps_ - 1);
     for (size_t i = pre_time_steps_; i < time_steps_; ++i) {
         grid_.at(i) = eta_ini_ + static_cast<double>(i - pre_time_steps_) * d_eta;
-    }
-}
-
-
-
-EtaGrid::EtaGrid(
-        size_t time_steps,
-        double eta_ini,
-        double eta_fin
-       ) :
-    pre_time_steps_(0), time_steps_(time_steps),
-    eta_ini_(eta_ini), eta_fin_(eta_fin), eta_asymp_(0.0)
-{
-    grid_.resize(time_steps_);
-
-    // Linear time step (including endpoints)
-    double d_eta =
-        std::abs(eta_fin_ - eta_ini_) / static_cast<double>(time_steps_ - 1);
-    for (size_t i = 0; i < time_steps_; ++i) {
-        grid_.at(i) = eta_ini_ + static_cast<double>(i) * d_eta;
     }
 }
 

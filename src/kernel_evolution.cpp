@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -234,7 +233,8 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
         }
     }
 
-    double zeta = input.ev_params.zeta_at_eta(eta);
+    double zeta = input.ev_params.zeta_at_eta(0, eta);
+    /* double zeta2 = input.ev_params.zeta_at_eta(1, eta); */
 
     /* etaD parametrization */
     f[0] = rhs[0] - n * y[0] + y[1];
@@ -303,7 +303,6 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
 
     const EvolutionParameters& ev_params = input.ev_params;
     int n       = input.n;
-    double f_nu = ev_params.f_nu();
     double k    = input.k;
 
     // Between eta_asymp and eta_i, set eta = eta_i
@@ -321,16 +320,17 @@ int kernel_gradient(double eta, const double y[], double f[], void *ode_input) {
         }
     }
 
-    double zeta = ev_params.zeta_at_eta(eta);
-    double cs2  = ev_params.cs2(eta, k);
+    double kappa = ev_params.get_kappa(0);
+    double zeta = ev_params.zeta_at_eta(0, eta);
+    double xi  = ev_params.xi_at_eta_k(0, eta, k);
 
     /* etaD parametrization */
     f[0] = rhs[0] - n * y[0] + y[1];
-    f[1] = rhs[1] + zeta * (1 - f_nu) * y[0] + (-zeta + 1 - n) * y[1] +
-           zeta * f_nu * y[2];
+    f[1] = rhs[1] + zeta * (1 - kappa) * y[0] + (-zeta + 1 - n) * y[1] +
+           zeta * kappa * y[2];
     f[2] = rhs[2] - n * y[2] + y[3];
-    f[3] = rhs[3] + zeta * (1 - f_nu) * y[0] +
-           zeta * (f_nu - k * k * cs2) * y[2] + (-zeta + 1 - n) * y[3];
+    f[3] = rhs[3] + zeta * (1 - kappa) * y[0] +
+           zeta * (kappa - k * k * xi) * y[2] + (-zeta + 1 - n) * y[3];
 
     return GSL_SUCCESS;
 }

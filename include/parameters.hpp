@@ -42,6 +42,9 @@ class Config {
         Vec1D<Pair<int>> pair_correlations_;     /* Power spectrum */
         Vec1D<Triple<int>> triple_correlations_; /* Bispectrum */
 
+        Vec1D<double> kappa_ = {0.0};
+        Vec1D<std::string> zeta_files_;
+        Vec1D<std::string> xi_files_;
         Vec1D<std::string> F1_ic_files_;
 
         /* T is the type of the parameter, S is the libconfig type (can be
@@ -91,6 +94,9 @@ class Config {
         Vec1D<Pair<int>> pair_correlations() const {return pair_correlations_;}
         Vec1D<Triple<int>> triple_correlations() const {return triple_correlations_;}
 
+        Vec1D<double> kappa() const {return kappa_;}
+        Vec1D<std::string> zeta_files() const {return zeta_files_;}
+        Vec1D<std::string> xi_files() const {return xi_files_;}
         Vec1D<std::string> F1_ic_files() const {return F1_ic_files_;}
 
         /* Read CUBA info */
@@ -120,6 +126,9 @@ class Config {
                 }
             }
             return T(); // Return default value if key not found or casting fails
+        }
+        bool exists(const std::string& key) const {
+            return params.find(key) != params.end();
         }
 };
 
@@ -172,18 +181,16 @@ class LoopParameters {
 
 class EvolutionParameters {
     private:
-        double f_nu_       = 0.0;
-        double cs2_factor  = 0.0;
+        Vec1D<double> kappa = {0.0};
+        Vec1D<Interpolation1D> zeta; /* Time-dependent functions */
+        Vec1D<Interpolation2D> xi;   /* Space- and time-dependent functions */
+
+        Interpolation1D omega_eigenvalues;
+        Vec1D<Interpolation1D> F1_ic;
 
         double ode_atol_   = 0.0;
         double ode_rtol_   = 0.0;
         double ode_hstart_ = 0.0;
-
-        Interpolation1D zeta;
-        Interpolation1D redshift;
-        Interpolation1D omega_eigenvalues;
-        Vec1D<Interpolation1D> F1_ic;
-        Interpolation2D effcs2;
     public:
         EvolutionParameters() = default;
         EvolutionParameters(const EvolutionParameters&) = delete;
@@ -191,47 +198,27 @@ class EvolutionParameters {
         EvolutionParameters(EvolutionParameters&& other) noexcept;
         EvolutionParameters& operator=(EvolutionParameters&& other);
 
-        /* Effective sound speed constructors */
         EvolutionParameters(
-                double f_nu,
-                double omega_m_0,
-                const std::string& zeta_file,
-                const std::string& redshift_file,
+                const Vec1D<double>& kappa,
+                const Vec1D<std::string>& zeta_files,
+                const Vec1D<std::string>& xi_files,
                 const std::string& omega_eigenvalues_file,
                 const Vec1D<std::string>& F1_ic_files,
-                const std::string& effcs2_x_file,
-                const std::string& effcs2_y_file,
-                const std::string& effcs2_data_file,
                 double ode_atol = 1e-6,
                 double ode_rtol = 1e-4,
                 double ode_hstart = 1e-3
                 );
 
-        /* No sound speed constructors */
-        EvolutionParameters(
-                const std::string& zeta_file,
-                double ode_atol = 1e-6,
-                double ode_rtol = 1e-4,
-                double ode_hstart = 1e-3
-                );
+        double ode_atol() const { return ode_atol_; }
+        double ode_rtol() const { return ode_rtol_; }
+        double ode_hstart() const { return ode_hstart_; }
 
-        double f_nu() const {return f_nu_;}
-        double ode_atol() const {return ode_atol_;}
-        double ode_rtol() const {return ode_rtol_;}
-        double ode_hstart() const {return ode_hstart_;}
+        double get_kappa(size_t i) const { return kappa[i]; }
+        double zeta_at_eta(size_t i, double eta) const { return zeta[i](eta); }
+        double xi_at_eta_k(size_t i, double eta, double k) const { return xi[i](eta, k); }
+        double omega_eigenvalues_at_k(double k) const { return omega_eigenvalues(k); }
 
-        double zeta_at_eta(double eta) const {return zeta(eta);}
-        double omega_eigenvalues_at_k(double k) const {
-            return omega_eigenvalues(k);
-        }
-
-        double F1_ic_at_k(std::size_t i, double k) const {
-            return F1_ic[i](k);
-        }
-
-        double cs2(double eta, double k) const {
-            return cs2_factor * effcs2(eta, k) / (1 + redshift(eta));
-        }
+        double F1_ic_at_k(std::size_t i, double k) const { return F1_ic[i](k); }
 };
 
 
