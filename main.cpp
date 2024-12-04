@@ -14,7 +14,6 @@ extern "C" {
 #include "include/parameters.hpp"
 #include "include/tables.hpp"
 #include "include/tree_level.hpp"
-#include "include/utilities.hpp"
 
 using std::pow;
 using std::string;
@@ -104,49 +103,27 @@ int main(int argc, char* argv[]) {
                                cfg.get<double>("q_max"),
                                cfg.get<bool>("single_hard_limit"));
 
-        EvolutionParameters ev_params;
-        EtaGrid eta_grid;
-
-        if (cfg.get<Dynamics>("dynamics") == EVOLVE_IC_EDS) {
-            if (COMPONENTS != 2) {
-                std::cerr <<
-                    "Dynamics = EVOLVE_IC_EDS not implemented for COMPONENTS != 2"
-                    << std::endl;
-                return EXIT_FAILURE;
-            }
-            ev_params = EvolutionParameters(cfg.get<string>("zeta_file"),
-                                            cfg.get<double>("ode_abs_tolerance"),
-                                            cfg.get<double>("ode_rel_tolerance"),
-                                            cfg.get<double>("ode_start_step"));
-            eta_grid = EtaGrid(cfg.get<size_t>("time_steps"),
-                               cfg.get<double>("eta_ini"),
-                               cfg.get<double>("eta_fin"));
-        }
-        else if (cfg.get<Dynamics>("dynamics") == EVOLVE_IC_ASYMP) {
-            if (COMPONENTS != 4) {
-                std::cerr <<
-                    "Dynamics = EVOLVE_IC_EDS not implemented for COMPONENTS != 2"
-                    << std::endl;
-                return EXIT_FAILURE;
-            }
-            ev_params = EvolutionParameters(cfg.get<double>("f_nu"),
-                                            cfg.get<double>("omega_m_0"),
-                                            cfg.get<string>("zeta_file"),
-                                            cfg.get<string>("redshift_file"),
-                                            cfg.get<string>("omega_eigenvalues_file"),
-                                            cfg.F1_ic_files(),
-                                            cfg.get<string>("effcs2_x_grid"),
-                                            cfg.get<string>("effcs2_y_grid"),
-                                            cfg.get<string>("effcs2_data"),
-                                            cfg.get<double>("ode_abs_tolerance"),
-                                            cfg.get<double>("ode_rel_tolerance"),
-                                            cfg.get<double>("ode_start_step"));
-            eta_grid = EtaGrid(cfg.get<size_t>("pre_time_steps"),
-                               cfg.get<size_t>("time_steps"),
-                               cfg.get<double>("eta_ini"),
-                               cfg.get<double>("eta_fin"),
-                               cfg.get<double>("eta_asymp"));
-        }
+        EtaGrid eta_grid(cfg.get<double>("eta_ini"),
+                         cfg.get<double>("eta_fin"),
+                         cfg.get<size_t>("time_steps"),
+                         cfg.get<size_t>("pre_time_steps"),
+                         cfg.get<double>("eta_asymp"));
+        EvolutionParameters ev_params(cfg.kappa(),
+                                      cfg.zeta_files(),
+                                      cfg.xi_files(),
+                                      cfg.get<double>("ode_abs_tolerance"),
+                                      cfg.get<double>("ode_rel_tolerance"),
+                                      cfg.get<double>("ode_start_step"));
+        OmegaEigenspace omega_eigenspace(
+            cfg.get<Dynamics>("dynamics"),
+            eta_grid.eta_ini(),
+            ev_params,
+            cfg.get<int>("omega_eigenmode"),
+            cfg.get<double>("omega_k_min"),
+            cfg.get<double>("omega_k_max"),
+            cfg.get<int>("omega_N"),
+            cfg.get<double>("omega_imag_threshold")
+            );
 
         if (cfg.get<Spectrum>("spectrum") == POWERSPECTRUM) {
             input.pair_correlations = cfg.pair_correlations();
@@ -173,7 +150,8 @@ int main(int argc, char* argv[]) {
                     input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
                                                   cfg.get<double>("rsd_growth_f"),
                                                   loop_params, sum_table,
-                                                  ev_params, eta_grid);
+                                                  ev_params, eta_grid,
+                                                  omega_eigenspace);
                 }
             }
         }
@@ -198,7 +176,8 @@ int main(int argc, char* argv[]) {
                                                   cfg.get<double>("cos_ab"),
                                                   cfg.get<double>("rsd_growth_f"),
                                                   loop_params, sum_table,
-                                                  ev_params, eta_grid);
+                                                  ev_params, eta_grid,
+                                                  omega_eigenspace);
                 }
             }
         }
@@ -219,17 +198,17 @@ int main(int argc, char* argv[]) {
 
         /* Tree-level results */
         if (cfg.get<Spectrum>("spectrum") == POWERSPECTRUM) {
-            ps::tree_level(cfg.get<double>("k_a"),
-                           cfg.get<Dynamics>("dynamics"), ps, eta_grid,
-                           ev_params, input.pair_correlations,
-                           tree_level_result);
+            IntegrandTables tables(cfg.get<double>("k_a"), 0, 0,
+                    cfg.get<double>("rsd_growth_f"), loop_params, sum_table,
+                    ev_params, eta_grid, omega_eigenspace);
+            ps::tree_level(tables, ps, input.pair_correlations, tree_level_result);
         }
         else if (cfg.get<Spectrum>("spectrum") == BISPECTRUM) {
             /* Tree level bispectrum */
             IntegrandTables tables(cfg.get<double>("k_a"),
                                    cfg.get<double>("k_b"),
                                    cfg.get<double>("cos_ab"), 0, loop_params,
-                                   sum_table, ev_params, eta_grid);
+                                   sum_table, ev_params, eta_grid, omega_eigenspace);
             bs::tree_level(tables, ps, input.triple_correlations,
                            tree_level_result);
         }

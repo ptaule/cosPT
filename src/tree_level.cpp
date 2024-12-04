@@ -131,15 +131,24 @@ void rsd_tree_level_ir_resum(
 
 
 void tree_level(
-    double k_a,
-    Dynamics dynamics,
+    IntegrandTables& tables,
     const InputPowerSpectrum& ps,
-    const EtaGrid& eta_grid,
-    const EvolutionParameters& ev_params,
     const Vec1D<Pair<int>>& pair_correlations,
     Vec1D<double>& results /* out */
 )
 {
+    double k_a = tables.get_k_a();
+    /* Set some irrelevant values for non-existent loops */
+    for (size_t i = 0; i < static_cast<size_t>(tables.loop_params.n_loops()); ++i) {
+        tables.vars.magnitudes.at(i) = 0;
+        tables.vars.cos_theta.at(i) = 0;
+        tables.vars.phi.at(i) = 0;
+    }
+    /* Zero-initialize kernel tables */
+    tables.reset();
+    /* Compute dot_products-, alpha- and beta-tables */
+    tables.compute_tables();
+
     if (ps.rsd()) {
         if (ps.ir_resum()) {
             size_t sub_regions = 10000;
@@ -158,22 +167,34 @@ void tree_level(
         for (auto& el : results) el = ps.tree_level(k_a, 0);
     }
 
-    if (dynamics == EVOLVE_IC_ASYMP) {
-        Vec1D<double> F1_eta_ini(COMPONENTS, 0);
-        Vec1D<double> F1_eta_fin(COMPONENTS, 0);
-        compute_F1(k_a, ev_params, eta_grid, F1_eta_ini,
-                   F1_eta_fin);
+    if (tables.loop_params.dynamics() == EVOLVE_ASYMPTOTIC_ICS) {
+        Vec1D<int> config(tables.loop_params.n_coeffs(), 0);
+        config.at(tables.loop_params.n_coeffs() - 1) = 1; /* Config for k_a */
+
+        Vec1D<int> arguments(tables.loop_params.n_kernel_args(),
+                tables.loop_params.zero_label());
+        arguments.at(0) = config2label(config);
+
+        KernelEvolver kernel_evolver(tables);
+        int kernel_index = kernel_evolver.compute(arguments.data(), -1, 1);
 
         for (size_t i = 0; i < results.size(); ++i) {
             results.at(i) *=
-                F1_eta_fin.at(static_cast<size_t>(
-                    pair_correlations.at(i).first())) *
-                F1_eta_fin.at(static_cast<size_t>(
-                    pair_correlations.at(i).second()));
+                tables.kernels.at(static_cast<size_t>(kernel_index))
+                .values.back()
+                .at(static_cast<size_t>(pair_correlations.at(i).first()))
+                *
+                tables.kernels.at(static_cast<size_t>(kernel_index))
+                .values.back()
+                .at(static_cast<size_t>(pair_correlations.at(i).second()));
         }
     }
+    /* Zero-initialize kernel tables again, to ensure that values do not
+     * corrupt futher computations */
+    tables.reset();
 }
 } /* namespace ps */
+
 
 
 namespace bs {
@@ -300,9 +321,9 @@ void diagram_term(
                        .at(static_cast<size_t>(arg_config.c().kernel_index))
                        .values;
     }
-    else if (tables.loop_params.dynamics() == EVOLVE_IC_ASYMP ||
-            tables.loop_params.dynamics() == EVOLVE_IC_EDS) {
-        if (tables.loop_params.dynamics() == EVOLVE_IC_EDS) {
+    else if (tables.loop_params.dynamics() == EVOLVE_ASYMPTOTIC_ICS ||
+            tables.loop_params.dynamics() == EVOLVE_EDS_ICS) {
+        if (tables.loop_params.dynamics() == EVOLVE_EDS_ICS) {
             compute_SPT_kernels(arg_config.a().args.data(),
                     arg_config.a().kernel_index, 2, tables);
             compute_SPT_kernels(arg_config.b().args.data(),
@@ -311,12 +332,14 @@ void diagram_term(
                     arg_config.c().kernel_index, 1, tables);
         }
 
-        compute_gen_kernels(arg_config.a().args.data(),
-                arg_config.a().kernel_index, 2, tables);
-        compute_gen_kernels(arg_config.b().args.data(),
-                arg_config.b().kernel_index, 1, tables);
-        compute_gen_kernels(arg_config.c().args.data(),
-                arg_config.c().kernel_index, 1, tables);
+        KernelEvolver kernel_evolver(tables);
+
+        kernel_evolver.compute(arg_config.a().args.data(),
+                arg_config.a().kernel_index, 2);
+        kernel_evolver.compute(arg_config.b().args.data(),
+                arg_config.b().kernel_index, 1);
+        kernel_evolver.compute(arg_config.c().args.data(),
+                arg_config.c().kernel_index, 1);
 
         size_t time_steps = tables.eta_grid.time_steps();
         values_a =

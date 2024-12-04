@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <cmath>
 
-#include "../include/utilities.hpp"
+#include "../include/omega_matrix.hpp"
 #include "../include/parameters.hpp"
 #include "../include/tables.hpp"
 
@@ -89,14 +89,15 @@ int SumTable::sum_labels(const int labels[], size_t size) const
 
 
 EtaGrid::EtaGrid(
-        size_t pre_time_steps,
-        size_t time_steps,
         double eta_ini,
         double eta_fin,
+        size_t time_steps,
+        size_t pre_time_steps,
         double eta_asymp
        ) :
-    pre_time_steps_(pre_time_steps), time_steps_(time_steps),
-    eta_ini_(eta_ini), eta_fin_(eta_fin), eta_asymp_(eta_asymp)
+    eta_ini_(eta_ini), eta_fin_(eta_fin),
+    time_steps_(time_steps), pre_time_steps_(pre_time_steps),
+    eta_asymp_(eta_asymp)
 {
     grid_.resize(time_steps_);
 
@@ -112,26 +113,6 @@ EtaGrid::EtaGrid(
             static_cast<double>(time_steps_ - pre_time_steps_ - 1);
     for (size_t i = pre_time_steps_; i < time_steps_; ++i) {
         grid_.at(i) = eta_ini_ + static_cast<double>(i - pre_time_steps_) * d_eta;
-    }
-}
-
-
-
-EtaGrid::EtaGrid(
-        size_t time_steps,
-        double eta_ini,
-        double eta_fin
-       ) :
-    pre_time_steps_(0), time_steps_(time_steps),
-    eta_ini_(eta_ini), eta_fin_(eta_fin), eta_asymp_(0.0)
-{
-    grid_.resize(time_steps_);
-
-    // Linear time step (including endpoints)
-    double d_eta =
-        std::abs(eta_fin_ - eta_ini_) / static_cast<double>(time_steps_ - 1);
-    for (size_t i = 0; i < time_steps_; ++i) {
-        grid_.at(i) = eta_ini_ + static_cast<double>(i) * d_eta;
     }
 }
 
@@ -154,11 +135,12 @@ IntegrandTables::IntegrandTables(
         const LoopParameters& loop_params,
         const SumTable& sum_table,
         const EvolutionParameters& ev_params,
-        const EtaGrid& eta_grid
+        const EtaGrid& eta_grid,
+        const OmegaEigenspace& omega_eigenspace
         ) :
     k_a(k_a), k_b(k_b), cos_ab(cos_ab), rsd_f(rsd_growth_f),
     loop_params(loop_params), sum_table(sum_table), ev_params(ev_params),
-    eta_grid(eta_grid),
+    eta_grid(eta_grid), omega_eigenspace(omega_eigenspace),
     vars(IntegrationVariables(static_cast<size_t>(loop_params.n_loops())))
 {
     int n_loops = loop_params.n_loops();
@@ -183,11 +165,11 @@ IntegrandTables::IntegrandTables(
     b_coeffs.resize(n_coeffs);
 
     if (loop_params.dynamics() == EDS_SPT ||
-        loop_params.dynamics() == EVOLVE_IC_EDS) {
+        loop_params.dynamics() == EVOLVE_EDS_ICS) {
         spt_kernels.resize(n_kernels);
     }
-    if (loop_params.dynamics() == EVOLVE_IC_EDS ||
-        loop_params.dynamics() == EVOLVE_IC_ASYMP
+    if (loop_params.dynamics() == EVOLVE_EDS_ICS ||
+        loop_params.dynamics() == EVOLVE_ASYMPTOTIC_ICS
         ) {
         kernels.resize(n_kernels);
 
@@ -219,11 +201,11 @@ void IntegrandTables::reset()
     if (loop_params.dynamics() == EDS_SPT) {
         reset_spt_kernels();
     }
-    else if (loop_params.dynamics() == EVOLVE_IC_ASYMP ) {
+    else if (loop_params.dynamics() == EVOLVE_ASYMPTOTIC_ICS ) {
         reset_kernels();
     }
     else {
-        /* loop_params.dynamics() == EVOLVE_IC_EDS */
+        /* loop_params.dynamics() == EVOLVE_EDS_ICS */
         reset_spt_kernels();
         reset_kernels();
     }

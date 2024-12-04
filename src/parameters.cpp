@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <cmath>
 #include <functional>
 #include <iostream>
 #include <iomanip>
@@ -16,8 +15,16 @@ namespace fs = std::filesystem;
 
 #include <libconfig.h++>
 
-#include "../include/utilities.hpp"
+extern "C" {
+    #include <cmath>
+    #include <gsl/gsl_eigen.h>
+    #include <gsl/gsl_vector_complex.h>
+    #include <gsl/gsl_matrix_complex_double.h>
+}
+
+
 #include "../include/io.hpp"
+#include "../include/omega_matrix.hpp"
 #include "../include/version.hpp"
 #include "../include/parameters.hpp"
 
@@ -198,13 +205,10 @@ Vec1D<string> Config::keys_not_recognized(const libconfig::Config& cfg) const {
         "input_ps_rescale",
         "cuba_settings",
         "ode_settings",
-        "f_nu",
-        "omega_m_0",
-        "redshift_file",
-        "omega_eigenvalues_file",
-        "zeta_file",
-        "effective_cs2_files",
-        "F1_ic_files",
+        "kappa_values",
+        "zeta_files",
+        "xi_files",
+        "omega_eigenspace_settings"
     };
 
     for (int i = 0; i < root.getLength(); ++i) {
@@ -516,6 +520,7 @@ void Config::set_dynamics(const libconfig::Config& cfg)
     Dynamics dynamics;
     string dynamics_str = get_param_value<string>(cfg, "dynamics", true);
 
+    /*Convert dynamics_str to lower case for comparison*/
     std::transform(dynamics_str.begin(), dynamics_str.end(),
             dynamics_str.begin(), [](unsigned char c) {return
             tolower(c);});
@@ -523,11 +528,11 @@ void Config::set_dynamics(const libconfig::Config& cfg)
     if (dynamics_str == "eds-spt") {
         dynamics = EDS_SPT;
     }
-    else if (dynamics_str == "evolve-ic-asymp") {
-        dynamics = EVOLVE_IC_ASYMP;
+    else if (dynamics_str == "evolve-asymp-ics") {
+        dynamics = EVOLVE_ASYMPTOTIC_ICS;
     }
-    else if (dynamics_str == "evolve-ic-eds") {
-        dynamics = EVOLVE_IC_EDS;
+    else if (dynamics_str == "evolve-eds-ics") {
+        dynamics = EVOLVE_EDS_ICS;
     }
     else {
         throw ConfigException("Unknown dynamics in configuration file.");
@@ -535,7 +540,7 @@ void Config::set_dynamics(const libconfig::Config& cfg)
     set("dynamics", dynamics);
 
     /* Settings for evolution dynamics */
-    if (dynamics == EVOLVE_IC_ASYMP || dynamics == EVOLVE_IC_EDS) {
+    if (dynamics == EVOLVE_ASYMPTOTIC_ICS || dynamics == EVOLVE_EDS_ICS) {
         /* ODE settings */
         try {
             if (cfg.exists("ode_settings")) {
@@ -553,37 +558,23 @@ void Config::set_dynamics(const libconfig::Config& cfg)
         set_param_value<double>(cfg, "eta_ini", true);
         set_param_value<double>(cfg, "eta_fin", true);
 
-        /* Need additional information about time steps before eta_ini to set ICs */
-        if (dynamics == EVOLVE_IC_ASYMP) {
-            set_param_value<size_t>(cfg, "pre_time_steps", true);
-            set_param_value<double>(cfg, "eta_asymp", true);
-        }
-
-        /* Read files containing scale/time-dependent functions depending on cosmology.
-         * zeta(eta) depends only on time, effcs2(eta, k) depends also on scale */
-        set_param_value<string>(cfg, "zeta_file", true);
-
+        /* Read files containing scale/time-dependent functions depending on
+         * cosmology. kappa is a constant, zeta(eta) depends only on time,
+         * xi(eta, k) depends also on scale */
         try {
-            if (dynamics == EVOLVE_IC_ASYMP) {
-                set_param_value<string>(cfg, "redshift_file", true);
-                set_param_value<string>(cfg, "omega_eigenvalues_file");
+            const libconfig::Setting& kappa_list = cfg.lookup("kappa_values");
+            for (int i = 0; i < kappa_list.getLength(); ++i) {
+                kappa_.push_back(kappa_list[i]);
+            }
 
-                const libconfig::Setting& F1_ic_files_list = cfg.lookup("F1_ic_files");
-                int count = F1_ic_files_list.getLength();
-                if (count != COMPONENTS) {
-                    throw ConfigException("There should be " +
-                                          std::to_string(COMPONENTS) + " F1 ic files in the configuration");
-                }
-                for (int i = 0; i < count; ++i) {
-                    F1_ic_files_.push_back(F1_ic_files_list[i].c_str());
-                }
+            const libconfig::Setting& zeta_files_list = cfg.lookup("zeta_files");
+            for (int i = 0; i < zeta_files_list.getLength(); ++i) {
+                zeta_files_.push_back(zeta_files_list[i].c_str());
+            }
 
-                if (cfg.exists("effective_cs2_files")) {
-                    const libconfig::Setting& effcs2_files = cfg.lookup("effective_cs2_files");
-                    set<string>("effcs2_x_grid", effcs2_files.lookup("x_grid"));
-                    set<string>("effcs2_y_grid", effcs2_files.lookup("y_grid"));
-                    set<string>("effcs2_data", effcs2_files.lookup("data"));
-                }
+            const libconfig::Setting& xi_files_list = cfg.lookup("xi_files");
+            for (int i = 0; i < xi_files_list.getLength(); ++i) {
+                xi_files_.push_back(xi_files_list[i].c_str());
             }
         }
         catch (const libconfig::SettingNotFoundException& nfex) {
@@ -593,9 +584,34 @@ void Config::set_dynamics(const libconfig::Config& cfg)
         catch (const libconfig::SettingTypeException& tex) {
             throw ConfigException("Encountered type exception parsing interpolation files.");
         }
-        if (dynamics == EVOLVE_IC_ASYMP) {
-            set_param_value<double>(cfg, "f_nu", true);
-            set_param_value<double>(cfg, "omega_m_0", true);
+
+        /* Specific settings for asymptotic ics */
+        if (dynamics == EVOLVE_ASYMPTOTIC_ICS) {
+            /* Need additional information about time steps before eta_ini to set ICs */
+            set_param_value<size_t>(cfg, "pre_time_steps", true);
+            set_param_value<double>(cfg, "eta_asymp", true);
+
+            /* Default omega_k_min/omega_k_max to q_min/q_max */
+            set<double>("omega_k_min", get<double>("q_min"));
+            set<double>("omega_k_max", get<double>("q_max"));
+
+            /* Settings for computing Omega matrix eigenvalues */
+            if (cfg.exists("omega_eigenspace_settings")) {
+                try {
+                    const libconfig::Setting& omega_eigenspace_settings =
+                        cfg.lookup("omega_eigenspace_settings");
+
+                    set_param_value<int>(omega_eigenspace_settings, "omega", "eigenmode");
+                    set_param_value<double>(omega_eigenspace_settings, "omega", "k_min");
+                    set_param_value<double>(omega_eigenspace_settings, "omega", "k_min");
+                    set_param_value<int>(omega_eigenspace_settings, "omega", "N");
+                    set_param_value<double>(omega_eigenspace_settings, "omega", "imag_threshold");
+                }
+                catch (const libconfig::SettingTypeException& tex) {
+                    throw ConfigException("Encountered type exception parsing "
+                            "omega_eigenspace_settings.");
+                }
+            }
         }
     }
 }
@@ -1022,8 +1038,8 @@ std::ostream& operator<<(std::ostream& out, const Config& c) {
         out << "#\n";
     }
 
-    if (c.get<Dynamics>("dynamics") == EVOLVE_IC_ASYMP
-        || c.get<Dynamics>("dynamics") == EVOLVE_IC_EDS) {
+    if (c.get<Dynamics>("dynamics") == EVOLVE_ASYMPTOTIC_ICS
+        || c.get<Dynamics>("dynamics") == EVOLVE_EDS_ICS) {
         out << "# ODE settings:\n";
         out << std::scientific;
         out << "#\t abs tolerance = " << c.get<double>("ode_abs_tolerance") << "\n";
@@ -1032,7 +1048,7 @@ std::ostream& operator<<(std::ostream& out, const Config& c) {
 
         out << "# Time grid settings:\n";
         out << "#\t time steps     = " << c.get<size_t>("time_steps") << "\n";
-        if (c.get<Dynamics>("dynamics") == EVOLVE_IC_ASYMP) {
+        if (c.get<Dynamics>("dynamics") == EVOLVE_ASYMPTOTIC_ICS) {
             out << "#\t pre time steps = " << c.get<size_t>("pre_time_steps") << "\n";
             out << "#\t eta asymp      = " << c.get<double>("eta_asymp") << "\n";
         }
@@ -1040,24 +1056,24 @@ std::ostream& operator<<(std::ostream& out, const Config& c) {
         out << "#\t eta fin        = " << c.get<double>("eta_fin") << "\n#\n";
 
         out << "# Dynamics settings:\n";
-        if (c.get<Dynamics>("dynamics") == EVOLVE_IC_ASYMP) {
-            out << "# f_nu      = " << c.get<double>("f_nu") << "\n";
-            out << "# omega_m_0 = " << c.get<double>("omega_m_0") << "\n";
+        for (size_t i = 0; i < c.kappa().size(); ++i) {
+            out << "#\t kappa[" << i << "]     = " << c.kappa().at(i) << "\n";
+        }
+        for (size_t i = 0; i < c.zeta_files().size(); ++i) {
+            out << "#\t zeta file[" << i << "] = " << c.zeta_files().at(i) << "\n";
+        }
+        for (size_t i = 0; i < c.xi_files().size(); ++i) {
+            out << "#\t xi file[" << i << "]   = " << c.xi_files().at(i) << "\n";
         }
         out << "#\n";
 
-        out << "# zeta file              = " << c.get<string>("zeta_file") << "\n";
-        if (c.get<Dynamics>("dynamics") == EVOLVE_IC_ASYMP) {
-            out << "# redshift file          = " << c.get<string>("redshift_file") << "\n";
-            out << "# omega eigenvalues file = " << c.get<string>("omega_eigenvalues_file")
-                << "\n";
-            for (size_t i = 0; i < COMPONENTS; ++i) {
-                out << "# F1 ic files[" << i
-                    << "]\t\t = " << c.F1_ic_files().at(i) << "\n";
-            }
-            out << "# effective cs2 x grid   = " << c.get<string>("effcs2_x_grid") << "\n";
-            out << "# effective cs2 y grid   = " << c.get<string>("effcs2_y_grid") << "\n";
-            out << "# effective cs2 data     = " << c.get<string>("effcs2_data") << "\n";
+        if (c.get<Dynamics>("dynamics") == EVOLVE_ASYMPTOTIC_ICS) {
+            out << "# Omega eigenspace settings:\n";
+            out << "#\t eigenmode      = " << c.get<int>("omega_eigenmode") << "\n";
+            out << "#\t k_min          = " << c.get<double>("omega_k_min") << "\n";
+            out << "#\t k_max          = " << c.get<double>("omega_k_max") << "\n";
+            out << "#\t N              = " << c.get<int>("omega_N") << "\n";
+            out << "#\t imag threshold = " << c.get<double>("omega_imag_threshold") << "\n";
         }
         out << "#\n";
     }
@@ -1308,37 +1324,24 @@ found_single_loop: ;
 
 
 EvolutionParameters::EvolutionParameters(EvolutionParameters&& other) noexcept
-    : f_nu_(other.f_nu_), cs2_factor(other.cs2_factor),
-    ode_atol_(other.ode_atol_), ode_rtol_(other.ode_rtol_),
-    ode_hstart_(other.ode_hstart_),
-    zeta(std::move(other.zeta)), redshift(std::move(other.redshift)),
-    omega_eigenvalues(std::move(other.omega_eigenvalues)),
-    effcs2(std::move(other.effcs2))
-{
-    for (auto&& el : other.F1_ic) {
-        F1_ic.emplace_back(std::move(el));
-    }
-}
+    :   kappa_(other.kappa_),
+        zeta_(std::move(other.zeta_)),
+        xi_(std::move(other.xi_)),
+        ode_atol_(other.ode_atol_), ode_rtol_(other.ode_rtol_),
+        ode_hstart_(other.ode_hstart_) {}
 
 
 
 EvolutionParameters& EvolutionParameters::operator=(EvolutionParameters&& other)
 {
     if (this != &other) {
-        f_nu_       = other.f_nu_;
-        cs2_factor  = other.cs2_factor;
         ode_atol_   = other.ode_atol_;
         ode_rtol_   = other.ode_rtol_;
         ode_hstart_ = other.ode_hstart_;
 
-        zeta              = std::move(other.zeta);
-        redshift          = std::move(other.redshift);
-        omega_eigenvalues = std::move(other.omega_eigenvalues);
-        effcs2            = std::move(other.effcs2);
-
-        for (auto&& el : other.F1_ic) {
-            F1_ic.emplace_back(std::move(el));
-        }
+        kappa_ = std::move(other.kappa_);
+        zeta_  = std::move(other.zeta_);
+        xi_    = std::move(other.xi_);
     }
     return *this;
 }
@@ -1346,48 +1349,151 @@ EvolutionParameters& EvolutionParameters::operator=(EvolutionParameters&& other)
 
 
 EvolutionParameters::EvolutionParameters(
-        double f_nu,
-        double omega_m_0,
-        const string& zeta_file,
-        const string& redshift_file,
-        const string& omega_eigenvalues_file,
-        const Vec1D<string>& F1_ic_files,
-        const string& effcs2_x_file,
-        const string& effcs2_y_file,
-        const string& effcs2_data_file,
-        double ode_atol,
-        double ode_rtol,
-        double ode_hstart
-        ) :
-    f_nu_(f_nu), ode_atol_(ode_atol), ode_rtol_(ode_rtol),
-    ode_hstart_(ode_hstart), redshift(redshift_file),
-    omega_eigenvalues(omega_eigenvalues_file), effcs2(effcs2_x_file,
-            effcs2_y_file, effcs2_data_file)
+    const Vec1D<double>& kappa,
+    const Vec1D<std::string>& zeta_files,
+    const Vec1D<std::string>& xi_files,
+    double ode_atol,
+    double ode_rtol,
+    double ode_hstart
+    ) :
+    kappa_(kappa),
+    ode_atol_(ode_atol), ode_rtol_(ode_rtol),
+    ode_hstart_(ode_hstart)
 {
-    /* zeta always enters with prefactor 1.5, hence we redefine and multiply
-     * here once */
-    zeta = Interpolation1D(zeta_file, 1.5);
-
-    for (auto& F1_ic_file : F1_ic_files) {
-        F1_ic.emplace_back(F1_ic_file);
+    for (auto& el : zeta_files) {
+        zeta_.push_back(el);
     }
-
-    /* cs2_factor = 2/3 * 1/(omegaM a^2 H^2) */
-    cs2_factor = 2.0/3.0 * SQUARE(3e3) / omega_m_0;
+    for (auto& el : xi_files) {
+        xi_.push_back(el);
+    }
 }
 
 
 
-EvolutionParameters::EvolutionParameters(
-        const string& zeta_file,
-        double ode_atol,
-        double ode_rtol,
-        double ode_hstart
-        ) :
-    ode_atol_(ode_atol), ode_rtol_(ode_rtol), ode_hstart_(ode_hstart),
-    zeta(zeta_file)
+OmegaEigenspace::OmegaEigenspace(OmegaEigenspace&& other) noexcept
+    : eigenvalue_(std::move(other.eigenvalue_)),
+    eigenvectors_(std::move(other.eigenvectors_)), eta_ini(other.eta_ini),
+    eigenmode(other.eigenmode), imag_threshold(other.imag_threshold),
+    dynamics(std::move(other.dynamics)),
+    ev_params(std::move(other.ev_params)) {}
+
+
+
+void OmegaEigenspace::omega_eigenspace_at_k(
+    double k,
+    double& eigenvalue,        /* out */
+    Vec1D<double>& eigenvector /* out */
+    )
 {
-    /* zeta always enters with prefactor 1.5, hence we redefine and multiply
-     * here once */
-    zeta = Interpolation1D(zeta_file, 1.5);
+    Vec2D<double> omega(COMPONENTS, Vec1D<double>(COMPONENTS, 0));
+
+    update_omega_matrix(eta_ini, k, ev_params.kappa(),
+        ev_params.zeta(), ev_params.xi(), omega);
+
+    /* Linear system is */
+    /* d(y)/d(eta) + omega.y + y */
+    /* Hence we add 1 to the diagonal of omega before finding eigenvalues/vectors */
+    for (size_t i = 0; i < COMPONENTS; ++i) {
+        omega.at(i).at(i) += 1;
+    }
+
+    /* Convert omega to double[] and switch sign (1d) */
+    double data[COMPONENTS * COMPONENTS];
+    size_t i = 0;
+    for (auto& row : omega) {
+        for (auto& el : row) {
+            data[i++] = -el;
+        }
+    }
+
+    gsl_matrix_view m = gsl_matrix_view_array (data, COMPONENTS, COMPONENTS);
+
+    gsl_vector_complex *eval = gsl_vector_complex_alloc (COMPONENTS);
+    gsl_matrix_complex *evec = gsl_matrix_complex_alloc(COMPONENTS, COMPONENTS);
+
+    gsl_eigen_nonsymmv_workspace * w = gsl_eigen_nonsymmv_alloc (COMPONENTS);
+    gsl_eigen_nonsymmv(&m.matrix, eval, evec, w);
+
+    gsl_complex eigenvalue_complex = gsl_vector_complex_get(eval,
+            static_cast<size_t>(eigenmode));
+
+    /* Check if the imaginary part of the eigenvalue is small */
+    if (std::abs(GSL_IMAG(eigenvalue_complex)) > imag_threshold) {
+        throw std::runtime_error("Imaginary part of eigenvalue is too large");
+    }
+
+    /* Store the real part of the eigenvalue */
+    eigenvalue = GSL_REAL(eigenvalue_complex);
+
+    for (size_t i = 0; i < COMPONENTS; ++i) {
+        gsl_complex eigenvector_complex = gsl_matrix_complex_get(evec, i,
+                static_cast<size_t>(eigenmode));
+
+        /* Check if the imaginary part of the eigenvector component is small */
+        if (std::abs(GSL_IMAG(eigenvector_complex)) > imag_threshold) {
+            throw std::runtime_error("Imaginary part of eigenvector[" +
+                    std::to_string(eigenmode) + "]["+
+                    std::to_string(i) + "] is too large"
+                    );
+        }
+
+        /* Store the real part of the eigenvector component */
+        eigenvector.at(i) = GSL_REAL(eigenvector_complex);
+    }
+}
+
+
+
+OmegaEigenspace::OmegaEigenspace(
+        const Dynamics dynamics,
+        double eta_ini,
+        const EvolutionParameters& ev_params,
+        int eigenmode,
+        double k_min,
+        double k_max,
+        int N,
+        double imag_threshold
+    ) : eta_ini(eta_ini), eigenmode(eigenmode), imag_threshold(imag_threshold),
+        dynamics(dynamics), ev_params(ev_params)
+{
+    /* Only compute for dynamics with asymptotic ICs */
+    if (dynamics != EVOLVE_ASYMPTOTIC_ICS) {
+        return;
+    }
+    if (eigenmode < 0) {
+        throw std::invalid_argument("OmegaEigenspace::OmegaEigenspace(): "
+                                    "eigenmode less than zero.");
+    }
+    else if (eigenmode > COMPONENTS) {
+        throw std::invalid_argument("OmegaEigenspace::OmegaEigenspace(): "
+                                    "eigenmode out of range.");
+    }
+    eigenvectors_.resize(COMPONENTS);
+
+    Vec1D<double> k_grid(static_cast<size_t>(N), 0);
+
+    Vec1D<double> eigenvalues_data(static_cast<size_t>(N), 0);
+    Vec2D<double> eigenvectors_data(static_cast<size_t>(N),
+            Vec1D<double>(COMPONENTS, 0));
+
+    double ratio = k_max/k_min;
+    for (int i = 0; i < N; ++i) {
+        k_grid.at(static_cast<size_t>(i)) =
+            k_min * pow(ratio, static_cast<double>(i)/(N-1));
+
+        omega_eigenspace_at_k(
+                k_grid.at(static_cast<size_t>(i)),
+                eigenvalues_data.at(static_cast<size_t>(i)),
+                eigenvectors_data.at(static_cast<size_t>(i))
+                );
+    }
+
+    eigenvalue_ = Interpolation1D(k_grid, eigenvalues_data);
+    for (std::size_t i = 0; i < COMPONENTS; ++i) {
+        Vec1D<double> slice(static_cast<size_t>(N), 0);
+        for (int j = 0; j < N; ++j) {
+            slice.at(static_cast<size_t>(j)) = eigenvectors_data.at(static_cast<size_t>(j)).at(i);
+        }
+        eigenvectors_.at(i) = Interpolation1D(k_grid, slice);
+    }
 }

@@ -8,9 +8,8 @@
 /* Maximum number of kernel arguments at 2-loop */
 #define N_KERNEL_ARGS_MAX 6
 
-/* Number of components */
+/* Number of EdS SPT components */
 #define EDS_SPT_COMPONENTS 2
-#define COMPONENTS 4
 
 /* Constants: */
 #define SQRT2 1.41421356237
@@ -54,7 +53,7 @@ template <class T>
 using Vec3D = std::vector<std::vector<std::vector<T>>>;
 
 enum Spectrum {POWERSPECTRUM, BISPECTRUM};
-enum Dynamics {EDS_SPT, EVOLVE_IC_EDS, EVOLVE_IC_ASYMP};
+enum Dynamics {EDS_SPT, EVOLVE_EDS_ICS, EVOLVE_ASYMPTOTIC_ICS};
 
 /* Pair and triple classes */
 template <typename T>
