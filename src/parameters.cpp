@@ -137,7 +137,7 @@ Config::Config(const string& ini_file,
         }
     }
     else if (cfg.exists("k_a")) {
-        set_param_value<int>(cfg, "k_a");
+        set_param_value<double>(cfg, "k_a");
     }
     else {
         throw ConfigException("Did not obtain any value for k_a. Either provide "
@@ -162,7 +162,7 @@ Config::Config(const string& ini_file,
     if(set_param_value<bool>(cfg, "ir_resum")) {
         set_param_value<double>(cfg, "k_s");
         set_param_value<double>(cfg, "k_osc");
-        set_param_value<double>(cfg, "pt_order", true);
+        set_param_value<int>(cfg, "pt_order", true);
     }
 
     /* Compute eft_displacement_dispersion? */
@@ -314,7 +314,7 @@ void Config::set_spectrum(const libconfig::Config& cfg)
                     b = correlation[i][1];
                     pair_correlations_.push_back({a,b});
                 }
-                else if (get<Spectrum>("spectrum") == POWERSPECTRUM) {
+                else if (get<Spectrum>("spectrum") == BISPECTRUM) {
                     if (correlation[i].getLength() != 3) {
                         throw ConfigException(
                             "Correlation must be three indices (bispectrum)");
@@ -377,7 +377,7 @@ void Config::set_bispectrum_ext_momenta(const libconfig::Config& cfg)
         }
     }
     else if (cfg.exists("k_b")) {
-        set_param_value<int>(cfg, "k_b");
+        set_param_value<double>(cfg, "k_b");
     }
     else {
         set("k_b", k_a);
@@ -406,13 +406,13 @@ void Config::set_bispectrum_ext_momenta(const libconfig::Config& cfg)
         k_c_given = true;
     }
     else if (cfg.exists("k_c")) {
-        set_param_value<int>(cfg, "k_c");
+        set_param_value<double>(cfg, "k_c");
         k_c = get<double>("k_c");
         k_c_given = true;
     }
 
     if (cfg.exists("cos_ab")) {
-        set_param_value<int>(cfg, "cos_ab");
+        set_param_value<double>(cfg, "cos_ab");
         cos_ab = get<double>("cos_ab");
         cos_ab_given = true;
 
@@ -448,7 +448,7 @@ void Config::set_bispectrum_ext_momenta(const libconfig::Config& cfg)
     else {
         /* cos_ab given */
         k_c = std::sqrt(SQUARE(k_a) + SQUARE(k_b) + 2*k_a*k_b*cos_ab);
-        set("k_c", k_c);
+        set<double>("k_c", k_c);
     }
 }
 
