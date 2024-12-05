@@ -1,11 +1,3 @@
-#!/usr/bin/env julia
-
-#   cont_sub.jl
-#
-#   Created by Petter Taule on 17.11.2020
-#   Copyright (c) 2020 Petter Taule. All rights reserved.
-
-
 using ArgParse, Printf
 
 function parse_commandline()
