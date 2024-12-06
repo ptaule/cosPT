@@ -68,7 +68,7 @@ Config::Config()
     set("cuba_atol", 1e-12);
     set("cuba_rtol", 1e-4);
     set<int>("cuba_maxevals", 1e6);
-    set("cuba_verbose", 1);
+    set("cuba_verbose", 0);
     set("cuba_cores", 0);
     set("cuba_retain_statefile", false);
     set("cuba_statefile", string());
@@ -572,9 +572,9 @@ void Config::set_dynamics(const libconfig::Config& cfg)
         try {
             if (cfg.exists("ode_settings")) {
                 const libconfig::Setting& ode_settings = cfg.lookup("ode_settings");
-                set<double>("ode_atol", ode_settings.lookup("abs_tolerance)"));
-                set<double>("ode_rtol", ode_settings.lookup("rel_tolerance)"));
-                set<double>("ode_hstart", ode_settings.lookup("start_step)"));
+                set<double>("ode_atol", ode_settings.lookup("abs_tolerance"));
+                set<double>("ode_rtol", ode_settings.lookup("rel_tolerance"));
+                set<double>("ode_hstart", ode_settings.lookup("start_step"));
             }
         }
         catch (const libconfig::SettingTypeException& tex) {
@@ -645,11 +645,10 @@ void Config::set_cuba_config(
     )
 {
     try {
-        set<double>("cuba_atol", cuba_settings.lookup("abs_tolerance)"));
-        set<double>("cuba_rtol", cuba_settings.lookup("rel_tolerance)"));
-        set<int>("cuba_verbose", cuba_settings.lookup("verbosity_level)"));
+        set<double>("cuba_atol", cuba_settings.lookup("abs_tolerance"));
+        set<double>("cuba_rtol", cuba_settings.lookup("rel_tolerance"));
+        set<int>("cuba_verbose", cuba_settings.lookup("verbosity_level"));
         set<bool>("cuba_retain_statefile", cuba_settings.lookup("cuba_retain_statefile"));
-
         /* If cuba_maxevals is not already set, look up value */
         if (cuba_maxevals == 0 && !set_param_value<int>(cuba_settings, "max_evaluations")) {
             std::cout << "No cuba max. evaluations given. Using default value: "
