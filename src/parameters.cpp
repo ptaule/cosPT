@@ -3,7 +3,6 @@
 #include <functional>
 #include <iostream>
 #include <iomanip>
-#include <vector>
 #include <string>
 #include <sstream>
 #include <stdexcept>
@@ -556,10 +555,10 @@ void Config::set_dynamics(const libconfig::Config& cfg)
         dynamics = EDS_SPT;
     }
     else if (dynamics_str == "evolve-ic-asymp") {
-        dynamics = EVOLVE_IC_ASYMP;
+        dynamics = EVOLVE_ASYMPTOTIC_ICS;
     }
     else if (dynamics_str == "evolve-ic-eds") {
-        dynamics = EVOLVE_IC_EDS;
+        dynamics = EVOLVE_EDS_ICS;
     }
     else {
         throw ConfigException("Unknown dynamics in configuration file.");
@@ -567,7 +566,7 @@ void Config::set_dynamics(const libconfig::Config& cfg)
     set("dynamics", dynamics);
 
     /* Settings for evolution dynamics */
-    if (dynamics == EVOLVE_IC_ASYMP || dynamics == EVOLVE_IC_EDS) {
+    if (dynamics == EVOLVE_ASYMPTOTIC_ICS || dynamics == EVOLVE_EDS_ICS) {
         /* ODE settings */
         try {
             if (cfg.exists("ode_settings")) {
@@ -586,7 +585,7 @@ void Config::set_dynamics(const libconfig::Config& cfg)
         set_param_value<double>(cfg, "eta_fin", true);
 
         /* Need additional information about time steps before eta_ini to set ICs */
-        if (dynamics == EVOLVE_IC_ASYMP) {
+        if (dynamics == EVOLVE_ASYMPTOTIC_ICS) {
             set_param_value<size_t>(cfg, "pre_time_steps", true);
             set_param_value<double>(cfg, "eta_asymp", true);
         }
@@ -611,7 +610,7 @@ void Config::set_dynamics(const libconfig::Config& cfg)
             }
 
             /* Files setting asymptotic initial conditions */
-            if (dynamics == EVOLVE_IC_ASYMP) {
+            if (dynamics == EVOLVE_ASYMPTOTIC_ICS) {
                 set_param_value<string>(cfg, "omega_eigenvalues_file_");
 
                 const libconfig::Setting& F1_ic_files_list = cfg.lookup("F1_ic_files");
@@ -827,8 +826,8 @@ std::ostream& operator<<(std::ostream& out, const Config& c) {
         out << "#\n";
     }
 
-    if (c.get<Dynamics>("dynamics") == EVOLVE_IC_ASYMP
-        || c.get<Dynamics>("dynamics") == EVOLVE_IC_EDS) {
+    if (c.get<Dynamics>("dynamics") == EVOLVE_ASYMPTOTIC_ICS
+        || c.get<Dynamics>("dynamics") == EVOLVE_EDS_ICS) {
         out << "# ODE settings:\n";
         out << std::scientific;
         out << "#\t abs tolerance = " << c.get<double>("ode_atol") << "\n";
@@ -837,7 +836,7 @@ std::ostream& operator<<(std::ostream& out, const Config& c) {
 
         out << "# Time grid settings:\n";
         out << "#\t time steps     = " << c.get<size_t>("time_steps") << "\n";
-        if (c.get<Dynamics>("dynamics") == EVOLVE_IC_ASYMP) {
+        if (c.get<Dynamics>("dynamics") == EVOLVE_ASYMPTOTIC_ICS) {
             out << "#\t pre time steps = " << c.get<size_t>("pre_time_steps") << "\n";
             out << "#\t eta asymp      = " << c.get<double>("eta_asymp") << "\n";
         }
@@ -845,14 +844,14 @@ std::ostream& operator<<(std::ostream& out, const Config& c) {
         out << "#\t eta fin        = " << c.get<double>("eta_fin") << "\n#\n";
 
         out << "# Dynamics settings:\n";
-        if (c.get<Dynamics>("dynamics") == EVOLVE_IC_ASYMP) {
+        if (c.get<Dynamics>("dynamics") == EVOLVE_ASYMPTOTIC_ICS) {
             out << "# f_nu      = " << c.get<double>("f_nu") << "\n";
             out << "# omega_m_0 = " << c.get<double>("omega_m_0") << "\n";
         }
         out << "#\n";
 
         out << "# zeta file              = " << c.get<string>("zeta_file") << "\n";
-        if (c.get<Dynamics>("dynamics") == EVOLVE_IC_ASYMP) {
+        if (c.get<Dynamics>("dynamics") == EVOLVE_ASYMPTOTIC_ICS) {
             out << "# redshift file          = " << c.get<string>("redshift_file") << "\n";
             out << "# omega eigenvalues file = " << c.get<string>("omega_eigenvalues_file")
                 << "\n";

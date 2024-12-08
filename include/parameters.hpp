@@ -218,7 +218,7 @@ class EvolutionParameters {
         double xi_at_eta_k(size_t i, double eta, double k) const { return xi[i](eta, k); }
         double omega_eigenvalues_at_k(double k) const { return omega_eigenvalues(k); }
 
-        double F1_ic_at_k(std::size_t i, double k) const { return F1_ic[i](k); }
+        double omega_eigenvector_at_k(std::size_t i, double k) const { return F1_ic[i](k); }
 };
 
 

@@ -54,7 +54,7 @@ template <class T>
 using Vec3D = std::vector<std::vector<std::vector<T>>>;
 
 enum Spectrum {POWERSPECTRUM, BISPECTRUM};
-enum Dynamics {EDS_SPT, EVOLVE_IC_EDS, EVOLVE_IC_ASYMP};
+enum Dynamics {EDS_SPT, EVOLVE_EDS_ICS, EVOLVE_ASYMPTOTIC_ICS};
 
 /* Pair and triple classes */
 template <typename T>

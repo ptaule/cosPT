@@ -156,9 +156,12 @@ void tree_level(
         for (auto& el : results) el = ps.tree_level(k_a, 0);
     }
 
-    if (dynamics == EVOLVE_IC_ASYMP) {
+    if (dynamics == EVOLVE_ASYMPTOTIC_ICS) {
         Vec1D<double> F1_eta_ini(COMPONENTS, 0);
         Vec1D<double> F1_eta_fin(COMPONENTS, 0);
+
+        KernelEvolver kernel_evolver(tables);
+        kernel_evolver.compute()
         compute_F1(k_a, ev_params, eta_grid, F1_eta_ini,
                    F1_eta_fin);
 
@@ -298,9 +301,9 @@ void diagram_term(
                        .at(static_cast<size_t>(arg_config.c().kernel_index))
                        .values;
     }
-    else if (tables.loop_params.dynamics() == EVOLVE_IC_ASYMP ||
-            tables.loop_params.dynamics() == EVOLVE_IC_EDS) {
-        if (tables.loop_params.dynamics() == EVOLVE_IC_EDS) {
+    else if (tables.loop_params.dynamics() == EVOLVE_ASYMPTOTIC_ICS ||
+            tables.loop_params.dynamics() == EVOLVE_EDS_ICS) {
+        if (tables.loop_params.dynamics() == EVOLVE_EDS_ICS) {
             compute_SPT_kernels(arg_config.a().args.data(),
                     arg_config.a().kernel_index, 2, tables);
             compute_SPT_kernels(arg_config.b().args.data(),
