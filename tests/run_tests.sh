@@ -59,10 +59,11 @@ mkdir -p "$tempdir"/input
 mkdir -p "$tempdir"/output
 mkdir -p "$tempdir"/tests
 
-cp -r -t "$tempdir" "$sourcedir"/src "$sourcedir"/include \
+cp -r -t "$tempdir" "$sourcedir"/src "$sourcedir"/include/ \
     "$sourcedir"/main.cpp "$sourcedir"/Makefile
-cp -r -t "$tempdir/tests/" "$sourcedir"/tests/data \
-    "$sourcedir"/tests/ini "$sourcedir"/tests/isapprox.jl
+cp -r -t "$tempdir/tests/" "$sourcedir"/tests/data/ \
+    "$sourcedir"/tests/ini/ "$sourcedir"/tests/input/ \
+    "$sourcedir"/tests/isapprox.jl
 cp -t "$tempdir"/input "$sourcedir"/input/k_*.dat
 
 # Remember git sha from source directory
