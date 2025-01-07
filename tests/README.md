@@ -12,6 +12,6 @@ Directory tree:
 ├── input                 # input for tests: power spectrum, dynamics files to interpolate
 │   └── quijote_Mnu_0p1eV
 ├── isapprox.jl           # julia-file for reading and comparing columns with uncertainties
-└── run_tests.sh          # test script
-├── README.md
+├── run_tests.sh          # test script
+└── README.md
 ```
