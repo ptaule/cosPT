@@ -258,7 +258,9 @@ static void BM_BS_EdS_integrand_2loop(benchmark::State& state) {
 static void BM_PS_2fluid_integrand_1loop(benchmark::State& state) {
     // Perform setup here
     try {
-        Config cfg("benchmark/ini/m_nu_0.05eV.cfg", -1, -1, -1, 0, 0);
+        Config cfg("benchmark/ini/quijote_Mnu_0.1eV.cfg",
+                   -1, -1, -1, 0,
+                   0);
 
         int n_loops = 1;
         int n_dims = 3 * n_loops - 1;
@@ -328,7 +330,9 @@ static void BM_PS_2fluid_integrand_1loop(benchmark::State& state) {
 static void BM_PS_2fluid_integrand_2loop(benchmark::State& state) {
     // Perform setup here
     try {
-        Config cfg("benchmark/ini/m_nu_0.05eV.cfg", -1, -1, -1, 0, 0);
+        Config cfg("benchmark/ini/quijote_Mnu_0.1eV.cfg",
+                   -1, -1, -1, 0,
+                   0);
 
         int n_loops = 2;
         int n_dims = 3 * n_loops - 1;
