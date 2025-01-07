@@ -3,7 +3,9 @@
 #include <numeric>
 #include <stdexcept>
 
-#include <gsl/gsl_sf.h>
+extern "C" {
+    #include <gsl/gsl_sf.h>
+}
 
 #include "../include/combinatorics.hpp"
 

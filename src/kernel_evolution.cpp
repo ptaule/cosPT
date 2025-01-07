@@ -5,8 +5,10 @@
 #include <string>
 #include <vector>
 
-#include <gsl/gsl_sf.h>
-#include <gsl/gsl_odeiv2.h>
+extern "C" {
+    #include <gsl/gsl_sf.h>
+    #include <gsl/gsl_odeiv2.h>
+}
 
 #include "../include/utilities.hpp"
 #include "../include/combinatorics.hpp"

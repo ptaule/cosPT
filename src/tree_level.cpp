@@ -1,7 +1,9 @@
 #include <cmath>
 #include <stdexcept>
 
-#include <gsl/gsl_integration.h>
+extern "C" {
+    #include <gsl/gsl_integration.h>
+}
 
 #include "../include/diagrams.hpp"
 #include "../include/ir_resum.hpp"

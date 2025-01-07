@@ -5,7 +5,9 @@
 #include <functional>
 #include <string>
 
-#include <gsl/gsl_integration.h>
+extern "C" {
+    #include <gsl/gsl_integration.h>
+}
 
 #include "interpolation.hpp"
 

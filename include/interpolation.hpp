@@ -5,8 +5,10 @@
 #include <stdexcept>
 #include <string>
 
-#include <gsl/gsl_spline.h>
-#include <gsl/gsl_spline2d.h>
+extern "C" {
+    #include <gsl/gsl_spline.h>
+    #include <gsl/gsl_spline2d.h>
+}
 
 /* Wrapper classes around GSL 1d and 2d spline
  * interpolation */

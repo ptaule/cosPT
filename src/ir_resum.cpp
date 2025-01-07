@@ -4,10 +4,12 @@
 #include <stdexcept>
 #include <string>
 
-#include <gsl/gsl_errno.h>
-#include <gsl/gsl_fft_real.h>
-#include <gsl/gsl_integration.h>
-#include <gsl/gsl_sf_bessel.h>
+extern "C" {
+    #include <gsl/gsl_errno.h>
+    #include <gsl/gsl_fft_real.h>
+    #include <gsl/gsl_integration.h>
+    #include <gsl/gsl_sf_bessel.h>
+}
 
 #include "../include/interpolation.hpp"
 #include "../include/utilities.hpp"

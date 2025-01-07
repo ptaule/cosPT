@@ -4,8 +4,10 @@
 #include <utility>
 #include <vector>
 
-#include <gsl/gsl_spline.h>
-#include <gsl/gsl_spline2d.h>
+extern "C" {
+    #include <gsl/gsl_spline.h>
+    #include <gsl/gsl_spline2d.h>
+}
 
 #include "../include/io.hpp"
 #include "../include/interpolation.hpp"

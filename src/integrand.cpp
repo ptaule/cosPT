@@ -2,7 +2,9 @@
 #include <iostream>
 #include <stdexcept>
 
-#include <cuba.h>
+extern "C" {
+    #include <cuba.h>
+}
 
 #include "../include/diagrams.hpp"
 #include "../include/kernel_evolution.hpp"

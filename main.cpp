@@ -1,9 +1,11 @@
 #include <cmath>
 #include <iostream>
 
-#include <getopt.h>
-#include <gsl/gsl_sf.h>
-#include <cuba.h>
+extern "C" {
+    #include <getopt.h>
+    #include <gsl/gsl_sf.h>
+    #include <cuba.h>
+}
 
 #include "include/diagrams.hpp"
 #include "include/integrand.hpp"

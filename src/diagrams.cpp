@@ -1,10 +1,11 @@
 #include <iostream>
 #include <algorithm>
-#include <numeric>
 #include <cmath>
 #include <stdexcept>
 
-#include <gsl/gsl_sf.h>
+extern "C" {
+    #include <gsl/gsl_sf.h>
+}
 
 #include "../include/utilities.hpp"
 #include "../include/combinatorics.hpp"
