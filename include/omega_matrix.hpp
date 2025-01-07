@@ -2,8 +2,9 @@
 #define OMEGA_MATRIX_HPP
 
 /*Definition of the linear (LHS) part of the ODE system for the kernels, using
- * kappa, zeta(eta) and xi(eta, k), where eta=ln(D). A factor exp(n eta) is
- * factorized out of the kernels, hence y' = omega.y - n.y + rhs */
+ * k, eta = ln(D), kappa, zeta(eta) and xi(eta, k). A factor exp(n eta) is
+ * factorized out of the kernels, hence
+ * d(y)/d(eta) = omega.y - n.y + rhs */
 #define UPDATE_OMEGA_MATRIX                                                    \
   omega[0][1] = 1;                                                             \
   omega[1][0] = zeta * (1 - kappa);                                            \
