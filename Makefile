@@ -21,19 +21,15 @@ CXXFLAGS += -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion \
 		-Wcast-align -Wunused -Wlogical-op -Wnull-dereference \
 		-std=c++17
 
-all: CPPFLAGS += -DDEBUG=0 -DHAVE_INLINE #-I
-all: CXXFLAGS += -O3
+all: CXXFLAGS += -O3 -DDEBUG=0 -DHAVE_INLINE #-I
 all: LDFLAGS  += #-L
 
-debug: CPPFLAGS   += -D_GLIBCXX_DEBUG -DDEBUG=2 #-I
-debug: CXXFLAGS   += -g -O0
+debug: CXXFLAGS   += -g -O0 -D_GLIBCXX_DEBUG -DDEBUG=2 #-I
 debug: LDFLAGS    += #-L
 
-benchmark: CPPFLAGS += -DHAVE_INLINE
-benchmark: CXXFLAGS += -O3
+benchmark: CXXFLAGS += -O3 -DDEBUG=0 -DHAVE_INLINE
 benchmark: LDLIBS   += -lbenchmark -pthread
-profile:   CPPFLAGS += -DHAVE_INLINE
-profile:   CXXFLAGS += -O3 -fno-omit-frame-pointer
+profile:   CXXFLAGS += -O3 -fno-omit-frame-pointer -DHAVE_INLINE
 profile:   LDLIBS   += -lbenchmark -pthread
 
 LDLIBS  += -lconfig++ -lcuba -lgsl -lgslcblas
