@@ -1,8 +1,6 @@
 #ifndef TABLES_HPP
 #define TABLES_HPP
 
-#include <vector>
-
 #include "utilities.hpp"
 
 class LoopParameters;

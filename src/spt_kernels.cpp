@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <iostream>
 #include <stdexcept>
 
 #include <gsl/gsl_sf.h>

@@ -2,8 +2,8 @@
 #define INTERPOLATION_HPP
 
 #include <vector>
-#include <string>
 #include <stdexcept>
+#include <string>
 
 #include <gsl/gsl_spline.h>
 #include <gsl/gsl_spline2d.h>

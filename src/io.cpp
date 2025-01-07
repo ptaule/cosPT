@@ -7,7 +7,6 @@
 
 #include "../include/utilities.hpp"
 #include "../include/parameters.hpp"
-#include "../include/version.hpp"
 #include "../include/io.hpp"
 
 using std::size_t;

@@ -1,11 +1,6 @@
 #ifndef RSD_HPP
 #define RSD_HPP
 
-#include <cstddef>
-
-#include <gsl/gsl_integration.h>
-
-#include "utilities.hpp"
 
 class IntegrandTables;
 

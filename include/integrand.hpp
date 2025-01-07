@@ -4,7 +4,6 @@
 #include "diagrams.hpp"
 #include "utilities.hpp"
 
-
 class IntegrandTables;
 class InputPowerSpectrum;
 

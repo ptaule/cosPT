@@ -1,15 +1,11 @@
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
-#include <string>
-#include <utility>
-#include <vector>
 
 #include <cuba.h>
 
 #include "../include/diagrams.hpp"
 #include "../include/kernel_evolution.hpp"
-#include "../include/interpolation.hpp"
 #include "../include/ir_resum.hpp"
 #include "../include/parameters.hpp"
 #include "../include/rsd.hpp"

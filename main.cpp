@@ -1,8 +1,5 @@
-#include <algorithm>
-#include <array>
 #include <cmath>
 #include <iostream>
-#include <vector>
 
 #include <getopt.h>
 #include <gsl/gsl_sf.h>
