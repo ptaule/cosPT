@@ -1,6 +1,7 @@
 #include <cmath>
 #include <cstddef>
 #include <numeric>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 
