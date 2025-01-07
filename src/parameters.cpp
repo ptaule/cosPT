@@ -180,7 +180,8 @@ Config::Config(const std::string& ini_file,
     set_dynamics(cfg);
 
     /* Compute single hard limit? */
-    if (cfg.lookupValue("single_hard_limit", single_hard_limit_)) {
+    if (cfg.lookupValue("single_hard_limit", single_hard_limit_) &&
+        single_hard_limit_) {
         int sh_Q1_int;
         if (cfg.lookupValue("single_hard_limit_q", sh_Q1_)) {}
         /* If not found as double, try int */

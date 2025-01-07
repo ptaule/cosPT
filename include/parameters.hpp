@@ -18,7 +18,7 @@ class Config {
         Dynamics dynamics_;
         Spectrum spectrum_;
 
-        bool single_hard_limit_;
+        bool single_hard_limit_ = false;
         double sh_Q1_ = 0;
 
         int k_a_idx = -1;
