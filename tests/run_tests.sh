@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 set -e
-set -x
 
 cleanup() {
     rm -rf "$tempdir"
@@ -72,7 +71,8 @@ cp -r -t "$tempdir" "$sourcedir"/src "$sourcedir"/include/ \
 cp -r -t "$tempdir/tests/" "$sourcedir"/tests/data/ \
     "$sourcedir"/tests/ini/ "$sourcedir"/tests/input/ \
     "$sourcedir"/tests/isapprox.jl
-cp -t "$tempdir"/input "$sourcedir"/input/k_*.dat
+cp -r -t "$tempdir"/input/ "$sourcedir"/input/k_*.dat \
+    "$sourcedir"/input/quijote/
 
 # Remember git sha from source directory
 cd "$sourcedir"
@@ -87,10 +87,6 @@ sed -i '/SRC_FILES/ s/\\$/version_.cpp \\/' Makefile
 make clean
 make -j "$n_cores"
 #export LD_LIBRARY_PATH=path to libs
-
-for f in {L1,L2}; do
-    mkdir -p "$tempdir"/output/eds_spt_bs/"$f"
-done
 
 {
     echo "Integration test"
@@ -120,10 +116,22 @@ for k_a in {000,010,020,030,040,050,060,070,080,090,100}; do
     }
 done
 
+for k_a in {030,045}; do
+    {
+        for f in {L1,L2}; do
+            {
+                mkdir -p "$tempdir"/output/quijote_Mnu_0p1eV/"$f"
+                "$exe" --k_a_idx "$k_a" --n_cores "$n_cores" "$tempdir"/tests/ini/quijote_Mnu_0p1eV_"$f".cfg
+            } >>"$log_file"
+        done
+    }
+done
+
 for f in output/*/*/; do
     cat "$f"/* >"$f"/total.dat
 done
 
+# Comparison
 for m in {L1,L2,L2_sh,rsd_L1,rsd_L2,rsd_L2_sh,rsd_ir_L1,rsd_ir_L2,rsd_ir_L2_sh}; do
     {
         julia "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
@@ -135,5 +143,16 @@ for m in {L1,L2}; do
     {
         julia "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
             "$tempdir"/tests/data/eds_spt_bs/"$m".dat "$tempdir"/output/eds_spt_bs/"$m"/total.dat
+    } >>"$log_file"
+done
+
+for m in {L1,L2}; do
+    {
+        julia "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
+            "$tempdir"/tests/data/quijote_Mnu_0p1eV/"$m".dat "$tempdir"/output/quijote_Mnu_0p1eV/"$m"/total.dat
+        julia "$isapprox" --col_A 5 --col_err_A 6 --col_B 5 --col_err_B 6 \
+            "$tempdir"/tests/data/quijote_Mnu_0p1eV/"$m".dat "$tempdir"/output/quijote_Mnu_0p1eV/"$m"/total.dat
+        julia "$isapprox" --col_A 7 --col_err_A 8 --col_B 7 --col_err_B 8 \
+            "$tempdir"/tests/data/quijote_Mnu_0p1eV/"$m".dat "$tempdir"/output/quijote_Mnu_0p1eV/"$m"/total.dat
     } >>"$log_file"
 done

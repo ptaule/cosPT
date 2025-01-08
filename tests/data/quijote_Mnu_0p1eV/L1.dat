@@ -1,0 +1,56 @@
+# Matter power spectrum P(k) at 1-loop
+#
+# Description: quijote M_nu = 0.1eV, effcs2
+# Git hash:    1c2569e69b0d131365090a07e2c0a0254553c37f
+# Build time:  07.01.2025 16:31 CET
+#
+# Correlations (zero-indexed components):
+#  <0,0> , <0,1> , <1,1> ,
+#
+# Input power spectrum read from tests/input/quijote_Mnu_0p1eV/pk_cb_z10.dat
+# Input power spectrum rescaled by a factor 2pi^-3 before interpolation.
+#
+# Integration limits:
+#	 q_min = 1.000000e-04
+#	 q_max = 1.000000e+00
+#
+# Cuba settings:
+#	 abs tolerance = 1.000000e-12
+#	 rel tolerance = 1.000000e-04
+#	 max. evals    = 1000000
+#
+# ODE settings:
+#	 abs tolerance = 1.000000e-06
+#	 rel tolerance = 1.000000e-04
+#	 start step    = 1.000000e-03
+#
+# Time grid settings:
+#	 time steps     = 125
+#	 pre time steps = 25
+#	 eta asymp      = -1.000000e+01
+#	 eta ini        = -2.161020e+00
+#	 eta fin        = 0.000000e+00
+#
+# Dynamics settings:
+# f_nu      = 7.500000e-03
+# omega_m_0 = 3.175000e-01
+#
+# zeta file              = tests/input/quijote_Mnu_0p1eV/OmegaM_over_f2.dat
+# redshift file          = tests/input/quijote_Mnu_0p1eV/redshift_of_eta.dat
+# omega eigenvalues file = input/quijote/M_nu_0.1eV/effcs2/growing_mode_eigenvalues_etaD_ini.dat
+# F1 ic files[0]		 = input/quijote/M_nu_0.1eV/effcs2/F1_growing_mode_etaD_-10.dat
+# F1 ic files[1]		 = input/quijote/M_nu_0.1eV/effcs2/F2_growing_mode_etaD_-10.dat
+# F1 ic files[2]		 = input/quijote/M_nu_0.1eV/effcs2/F3_growing_mode_etaD_-10.dat
+# F1 ic files[3]		 = input/quijote/M_nu_0.1eV/effcs2/F4_growing_mode_etaD_-10.dat
+# effective cs2 x grid   = tests/input/quijote_Mnu_0p1eV/etaD_grid.dat
+# effective cs2 y grid   = tests/input/quijote_Mnu_0p1eV/k_grid.dat
+# effective cs2 data     = tests/input/quijote_Mnu_0p1eV/effcs2.dat
+#
+# Information from Cuba integration:
+#	 Accuracy not reached.
+#	 Num. evaluations = 1000000
+#	 Num. subregions  = 1000
+#
+#                k        P_L0 <0,0>        P_L1 <0,0>      err_L1 <0,0>        P_L0 <0,1>        P_L1 <0,1>      err_L1 <0,1>        P_L0 <1,1>        P_L1 <1,1>      err_L1 <1,1>
+      1.349501e-01      3.051078e-01      4.027438e-04      1.189168e-07      3.037292e-01     -6.980619e-04      1.463963e-07      3.023568e-01     -1.602765e-03      2.236338e-07
+      2.292620e-01      1.227535e-01      1.076952e-03      1.819670e-07      1.221927e-01      9.924345e-05      1.127264e-07      1.216344e-01     -6.766955e-04      1.487670e-07
