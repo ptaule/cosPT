@@ -7,9 +7,10 @@ EXE           = $(BUILD_DIR)/cosPT
 DEBUG_EXE     = $(BUILD_DIR)/debug
 BENCHMARK_EXE = $(BUILD_DIR)/bench
 
-SRC_FILES = tree_level.cpp combinatorics.cpp diagrams.cpp \
-		integrand.cpp interpolation.cpp io.cpp ir_resum.cpp kernel_evolution.cpp \
-		parameters.cpp rsd.cpp spt_kernels.cpp tables.cpp utilities.cpp version.cpp
+SRC_FILES = biased_tracers.cpp combinatorics.cpp diagrams.cpp \
+	integrand.cpp interpolation.cpp io.cpp ir_resum.cpp kernel_evolution.cpp \
+	parameters.cpp rsd.cpp spt_kernels.cpp tables.cpp tree_level.cpp \
+	utilities.cpp version.cpp
 SRC = $(addprefix $(SRC_DIR)/, $(SRC_FILES))
 OBJ = $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 HEADERS = $(wildcard $(INC_DIR)/*.hpp)
@@ -18,8 +19,8 @@ GIT = git
 CXX ?= g++
 
 CXXFLAGS += -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion \
-		-Wcast-align -Wunused -Wlogical-op -Wnull-dereference \
-		-std=c++17
+	-Wcast-align -Wunused -Wlogical-op -Wnull-dereference \
+	-std=c++17
 
 all: CXXFLAGS += -O3 -DDEBUG=0 -DHAVE_INLINE #-I
 all: LDFLAGS  += #-L
