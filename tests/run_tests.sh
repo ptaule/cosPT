@@ -3,7 +3,7 @@
 set -e
 
 cleanup() {
-    rm -rf "$tempdir"
+    git worktree remove -f "$tempdir"
 }
 
 # Run cleanup on EXIT
@@ -61,32 +61,13 @@ isapprox=tests/isapprox.jl
 sourcedir=$(pwd)
 tempdir="$(mktemp -d -t cosPTintTest_XXXXXX)"
 
-mkdir -p "$tempdir"/local
-mkdir -p "$tempdir"/input
-mkdir -p "$tempdir"/output
-mkdir -p "$tempdir"/tests
+git worktree add "$tempdir"
 
-cp -r -t "$tempdir" "$sourcedir"/src "$sourcedir"/include/ \
-    "$sourcedir"/main.cpp "$sourcedir"/Makefile
-cp -r -t "$tempdir/tests/" "$sourcedir"/tests/data/ \
-    "$sourcedir"/tests/ini/ "$sourcedir"/tests/input/ \
-    "$sourcedir"/tests/isapprox.jl
-cp -r -t "$tempdir"/input/ "$sourcedir"/input/k_*.dat \
-    "$sourcedir"/input/quijote/
-
-# Remember git sha from source directory
-cd "$sourcedir"
-git_sha=$(git rev-parse HEAD)
-
+# Make binary
 cd "$tempdir"
-# Create src/version_.cpp with git sha from source directory, and add this file
-# to the source files listed in the makefile
-printf "#include \"../include/version.hpp\"\nstd::string build_git_sha =  \"%s\";" \
-    "$git_sha" >src/version_.cpp
-sed -i '/SRC_FILES/ s/\\$/version_.cpp \\/' Makefile
+#export LD_LIBRARY_PATH=path to libs
 make clean
 make -j "$n_cores"
-#export LD_LIBRARY_PATH=path to libs
 
 {
     echo "Integration test"
