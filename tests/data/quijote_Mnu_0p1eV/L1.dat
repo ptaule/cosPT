@@ -1,13 +1,13 @@
 # Matter power spectrum P(k) at 1-loop
 #
 # Description: quijote M_nu = 0.1eV, effcs2
-# Git hash:    1c2569e69b0d131365090a07e2c0a0254553c37f
-# Build time:  07.01.2025 16:31 CET
+# Git hash:    195ed1e9507960e6f2f02e4e7fbc768459eb2ab1
+# Build time:  09.01.2025 14:41 CET
 #
 # Correlations (zero-indexed components):
 #  <0,0> , <0,1> , <1,1> ,
 #
-# Input power spectrum read from tests/input/quijote_Mnu_0p1eV/pk_cb_z10.dat
+# Input power spectrum read from tests/input/quijote_Mnu_0p1eV/pk_cb_z25.dat
 # Input power spectrum rescaled by a factor 2pi^-3 before interpolation.
 #
 # Integration limits:
@@ -28,7 +28,7 @@
 #	 time steps     = 125
 #	 pre time steps = 25
 #	 eta asymp      = -1.000000e+01
-#	 eta ini        = -2.161020e+00
+#	 eta ini        = -3.017720e+00
 #	 eta fin        = 0.000000e+00
 #
 # Dynamics settings:
@@ -46,11 +46,13 @@
 # effective cs2 y grid   = tests/input/quijote_Mnu_0p1eV/k_grid.dat
 # effective cs2 data     = tests/input/quijote_Mnu_0p1eV/effcs2.dat
 #
-# Information from Cuba integration:
-#	 Accuracy not reached.
-#	 Num. evaluations = 1000000
-#	 Num. subregions  = 1000
-#
 #                k        P_L0 <0,0>        P_L1 <0,0>      err_L1 <0,0>        P_L0 <0,1>        P_L1 <0,1>      err_L1 <0,1>        P_L0 <1,1>        P_L1 <1,1>      err_L1 <1,1>
-      1.349501e-01      3.051078e-01      4.027438e-04      1.189168e-07      3.037292e-01     -6.980619e-04      1.463963e-07      3.023568e-01     -1.602765e-03      2.236338e-07
-      2.292620e-01      1.227535e-01      1.076952e-03      1.819670e-07      1.221927e-01      9.924345e-05      1.127264e-07      1.216344e-01     -6.766955e-04      1.487670e-07
+      1.000000e-03      3.861200e-02     -1.853211e-09      6.702688e-12      3.860307e-02     -3.816728e-09      7.077616e-12      3.859415e-02     -5.766755e-09      1.242956e-11
+      8.899641e-03      2.132819e-01     -7.333711e-07      7.326522e-11      2.127606e-01     -1.556208e-06      8.212015e-11      2.122406e-01     -2.342248e-06      1.374991e-10
+      7.196633e-02      9.576943e-02     -3.117652e-06      1.423911e-09      9.535030e-02     -1.951090e-05      3.021856e-09      9.493299e-02     -3.349815e-05      5.502905e-09
+      1.349501e-01      3.957003e-02      7.943603e-06      2.061876e-09      3.939123e-02     -1.051264e-05      2.224035e-09      3.921324e-02     -2.563094e-05      3.258066e-09
+      1.977890e-01      2.051622e-02      1.516131e-05      3.009389e-09      2.042269e-02     -1.641485e-06      1.817596e-09      2.032958e-02     -1.509763e-05      2.503260e-09
+      2.606334e-01      1.219322e-02      1.877516e-05      2.411513e-09      1.213742e-02      4.154929e-06      1.681306e-09      1.208189e-02     -7.379265e-06      1.865015e-09
+      3.235188e-01      7.955918e-03      2.005521e-05      2.597512e-09      7.919444e-03      7.426118e-06      1.698174e-09      7.883137e-03     -2.432617e-06      1.461867e-09
+      3.863540e-01      5.546967e-03      2.001764e-05      2.821713e-09      5.521509e-03      9.078669e-06      1.767993e-09      5.496167e-03      6.063279e-07      1.429157e-09
+      4.491634e-01      4.057441e-03      1.931921e-05      2.067885e-09      4.038805e-03      9.792895e-06      1.359040e-09      4.020256e-03      2.460533e-06      1.152413e-09

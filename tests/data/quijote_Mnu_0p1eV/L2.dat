@@ -1,13 +1,13 @@
 # Matter power spectrum P(k) at 2-loop
 #
 # Description: quijote M_nu = 0.1eV, effcs2
-# Git hash:    1c2569e69b0d131365090a07e2c0a0254553c37f
-# Build time:  07.01.2025 16:31 CET
+# Git hash:    195ed1e9507960e6f2f02e4e7fbc768459eb2ab1
+# Build time:  09.01.2025 14:41 CET
 #
 # Correlations (zero-indexed components):
 #  <0,0> , <0,1> , <1,1> ,
 #
-# Input power spectrum read from tests/input/quijote_Mnu_0p1eV/pk_cb_z10.dat
+# Input power spectrum read from tests/input/quijote_Mnu_0p1eV/pk_cb_z25.dat
 # Input power spectrum rescaled by a factor 2pi^-3 before interpolation.
 #
 # Integration limits:
@@ -28,7 +28,7 @@
 #	 time steps     = 125
 #	 pre time steps = 25
 #	 eta asymp      = -1.000000e+01
-#	 eta ini        = -2.161020e+00
+#	 eta ini        = -3.017720e+00
 #	 eta fin        = 0.000000e+00
 #
 # Dynamics settings:
@@ -46,11 +46,6 @@
 # effective cs2 y grid   = tests/input/quijote_Mnu_0p1eV/k_grid.dat
 # effective cs2 data     = tests/input/quijote_Mnu_0p1eV/effcs2.dat
 #
-# Information from Cuba integration:
-#	 Accuracy not reached.
-#	 Num. evaluations = 1000000
-#	 Num. subregions  = 1000
-#
 #                k        P_L0 <0,0>        P_L2 <0,0>      err_L2 <0,0>        P_L0 <0,1>        P_L2 <0,1>      err_L2 <0,1>        P_L0 <1,1>        P_L2 <1,1>      err_L2 <1,1>
-      1.349501e-01      3.051078e-01     -9.749041e-06      2.869973e-08      3.037292e-01     -1.097408e-05      2.233390e-08      3.023568e-01     -7.240306e-06      2.388029e-08
-      2.292620e-01      1.227535e-01     -1.184245e-05      7.193483e-08      1.221927e-01     -2.114192e-05      5.752093e-08      1.216344e-01     -1.991049e-05      6.091031e-08
+      1.349501e-01      3.957003e-02     -1.918338e-08      6.598298e-11      3.939123e-02     -2.291484e-08      5.166943e-11      3.921324e-02     -1.570567e-08      5.419208e-11
+      2.292620e-01      1.492194e-02     -2.333481e-08      1.530394e-10      1.485376e-02     -4.500101e-08      1.245297e-10      1.478589e-02     -4.498482e-08      1.327955e-10

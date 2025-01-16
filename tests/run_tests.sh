@@ -97,15 +97,18 @@ for k_a in {000,010,020,030,040,050,060,070,080,090,100}; do
     }
 done
 
+for k_a in {000,010,020,030,040,050,060,070,080}; do
+    {
+        mkdir -p "$tempdir"/output/quijote_Mnu_0p1eV/L1/
+        "$exe" --k_a_idx "$k_a" --n_cores "$n_cores" "$tempdir"/tests/ini/quijote_Mnu_0p1eV_L1.cfg
+    } >>"$log_file"
+done
+
 for k_a in {030,045}; do
     {
-        for f in {L1,L2}; do
-            {
-                mkdir -p "$tempdir"/output/quijote_Mnu_0p1eV/"$f"
-                "$exe" --k_a_idx "$k_a" --n_cores "$n_cores" "$tempdir"/tests/ini/quijote_Mnu_0p1eV_"$f".cfg
-            } >>"$log_file"
-        done
-    }
+        mkdir -p "$tempdir"/output/quijote_Mnu_0p1eV/L2/
+        "$exe" --k_a_idx "$k_a" --n_cores "$n_cores" "$tempdir"/tests/ini/quijote_Mnu_0p1eV_L2.cfg
+    } >>"$log_file"
 done
 
 for f in output/*/*/; do
