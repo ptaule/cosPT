@@ -107,14 +107,14 @@ class IntegrandTables {
 
         Vec2D<double> bare_dot_prod;
         /* N_COEFFS x N_COEFFS, dot products between external/loop wavenumbers */
-        Vec2D<double> comp_dot_prod;
+        Vec2D<double> composite_dot_prod;
         /* N_CONFIGS x N_CONFIGS, dot products between composite wavenumbers */
         Vec2D<double> alpha_;                /* N_CONFIGS x N_CONFIGS */
         Vec2D<double> beta_;                 /* N_CONFIGS x N_CONFIGS */
 
         Vec1D<double> bare_los_projection_;
         /* N_COEFFS dot products between external/loop wavenumber and L.o.S */
-        Vec1D<double> comp_los_projection_;
+        Vec1D<double> composite_los_projection_;
         /* N_CONFIGS dot products between composite wavenumber and L.o.S */
 
         void reset_spt_kernels();
@@ -122,11 +122,11 @@ class IntegrandTables {
         void reset_rsd_kernels();
 
         void compute_bare_los_proj();
-        void compute_comp_los_proj();
+        void compute_composite_los_proj();
 
         void compute_bare_dot_prod();
 
-        void compute_comp_dot_prod();
+        void compute_composite_dot_prod();
         void compute_alpha_beta();
     public:
         const LoopParameters& loop_params;
@@ -155,12 +155,12 @@ class IntegrandTables {
                 );
 
         const Vec2D<double>& bare_dot_products() const { return bare_dot_prod; }
-        const Vec2D<double>& comp_dot_products() const { return comp_dot_prod; }
+        const Vec2D<double>& composite_dot_products() const { return composite_dot_prod; }
         const Vec2D<double>& alpha() const {return alpha_;}
         const Vec2D<double>& beta() const {return beta_;}
 
         const Vec1D<double>& bare_los_projection() const { return bare_los_projection_; }
-        const Vec1D<double>& comp_los_projection() const { return comp_los_projection_; }
+        const Vec1D<double>& composite_los_projection() const { return composite_los_projection_; }
 
         double rsd_growth_f() const { return rsd_f; }
 

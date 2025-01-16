@@ -171,11 +171,11 @@ IntegrandTables::IntegrandTables(
         bare_dot_prod.at(i).resize(n_coeffs);
     }
 
-    comp_dot_prod.resize(n_configs);
+    composite_dot_prod.resize(n_configs);
     alpha_.resize(n_configs);
     beta_.resize(n_configs);
     for (size_t i = 0; i < n_configs; ++i) {
-        comp_dot_prod.at(i).resize(n_configs);
+        composite_dot_prod.at(i).resize(n_configs);
         alpha_.at(i).resize(n_configs);
         beta_.at(i).resize(n_configs);
     }
@@ -198,7 +198,7 @@ IntegrandTables::IntegrandTables(
     }
     if (loop_params.rsd()) {
         bare_los_projection_.resize(n_coeffs);
-        comp_los_projection_.resize(n_configs);
+        composite_los_projection_.resize(n_configs);
 
         rsd_kernels.resize(n_kernels);
         vel_power_kernels.resize(n_kernels);
@@ -363,7 +363,7 @@ void IntegrandTables::compute_bare_los_proj() {
 
 
 
-void IntegrandTables::compute_comp_los_proj() {
+void IntegrandTables::compute_composite_los_proj() {
     size_t n_coeffs = loop_params.n_coeffs();
     size_t n_configs = loop_params.n_configs();
 
@@ -374,14 +374,14 @@ void IntegrandTables::compute_comp_los_proj() {
         for (size_t i = 0; i < n_coeffs; ++i) {
             product_value += a_coeffs[i] * bare_los_projection_.at(i);
         }
-        comp_los_projection_.at(a) = product_value;
+        composite_los_projection_.at(a) = product_value;
     }
 }
 
 
 
 /* Computes table of composite dot products given bare_dot_prod table */
-void IntegrandTables::compute_comp_dot_prod()
+void IntegrandTables::compute_composite_dot_prod()
 {
     size_t n_coeffs = loop_params.n_coeffs();
     size_t n_configs = loop_params.n_configs();
@@ -401,11 +401,11 @@ void IntegrandTables::compute_comp_dot_prod()
                 }
             }
             if (a == b) {
-                comp_dot_prod.at(a).at(a) = product_value;
+                composite_dot_prod.at(a).at(a) = product_value;
             }
             else {
-                comp_dot_prod.at(a).at(b) = product_value;
-                comp_dot_prod.at(b).at(a) = product_value;
+                composite_dot_prod.at(a).at(b) = product_value;
+                composite_dot_prod.at(b).at(a) = product_value;
             }
         }
     }
@@ -431,13 +431,13 @@ void IntegrandTables::compute_alpha_beta()
             // If the first argument is the zero-vector, alpha and beta remains 0
             // If the second argument is the zero-vector, beta remains 0
             if (a != static_cast<size_t>(loop_params.zero_label())) {
-                double product_ab = comp_dot_prod.at(a).at(b);
-                double product_aa = comp_dot_prod.at(a).at(a);
+                double product_ab = composite_dot_prod.at(a).at(b);
+                double product_aa = composite_dot_prod.at(a).at(a);
 
                 alpha_val = 1 + product_ab/product_aa;
 
                 if (b != static_cast<size_t>(loop_params.zero_label())) {
-                    double product_bb = comp_dot_prod.at(b).at(b);
+                    double product_bb = composite_dot_prod.at(b).at(b);
 
                     beta_val = product_ab / 2.0
                         * ( 1.0 / product_aa + 1.0 / product_bb
@@ -456,11 +456,11 @@ void IntegrandTables::compute_alpha_beta()
 void IntegrandTables::compute_tables()
 {
     compute_bare_dot_prod();
-    compute_comp_dot_prod();
+    compute_composite_dot_prod();
     compute_alpha_beta();
 
     if (loop_params.rsd()) {
         compute_bare_los_proj();
-        compute_comp_los_proj();
+        compute_composite_los_proj();
     }
 }

@@ -38,11 +38,11 @@ inline double rsd_coord_transformation(
     if (sum == tables.loop_params.zero_label()) return 0;
 
     /* k = absolute value of sum of arguments */
-    double k = std::sqrt(tables.comp_dot_products()
+    double k = std::sqrt(tables.composite_dot_products()
             .at(static_cast<size_t>(sum))
             .at(static_cast<size_t>(sum)));
     /* Sum of arguments dotted with L.o.S., normalized */
-    double mu = tables.comp_los_projection().at(static_cast<size_t>(sum)) / k;
+    double mu = tables.composite_los_projection().at(static_cast<size_t>(sum)) / k;
 
     kernel_index = compute_SPT_kernels(arguments, kernel_index, n, tables);
 
@@ -75,11 +75,11 @@ inline double rsd_jac_transformation(
     if (sum == tables.loop_params.zero_label()) return 0;
 
     /* k = absolute value of sum of arguments */
-    double k = std::sqrt(tables.comp_dot_products()
+    double k = std::sqrt(tables.composite_dot_products()
             .at(static_cast<size_t>(sum))
             .at(static_cast<size_t>(sum)));
     /* Sum of arguments dotted with L.o.S. */
-    double mu = tables.comp_los_projection().at(static_cast<size_t>(sum)) / k;
+    double mu = tables.composite_los_projection().at(static_cast<size_t>(sum)) / k;
 
     kernel_index = compute_SPT_kernels(arguments, kernel_index, n, tables);
 
@@ -246,7 +246,7 @@ void compute_rsd_kernels(
     /* Compute sum of arguments, and its absolute value k */
     int sum = tables.sum_table.sum_labels(arguments,
             tables.loop_params.n_kernel_args());
-    double k = std::sqrt(tables.comp_dot_products()
+    double k = std::sqrt(tables.composite_dot_products()
             .at(static_cast<size_t>(sum))
             .at(static_cast<size_t>(sum)));
     /* RSD growth factor f and L.o.S angle */
