@@ -12,13 +12,14 @@ trap cleanup EXIT
 # Set some default values:
 n_cores=1
 log_file=
+use_python=false
 
 usage() {
     echo "Usage: run_tests.sh [ --n_cores NUM] LOG_FILE"
     exit 2
 }
 
-PARSED_ARGUMENTS=$(getopt -n run_tests -o hp: --long help,n_cores: -- "$@")
+PARSED_ARGUMENTS=$(getopt -n run_tests -o hn:p --long help,n_cores:,python -- "$@")
 VALID_ARGUMENTS=$?
 if [ "$VALID_ARGUMENTS" != "0" ]; then
     usage
@@ -29,11 +30,15 @@ while :; do
     case "$1" in
     -h | --help)
         usage
-        shift 2
+        shift 1
         ;;
-    -p | --n_cores)
+    -n | --n_cores)
         n_cores=$2
         shift 2
+        ;;
+    -p | --python)
+        use_python=true
+        shift 1
         ;;
     # -- means the end of the arguments; drop this, and break out of the while loop
     --)
@@ -56,7 +61,12 @@ fi
 log_file=$1
 
 exe=build/cosPT
+compare_prog=julia
 isapprox=tests/isapprox.jl
+if [[ "$use_python" == "true" ]]; then
+    compare_prog=python
+    isapprox=tests/isapprox.py
+fi
 
 sourcedir=$(pwd)
 tempdir="$(mktemp -d -t cosPTintTest_XXXXXX)"
@@ -118,25 +128,25 @@ done
 # Comparison
 for m in {L1,L2,L2_sh,rsd_L1,rsd_L2,rsd_L2_sh,rsd_ir_L1,rsd_ir_L2,rsd_ir_L2_sh}; do
     {
-        julia "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
+        "$compare_prog" "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
             "$tempdir"/tests/data/eds_spt_ps/"$m".dat "$tempdir"/output/eds_spt_ps/"$m"/total.dat
     } >>"$log_file"
 done
 
 for m in {L1,L2}; do
     {
-        julia "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
+        "$compare_prog" "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
             "$tempdir"/tests/data/eds_spt_bs/"$m".dat "$tempdir"/output/eds_spt_bs/"$m"/total.dat
     } >>"$log_file"
 done
 
 for m in {L1,L2}; do
     {
-        julia "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
+        "$compare_prog" "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
             "$tempdir"/tests/data/quijote_Mnu_0p1eV/"$m".dat "$tempdir"/output/quijote_Mnu_0p1eV/"$m"/total.dat
-        julia "$isapprox" --col_A 5 --col_err_A 6 --col_B 5 --col_err_B 6 \
+        "$compare_prog" "$isapprox" --col_A 5 --col_err_A 6 --col_B 5 --col_err_B 6 \
             "$tempdir"/tests/data/quijote_Mnu_0p1eV/"$m".dat "$tempdir"/output/quijote_Mnu_0p1eV/"$m"/total.dat
-        julia "$isapprox" --col_A 7 --col_err_A 8 --col_B 7 --col_err_B 8 \
+        "$compare_prog" "$isapprox" --col_A 7 --col_err_A 8 --col_B 7 --col_err_B 8 \
             "$tempdir"/tests/data/quijote_Mnu_0p1eV/"$m".dat "$tempdir"/output/quijote_Mnu_0p1eV/"$m"/total.dat
     } >>"$log_file"
 done
