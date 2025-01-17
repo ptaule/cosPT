@@ -49,8 +49,8 @@ function main()
     col_b = parse_args["col_B"]
     col_err_b = parse_args["col_err_B"]
 
-    a = measurement.(a_data[:,col_a], (col_err_a != nothing ? a_data[:,col_err_a] : 0))
-    b = measurement.(b_data[:,col_b], (col_err_b != nothing ? b_data[:,col_err_b] : 0))
+    a = measurement.(a_data[:,col_a], (isnothing(col_err_a) ? 0 : a_data[:,col_err_a]))
+    b = measurement.(b_data[:,col_b], (isnothing(col_err_b) ? 0 : b_data[:,col_err_b]))
 
     N = size(a)[1]
 
