@@ -351,16 +351,16 @@ Interpolation2D::Interpolation2D(
     data.erase(data.begin() + 1);
 
     if (x.size() != data.size()) {
-        std::cerr << "Interpolation2D::Interpolation2D(): Error: dimension"
-            "mismatch between x-grid and data. Interpolating from file: "
-              << data_file << "." << std::endl;
+        throw(std::invalid_argument("Interpolation2D::Interpolation2D(): "
+                    "Dimension mismatch between x-grid and data. Interpolating "
+                    "from file: " + data_file));
     }
 
     for (size_t i = 0; i < x.size(); ++i) {
         if (y.size() != data.at(i).size()) {
-            std::cerr << "Interpolation2D::Interpolation2D(): Error: dimension"
-                "mismatch between y-grid and data. Interpolating from file: "
-                  << data_file << "." << std::endl;
+            throw(std::invalid_argument("Interpolation2D::Interpolation2D(): "
+                        "Dimension mismatch between y-grid and data. Interpolating "
+                        "from file: " + data_file));
         }
     }
     initialize(x, y, data, factor);
