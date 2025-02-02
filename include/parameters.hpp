@@ -122,7 +122,8 @@ class Config {
                 try {
                     return std::any_cast<T>(it->second);
                 } catch (const std::bad_any_cast&) {
-                    throw ConfigException("Bad cast in Config::get()");
+                    throw ConfigException(
+                    "Config::get(): bad cast with key = " + key);
                 }
             }
             return T(); // Return default value if key not found or casting fails
