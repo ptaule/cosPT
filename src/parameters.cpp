@@ -707,7 +707,7 @@ Config::Config()
     set("q_max", 1.0);
 
     set("input_ps_file", string());
-    set("input_ps_rescale_num", 1);
+    set("input_ps_rescale_num", 1.0);
     set("input_ps_rescale_str", string());
 
     set("output_path", string());
