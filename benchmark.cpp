@@ -11,6 +11,7 @@
 #include "include/utilities.hpp"
 
 using std::size_t;
+using std::string;
 
 static void BM_PS_EdS_integrand_1loop(benchmark::State& state) {
     // Perform setup here
@@ -20,16 +21,22 @@ static void BM_PS_EdS_integrand_1loop(benchmark::State& state) {
         int n_loops = 1;
         int n_dims = 3 * n_loops - 1;
 
-        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
+        LoopParameters loop_params(n_loops, cfg.get<Spectrum>("spectrum"),
+                                   cfg.get<Dynamics>("dynamics"),
+                                   cfg.get<bool>("rsd"));
         SumTable sum_table(loop_params);
 
-        IRresumSettings ir_settings(cfg.k_s(), cfg.k_osc());
+        IRresumSettings ir_settings(cfg.get<double>("k_s"), cfg.get<double>("k_osc"));
 
-        InputPowerSpectrum ps(cfg.input_ps_file(), cfg.input_ps_rescale(),
-                              cfg.ir_resum(), ir_settings, n_loops,
-                              cfg.pt_order(), cfg.rsd(), cfg.rsd_growth_f());
+        InputPowerSpectrum ps(cfg.get<string>("input_ps_file"),
+                              cfg.get<double>("input_ps_rescale_num"),
+                              cfg.get<bool>("ir_resum"), ir_settings, n_loops,
+                              cfg.get<int>("pt_order"), cfg.get<bool>("rsd"),
+                              cfg.get<double>("rsd_growth_f"));
 
-        IntegrationInput input(ps, cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
+        IntegrationInput input(ps, cfg.get<double>("q_min"),
+                               cfg.get<double>("q_max"),
+                               cfg.get<bool>("single_hard_limit"));
 
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
@@ -37,9 +44,10 @@ static void BM_PS_EdS_integrand_1loop(benchmark::State& state) {
         input.pair_correlations = cfg.pair_correlations();
         input.ps_diagrams = ps::construct_diagrams(loop_params);
 
-        input.tables_vec.emplace_back(cfg.k_a(), 0, 0, cfg.rsd_growth_f(),
-                                      loop_params, sum_table, ev_params,
-                                      eta_grid);
+        input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
+                                        cfg.get<double>("rsd_growth_f"),
+                                        loop_params, sum_table,
+                                        ev_params, eta_grid);
 
         int n_correlations = static_cast<int>(input.pair_correlations.size());
 
@@ -81,16 +89,22 @@ static void BM_PS_EdS_integrand_2loop(benchmark::State& state) {
         int n_loops = 2;
         int n_dims = 3 * n_loops - 1;
 
-        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
+        LoopParameters loop_params(n_loops, cfg.get<Spectrum>("spectrum"),
+                                   cfg.get<Dynamics>("dynamics"),
+                                   cfg.get<bool>("rsd"));
         SumTable sum_table(loop_params);
 
-        IRresumSettings ir_settings(cfg.k_s(), cfg.k_osc());
+        IRresumSettings ir_settings(cfg.get<double>("k_s"), cfg.get<double>("k_osc"));
 
-        InputPowerSpectrum ps(cfg.input_ps_file(), cfg.input_ps_rescale(),
-                              cfg.ir_resum(), ir_settings, n_loops,
-                              cfg.pt_order(), cfg.rsd(), cfg.rsd_growth_f());
+        InputPowerSpectrum ps(cfg.get<string>("input_ps_file"),
+                              cfg.get<double>("input_ps_rescale_num"),
+                              cfg.get<bool>("ir_resum"), ir_settings, n_loops,
+                              cfg.get<int>("pt_order"), cfg.get<bool>("rsd"),
+                              cfg.get<double>("rsd_growth_f"));
 
-        IntegrationInput input(ps, cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
+        IntegrationInput input(ps, cfg.get<double>("q_min"),
+                               cfg.get<double>("q_max"),
+                               cfg.get<bool>("single_hard_limit"));
 
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
@@ -98,9 +112,10 @@ static void BM_PS_EdS_integrand_2loop(benchmark::State& state) {
         input.pair_correlations = cfg.pair_correlations();
         input.ps_diagrams = ps::construct_diagrams(loop_params);
 
-        input.tables_vec.emplace_back(cfg.k_a(), 0, 0, cfg.rsd_growth_f(),
-                                      loop_params, sum_table, ev_params,
-                                      eta_grid);
+        input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
+                                        cfg.get<double>("rsd_growth_f"),
+                                        loop_params, sum_table,
+                                        ev_params, eta_grid);
 
         int n_correlations = static_cast<int>(input.pair_correlations.size());
 
@@ -141,16 +156,22 @@ static void BM_BS_EdS_integrand_1loop(benchmark::State& state) {
         int n_loops = 1;
         int n_dims = 3 * n_loops;
 
-        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
+        LoopParameters loop_params(n_loops, cfg.get<Spectrum>("spectrum"),
+                                   cfg.get<Dynamics>("dynamics"),
+                                   cfg.get<bool>("rsd"));
         SumTable sum_table(loop_params);
 
-        IRresumSettings ir_settings(cfg.k_s(), cfg.k_osc());
+        IRresumSettings ir_settings(cfg.get<double>("k_s"), cfg.get<double>("k_osc"));
 
-        InputPowerSpectrum ps(cfg.input_ps_file(), cfg.input_ps_rescale(),
-                              cfg.ir_resum(), ir_settings, n_loops,
-                              cfg.pt_order(), cfg.rsd(), cfg.rsd_growth_f());
+        InputPowerSpectrum ps(cfg.get<string>("input_ps_file"),
+                              cfg.get<double>("input_ps_rescale_num"),
+                              cfg.get<bool>("ir_resum"), ir_settings, n_loops,
+                              cfg.get<int>("pt_order"), cfg.get<bool>("rsd"),
+                              cfg.get<double>("rsd_growth_f"));
 
-        IntegrationInput input(ps, cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
+        IntegrationInput input(ps, cfg.get<double>("q_min"),
+                               cfg.get<double>("q_max"),
+                               cfg.get<bool>("single_hard_limit"));
 
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
@@ -158,9 +179,12 @@ static void BM_BS_EdS_integrand_1loop(benchmark::State& state) {
         input.pair_correlations = cfg.pair_correlations();
         input.bs_diagrams = bs::construct_diagrams(loop_params);
 
-        input.tables_vec.emplace_back(cfg.k_a(), cfg.k_b(), cfg.cos_ab(),
-                                      cfg.rsd_growth_f(), loop_params,
-                                      sum_table, ev_params, eta_grid);
+        input.tables_vec.emplace_back(cfg.get<double>("k_a"),
+                                      cfg.get<double>("k_b"),
+                                      cfg.get<double>("cos_ab"),
+                                      cfg.get<double>("rsd_growth_f"),
+                                      loop_params, sum_table, ev_params,
+                                      eta_grid);
 
         int n_correlations = static_cast<int>(input.pair_correlations.size());
 
@@ -202,16 +226,22 @@ static void BM_BS_EdS_integrand_2loop(benchmark::State& state) {
         int n_loops = 2;
         int n_dims = 3 * n_loops;
 
-        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
+        LoopParameters loop_params(n_loops, cfg.get<Spectrum>("spectrum"),
+                                   cfg.get<Dynamics>("dynamics"),
+                                   cfg.get<bool>("rsd"));
         SumTable sum_table(loop_params);
 
-        IRresumSettings ir_settings(cfg.k_s(), cfg.k_osc());
+        IRresumSettings ir_settings(cfg.get<double>("k_s"), cfg.get<double>("k_osc"));
 
-        InputPowerSpectrum ps(cfg.input_ps_file(), cfg.input_ps_rescale(),
-                              cfg.ir_resum(), ir_settings, n_loops,
-                              cfg.pt_order(), cfg.rsd(), cfg.rsd_growth_f());
+        InputPowerSpectrum ps(cfg.get<string>("input_ps_file"),
+                              cfg.get<double>("input_ps_rescale_num"),
+                              cfg.get<bool>("ir_resum"), ir_settings, n_loops,
+                              cfg.get<int>("pt_order"), cfg.get<bool>("rsd"),
+                              cfg.get<double>("rsd_growth_f"));
 
-        IntegrationInput input(ps, cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
+        IntegrationInput input(ps, cfg.get<double>("q_min"),
+                               cfg.get<double>("q_max"),
+                               cfg.get<bool>("single_hard_limit"));
 
         EvolutionParameters ev_params;
         EtaGrid eta_grid;
@@ -219,9 +249,12 @@ static void BM_BS_EdS_integrand_2loop(benchmark::State& state) {
         input.pair_correlations = cfg.pair_correlations();
         input.bs_diagrams = bs::construct_diagrams(loop_params);
 
-        input.tables_vec.emplace_back(cfg.k_a(), cfg.k_b(), cfg.cos_ab(),
-                                      cfg.rsd_growth_f(), loop_params,
-                                      sum_table, ev_params, eta_grid);
+        input.tables_vec.emplace_back(cfg.get<double>("k_a"),
+                                      cfg.get<double>("k_b"),
+                                      cfg.get<double>("cos_ab"),
+                                      cfg.get<double>("rsd_growth_f"),
+                                      loop_params, sum_table, ev_params,
+                                      eta_grid);
 
         int n_correlations = static_cast<int>(input.pair_correlations.size());
 
@@ -265,35 +298,48 @@ static void BM_PS_2fluid_integrand_1loop(benchmark::State& state) {
         int n_loops = 1;
         int n_dims = 3 * n_loops - 1;
 
-        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
+        LoopParameters loop_params(n_loops, cfg.get<Spectrum>("spectrum"),
+                                   cfg.get<Dynamics>("dynamics"),
+                                   cfg.get<bool>("rsd"));
         SumTable sum_table(loop_params);
 
-        IRresumSettings ir_settings(cfg.k_s(), cfg.k_osc());
+        IRresumSettings ir_settings(cfg.get<double>("k_s"), cfg.get<double>("k_osc"));
 
-        InputPowerSpectrum ps(cfg.input_ps_file(), cfg.input_ps_rescale(),
-                              cfg.ir_resum(), ir_settings, n_loops,
-                              cfg.pt_order(), cfg.rsd(), cfg.rsd_growth_f());
+        InputPowerSpectrum ps(cfg.get<string>("input_ps_file"),
+                              cfg.get<double>("input_ps_rescale_num"),
+                              cfg.get<bool>("ir_resum"), ir_settings, n_loops,
+                              cfg.get<int>("pt_order"), cfg.get<bool>("rsd"),
+                              cfg.get<double>("rsd_growth_f"));
 
-        IntegrationInput input(ps, cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
+        IntegrationInput input(ps, cfg.get<double>("q_min"),
+                               cfg.get<double>("q_max"),
+                               cfg.get<bool>("single_hard_limit"));
 
-        EvolutionParameters ev_params;
-        EtaGrid eta_grid;
-
-        ev_params = EvolutionParameters(cfg.f_nu(), cfg.omega_m_0(),
-                cfg.zeta_file(), cfg.redshift_file(),
-                cfg.omega_eigenvalues_file(), cfg.F1_ic_files(),
-                cfg.effcs2_x_grid(), cfg.effcs2_y_grid(),
-                cfg.effcs2_data(), cfg.ode_atol(), cfg.ode_rtol(),
-                cfg.ode_hstart());
-        eta_grid = EtaGrid(cfg.pre_time_steps(), cfg.time_steps(), cfg.eta_ini(),
-                cfg.eta_fin(), cfg.eta_asymp());
+        EvolutionParameters ev_params(cfg.get<double>("f_nu"),
+                                            cfg.get<double>("omega_m_0"),
+                                            cfg.get<string>("zeta_file"),
+                                            cfg.get<string>("redshift_file"),
+                                            cfg.get<string>("omega_eigenvalues_file"),
+                                            cfg.F1_ic_files(),
+                                            cfg.get<string>("effcs2_x_grid"),
+                                            cfg.get<string>("effcs2_y_grid"),
+                                            cfg.get<string>("effcs2_data"),
+                                            cfg.get<double>("ode_atol"),
+                                            cfg.get<double>("ode_rtol"),
+                                            cfg.get<double>("ode_hstart"));
+        EtaGrid eta_grid(cfg.get<size_t>("pre_time_steps"),
+                               cfg.get<size_t>("time_steps"),
+                               cfg.get<double>("eta_ini"),
+                               cfg.get<double>("eta_fin"),
+                               cfg.get<double>("eta_asymp"));
 
         input.pair_correlations = cfg.pair_correlations();
         input.ps_diagrams = ps::construct_diagrams(loop_params);
 
-        input.tables_vec.emplace_back(cfg.k_a(), 0, 0, cfg.rsd_growth_f(),
-                                      loop_params, sum_table, ev_params,
-                                      eta_grid);
+        input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
+                                        cfg.get<double>("rsd_growth_f"),
+                                        loop_params, sum_table,
+                                        ev_params, eta_grid);
 
         int n_correlations = static_cast<int>(input.pair_correlations.size());
 
@@ -337,35 +383,48 @@ static void BM_PS_2fluid_integrand_2loop(benchmark::State& state) {
         int n_loops = 2;
         int n_dims = 3 * n_loops - 1;
 
-        LoopParameters loop_params(n_loops, cfg.spectrum(), cfg.dynamics(), cfg.rsd());
+        LoopParameters loop_params(n_loops, cfg.get<Spectrum>("spectrum"),
+                                   cfg.get<Dynamics>("dynamics"),
+                                   cfg.get<bool>("rsd"));
         SumTable sum_table(loop_params);
 
-        IRresumSettings ir_settings(cfg.k_s(), cfg.k_osc());
+        IRresumSettings ir_settings(cfg.get<double>("k_s"), cfg.get<double>("k_osc"));
 
-        InputPowerSpectrum ps(cfg.input_ps_file(), cfg.input_ps_rescale(),
-                              cfg.ir_resum(), ir_settings, n_loops,
-                              cfg.pt_order(), cfg.rsd(), cfg.rsd_growth_f());
+        InputPowerSpectrum ps(cfg.get<string>("input_ps_file"),
+                              cfg.get<double>("input_ps_rescale_num"),
+                              cfg.get<bool>("ir_resum"), ir_settings, n_loops,
+                              cfg.get<int>("pt_order"), cfg.get<bool>("rsd"),
+                              cfg.get<double>("rsd_growth_f"));
 
-        IntegrationInput input(ps, cfg.q_min(), cfg.q_max(), cfg.single_hard_limit());
+        IntegrationInput input(ps, cfg.get<double>("q_min"),
+                               cfg.get<double>("q_max"),
+                               cfg.get<bool>("single_hard_limit"));
 
-        EvolutionParameters ev_params;
-        EtaGrid eta_grid;
-
-        ev_params = EvolutionParameters(cfg.f_nu(), cfg.omega_m_0(),
-                cfg.zeta_file(), cfg.redshift_file(),
-                cfg.omega_eigenvalues_file(), cfg.F1_ic_files(),
-                cfg.effcs2_x_grid(), cfg.effcs2_y_grid(),
-                cfg.effcs2_data(), cfg.ode_atol(), cfg.ode_rtol(),
-                cfg.ode_hstart());
-        eta_grid = EtaGrid(cfg.pre_time_steps(), cfg.time_steps(), cfg.eta_ini(),
-                cfg.eta_fin(), cfg.eta_asymp());
+        EvolutionParameters ev_params(cfg.get<double>("f_nu"),
+                                            cfg.get<double>("omega_m_0"),
+                                            cfg.get<string>("zeta_file"),
+                                            cfg.get<string>("redshift_file"),
+                                            cfg.get<string>("omega_eigenvalues_file"),
+                                            cfg.F1_ic_files(),
+                                            cfg.get<string>("effcs2_x_grid"),
+                                            cfg.get<string>("effcs2_y_grid"),
+                                            cfg.get<string>("effcs2_data"),
+                                            cfg.get<double>("ode_atol"),
+                                            cfg.get<double>("ode_rtol"),
+                                            cfg.get<double>("ode_hstart"));
+        EtaGrid eta_grid(cfg.get<size_t>("pre_time_steps"),
+                               cfg.get<size_t>("time_steps"),
+                               cfg.get<double>("eta_ini"),
+                               cfg.get<double>("eta_fin"),
+                               cfg.get<double>("eta_asymp"));
 
         input.pair_correlations = cfg.pair_correlations();
         input.ps_diagrams = ps::construct_diagrams(loop_params);
 
-        input.tables_vec.emplace_back(cfg.k_a(), 0, 0, cfg.rsd_growth_f(),
-                                      loop_params, sum_table, ev_params,
-                                      eta_grid);
+        input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
+                                        cfg.get<double>("rsd_growth_f"),
+                                        loop_params, sum_table,
+                                        ev_params, eta_grid);
 
         int n_correlations = static_cast<int>(input.pair_correlations.size());
 
