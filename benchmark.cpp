@@ -1,5 +1,5 @@
-#include <iostream>
 #include <cmath>
+#include <iostream>
 
 #include <benchmark/benchmark.h>
 
@@ -38,8 +38,27 @@ static void BM_PS_EdS_integrand_1loop(benchmark::State& state) {
                                cfg.get<double>("q_max"),
                                cfg.get<bool>("single_hard_limit"));
 
-        EvolutionParameters ev_params;
-        EtaGrid eta_grid;
+        EtaGrid eta_grid(cfg.get<double>("eta_ini"),
+                         cfg.get<double>("eta_fin"),
+                         cfg.get<size_t>("time_steps"),
+                         cfg.get<size_t>("pre_time_steps"),
+                         cfg.get<double>("eta_asymp"));
+        EvolutionParameters ev_params(cfg.kappa(),
+                                      cfg.zeta_files(),
+                                      cfg.xi_files(),
+                                      cfg.get<double>("ode_atol"),
+                                      cfg.get<double>("ode_rtol"),
+                                      cfg.get<double>("ode_hstart"));
+        OmegaEigenspace omega_eigenspace(
+            cfg.get<Dynamics>("dynamics"),
+            eta_grid.eta_ini(),
+            ev_params,
+            cfg.get<int>("omega_eigenmode"),
+            cfg.get<double>("omega_k_min"),
+            cfg.get<double>("omega_k_max"),
+            cfg.get<int>("omega_N"),
+            cfg.get<double>("omega_imag_threshold")
+            );
 
         input.pair_correlations = cfg.pair_correlations();
         input.ps_diagrams = ps::construct_diagrams(loop_params);
@@ -47,7 +66,7 @@ static void BM_PS_EdS_integrand_1loop(benchmark::State& state) {
         input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
                                         cfg.get<double>("rsd_growth_f"),
                                         loop_params, sum_table,
-                                        ev_params, eta_grid);
+                                        ev_params, eta_grid, omega_eigenspace);
 
         int n_correlations = static_cast<int>(input.pair_correlations.size());
 
@@ -106,8 +125,27 @@ static void BM_PS_EdS_integrand_2loop(benchmark::State& state) {
                                cfg.get<double>("q_max"),
                                cfg.get<bool>("single_hard_limit"));
 
-        EvolutionParameters ev_params;
-        EtaGrid eta_grid;
+        EtaGrid eta_grid(cfg.get<double>("eta_ini"),
+                         cfg.get<double>("eta_fin"),
+                         cfg.get<size_t>("time_steps"),
+                         cfg.get<size_t>("pre_time_steps"),
+                         cfg.get<double>("eta_asymp"));
+        EvolutionParameters ev_params(cfg.kappa(),
+                                      cfg.zeta_files(),
+                                      cfg.xi_files(),
+                                      cfg.get<double>("ode_atol"),
+                                      cfg.get<double>("ode_rtol"),
+                                      cfg.get<double>("ode_hstart"));
+        OmegaEigenspace omega_eigenspace(
+            cfg.get<Dynamics>("dynamics"),
+            eta_grid.eta_ini(),
+            ev_params,
+            cfg.get<int>("omega_eigenmode"),
+            cfg.get<double>("omega_k_min"),
+            cfg.get<double>("omega_k_max"),
+            cfg.get<int>("omega_N"),
+            cfg.get<double>("omega_imag_threshold")
+            );
 
         input.pair_correlations = cfg.pair_correlations();
         input.ps_diagrams = ps::construct_diagrams(loop_params);
@@ -115,7 +153,7 @@ static void BM_PS_EdS_integrand_2loop(benchmark::State& state) {
         input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
                                         cfg.get<double>("rsd_growth_f"),
                                         loop_params, sum_table,
-                                        ev_params, eta_grid);
+                                        ev_params, eta_grid, omega_eigenspace);
 
         int n_correlations = static_cast<int>(input.pair_correlations.size());
 
@@ -173,8 +211,27 @@ static void BM_BS_EdS_integrand_1loop(benchmark::State& state) {
                                cfg.get<double>("q_max"),
                                cfg.get<bool>("single_hard_limit"));
 
-        EvolutionParameters ev_params;
-        EtaGrid eta_grid;
+        EtaGrid eta_grid(cfg.get<double>("eta_ini"),
+                         cfg.get<double>("eta_fin"),
+                         cfg.get<size_t>("time_steps"),
+                         cfg.get<size_t>("pre_time_steps"),
+                         cfg.get<double>("eta_asymp"));
+        EvolutionParameters ev_params(cfg.kappa(),
+                                      cfg.zeta_files(),
+                                      cfg.xi_files(),
+                                      cfg.get<double>("ode_atol"),
+                                      cfg.get<double>("ode_rtol"),
+                                      cfg.get<double>("ode_hstart"));
+        OmegaEigenspace omega_eigenspace(
+            cfg.get<Dynamics>("dynamics"),
+            eta_grid.eta_ini(),
+            ev_params,
+            cfg.get<int>("omega_eigenmode"),
+            cfg.get<double>("omega_k_min"),
+            cfg.get<double>("omega_k_max"),
+            cfg.get<int>("omega_N"),
+            cfg.get<double>("omega_imag_threshold")
+            );
 
         input.pair_correlations = cfg.pair_correlations();
         input.bs_diagrams = bs::construct_diagrams(loop_params);
@@ -184,7 +241,7 @@ static void BM_BS_EdS_integrand_1loop(benchmark::State& state) {
                                       cfg.get<double>("cos_ab"),
                                       cfg.get<double>("rsd_growth_f"),
                                       loop_params, sum_table, ev_params,
-                                      eta_grid);
+                                      eta_grid, omega_eigenspace);
 
         int n_correlations = static_cast<int>(input.pair_correlations.size());
 
@@ -243,8 +300,27 @@ static void BM_BS_EdS_integrand_2loop(benchmark::State& state) {
                                cfg.get<double>("q_max"),
                                cfg.get<bool>("single_hard_limit"));
 
-        EvolutionParameters ev_params;
-        EtaGrid eta_grid;
+        EtaGrid eta_grid(cfg.get<double>("eta_ini"),
+                         cfg.get<double>("eta_fin"),
+                         cfg.get<size_t>("time_steps"),
+                         cfg.get<size_t>("pre_time_steps"),
+                         cfg.get<double>("eta_asymp"));
+        EvolutionParameters ev_params(cfg.kappa(),
+                                      cfg.zeta_files(),
+                                      cfg.xi_files(),
+                                      cfg.get<double>("ode_atol"),
+                                      cfg.get<double>("ode_rtol"),
+                                      cfg.get<double>("ode_hstart"));
+        OmegaEigenspace omega_eigenspace(
+            cfg.get<Dynamics>("dynamics"),
+            eta_grid.eta_ini(),
+            ev_params,
+            cfg.get<int>("omega_eigenmode"),
+            cfg.get<double>("omega_k_min"),
+            cfg.get<double>("omega_k_max"),
+            cfg.get<int>("omega_N"),
+            cfg.get<double>("omega_imag_threshold")
+            );
 
         input.pair_correlations = cfg.pair_correlations();
         input.bs_diagrams = bs::construct_diagrams(loop_params);
@@ -254,7 +330,7 @@ static void BM_BS_EdS_integrand_2loop(benchmark::State& state) {
                                       cfg.get<double>("cos_ab"),
                                       cfg.get<double>("rsd_growth_f"),
                                       loop_params, sum_table, ev_params,
-                                      eta_grid);
+                                      eta_grid, omega_eigenspace);
 
         int n_correlations = static_cast<int>(input.pair_correlations.size());
 
@@ -315,23 +391,27 @@ static void BM_PS_2fluid_integrand_1loop(benchmark::State& state) {
                                cfg.get<double>("q_max"),
                                cfg.get<bool>("single_hard_limit"));
 
-        EvolutionParameters ev_params(cfg.get<double>("f_nu"),
-                                            cfg.get<double>("omega_m_0"),
-                                            cfg.get<string>("zeta_file"),
-                                            cfg.get<string>("redshift_file"),
-                                            cfg.get<string>("omega_eigenvalues_file"),
-                                            cfg.F1_ic_files(),
-                                            cfg.get<string>("effcs2_x_grid"),
-                                            cfg.get<string>("effcs2_y_grid"),
-                                            cfg.get<string>("effcs2_data"),
-                                            cfg.get<double>("ode_abs_tolerance"),
-                                            cfg.get<double>("ode_rel_tolerance"),
-                                            cfg.get<double>("ode_start_step"));
-        EtaGrid eta_grid(cfg.get<size_t>("pre_time_steps"),
-                               cfg.get<size_t>("time_steps"),
-                               cfg.get<double>("eta_ini"),
-                               cfg.get<double>("eta_fin"),
-                               cfg.get<double>("eta_asymp"));
+        EtaGrid eta_grid(cfg.get<double>("eta_ini"),
+                         cfg.get<double>("eta_fin"),
+                         cfg.get<size_t>("time_steps"),
+                         cfg.get<size_t>("pre_time_steps"),
+                         cfg.get<double>("eta_asymp"));
+        EvolutionParameters ev_params(cfg.kappa(),
+                                      cfg.zeta_files(),
+                                      cfg.xi_files(),
+                                      cfg.get<double>("ode_abs_tolerance"),
+                                      cfg.get<double>("ode_rel_tolerance"),
+                                      cfg.get<double>("ode_start_step"));
+        OmegaEigenspace omega_eigenspace(
+            cfg.get<Dynamics>("dynamics"),
+            eta_grid.eta_ini(),
+            ev_params,
+            cfg.get<int>("omega_eigenmode"),
+            cfg.get<double>("omega_k_min"),
+            cfg.get<double>("omega_k_max"),
+            cfg.get<int>("omega_N"),
+            cfg.get<double>("omega_imag_threshold")
+            );
 
         input.pair_correlations = cfg.pair_correlations();
         input.ps_diagrams = ps::construct_diagrams(loop_params);
@@ -339,7 +419,7 @@ static void BM_PS_2fluid_integrand_1loop(benchmark::State& state) {
         input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
                                         cfg.get<double>("rsd_growth_f"),
                                         loop_params, sum_table,
-                                        ev_params, eta_grid);
+                                        ev_params, eta_grid, omega_eigenspace);
 
         int n_correlations = static_cast<int>(input.pair_correlations.size());
 
@@ -400,23 +480,27 @@ static void BM_PS_2fluid_integrand_2loop(benchmark::State& state) {
                                cfg.get<double>("q_max"),
                                cfg.get<bool>("single_hard_limit"));
 
-        EvolutionParameters ev_params(cfg.get<double>("f_nu"),
-                                            cfg.get<double>("omega_m_0"),
-                                            cfg.get<string>("zeta_file"),
-                                            cfg.get<string>("redshift_file"),
-                                            cfg.get<string>("omega_eigenvalues_file"),
-                                            cfg.F1_ic_files(),
-                                            cfg.get<string>("effcs2_x_grid"),
-                                            cfg.get<string>("effcs2_y_grid"),
-                                            cfg.get<string>("effcs2_data"),
-                                            cfg.get<double>("ode_abs_tolerance"),
-                                            cfg.get<double>("ode_rel_tolerance"),
-                                            cfg.get<double>("ode_start_step"));
-        EtaGrid eta_grid(cfg.get<size_t>("pre_time_steps"),
-                               cfg.get<size_t>("time_steps"),
-                               cfg.get<double>("eta_ini"),
-                               cfg.get<double>("eta_fin"),
-                               cfg.get<double>("eta_asymp"));
+        EtaGrid eta_grid(cfg.get<double>("eta_ini"),
+                         cfg.get<double>("eta_fin"),
+                         cfg.get<size_t>("time_steps"),
+                         cfg.get<size_t>("pre_time_steps"),
+                         cfg.get<double>("eta_asymp"));
+        EvolutionParameters ev_params(cfg.kappa(),
+                                      cfg.zeta_files(),
+                                      cfg.xi_files(),
+                                      cfg.get<double>("ode_abs_tolerance"),
+                                      cfg.get<double>("ode_rel_tolerance"),
+                                      cfg.get<double>("ode_start_step"));
+        OmegaEigenspace omega_eigenspace(
+            cfg.get<Dynamics>("dynamics"),
+            eta_grid.eta_ini(),
+            ev_params,
+            cfg.get<int>("omega_eigenmode"),
+            cfg.get<double>("omega_k_min"),
+            cfg.get<double>("omega_k_max"),
+            cfg.get<int>("omega_N"),
+            cfg.get<double>("omega_imag_threshold")
+            );
 
         input.pair_correlations = cfg.pair_correlations();
         input.ps_diagrams = ps::construct_diagrams(loop_params);
@@ -424,7 +508,7 @@ static void BM_PS_2fluid_integrand_2loop(benchmark::State& state) {
         input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
                                         cfg.get<double>("rsd_growth_f"),
                                         loop_params, sum_table,
-                                        ev_params, eta_grid);
+                                        ev_params, eta_grid, omega_eigenspace);
 
         int n_correlations = static_cast<int>(input.pair_correlations.size());
 
