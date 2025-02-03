@@ -63,7 +63,22 @@ void configuration_term(
                 2 * diagram.r + diagram.m);
     }
 
-    if (rsd) {
+    if (biased_tracers) {
+        compute_rsd_biased_kernels(arg_config_l.args.data(), arg_config_l.kernel_index,
+                2 * diagram.l + diagram.m, tables);
+        compute_rsd_biased_kernels(arg_config_r.args.data(), arg_config_r.kernel_index,
+                2 * diagram.r + diagram.m, tables);
+
+        /* Read values for two-point correlators.
+         * If l != r, there are two diagrams corresponding to l <-> r */
+        term_results.at(0) = tables.rsd_kernels
+            .at(static_cast<size_t>(arg_config_l.kernel_index)).value
+            * tables.rsd_kernels
+            .at(static_cast<size_t>(arg_config_r.kernel_index)).value
+            * (diagram.l == diagram.r ? 1 : 2);
+        return;
+    }
+    else if (rsd) {
         compute_rsd_kernels(arg_config_l.args.data(), arg_config_l.kernel_index,
                 2 * diagram.l + diagram.m, tables);
         compute_rsd_kernels(arg_config_r.args.data(), arg_config_r.kernel_index,
