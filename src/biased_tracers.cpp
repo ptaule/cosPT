@@ -18,7 +18,6 @@ inline double n2(
         const int arguments[],
         int kernel_index,
         IntegrandTables& tables,
-        const Vec1D<double>& biases,
         double k,
         double mu,
         double f
@@ -44,9 +43,9 @@ inline double n2(
     double F2 = tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[0];
     double G2 = tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[1];
 
-    double b1 = biases.at(0);
-    double b2 = biases.at(1);
-    double bG2 = biases.at(2);
+    double b1 = tables.bias_parameters.at(0);
+    double b2 = tables.bias_parameters.at(1);
+    double bG2 = tables.bias_parameters.at(2);
 
     double f_mu_k = f * mu * k;
 
@@ -67,7 +66,6 @@ inline double n3(
         const int arguments[],
         int kernel_index,
         IntegrandTables& tables,
-        const Vec1D<double>& biases,
         double k,
         double mu,
         double f
@@ -97,10 +95,10 @@ inline double n3(
     double F3 = tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[0];
     double G3 = tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[1];
 
-    double b1 = biases.at(0);
-    double b2 = biases.at(1);
-    double bG2 = biases.at(2);
-    double bGamma3 = biases.at(3);
+    double b1 = tables.bias_parameters.at(0);
+    double b2 = tables.bias_parameters.at(1);
+    double bG2 = tables.bias_parameters.at(2);
+    double bGamma3 = tables.bias_parameters.at(3);
 
     double f_mu_k = f * mu * k;
 
@@ -157,8 +155,7 @@ double compute_rsd_biased_kernels(
         const int arguments[],
         int kernel_index,
         int n,
-        IntegrandTables& tables,
-        const Vec1D<double>& biases
+        IntegrandTables& tables
         )
 {
 #if DEBUG >= 1
@@ -192,10 +189,10 @@ double compute_rsd_biased_kernels(
     double result = 0;
 
     if (n == 1) {
-        result = biases.at(0) + rsd_f * SQUARE(mu_los);
+        result = tables.bias_parameters.at(0) + rsd_f * SQUARE(mu_los);
     }
     else if (n == 2) {
-        result = n2(arguments, kernel_index, tables, biases, k, mu_los, rsd_f);
+        result = n2(arguments, kernel_index, tables, k, mu_los, rsd_f);
     }
     else if (n == 3) {
         int args_rearranged[N_KERNEL_ARGS_MAX] = {};
@@ -205,7 +202,7 @@ double compute_rsd_biased_kernels(
                                                     static_cast<size_t>(2));
             comb.rearrange_from_current_complement(arguments, args_rearranged + 2,
                                                    static_cast<size_t>(1));
-            result += n3(args_rearranged, kernel_index, tables, biases, k, mu_los, rsd_f);
+            result += n3(args_rearranged, kernel_index, tables, k, mu_los, rsd_f);
         } while (comb.next());
         result /= 3; /* 3 choose 2 */
     }

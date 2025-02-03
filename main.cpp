@@ -191,11 +191,14 @@ int main(int argc, char* argv[]) {
 
                 /* (Master + n_cores) instances of IntegrandTables */
                 for (int i = 0; i < cuba_n_cores + 1; ++i) {
-                    input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
-                                                  cfg.get<double>("rsd_growth_f"),
-                                                  loop_params, sum_table,
-                                                  ev_params, eta_grid,
-                                                  omega_eigenspace);
+                    input.tables_vec.emplace_back(
+                            cfg.get<double>("k_a"), 0, 0,
+                            cfg.get<bool>("rsd"),
+                            cfg.get<double>("rsd_growth_f"),
+                            cfg.get<bool>("biased_tracers"),
+                            cfg.bias_parameters(),
+                            loop_params, sum_table, ev_params, eta_grid,
+                            omega_eigenspace);
                 }
             }
         }
@@ -215,13 +218,16 @@ int main(int argc, char* argv[]) {
 
                 /* (Master + n_cores) instances of IntegrandTables */
                 for (int i = 0; i < cuba_n_cores + 1; ++i) {
-                    input.tables_vec.emplace_back(cfg.get<double>("k_a"),
-                                                  cfg.get<double>("k_b"),
-                                                  cfg.get<double>("cos_ab"),
-                                                  cfg.get<double>("rsd_growth_f"),
-                                                  loop_params, sum_table,
-                                                  ev_params, eta_grid,
-                                                  omega_eigenspace);
+                    input.tables_vec.emplace_back(
+                            cfg.get<double>("k_a"),
+                            cfg.get<double>("k_b"),
+                            cfg.get<double>("cos_ab"),
+                            cfg.get<bool>("rsd"),
+                            cfg.get<double>("rsd_growth_f"),
+                            cfg.get<bool>("biased_tracers"),
+                            cfg.bias_parameters(),
+                            loop_params, sum_table, ev_params, eta_grid,
+                            omega_eigenspace);
                 }
             }
         }
@@ -242,17 +248,28 @@ int main(int argc, char* argv[]) {
 
         /* Tree-level results */
         if (cfg.get<Spectrum>("spectrum") == POWERSPECTRUM) {
-            IntegrandTables tables(cfg.get<double>("k_a"), 0, 0,
-                    cfg.get<double>("rsd_growth_f"), loop_params, sum_table,
-                    ev_params, eta_grid, omega_eigenspace);
+            IntegrandTables tables(
+                    cfg.get<double>("k_a"), 0, 0,
+                    cfg.get<bool>("rsd"),
+                    cfg.get<double>("rsd_growth_f"),
+                    cfg.get<bool>("biased_tracers"),
+                    cfg.bias_parameters(),
+                    loop_params, sum_table, ev_params, eta_grid,
+                    omega_eigenspace);
             ps::tree_level(tables, ps, input.pair_correlations, tree_level_result);
         }
         else if (cfg.get<Spectrum>("spectrum") == BISPECTRUM) {
             /* Tree level bispectrum */
-            IntegrandTables tables(cfg.get<double>("k_a"),
-                                   cfg.get<double>("k_b"),
-                                   cfg.get<double>("cos_ab"), 0, loop_params,
-                                   sum_table, ev_params, eta_grid, omega_eigenspace);
+            IntegrandTables tables(
+                    cfg.get<double>("k_a"),
+                    cfg.get<double>("k_b"),
+                    cfg.get<double>("cos_ab"),
+                    cfg.get<bool>("rsd"),
+                    cfg.get<double>("rsd_growth_f"),
+                    cfg.get<bool>("biased_tracers"),
+                    cfg.bias_parameters(),
+                    loop_params, sum_table, ev_params, eta_grid,
+                    omega_eigenspace);
             bs::tree_level(tables, ps, input.triple_correlations,
                            tree_level_result);
         }

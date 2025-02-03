@@ -95,6 +95,9 @@ class IntegrandTables {
         double k_b    = 0.0; // For bispectrum
         double cos_ab = 0.0; // For bispectrum
 
+        bool rsd_ = false;
+        bool biased_tracers_ = false;
+
         double rsd_f; /* Growth factor (at observation redshift) for L.o.S. */
 
         /* Helper vectors for compute_scalar_products() */
@@ -125,6 +128,8 @@ class IntegrandTables {
         void compute_composite_dot_prod();
         void compute_alpha_beta();
     public:
+        const Vec1D<double>& bias_parameters;
+
         const LoopParameters& loop_params;
         const SumTable& sum_table;
 
@@ -145,7 +150,10 @@ class IntegrandTables {
                 double k_a,
                 double k_b,
                 double cos_ab,
+                bool rsd,
                 double rsd_growth_f,
+                bool biased_tracers,
+                const Vec1D<double>& bias_parameters,
                 const LoopParameters& loop_params,
                 const SumTable& sum_table,
                 const EvolutionParameters& ev_params,
@@ -162,6 +170,8 @@ class IntegrandTables {
         const Vec1D<double>& composite_los_projection() const { return composite_los_projection_; }
 
         double get_k_a() const { return k_a; }
+        bool rsd() const { return rsd_; }
+        bool biased_tracers() const { return biased_tracers_; }
         double rsd_growth_f() const { return rsd_f; }
 
         void reset();

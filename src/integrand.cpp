@@ -6,6 +6,7 @@ extern "C" {
     #include <cuba.h>
 }
 
+#include "../include/biased_tracers.hpp"
 #include "../include/diagrams.hpp"
 #include "../include/kernel_evolution.hpp"
 #include "../include/ir_resum.hpp"
@@ -41,7 +42,8 @@ void configuration_term(
         diagram.get_arg_config_r(rearr_idx, sign_idx);
 
     const Dynamics dynamics = tables.loop_params.dynamics();
-    bool rsd = tables.loop_params.rsd();
+    bool rsd = tables.rsd();
+    bool biased_tracers = tables.biased_tracers();
 
     /* If dynamics is EdS-SPT or the corresponding kernels are used for initial
      * conditions, compute the EdS-SPT kernels */

@@ -131,18 +131,29 @@ IntegrandTables::IntegrandTables(
         double k_a,
         double k_b,
         double cos_ab,
+        bool rsd,
         double rsd_growth_f,
+        bool biased_tracers,
+        const Vec1D<double>& bias_parameters,
         const LoopParameters& loop_params,
         const SumTable& sum_table,
         const EvolutionParameters& ev_params,
         const EtaGrid& eta_grid,
         const OmegaEigenspace& omega_eigenspace
         ) :
-    k_a(k_a), k_b(k_b), cos_ab(cos_ab), rsd_f(rsd_growth_f),
-    loop_params(loop_params), sum_table(sum_table), ev_params(ev_params),
-    eta_grid(eta_grid), omega_eigenspace(omega_eigenspace),
+    k_a(k_a), k_b(k_b), cos_ab(cos_ab), rsd_(rsd),
+    biased_tracers_(biased_tracers), rsd_f(rsd_growth_f),
+    bias_parameters(bias_parameters), loop_params(loop_params),
+    sum_table(sum_table), ev_params(ev_params), eta_grid(eta_grid),
+    omega_eigenspace(omega_eigenspace),
     vars(IntegrationVariables(static_cast<size_t>(loop_params.n_loops())))
 {
+    if (biased_tracers && !rsd) {
+        throw std::logic_error(
+            "IntegrandTables::IntegrandTables(): Biased tracers only implemented "
+            "for rsd = true.");
+    }
+
     int n_loops = loop_params.n_loops();
     size_t n_coeffs = loop_params.n_coeffs();
     size_t n_configs = loop_params.n_configs();
@@ -178,7 +189,7 @@ IntegrandTables::IntegrandTables(
                 Vec1D<double>(COMPONENTS));
         }
     }
-    if (loop_params.rsd()) {
+    if (rsd_) {
         bare_los_projection_.resize(n_coeffs);
         composite_los_projection_.resize(n_configs);
 
@@ -209,7 +220,7 @@ void IntegrandTables::reset()
         reset_spt_kernels();
         reset_kernels();
     }
-    if (loop_params.rsd()) {
+    if (rsd_) {
         reset_rsd_kernels();
     }
 }
@@ -441,7 +452,7 @@ void IntegrandTables::compute_tables()
     compute_composite_dot_prod();
     compute_alpha_beta();
 
-    if (loop_params.rsd()) {
+    if (rsd_) {
         compute_bare_los_proj();
         compute_composite_los_proj();
     }
