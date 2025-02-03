@@ -716,6 +716,9 @@ Config::Config()
     set("rsd", false);
     set("rsd_growth_f", 1.0);
 
+    set("biased_tracers", false);
+    bias_parameters_ = {1,0,0,0};
+
     set("ir_resum", false);
     /* Values from 1605.02149 */
     set("k_s", 0.2);
@@ -827,6 +830,42 @@ Config::Config(const string& ini_file,
         }
     }
 
+    /* Biased tracers */
+    if(set_param_value<bool>(cfg, "biased_tracers")) {
+        if (!get<bool>("rsd")) {
+            throw ConfigException("Biased tracers only implemented for rsd = true.");
+        }
+        try {
+            const libconfig::Setting& bias_params_setting = cfg.lookup("bias_parameters");
+            int count = bias_params_setting.getLength();
+            if (count != 4) {
+                throw ConfigException(
+                        "There should be 4 bias parameters in the configuration");
+            }
+            for (int i = 0; i < count; ++i) {
+                bias_parameters_.at(static_cast<size_t>(i)) =
+                    static_cast<double>(bias_params_setting[i]);
+            }
+            if(!set_param_value<double>(cfg, "rsd_growth_f")) {
+            }
+        }
+        catch (const ConfigException& ce) {
+            throw ce;
+        }
+        catch (const libconfig::SettingNotFoundException& nfex) {
+            std::cout <<
+                "Info: No value for bias parameters read, using default values = ";
+            for (auto& el : bias_parameters_) {
+                std::cout << el << ",";
+            }
+            std::cout << std::endl;
+        }
+        catch (const libconfig::SettingTypeException& tex) {
+            throw ConfigException("Encountered type exception parsing bias_parameters.");
+        }
+    }
+
+
     /* IR resummation */
     if(set_param_value<bool>(cfg, "ir_resum")) {
         set_param_value<double>(cfg, "k_s");
@@ -915,6 +954,14 @@ std::ostream& operator<<(std::ostream& out, const Config& c) {
             for (auto& el : c.triple_correlations()) {
                 out << " " << el <<  " ,";
             }
+        }
+        out << "\n#\n";
+    }
+
+    if (!c.get<bool>("biased_tracers")) {
+        out << "# Bias parameters:\n# ";
+        for (auto& el : c.bias_parameters()) {
+            out << " " << el <<  " ,";
         }
         out << "\n#\n";
     }
