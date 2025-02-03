@@ -65,6 +65,8 @@ static void BM_PS_EdS_integrand_1loop(benchmark::State& state) {
 
         input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
                                         cfg.get<double>("rsd_growth_f"),
+                                        cfg.get<bool>("biased_tracers"),
+                                        cfg.bias_parameters(),
                                         loop_params, sum_table,
                                         ev_params, eta_grid, omega_eigenspace);
 
@@ -152,6 +154,8 @@ static void BM_PS_EdS_integrand_2loop(benchmark::State& state) {
 
         input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
                                         cfg.get<double>("rsd_growth_f"),
+                                        cfg.get<bool>("biased_tracers"),
+                                        cfg.bias_parameters(),
                                         loop_params, sum_table,
                                         ev_params, eta_grid, omega_eigenspace);
 
@@ -240,6 +244,8 @@ static void BM_BS_EdS_integrand_1loop(benchmark::State& state) {
                                       cfg.get<double>("k_b"),
                                       cfg.get<double>("cos_ab"),
                                       cfg.get<double>("rsd_growth_f"),
+                                      cfg.get<bool>("biased_tracers"),
+                                      cfg.bias_parameters(),
                                       loop_params, sum_table, ev_params,
                                       eta_grid, omega_eigenspace);
 
@@ -329,6 +335,8 @@ static void BM_BS_EdS_integrand_2loop(benchmark::State& state) {
                                       cfg.get<double>("k_b"),
                                       cfg.get<double>("cos_ab"),
                                       cfg.get<double>("rsd_growth_f"),
+                                      cfg.get<bool>("biased_tracers"),
+                                      cfg.bias_parameters(),
                                       loop_params, sum_table, ev_params,
                                       eta_grid, omega_eigenspace);
 
@@ -418,6 +426,8 @@ static void BM_PS_2fluid_integrand_1loop(benchmark::State& state) {
 
         input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
                                         cfg.get<double>("rsd_growth_f"),
+                                        cfg.get<bool>("biased_tracers"),
+                                        cfg.bias_parameters(),
                                         loop_params, sum_table,
                                         ev_params, eta_grid, omega_eigenspace);
 
@@ -507,6 +517,8 @@ static void BM_PS_2fluid_integrand_2loop(benchmark::State& state) {
 
         input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
                                         cfg.get<double>("rsd_growth_f"),
+                                        cfg.get<bool>("biased_tracers"),
+                                        cfg.bias_parameters(),
                                         loop_params, sum_table,
                                         ev_params, eta_grid, omega_eigenspace);
 
