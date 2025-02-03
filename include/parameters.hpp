@@ -43,6 +43,7 @@ class Config {
         Vec1D<Triple<int>> triple_correlations_; /* Bispectrum */
 
         Vec1D<std::string> F1_ic_files_;
+        Vec1D<double> bias_parameters_;
 
         /* T is the type of the parameter */
         template<typename T>
@@ -100,6 +101,7 @@ class Config {
         Vec1D<Triple<int>> triple_correlations() const {return triple_correlations_;}
 
         Vec1D<std::string> F1_ic_files() const {return F1_ic_files_;}
+        Vec1D<double> bias_parameters() const {return bias_parameters_;}
 
         /* Read CUBA info */
         int cuba_evals() const {return cuba_evals_;}
