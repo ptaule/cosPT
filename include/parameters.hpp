@@ -111,7 +111,7 @@ class Config {
 
         /* Setters/getters for params map */
         template<typename T>
-        void set(const std::string& key, const T& value) {
+        void set(const std::string& key, T value) {
             params[key] = value;
         }
 
