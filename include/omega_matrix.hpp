@@ -37,9 +37,14 @@ inline void update_omega_matrix(
 
     /*Alternative definition with only two components and zeta(eta) dependence (EdS
      * relaxation test)*/
-    /*omega[0][1] = 1; */
-    /*omega[1][0] = zeta */
-    /*omega[1][1] = -zeta + 1; */
+    /*UNUSED(eta);*/
+    /*UNUSED(k);*/
+    /*UNUSED(kappa_vec);*/
+    /*UNUSED(xi_vec);*/
+    /**/
+    /*omega[0][1] = -1; */
+    /*omega[1][0] = -1.5 * zeta;*/
+    /*omega[1][1] = 1.5 * zeta - 1; */
 }
 
 #endif /* #ifndef OMEGA_MATRIX_HPP */
