@@ -331,11 +331,11 @@ void KernelEvolver::evolve(
     size_t pre_time_steps = eta_grid.pre_time_steps();
     double eta_current = eta_grid.at(0);
 
-    size_t i = 0;
+    size_t i = 1;
 
     if (tables.loop_params.dynamics() == EVOLVE_ASYMPTOTIC_ICS) {
         if (n == 1) {
-            for (i = 1; i < pre_time_steps + 1; ++i) {
+            for (; i < pre_time_steps + 1; ++i) {
             /*For n == 1 kernels, we may multipliy by exp("growing mode" eigenvalue)*/
             /*before eta_I*/
                 double factor = std::exp(tables.omega_eigenspace.eigenvalue()(k) *
@@ -354,7 +354,7 @@ void KernelEvolver::evolve(
             sys.function = &ode_system_fixed_eta;
             /* For calculation of kernel_vec.at(i), the initial condition is
             * kernel_vec.at(i-1). Hence we copy kernel_vec.at(i-1) to kernel_vec.at(i) */
-            for (i = 1; i < pre_time_steps + 1; ++i) {
+            for (; i < pre_time_steps + 1; ++i) {
                 std::copy(kernel_vec.at(i - 1).begin(), kernel_vec.at(i - 1).end(),
                         kernel_vec.at(i).begin());
                 /* Then evolve to index i */
