@@ -115,9 +115,9 @@ int main(int argc, char* argv[]) {
                 return EXIT_FAILURE;
             }
             ev_params = EvolutionParameters(cfg.get<string>("zeta_file"),
-                                            cfg.get<double>("ode_atol"),
-                                            cfg.get<double>("ode_rtol"),
-                                            cfg.get<double>("ode_hstart"));
+                                            cfg.get<double>("ode_abs_tolerance"),
+                                            cfg.get<double>("ode_rel_tolerance"),
+                                            cfg.get<double>("ode_start_step"));
             eta_grid = EtaGrid(cfg.get<size_t>("time_steps"),
                                cfg.get<double>("eta_ini"),
                                cfg.get<double>("eta_fin"));
@@ -138,9 +138,9 @@ int main(int argc, char* argv[]) {
                                             cfg.get<string>("effcs2_x_grid"),
                                             cfg.get<string>("effcs2_y_grid"),
                                             cfg.get<string>("effcs2_data"),
-                                            cfg.get<double>("ode_atol"),
-                                            cfg.get<double>("ode_rtol"),
-                                            cfg.get<double>("ode_hstart"));
+                                            cfg.get<double>("ode_abs_tolerance"),
+                                            cfg.get<double>("ode_rel_tolerance"),
+                                            cfg.get<double>("ode_start_step"));
             eta_grid = EtaGrid(cfg.get<size_t>("pre_time_steps"),
                                cfg.get<size_t>("time_steps"),
                                cfg.get<double>("eta_ini"),
@@ -169,7 +169,7 @@ int main(int argc, char* argv[]) {
                 input.ps_diagrams = ps::construct_diagrams(loop_params);
 
                 /* (Master + n_cores) instances of IntegrandTables */
-                for (int i = 0; i < cfg.get<int>("cuba_cores") + 1; ++i) {
+                for (int i = 0; i < cfg.get<int>("cuba_n_cores") + 1; ++i) {
                     input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
                                                   cfg.get<double>("rsd_growth_f"),
                                                   loop_params, sum_table,
@@ -192,7 +192,7 @@ int main(int argc, char* argv[]) {
                 input.bs_diagrams = bs::construct_diagrams(loop_params);
 
                 /* (Master + n_cores) instances of IntegrandTables */
-                for (int i = 0; i < cfg.get<int>("cuba_cores") + 1; ++i) {
+                for (int i = 0; i < cfg.get<int>("cuba_n_cores") + 1; ++i) {
                     input.tables_vec.emplace_back(cfg.get<double>("k_a"),
                                                   cfg.get<double>("k_b"),
                                                   cfg.get<double>("cos_ab"),
@@ -246,7 +246,7 @@ int main(int argc, char* argv[]) {
         }
 
         if (n_loops > 0) {
-            cuba_cores = cfg.get<int>("cuba_cores");
+            cuba_cores = cfg.get<int>("cuba_n_cores");
             int cuba_points = 10000;
             cubacores(&cuba_cores, &cuba_points);
             int cuba_retain_statefile = 0;
@@ -271,12 +271,12 @@ int main(int argc, char* argv[]) {
                   (integrand_t)integrand,
                   &input,
                   CUBA_NVEC,
-                  cfg.get<double>("cuba_rtol"),
-                  cfg.get<double>("cuba_atol"),
-                  (cfg.get<int>("cuba_verbose") | CUBA_LAST | cuba_retain_statefile),
+                  cfg.get<double>("cuba_rel_tolerance"),
+                  cfg.get<double>("cuba_abs_tolerance"),
+                  (cfg.get<int>("cuba_verbosity_level") | CUBA_LAST | cuba_retain_statefile),
                   CUBA_SEED,
                   CUBA_MINEVAL,
-                  cfg.get<int>("cuba_maxevals"),
+                  cfg.get<int>("cuba_max_evaluations"),
                   CUBA_NNEW,
                   CUBA_NMIN,
                   CUBA_FLATNESS,

@@ -558,20 +558,20 @@ void Config::set_dynamics(const libconfig::Config& cfg)
 
 void Config::set_cuba_config(
     const libconfig::Setting& cuba_settings,
-    int cuba_maxevals,
+    int cuba_max_evaluations,
     int cuba_cores
     )
 {
-    set_param_value<double>(cuba_settings, "cuba", "atol");
-    set_param_value<double>(cuba_settings, "cuba", "rtol");
-    set_param_value<int>(cuba_settings, "cuba", "verbose");
+    set_param_value<double>(cuba_settings, "cuba", "abs_tolerance");
+    set_param_value<double>(cuba_settings, "cuba", "rel_tolerance");
+    set_param_value<int>(cuba_settings, "cuba", "verbosity_level");
     set_param_value<bool>(cuba_settings, "cuba", "retain_statefile");
 
-    /* If cuba_maxevals is not already set, look up value */
-    if (cuba_maxevals == 0) {
+    /* If cuba_max_evaluations is not already set, look up value */
+    if (cuba_max_evaluations == 0) {
         /* Try int */
         try {
-            set<int>("cuba_maxevals", cuba_settings.lookup("max_evaluations"));
+            set<int>("cuba_max_evaluations", cuba_settings.lookup("max_evaluations"));
         }
         catch (const libconfig::SettingTypeException& tex) {
             /* If not recognized, try double */
@@ -580,7 +580,7 @@ void Config::set_cuba_config(
                 if (value > std::numeric_limits<int>::max() || value < std::numeric_limits<int>::min()) {
                     throw std::overflow_error("Value is out of range for int");
                 }
-                set<int>("cuba_maxevals", static_cast<int>(std::round(value)));
+                set<int>("cuba_max_evaluations", static_cast<int>(std::round(value)));
             }
             catch (std::overflow_error& oe) {
                 throw ConfigException("Parsing cuba_settings: "
@@ -729,20 +729,20 @@ Config::Config()
     /* Upper limit for EFT displacement dispersion integral. Lower limit = cutoff */
     set("eft_displacement_dispersion_infty_", 10);
 
-    set("cuba_atol", 1e-12);
-    set("cuba_rtol", 1e-4);
-    set<int>("cuba_maxevals", 1e6);
-    set("cuba_verbose", 0);
-    set("cuba_cores", 0);
+    set("cuba_abs_tolerance", 1e-12);
+    set("cuba_rel_tolerance", 1e-4);
+    set<int>("cuba_max_evaluations", 1e6);
+    set("cuba_verbosity_level", 0);
+    set("cuba_n_cores", 0);
     set("cuba_retain_statefile", false);
     set("cuba_statefile", string());
     set("cuba_statefile_path", string());
 
     set("description", string());
 
-    set("ode_atol", 1e-6);
-    set("ode_rtol", 1e-4);
-    set("ode_hstart", 1e-3);
+    set("ode_abs_tolerance", 1e-6);
+    set("ode_rel_tolerance", 1e-4);
+    set("ode_start_step", 1e-3);
 
     set("eta_ini", 0.0);
     set("eta_fin", 0.0);
@@ -763,7 +763,7 @@ Config::Config(const string& ini_file,
         int k_a_idx,
         int k_b_idx,
         int k_c_idx,
-        int cuba_maxevals,
+        int cuba_max_evaluations,
         int cuba_cores
         )
     : Config()
@@ -864,7 +864,7 @@ Config::Config(const string& ini_file,
 
     if (cfg.exists("cuba_settings")) {
         const libconfig::Setting& cuba_settings = cfg.lookup("cuba_settings");
-        set_cuba_config(cuba_settings, cuba_maxevals, cuba_cores);
+        set_cuba_config(cuba_settings, cuba_max_evaluations, cuba_cores);
         set_cuba_statefile(cuba_settings);
     }
 
@@ -944,9 +944,9 @@ std::ostream& operator<<(std::ostream& out, const Config& c) {
     out << "#\t q_max = " << c.get<double>("q_max") << "\n";
 
     out << "#\n# Cuba settings:\n";
-    out << "#\t abs tolerance = " << c.get<double>("cuba_atol") << "\n";
-    out << "#\t rel tolerance = " << c.get<double>("cuba_rtol") << "\n";
-    out << "#\t max. evals    = " << c.get<int>("cuba_maxevals") << "\n";
+    out << "#\t abs tolerance = " << c.get<double>("cuba_abs_tolerance") << "\n";
+    out << "#\t rel tolerance = " << c.get<double>("cuba_rel_tolerance") << "\n";
+    out << "#\t max. evals    = " << c.get<int>("cuba_max_evaluations") << "\n";
 
     if (!c.get<string>("cuba_statefile").empty()) {
         out << "#\t statefile     = " << c.get<string>("cuba_statefile") << "\n";
@@ -968,9 +968,9 @@ std::ostream& operator<<(std::ostream& out, const Config& c) {
         || c.get<Dynamics>("dynamics") == EVOLVE_IC_EDS) {
         out << "# ODE settings:\n";
         out << std::scientific;
-        out << "#\t abs tolerance = " << c.get<double>("ode_atol") << "\n";
-        out << "#\t rel tolerance = " << c.get<double>("ode_rtol") << "\n";
-        out << "#\t start step    = " << c.get<double>("ode_hstart") << "\n#\n";
+        out << "#\t abs tolerance = " << c.get<double>("ode_abs_tolerance") << "\n";
+        out << "#\t rel tolerance = " << c.get<double>("ode_rel_tolerance") << "\n";
+        out << "#\t start step    = " << c.get<double>("ode_start_step") << "\n#\n";
 
         out << "# Time grid settings:\n";
         out << "#\t time steps     = " << c.get<size_t>("time_steps") << "\n";

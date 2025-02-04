@@ -324,9 +324,9 @@ static void BM_PS_2fluid_integrand_1loop(benchmark::State& state) {
                                             cfg.get<string>("effcs2_x_grid"),
                                             cfg.get<string>("effcs2_y_grid"),
                                             cfg.get<string>("effcs2_data"),
-                                            cfg.get<double>("ode_atol"),
-                                            cfg.get<double>("ode_rtol"),
-                                            cfg.get<double>("ode_hstart"));
+                                            cfg.get<double>("ode_abs_tolerance"),
+                                            cfg.get<double>("ode_rel_tolerance"),
+                                            cfg.get<double>("ode_start_step"));
         EtaGrid eta_grid(cfg.get<size_t>("pre_time_steps"),
                                cfg.get<size_t>("time_steps"),
                                cfg.get<double>("eta_ini"),
@@ -409,9 +409,9 @@ static void BM_PS_2fluid_integrand_2loop(benchmark::State& state) {
                                             cfg.get<string>("effcs2_x_grid"),
                                             cfg.get<string>("effcs2_y_grid"),
                                             cfg.get<string>("effcs2_data"),
-                                            cfg.get<double>("ode_atol"),
-                                            cfg.get<double>("ode_rtol"),
-                                            cfg.get<double>("ode_hstart"));
+                                            cfg.get<double>("ode_abs_tolerance"),
+                                            cfg.get<double>("ode_rel_tolerance"),
+                                            cfg.get<double>("ode_start_step"));
         EtaGrid eta_grid(cfg.get<size_t>("pre_time_steps"),
                                cfg.get<size_t>("time_steps"),
                                cfg.get<double>("eta_ini"),
