@@ -66,6 +66,8 @@ class Config {
             bool required = false
             );
 
+        Vec1D<std::string> keys_not_recognized(const libconfig::Config& cfg) const;
+
         void set_spectrum(const libconfig::Config& cfg);
         void set_bispectrum_ext_momenta(const libconfig::Config& cfg);
 

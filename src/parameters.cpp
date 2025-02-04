@@ -175,6 +175,46 @@ T Config::get_param_value(
 
 
 
+Vec1D<string> Config::keys_not_recognized(const libconfig::Config& cfg) const {
+    const libconfig::Setting& root = cfg.getRoot();
+    Vec1D<string> keys;
+    /* Keys that are converted into other options in Config, these are allowed
+     * as well */
+    Vec1D<string> additional_keys = {
+        "loops",
+        "k_a_grid",
+        "k_a_grid_file",
+        "k_b_grid",
+        "k_b_grid_file",
+        "k_c_grid",
+        "k_c_grid_file",
+        "correlations",
+        "input_ps_rescale",
+        "cuba_settings",
+        "ode_settings",
+        "f_nu",
+        "omega_m_0",
+        "redshift_file",
+        "omega_eigenvalues_file",
+        "zeta_file",
+        "effective_cs2_files",
+        "F1_ic_files",
+    };
+
+    for (int i = 0; i < root.getLength(); ++i) {
+        string key = root[i].getName();
+        if (params.find(key) == params.end() &&
+                std::find(additional_keys.begin(), additional_keys.end(), key)
+                == additional_keys.end())
+        {
+            keys.push_back(key);
+        }
+    }
+    return keys;
+}
+
+
+
 void Config::set_spectrum(const libconfig::Config& cfg)
 {
     string spectrum_str = get_param_value<string>(cfg, "spectrum", true);
@@ -784,6 +824,15 @@ Config::Config(const string& ini_file,
         throw ConfigException("Parse error at " + string(pex.getFile()) +
                               ":" + std::to_string(pex.getLine()) + " - " +
                               string(pex.getError()));
+    }
+
+    Vec1D<string> keys = keys_not_recognized(cfg);
+    if (!keys.empty()) {
+        string error_msg = "Keys in configuration file not recognized: ";
+        for (auto key : keys) {
+            error_msg += key + ", ";
+        }
+        throw ConfigException(error_msg);
     }
 
     /* Number of loops */
