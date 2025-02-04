@@ -637,10 +637,12 @@ void Config::set_cuba_config(
         }
     }
     /* If cuba_cores is not already set, look up value */
-    if (cuba_cores == 0 && !set_param_value<int>(cuba_settings, "cuba", "cores")) {
+    if (cuba_cores == 0 && !set_param_value<int>(cuba_settings, "cuba", "n_cores")) {
         std::cout << "No CUBA number of cores option given. Using default value: "
-            << get<double>("cuba_cores")
-            << " (0 defaults to the number of cores available)"<< std::endl;
+            << get<double>("cuba_n_cores") << "."<< std::endl;
+    }
+    else {
+        set<int>("cuba_n_cores", cuba_cores);
     }
 }
 
