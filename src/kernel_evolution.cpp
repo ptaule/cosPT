@@ -270,13 +270,17 @@ int KernelEvolver::ode_system_fixed_eta(double eta, const double y[], double f[]
 
 
 void KernelEvolver::set_EdS_ICs(
-        double k,
+        const int arguments[],
+        int kernel_index,
         int n,
-        int kernel_index
+        double k
         )
 {
     UNUSED(n);
     UNUSED(k);
+
+    compute_SPT_kernels(arguments, kernel_index, n, tables);
+
     for (size_t i = 0; i < EDS_SPT_COMPONENTS; ++i) {
         tables.kernels.at(static_cast<size_t>(kernel_index)).values.at(0).at(i) =
             tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[i];
@@ -286,11 +290,13 @@ void KernelEvolver::set_EdS_ICs(
 
 
 void KernelEvolver::set_asymptotic_ICs(
-        double k,
+        const int arguments[],
+        int kernel_index,
         int n,
-        int kernel_index
+        double k
         )
 {
+    UNUSED(arguments);
     // Use growing mode IC for F1 at eta_asymp
     if (n == 1) {
         double delta_eta = tables.eta_grid.eta_ini() - tables.eta_grid.eta_asymp();
@@ -317,9 +323,9 @@ void KernelEvolver::set_asymptotic_ICs(
 
 
 void KernelEvolver::evolve(
-    double k,
-    int n,
-    int kernel_index
+        int kernel_index,
+        int n,
+        double k
     )
 {
     const EvolutionParameters& ev_params = tables.ev_params;
@@ -399,13 +405,13 @@ KernelEvolver::KernelEvolver(IntegrandTables& tables)
             tables.ev_params.ode_atol()
             );
     if (tables.loop_params.dynamics() == EVOLVE_EDS_ICS) {
-        set_ICs = [this](double k, int n, int kernel_index) {
-            return this->set_EdS_ICs(k, n, kernel_index);
+        set_ICs = [this](const int arguments[], int kernel_index, int n, double k) {
+            return this->set_EdS_ICs(arguments, kernel_index, n, k);
         };
     }
     else if (tables.loop_params.dynamics() == EVOLVE_ASYMPTOTIC_ICS) {
-        set_ICs = [this](double k, int n, int kernel_index) {
-            return this->set_asymptotic_ICs(k, n, kernel_index);
+        set_ICs = [this](const int arguments[], int kernel_index, int n, double k) {
+            return this->set_asymptotic_ICs(arguments, kernel_index, n, k);
         };
     }
     else {
@@ -460,9 +466,9 @@ int KernelEvolver::compute(
         tables.ev_params, rhs, omega);
     sys.params = &params;
     /* Set initial conditions */
-    set_ICs(k, n, kernel_index);
+    set_ICs(arguments, kernel_index, n, k);
     /* Solve ODE */
-    evolve(k, n, kernel_index);
+    evolve(kernel_index, n, k);
 
     tables.kernels.at(static_cast<size_t>(kernel_index)).computed = true;
     return kernel_index;
