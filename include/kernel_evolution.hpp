@@ -49,11 +49,13 @@ class KernelEvolver {
         static int ode_system(double eta, const double y[], double f[], void* ode_input);
         static int ode_system_fixed_eta(double eta, const double y[], double f[], void* ode_input);
 
-        std::function<void(double, int, int)> set_ICs;
-        void set_EdS_ICs(double k, int n, int kernel_index);
-        void set_asymptotic_ICs(double k, int n, int kernel_index);
+        std::function<void(const int[], int, int, double)> set_ICs;
+        void set_EdS_ICs(const int arguments[], int kernel_index , int n,
+                         double k);
+        void set_asymptotic_ICs(const int arguments[], int kernel_index,
+                                int n, double k);
 
-        void evolve(double k, int n, int kernel_index);
+        void evolve(int kernel_index, int n, double k);
     public:
         KernelEvolver();
         KernelEvolver(IntegrandTables& tables);

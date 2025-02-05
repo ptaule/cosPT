@@ -167,7 +167,7 @@ void tree_level(
         for (auto& el : results) el = ps.tree_level(k_a, 0);
     }
 
-    if (tables.loop_params.dynamics() == EVOLVE_ASYMPTOTIC_ICS) {
+    if (tables.loop_params.dynamics() != EDS_SPT) {
         Vec1D<int> config(tables.loop_params.n_coeffs(), 0);
         config.at(tables.loop_params.n_coeffs() - 1) = 1; /* Config for k_a */
 
