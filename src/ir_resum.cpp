@@ -13,6 +13,7 @@ extern "C" {
 }
 
 #include "../include/interpolation.hpp"
+#include "../include/ir_resum.hpp"
 #include "../include/utilities.hpp"
 
 #include "../include/ir_resum.hpp"
@@ -248,7 +249,11 @@ void remove_BAO_wiggles(
 
     double k_min = ps.x_minimum();
     /* If k_max is larger than ps interpolation range, use max of that range */
-    double k_max = settings.k_max > ps.x_maximum() ? ps.x_maximum() : settings.k_max;
+    double k_max = settings.k_max;
+    if (k_max > ps.x_maximum()) {
+        throw std::invalid_argument("remove_BAO_wiggles(): k_max is larger "
+            "than the maximum of the input power spectrum interpolation range.");
+    }
 
     /* Create grid of ln(k*Pk) */
     for (size_t i = 0; i < N; ++i) {
