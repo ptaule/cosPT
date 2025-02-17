@@ -976,12 +976,6 @@ std::ostream& operator<<(std::ostream& out, const Config& c) {
         out << "\n#\n";
     }
 
-    if (c.get<bool>("single_hard_limit")) {
-        out << "# Computing single-hard limit with fixed Q1 = "
-            << c.get<double>("sh_Q1")
-            << "\n#\n";
-    }
-
     out << "# Input power spectrum read from " << c.get<string>("input_ps_file") << "\n";
     if (c.get<double>("input_ps_rescale") != 1) {
         out << "# Input power spectrum rescaled by a factor ";
@@ -996,9 +990,18 @@ std::ostream& operator<<(std::ostream& out, const Config& c) {
     out << "#\n";
 
     out << std::scientific;
-    out << "# Integration limits:\n";
-    out << "#\t q_min = " << c.get<double>("q_min") << "\n";
-    out << "#\t q_max = " << c.get<double>("q_max") << "\n";
+    if (c.get<bool>("rsd")) {
+        out << "# (RSD) growth_f = " << c.get<double>("rsd_growth_f") << "\n#\n";
+    }
+
+    if (c.get<bool>("single_hard_limit")) {
+        out << "# Computing single-hard limit with fixed Q1 = "
+            << c.get<double>("sh_Q1")
+            << "\n#\n";
+    }
+
+    out << "# Integration limits: [q_min, q_max] = ["
+        << c.get<double>("q_min") << ", " << c.get<double>("q_max") << "]\n";
 
     out << "#\n# Cuba settings:\n";
     out << "#\t abs tolerance = " << c.get<double>("cuba_abs_tolerance") << "\n";
@@ -1010,14 +1013,11 @@ std::ostream& operator<<(std::ostream& out, const Config& c) {
     }
     out << "#\n";
 
-    if (c.get<bool>("rsd")) {
-        out << "# (RSD) growth_f = " << c.get<double>("rsd_growth_f") << "\n#\n";
-    }
     if (c.get<bool>("ir_resum")) {
         out << "# IR resummation on, working at PT order N = " <<
             c.get<int>("pt_order") << "\n";
-        out << "#\tk_s   = " << c.get<double>("k_s") << "\n";
-        out << "#\tk_osc = " << c.get<double>("k_osc") << "\n";
+        out << "#\t k_s   = " << c.get<double>("k_s") << "\n";
+        out << "#\t k_osc = " << c.get<double>("k_osc") << "\n";
         out << "#\n";
     }
 
