@@ -762,7 +762,7 @@ Config::Config()
     set("output_file", string());
 
     set("rsd", false);
-    set("rsd_growth_f", 1.0);
+    set("rsd_growth_f", 0.0);
 
     set("ir_resum", false);
     /* Values from 1605.02149 */
