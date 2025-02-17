@@ -34,30 +34,36 @@ bool Config::set_param_value<double>(
     bool required
     )
 {
-    /* Try double */
     try {
-        set<double>(param, cfg.lookup(param));
-        return true;
+        const libconfig::Setting& setting = cfg.lookup(param);
+        switch (setting.getType()) {
+            case libconfig::Setting::TypeInt:
+            case libconfig::Setting::TypeInt64:
+                {
+                int value = setting;
+                set<double>(param, value);
+                return true;
+                }
+            case libconfig::Setting::TypeFloat:
+                {
+                set<double>(param, setting);
+                return true;
+                }
+            default:
+                throw ConfigException("Encountered type exception parsing " +
+                        param + " setting.");
+        }
     }
-    catch (const libconfig::SettingTypeException& tex) {
-        /* If not recognized, try int */
-        try {
-            int value = cfg.lookup(param);
-            set<double>(param, static_cast<int>(value));
-            return true;
-        }
-        catch (const libconfig::SettingTypeException& tex) {
-            throw ConfigException("Encountered type exception parsing " + param +
-                    " setting. ");
-        }
+    catch (const ConfigException& ce) {
+        throw ce;
     }
     catch (const libconfig::SettingNotFoundException& nfex) {
         if (required) {
             throw ConfigException("No " + param + " (required) setting found in "
                     "configuration file.");
         }
+        return false;
     }
-    return true;
 }
 
 
