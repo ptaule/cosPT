@@ -876,7 +876,8 @@ Config::Config(const string& ini_file,
 
     /* RSD. Read before spectrum settings, so that warning messages can be
      * given if rsd AND correlations are set */
-    if(set_param_value<bool>(cfg, "rsd")) {
+    set_param_value<bool>(cfg, "rsd");
+    if(get<bool>("rsd")) {
         if(!set_param_value<double>(cfg, "rsd_growth_f")) {
             std::cout <<
                 "Info: No value for rsd_growth_f read, using default value = "
