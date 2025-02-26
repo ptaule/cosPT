@@ -5,7 +5,7 @@
 class IntegrandTables;
 
 
-void compute_rsd_kernels(
+int compute_rsd_kernels(
         const int arguments[],
         int kernel_index,
         int n,
