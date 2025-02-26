@@ -128,7 +128,7 @@ class IntegrandTables {
         void compute_composite_dot_prod();
         void compute_alpha_beta();
     public:
-        const Vec1D<double>& bias_parameters;
+        const Vec1D<double> bias_parameters;
 
         const LoopParameters& loop_params;
         const SumTable& sum_table;
