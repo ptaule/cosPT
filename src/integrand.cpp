@@ -545,6 +545,17 @@ int integrand(
                     35 * POW4(vars.mu_los) - 30 * SQUARE(vars.mu_los) + 3
                     );
         }
+        if (tables.biased_tracers()) {
+            /* We define b2 such that the constant contribution to Id2d2 as k->
+             * 0 is removed */
+            /* TODO: atm only implemented for n_loops = 1 */
+            double b2_subtract = 0.5 *
+                SQUARE(tables.bias_parameters.at(1)) *
+                SQUARE(input.ps(vars.magnitudes.at(0), vars.mu_los));
+            results.at(0) -= b2_subtract;
+            results.at(1) -= b2_subtract;
+            results.at(2) -= b2_subtract;
+        }
     }
     catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
