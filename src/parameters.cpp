@@ -927,6 +927,9 @@ Config::Config(const string& ini_file,
         if (!get<bool>("rsd")) {
             throw ConfigException("Biased tracers only implemented for rsd = true.");
         }
+        if (get<int>("n_loops") > 1) {
+            throw ConfigException("Biased tracers only implemented for n_loops <= 1.");
+        }
         try {
             const libconfig::Setting& bias_params_setting = cfg.lookup("bias_parameters");
             int count = bias_params_setting.getLength();
