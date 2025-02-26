@@ -151,7 +151,7 @@ inline double n3(
 
 
 
-double compute_rsd_biased_kernels(
+int compute_rsd_biased_kernels(
         const int arguments[],
         int kernel_index,
         int n,
@@ -173,7 +173,7 @@ double compute_rsd_biased_kernels(
 
     // Check if the kernels are already computed
     if (kernel.computed) {
-        return kernel.value;
+        return kernel_index;
     }
 
     /* Compute sum of arguments, and its absolute value k */
@@ -213,5 +213,5 @@ double compute_rsd_biased_kernels(
     // Update kernel table
     kernel.computed = true;
     kernel.value = result;
-    return result;
+    return kernel_index;
 }

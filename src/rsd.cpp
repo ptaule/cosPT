@@ -216,7 +216,7 @@ int rsd_velocity_power(
 
 
 
-void compute_rsd_kernels(
+int compute_rsd_kernels(
         const int arguments[],
         int kernel_index,
         int n,
@@ -238,7 +238,7 @@ void compute_rsd_kernels(
 
     // Check if the kernels are already computed
     if (kernel.computed) {
-        return;
+        return kernel_index;
     }
 
     size_t n_kernel_args = tables.loop_params.n_kernel_args();
@@ -320,4 +320,5 @@ void compute_rsd_kernels(
     // Update kernel table
     kernel.computed = true;
     kernel.value = result;
+    return kernel_index;
 }
