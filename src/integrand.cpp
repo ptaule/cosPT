@@ -532,8 +532,8 @@ int integrand(
         for (; i < tables.loop_params.n_loops(); ++i) {
             for (auto& el : results) {
                 el *= input.ps(
-                        tables.vars.magnitudes.at(static_cast<size_t>(i)),
-                        tables.vars.mu_los
+                        vars.magnitudes.at(static_cast<size_t>(i)),
+                        vars.mu_los
                         );
             }
         }
