@@ -115,8 +115,6 @@ class InputPowerSpectrum {
 
         /* Getters */
         bool ir_resum() const { return ir_resum_; }
-        bool rsd() const { return rsd_; }
-        double rsd_growth_f() const { return rsd_growth_f_; }
 };
 
 
