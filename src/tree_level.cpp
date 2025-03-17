@@ -20,19 +20,25 @@ namespace ps {
 
 void rsd_tree_level(
     double k,
+    double rsd_growth_f,
+    bool biased_tracers,
+    double b1,
     const InputPowerSpectrum& ps,
     Vec1D<double>& results /* out */
     )
 {
-    double f = ps.rsd_growth_f();
+    double f = rsd_growth_f;
     double f2 = SQUARE(f);
+
+    /* If biased_tracers == false, b1 = 1 */
+    b1 = biased_tracers ? b1 : 1;
 
     for (auto& el : results) el = ps.tree_level(k, 0);
 
     /* Linear monopole */
-    results.at(0) *= ( 1 + 2.0/3.0 * f + 1.0/5.0 * f2);
+    results.at(0) *= ( b1*b1 + 2.0/3.0 * b1 * f + 1.0/5.0 * f2);
     /* Linear quadrupole */
-    results.at(1) *= ( 4.0/3.0 * f + 4.0/7.0 * f2);
+    results.at(1) *= ( 4.0/3.0 * b1 * f + 4.0/7.0 * f2);
     /* Linear hexadecapole */
     results.at(2) *= (8.0/35.0 * f2);
 }
@@ -41,6 +47,9 @@ void rsd_tree_level(
 
 void rsd_tree_level_ir_resum(
     double k,
+    double rsd_growth_f,
+    bool biased_tracers,
+    double b1,
     const InputPowerSpectrum& ps,
     Vec1D<double>& results, /* out */
     std::size_t integration_sub_regions = 10000,
@@ -49,13 +58,16 @@ void rsd_tree_level_ir_resum(
     int integration_key = GSL_INTEG_GAUSS61
     )
 {
+    /* If biased_tracers == false, b1 = 1 */
+    b1 = biased_tracers ? b1 : 1;
+    double f = rsd_growth_f;
+
     gsl_integration_workspace* workspace =
         gsl_integration_workspace_alloc(integration_sub_regions);
 
-    /* l=0 integration, RSD kernel Z1 = (1 + f mu^2)  */
-    auto integral_l0 = [&k, &ps](double mu) {
-        double f = ps.rsd_growth_f();
-        return SQUARE(1 + f*mu*mu) * ps.tree_level(k, mu);
+    /* l=0 integration, RSD kernel Z1 = (b1 + f mu^2)  */
+    auto integral_l0 = [&k, &f, &b1, &ps](double mu) {
+        return SQUARE(b1 + f*mu*mu) * ps.tree_level(k, mu);
     };
 
     gsl_function F;
@@ -76,9 +88,8 @@ void rsd_tree_level_ir_resum(
     }
 
     /* l=2 integration */
-    auto integral_l2 = [&k, &ps](double mu) {
-        double f = ps.rsd_growth_f();
-        return SQUARE(1 + f*mu*mu) *
+    auto integral_l2 = [&k, &f, &b1, &ps](double mu) {
+        return SQUARE(b1 + f*mu*mu) *
             0.5 * (3 * SQUARE(mu) - 1) *
             ps.tree_level(k, mu);
     };
@@ -99,9 +110,8 @@ void rsd_tree_level_ir_resum(
     }
 
     /* l=4 integration */
-    auto integral_l4 = [&k, &ps](double mu) {
-        double f = ps.rsd_growth_f();
-        return SQUARE(1 + f*mu*mu) *
+    auto integral_l4 = [&k, &f, &b1, &ps](double mu) {
+        return SQUARE(b1 + f*mu*mu) *
             0.125 * (35 * POW4(mu) - 30 * mu * mu + 3) *
             ps.tree_level(k, mu);
     };
@@ -138,6 +148,9 @@ void tree_level(
 )
 {
     double k_a = tables.get_k_a();
+    double b1 = tables.bias_parameters.at(0);
+    double rsd_f = tables.rsd_growth_f();
+
     /* Set some irrelevant values for non-existent loops */
     for (size_t i = 0; i < static_cast<size_t>(tables.loop_params.n_loops()); ++i) {
         tables.vars.magnitudes.at(i) = 0;
@@ -149,18 +162,23 @@ void tree_level(
     /* Compute dot_products-, alpha- and beta-tables */
     tables.compute_tables();
 
-    if (ps.rsd()) {
+
+    if (tables.rsd()) {
         if (ps.ir_resum()) {
             size_t sub_regions = 10000;
             double atol = std::min(1e-10, ps(k_a,0));
             double rtol = 1e-6;
             int integration_key = GSL_INTEG_GAUSS61;
 
-            ps::rsd_tree_level_ir_resum(k_a, ps, results, sub_regions, atol,
-                    rtol, integration_key);
+            ps::rsd_tree_level_ir_resum(k_a, rsd_f,
+                tables.biased_tracers(), b1, ps, results,
+                sub_regions, atol,
+                rtol, integration_key);
         }
         else {
-            ps::rsd_tree_level(k_a, ps, results);
+            ps::rsd_tree_level(k_a, rsd_f,
+                tables.biased_tracers(), b1, ps,
+                results);
         }
     }
     else {
