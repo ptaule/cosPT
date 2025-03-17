@@ -139,7 +139,6 @@ inline double n3(
         double G2 = tables.spt_kernels.at(static_cast<size_t>(n2_kernel_index)).values[1];
 
         result += (
-            b2 * F2
             + f_mu_k * mu3/q3 * (b1 * F2 + f * SQUARE(mu12) * G2)
             + f_mu_k * (b1 + f * SQUARE(mu3)) * mu12/q12 * G2
             + 2 * bG2 * (SQUARE(cos3_12) - 1) * F2
