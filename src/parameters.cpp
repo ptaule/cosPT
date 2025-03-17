@@ -923,7 +923,8 @@ Config::Config(const string& ini_file,
     }
 
     /* Biased tracers */
-    if(set_param_value<bool>(cfg, "biased_tracers")) {
+    set_param_value<bool>(cfg, "biased_tracers");
+    if(get<bool>("biased_tracers")) {
         if (!get<bool>("rsd")) {
             throw ConfigException("Biased tracers only implemented for rsd = true.");
         }
