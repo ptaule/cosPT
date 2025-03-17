@@ -538,13 +538,6 @@ int integrand(
             }
         }
 
-        /* RSD multipoles: multiply with Legendre polynomials */
-        if (rsd) {
-            results.at(1) *= 0.5 * (3 * SQUARE(vars.mu_los) - 1);
-            results.at(2) *= 0.125 * (
-                    35 * POW4(vars.mu_los) - 30 * SQUARE(vars.mu_los) + 3
-                    );
-        }
         if (tables.biased_tracers()) {
             /* We define b2 such that the constant contribution to Id2d2 as k->
              * 0 is removed */
@@ -555,6 +548,13 @@ int integrand(
             results.at(0) -= b2_subtract;
             results.at(1) -= b2_subtract;
             results.at(2) -= b2_subtract;
+        }
+        /* RSD multipoles: multiply with Legendre polynomials */
+        if (rsd) {
+            results.at(1) *= 0.5 * (3 * SQUARE(vars.mu_los) - 1);
+            results.at(2) *= 0.125 * (
+                    35 * POW4(vars.mu_los) - 30 * SQUARE(vars.mu_los) + 3
+                    );
         }
     }
     catch (const std::exception& e) {
