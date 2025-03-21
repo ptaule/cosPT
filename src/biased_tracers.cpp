@@ -1,3 +1,8 @@
+/* Expressions for biased tracers in redshift-space are taken from 2004.10607 */
+/* Notice however that the authors adopt a renormalization of the biases in which */
+/* two b2-terms in Z3 do not contribute in the end. This is also the */
+/* implementation here. */
+
 #include <cmath>
 #include <stdexcept>
 
@@ -49,7 +54,8 @@ inline double n2(
 
     double f_mu_k = f * mu * k;
 
-    return (0.5 * b2
+    return (
+        + 0.5 * b2
         + bG2 * (SQUARE(cos12) - 1)
         + b1 * F2 + f * SQUARE(mu) * G2
         + 0.5 * f_mu_k * (
@@ -96,16 +102,14 @@ inline double n3(
     double G3 = tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[1];
 
     double b1 = tables.bias_parameters.at(0);
-    double b2 = tables.bias_parameters.at(1);
     double bG2 = tables.bias_parameters.at(2);
     double bGamma3 = tables.bias_parameters.at(3);
 
     double f_mu_k = f * mu * k;
 
     double result = (
-        b1 * F3 + f * SQUARE(mu) * G3
+        + b1 * F3 + f * SQUARE(mu) * G3
         + 0.5 * SQUARE(f_mu_k) * (b1 + f * SQUARE(mu3)) * mu1 * mu2 / (q1 * q2)
-        + 0.5 * b2 * f_mu_k * mu3/q3
         + bG2 * f_mu_k * mu3/q3 * (SQUARE(cos12) - 1)
     );
 
@@ -121,7 +125,6 @@ inline double n3(
         n2_args, tables.loop_params.n_kernel_args());
 
     if (q12_label != tables.loop_params.zero_label()) {
-
         double q12 = std::sqrt(tables.composite_dot_products()
                 .at(static_cast<size_t>(q12_label))
                 .at(static_cast<size_t>(q12_label)));
@@ -130,7 +133,9 @@ inline double n3(
         double cos3_12 = tables.composite_dot_products()
                 .at(static_cast<size_t>(q12_label))
                 .at(static_cast<size_t>(arguments[2]))
-                / (q1*q2);
+                / (q12 * q3);
+        /*  cosine(q1+q2,q3)^2 - 1 */
+        double cos3_12_sqm1 = SQUARE(cos3_12) - 1;
 
         double mu12 = tables.composite_los_projection().at(static_cast<size_t>(q12_label)) / q12;
 
@@ -141,8 +146,8 @@ inline double n3(
         result += (
             + f_mu_k * mu3/q3 * (b1 * F2 + f * SQUARE(mu12) * G2)
             + f_mu_k * (b1 + f * SQUARE(mu3)) * mu12/q12 * G2
-            + 2 * bG2 * (SQUARE(cos3_12) - 1) * F2
-            + 2 * bGamma3 * (SQUARE(cos3_12) - 1) * (F2 - G2)
+            + 2 * bG2 * cos3_12_sqm1 * F2
+            + 2 * bGamma3 * cos3_12_sqm1 * (F2 - G2)
         );
     }
     return result;
