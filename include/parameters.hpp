@@ -46,7 +46,6 @@ class Config {
         Vec1D<double> kappa_;
         Vec1D<std::string> zeta_files_;
         Vec1D<std::string> xi_files_;
-        Vec1D<std::string> F1_ic_files_;
 
         /* T is the type of the parameter */
         template<typename T>
@@ -106,7 +105,6 @@ class Config {
         Vec1D<double> kappa() const {return kappa_;}
         Vec1D<std::string> zeta_files() const {return zeta_files_;}
         Vec1D<std::string> xi_files() const {return xi_files_;}
-        Vec1D<std::string> F1_ic_files() const {return F1_ic_files_;}
 
         /* Read CUBA info */
         int cuba_evals() const {return cuba_evals_;}
