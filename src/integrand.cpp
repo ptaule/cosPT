@@ -78,6 +78,7 @@ void configuration_term(
             * (diagram.l == diagram.r ? 1 : 2);
         return;
     }
+    /* Generic RSD computation (general loop order) */
     else if (rsd) {
         compute_rsd_kernels(arg_config_l.args.data(), arg_config_l.kernel_index,
                 2 * diagram.l + diagram.m, tables);
@@ -542,7 +543,30 @@ int integrand(
             /* We define b2 such that the constant contribution to Id2d2 as k->
              * 0 is removed */
             /* TODO: atm only implemented for n_loops = 1 */
+            /* Compute F1(k) (which is 1 for EdS-SPT) */
+            double F1 = 1;
+            if (tables.loop_params.dynamics() != EDS_SPT) {
+                KernelEvolver kernel_evolver(tables);
+
+                Vec1D<int> config(tables.loop_params.n_coeffs(), 0);
+                if (config.empty()) {
+                    throw std::runtime_error(
+                            "integrand(): n_coeffs = 0");
+                }
+                config.at(0) = 1; /* Config for q1 */
+
+                Vec1D<int> arguments(tables.loop_params.n_kernel_args(),
+                    tables.loop_params.zero_label());
+                arguments.at(0) = config2label(config);
+
+                int kernel_index =
+                    kernel_evolver.compute(arguments.data(), -1, 1);
+                F1 =
+                    tables.kernels.at(static_cast<size_t>(kernel_index)).values.back().at(0);
+            }
+
             double b2_subtract = 0.5 *
+                SQUARE(F1) *
                 SQUARE(tables.bias_parameters.at(1)) *
                 SQUARE(input.ps(vars.magnitudes.at(0), vars.mu_los));
             results.at(0) -= b2_subtract;
