@@ -3,11 +3,13 @@
 /* two b2-terms in Z3 do not contribute in the end. This is also the */
 /* implementation here. */
 
+#include <array>
 #include <cmath>
 #include <stdexcept>
 
 #include "../include/biased_tracers.hpp"
 #include "../include/combinatorics.hpp"
+#include "../include/kernel_evolution.hpp"
 #include "../include/parameters.hpp"
 #include "../include/spt_kernels.hpp"
 #include "../include/tables.hpp"
@@ -19,6 +21,15 @@ using std::size_t;
 #define at(x) operator[](x)
 #endif
 
+inline double n1(
+    double b1F1, /* b1 * F1 */
+    double fG1, /* f * G1 */
+    double mu
+    )
+{
+    return b1F1 + fG1 * SQUARE(mu);
+}
+
 inline double n2(
         const int arguments[],
         int kernel_index,
@@ -28,6 +39,10 @@ inline double n2(
         double f
         )
 {
+    double b1 = tables.bias_parameters.at(0);
+    double b2 = tables.bias_parameters.at(1);
+    double bG2 = tables.bias_parameters.at(2);
+
     double q1 = std::sqrt(tables.composite_dot_products()
             .at(static_cast<size_t>(arguments[0]))
             .at(static_cast<size_t>(arguments[0])));
@@ -44,22 +59,52 @@ inline double n2(
     double mu1 = tables.composite_los_projection().at(static_cast<size_t>(arguments[0])) / q1;
     double mu2 = tables.composite_los_projection().at(static_cast<size_t>(arguments[1])) / q2;
 
-    compute_SPT_kernels(arguments, kernel_index, 2, tables);
-    double F2 = tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[0];
-    double G2 = tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[1];
-
-    double b1 = tables.bias_parameters.at(0);
-    double b2 = tables.bias_parameters.at(1);
-    double bG2 = tables.bias_parameters.at(2);
-
     double f_mu_k = f * mu * k;
 
+    std::array<double, 2> F1; /* F1(q1), F1(q2) */
+    std::array<double, 2> G1; /* G1(q1), G1(q2) */
+    std::array<double, 2> Z1; /* Z1(q1), Z1(q2) */
+    double F2 = 0;
+    double G2 = 0;
+
+    /* Initialise F1/G1 to SPT values */
+    for (auto& el : F1) el = 1;
+    for (auto& el : G1) el = 1;
+
+    if (tables.loop_params.dynamics() == EDS_SPT) {
+        compute_SPT_kernels(arguments, kernel_index, 2, tables);
+        F2 = tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[0];
+        G2 = tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[1];
+    }
+    else {
+        KernelEvolver kernel_evolver(tables);
+        kernel_evolver.compute(arguments, kernel_index, 2);
+        F2 = tables.kernels.at(static_cast<size_t>(kernel_index)).values.back().at(0);
+        G2 = tables.kernels.at(static_cast<size_t>(kernel_index)).values.back().at(1);
+
+        int n1_args[N_KERNEL_ARGS_MAX];
+        std::fill(&n1_args[1],
+                &n1_args[tables.loop_params.n_kernel_args()],
+                tables.loop_params.zero_label());
+
+        for (size_t i = 0; i < 2; ++i) {
+            n1_args[0] = arguments[i];
+            kernel_index = kernel_evolver.compute(n1_args, -1, 1);
+            F1[i] = tables.kernels.at(static_cast<size_t>(kernel_index)).values.back().at(0);
+            G1[i] = tables.kernels.at(static_cast<size_t>(kernel_index)).values.back().at(1);
+        }
+    }
+
+    Z1.at(0) = n1(b1 * F1.at(0), f * G1.at(0), mu1);
+    Z1.at(1) = n1(b1 * F1.at(1), f * G1.at(1), mu2);
+
     return (
-        + 0.5 * b2
-        + bG2 * (SQUARE(cos12) - 1)
+        (0.5 * b2 + bG2 * (SQUARE(cos12) - 1))
+            * F1.at(0) * F1.at(1)
         + b1 * F2 + f * SQUARE(mu) * G2
         + 0.5 * f_mu_k * (
-            mu1/q1 * (b1 + f * SQUARE(mu2)) + mu2/q2 * (b1 + f * SQUARE(mu1))
+            mu1/q1 * G1.at(0) * Z1.at(1)
+            + mu2/q2 * G1.at(1) * Z1.at(0)
         )
     );
 }
@@ -77,6 +122,10 @@ inline double n3(
         double f
         )
 {
+    double b1 = tables.bias_parameters.at(0);
+    double bG2 = tables.bias_parameters.at(2);
+    double bGamma3 = tables.bias_parameters.at(3);
+
     double q1 = std::sqrt(tables.composite_dot_products()
             .at(static_cast<size_t>(arguments[0]))
             .at(static_cast<size_t>(arguments[0])));
@@ -97,20 +146,52 @@ inline double n3(
     double mu2 = tables.composite_los_projection().at(static_cast<size_t>(arguments[1])) / q2;
     double mu3 = tables.composite_los_projection().at(static_cast<size_t>(arguments[2])) / q3;
 
-    compute_SPT_kernels(arguments, kernel_index, 3, tables); /* F3(q1,q2,q3) and G3(q1,q2,q3) */
-    double F3 = tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[0];
-    double G3 = tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[1];
-
-    double b1 = tables.bias_parameters.at(0);
-    double bG2 = tables.bias_parameters.at(2);
-    double bGamma3 = tables.bias_parameters.at(3);
-
     double f_mu_k = f * mu * k;
+
+    std::array<double, 3> F1; /* F1(q1), F1(q2), F1(q3) */
+    std::array<double, 3> G1; /* G1(q1), F1(q2), F1(q3) */
+    std::array<double, 3> Z1; /* G1(q1), F1(q2), F1(q3) */
+
+    double F3 = 0; /* F3(q1,q2,q3) */
+    double G3 = 0; /* G3(q1,q2,q3) */
+
+    /* Initialise F1/G1 to SPT values */
+    for (auto& el : F1) el = 1;
+    for (auto& el : G1) el = 1;
+
+    if (tables.loop_params.dynamics() == EDS_SPT) {
+        compute_SPT_kernels(arguments, kernel_index, 3, tables);
+        F3 = tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[0];
+        G3 = tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[1];
+    }
+    else {
+        KernelEvolver kernel_evolver(tables);
+        kernel_evolver.compute(arguments, kernel_index, 3);
+
+        F3 = tables.kernels.at(static_cast<size_t>(kernel_index)).values.back().at(0);
+        G3 = tables.kernels.at(static_cast<size_t>(kernel_index)).values.back().at(1);
+
+        int n1_args[N_KERNEL_ARGS_MAX];
+        std::fill(&n1_args[1],
+                &n1_args[tables.loop_params.n_kernel_args()],
+                tables.loop_params.zero_label());
+
+        for (size_t i = 0; i < 3; ++i) {
+            n1_args[0] = arguments[i];
+            kernel_index = kernel_evolver.compute(n1_args, -1, 1);
+            F1[i] = tables.kernels.at(static_cast<size_t>(kernel_index)).values.back().at(0);
+            G1[i] = tables.kernels.at(static_cast<size_t>(kernel_index)).values.back().at(1);
+        }
+    }
+
+    Z1.at(0) = n1(b1 * F1.at(0), f * G1.at(0), mu1);
+    Z1.at(1) = n1(b1 * F1.at(1), f * G1.at(1), mu2);
+    Z1.at(2) = n1(b1 * F1.at(2), f * G1.at(2), mu3);
 
     double result = (
         + b1 * F3 + f * SQUARE(mu) * G3
-        + 0.5 * SQUARE(f_mu_k) * (b1 + f * SQUARE(mu3)) * mu1 * mu2 / (q1 * q2)
-        + bG2 * f_mu_k * mu3/q3 * (SQUARE(cos12) - 1)
+        + 0.5 * SQUARE(f_mu_k) * Z1.at(2) * mu1 * mu2 / (q1 * q2) * G1.at(0) * G1.at(1)
+        + bG2 * f_mu_k * mu3/q3 * G1.at(2) * (SQUARE(cos12) - 1) * F1.at(0) * F1.at(1)
     );
 
     /* Get label corresponding to q1 + q2 */
@@ -144,10 +225,10 @@ inline double n3(
         double G2 = tables.spt_kernels.at(static_cast<size_t>(n2_kernel_index)).values[1];
 
         result += (
-            + f_mu_k * mu3/q3 * (b1 * F2 + f * SQUARE(mu12) * G2)
-            + f_mu_k * (b1 + f * SQUARE(mu3)) * mu12/q12 * G2
-            + 2 * bG2 * cos3_12_sqm1 * F2
-            + 2 * bGamma3 * cos3_12_sqm1 * (F2 - G2)
+            + f_mu_k * mu3/q3 * G1.at(2) * (b1 * F2 + f * SQUARE(mu12) * G2)
+            + f_mu_k * Z1.at(2) * mu12/q12 * G2
+            + 2 * bG2 * cos3_12_sqm1 * F1.at(2) * F2
+            + 2 * bGamma3 * cos3_12_sqm1 * F1.at(2) * (F2 - G2)
         );
     }
     return result;
@@ -193,7 +274,15 @@ int compute_rsd_biased_kernels(
     double result = 0;
 
     if (n == 1) {
-        result = tables.bias_parameters.at(0) + rsd_f * SQUARE(mu_los);
+        double F1 = 1;
+        double G1 = 1;
+        if (tables.loop_params.dynamics() != EDS_SPT) {
+            KernelEvolver kernel_evolver(tables);
+            kernel_evolver.compute(arguments, kernel_index, 1);
+            F1 = tables.kernels.at(static_cast<size_t>(kernel_index)).values.back().at(0);
+            G1 = tables.kernels.at(static_cast<size_t>(kernel_index)).values.back().at(1);
+        }
+        result = tables.bias_parameters.at(0) * F1 + rsd_f * SQUARE(mu_los) * G1;
     }
     else if (n == 2) {
         result = n2(arguments, kernel_index, tables, k, mu_los, rsd_f);
