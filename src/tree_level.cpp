@@ -20,36 +20,30 @@ namespace ps {
 
 void rsd_tree_level(
     double k,
-    double rsd_growth_f,
-    bool biased_tracers,
-    double b1,
+    double b1F1, /* b1 * F1 */
+    double fG1, /* f * G1 */
     const InputPowerSpectrum& ps,
     Vec1D<double>& results /* out */
     )
 {
-    double f = rsd_growth_f;
-    double f2 = SQUARE(f);
-
-    /* If biased_tracers == false, b1 = 1 */
-    b1 = biased_tracers ? b1 : 1;
+    double fG1_sq = SQUARE(fG1);
 
     for (auto& el : results) el = ps.tree_level(k, 0);
-
     /* Linear monopole */
-    results.at(0) *= ( b1*b1 + 2.0/3.0 * b1 * f + 1.0/5.0 * f2);
+    // TODO Fix expressions
+    results.at(0) *= ( b1F1*b1F1 + 2.0/3.0 * b1F1 * fG1 + 1.0/5.0 * fG1_sq);
     /* Linear quadrupole */
-    results.at(1) *= ( 4.0/3.0 * b1 * f + 4.0/7.0 * f2);
+    results.at(1) *= ( 4.0/3.0 * b1F1 * fG1 + 4.0/7.0 * fG1_sq);
     /* Linear hexadecapole */
-    results.at(2) *= (8.0/35.0 * f2);
+    results.at(2) *= (8.0/35.0 * fG1_sq);
 }
 
 
 
 void rsd_tree_level_ir_resum(
     double k,
-    double rsd_growth_f,
-    bool biased_tracers,
-    double b1,
+    double b1F1, /* b1 * F1 */
+    double fG1, /* f * G1 */
     const InputPowerSpectrum& ps,
     Vec1D<double>& results, /* out */
     std::size_t integration_sub_regions = 10000,
@@ -58,16 +52,12 @@ void rsd_tree_level_ir_resum(
     int integration_key = GSL_INTEG_GAUSS61
     )
 {
-    /* If biased_tracers == false, b1 = 1 */
-    b1 = biased_tracers ? b1 : 1;
-    double f = rsd_growth_f;
-
     gsl_integration_workspace* workspace =
         gsl_integration_workspace_alloc(integration_sub_regions);
 
     /* l=0 integration, RSD kernel Z1 = (b1 + f mu^2)  */
-    auto integral_l0 = [&k, &f, &b1, &ps](double mu) {
-        return SQUARE(b1 + f*mu*mu) * ps.tree_level(k, mu);
+    auto integral_l0 = [&k, &fG1, &b1F1, &ps](double mu) {
+        return SQUARE(b1F1 + fG1*mu*mu) * ps.tree_level(k, mu);
     };
 
     gsl_function F;
@@ -88,8 +78,8 @@ void rsd_tree_level_ir_resum(
     }
 
     /* l=2 integration */
-    auto integral_l2 = [&k, &f, &b1, &ps](double mu) {
-        return SQUARE(b1 + f*mu*mu) *
+    auto integral_l2 = [&k, &fG1, &b1F1, &ps](double mu) {
+        return SQUARE(b1F1 + fG1*mu*mu) *
             0.5 * (3 * SQUARE(mu) - 1) *
             ps.tree_level(k, mu);
     };
@@ -110,8 +100,8 @@ void rsd_tree_level_ir_resum(
     }
 
     /* l=4 integration */
-    auto integral_l4 = [&k, &f, &b1, &ps](double mu) {
-        return SQUARE(b1 + f*mu*mu) *
+    auto integral_l4 = [&k, &fG1, &b1F1, &ps](double mu) {
+        return SQUARE(b1F1 + fG1*mu*mu) *
             0.125 * (35 * POW4(mu) - 30 * mu * mu + 3) *
             ps.tree_level(k, mu);
     };
@@ -148,8 +138,10 @@ void tree_level(
 )
 {
     double k_a = tables.get_k_a();
-    double b1 = tables.bias_parameters.at(0);
+    /* If biased_tracers == false, set b1 = 1 */
+    double b1 = tables.biased_tracers() ? tables.bias_parameters.at(0) : 1;
     double rsd_f = tables.rsd_growth_f();
+    Dynamics dynamics = tables.loop_params.dynamics();
 
     /* Set some irrelevant values for non-existent loops */
     for (size_t i = 0; i < static_cast<size_t>(tables.loop_params.n_loops()); ++i) {
@@ -162,30 +154,16 @@ void tree_level(
     /* Compute dot_products-, alpha- and beta-tables */
     tables.compute_tables();
 
-
-    if (tables.rsd()) {
-        if (ps.ir_resum()) {
-            size_t sub_regions = 10000;
-            double atol = std::min(1e-10, ps(k_a,0));
-            double rtol = 1e-6;
-            int integration_key = GSL_INTEG_GAUSS61;
-
-            ps::rsd_tree_level_ir_resum(k_a, rsd_f,
-                tables.biased_tracers(), b1, ps, results,
-                sub_regions, atol,
-                rtol, integration_key);
-        }
-        else {
-            ps::rsd_tree_level(k_a, rsd_f,
-                tables.biased_tracers(), b1, ps,
-                results);
-        }
+    /* If dynamical kernels, compute F1 for all fields in correlations (or for
+     * rsd/biased tracers, for F1/G1) */
+    size_t n_pair_correlations = 1;
+    if (!(tables.rsd() || tables.biased_tracers())) {
+        n_pair_correlations = pair_correlations.size();
     }
-    else {
-        for (auto& el : results) el = ps.tree_level(k_a, 0);
-    }
+    /* Initialize to EdS values, F1=G1=...=1 */
+    Vec2D<double> F1(n_pair_correlations, Vec1D<double>(2, 1.0));
 
-    if (tables.loop_params.dynamics() != EDS_SPT) {
+    if (dynamics != EDS_SPT) {
         Vec1D<int> config(tables.loop_params.n_coeffs(), 0);
         config.at(tables.loop_params.n_coeffs() - 1) = 1; /* Config for k_a */
 
@@ -196,17 +174,52 @@ void tree_level(
         KernelEvolver kernel_evolver(tables);
         int kernel_index = kernel_evolver.compute(arguments.data(), -1, 1);
 
-        for (size_t i = 0; i < results.size(); ++i) {
-            results.at(i) *=
-                tables.kernels.at(static_cast<size_t>(kernel_index))
+        if (tables.rsd() || tables.biased_tracers()) {
+            F1.at(0).at(0) = tables.kernels.at(static_cast<size_t>(kernel_index))
                 .values.back()
-                .at(static_cast<size_t>(pair_correlations.at(i).first()))
-                *
-                tables.kernels.at(static_cast<size_t>(kernel_index))
+                .at(static_cast<size_t>(0));
+            F1.at(0).at(1) = tables.kernels.at(static_cast<size_t>(kernel_index))
                 .values.back()
-                .at(static_cast<size_t>(pair_correlations.at(i).second()));
+                .at(static_cast<size_t>(1));
+        }
+        else {
+            for (size_t i = 0; i < n_pair_correlations; ++i) {
+                Pair<int> p = pair_correlations.at(i);
+                F1.at(i).at(0) = tables.kernels.at(static_cast<size_t>(kernel_index))
+                    .values.back()
+                    .at(static_cast<size_t>(p.first()));
+                F1.at(i).at(1) = tables.kernels.at(static_cast<size_t>(kernel_index))
+                    .values.back()
+                    .at(static_cast<size_t>(p.second()));
+            }
         }
     }
+
+    if (tables.rsd()) {
+        if (ps.ir_resum()) {
+            size_t sub_regions = 10000;
+            double atol = std::min(1e-10, ps(k_a,0));
+            double rtol = 1e-6;
+            int integration_key = GSL_INTEG_GAUSS61;
+
+            ps::rsd_tree_level_ir_resum(k_a, b1*F1.at(0).at(0),
+                    rsd_f*F1.at(0).at(1), ps, results,
+                    sub_regions,
+                    atol, rtol,
+                    integration_key);
+        }
+        else {
+            ps::rsd_tree_level(k_a, b1*F1.at(0).at(0),
+                    rsd_f*F1.at(0).at(1), ps, results);
+        }
+    }
+    else {
+        for (size_t i = 0; i < pair_correlations.size(); ++i) {
+            results.at(i) =
+                ps.tree_level(k_a, 0) * F1.at(i).at(0) * F1.at(i).at(1);
+        }
+    }
+
     /* Zero-initialize kernel tables again, to ensure that values do not
      * corrupt futher computations */
     tables.reset();
