@@ -75,7 +75,7 @@ class Config {
         void set_bispectrum_ext_momenta(const libconfig::Config& cfg);
 
         void set_input_ps(const libconfig::Config& cfg);
-        void set_output_file(const libconfig::Config& cfg);
+        bool set_output_file(const libconfig::Config& cfg);
 
         void set_dynamics(const libconfig::Config& cfg);
 

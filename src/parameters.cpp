@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <functional>
+#include <fstream>
 #include <iostream>
 #include <iomanip>
 #include <limits>
@@ -461,51 +462,64 @@ void Config::set_input_ps(const libconfig::Config& cfg)
 
 
 
-void Config::set_output_file(const libconfig::Config& cfg)
+bool Config::set_output_file(const libconfig::Config& cfg)
 {
     try {
-        /* Instead of running the entire integration before checking whether
-         * the output file/path can be written to, perform certain checks
-         * immediately */
-        string output_path;
-        if (set_param_value<string>(cfg, "output_file")) {
-            /* For c++ version > 2017 use routines in <filesystem> to check
-             * that directory exists */
-#if (__cplusplus > 201703L)
-            fs::path p(get<string>("output_file"));
-            if (p.has_parent_path() && !fs::exists(p.parent_path())) {
-                throw ConfigException("Output file directory " +
-                                      string(p.parent_path()) +
-                                      " does not exist.");
-            }
-#endif
-        }
-        else if (cfg.lookupValue("output_path", output_path)) {
-            /* For c++ version > 2017 use routines in <filesystem> to check
-             * that directory exists */
-#if (__cplusplus > 201703L)
-            if (!fs::exists(fs::path(output_path))) {
-                throw ConfigException("Output directory \"" + output_path +
-                                      "\" does not exist.");
-            }
-            if (!fs::is_directory(output_path)) {
-                throw ConfigException("Output directory \"" + output_path +
-                                      "\" is not a directory.");
-            }
-#endif
+        std::string output_path;
 
-            set<string>("output_file",
-                        create_filename_from_wavenumbers(output_path, ".dat"));
+        // Case 1: output_file is explicitly set
+        if (set_param_value<std::string>(cfg, "output_file")) {
+#if (__cplusplus > 201703L)
+            fs::path file_path(get<std::string>("output_file"));
+            fs::path parent = file_path.parent_path();
+
+            if (!parent.empty() && !fs::exists(parent)) {
+                std::error_code ec;
+                if (!fs::create_directories(parent, ec)) {
+                    throw ConfigException("Failed to create output directory \"" +
+                                          parent.string() + "\": " + ec.message());
+                }
+            }
+
+            // Test file writability
+            std::ofstream test(file_path);
+            if (!test) {
+                throw ConfigException("Cannot write to output file \"" + file_path.string() + "\".");
+            }
+#endif
+            return true;
+        }
+
+        // Case 2: output_path is provided
+        if (!cfg.exists("output_path")) {
+            return false;
         }
         else {
-            throw ConfigException("No output path/file given in configuration.");
+            cfg.lookupValue("output_path", output_path);
+#if (__cplusplus > 201703L)
+            fs::path dir_path(output_path);
+
+            if (!fs::exists(dir_path)) {
+                std::error_code ec;
+                if (!fs::create_directories(dir_path, ec)) {
+                    throw ConfigException("Failed to create output directory \"" +
+                                          dir_path.string() + "\": " + ec.message());
+                }
+            }
+
+            if (!fs::is_directory(dir_path)) {
+                throw ConfigException("\"" + output_path + "\" is not a directory.");
+            }
+#endif
+            set<std::string>("output_file",
+                create_filename_from_wavenumbers(output_path, ".dat"));
+            return true;
         }
     }
-    catch (const libconfig::SettingNotFoundException& nfex) {
-        throw ConfigException("No output_file or output_path (required) found "
-                              "in configuration file.");
+    catch (const libconfig::SettingNotFoundException&) {
+        return false;
     }
-    catch (const libconfig::SettingTypeException& tex) {
+    catch (const libconfig::SettingTypeException&) {
         throw ConfigException("Encountered type exception parsing output_file setting.");
     }
     catch (const ConfigException& ex) {
@@ -674,41 +688,56 @@ void Config::set_cuba_statefile(const libconfig::Setting& cuba_settings)
 {
     try {
         string statefile_path;
-        if (set_param_value<string>(cuba_settings, "cuba", "statefile")) {
-            /* For c++ version > 2017 use routines in <filesystem> to check
-             * that directory exists */
-#if (__cplusplus > 201703L)
-            fs::path p(get<string>("statefile"));
-            if (!fs::exists(p.parent_path())) {
-                throw ConfigException("CUBA statefile file directory " +
-                                      string(p.parent_path()) + " does not exist.");
-            }
-#endif
-        }
-        else if (cuba_settings.lookupValue("statefile_path", statefile_path)) {
-            /* For c++ version > 2017 use routines in <filesystem> to check
-             * that directory exists */
-#if (__cplusplus > 201703L)
-            if (!fs::exists(fs::path(statefile_path))) {
-                throw ConfigException("CUBA statefile directory \"" +
-                                      statefile_path + "\" does not exist.");
-            }
-            if (!fs::is_directory(statefile_path)) {
-                throw ConfigException("CUBA statefile directory \"" +
-                                      statefile_path + "\" is not a directory.");
-            }
-#endif
 
-            set<string>("output_file",
-                        create_filename_from_wavenumbers(statefile_path, ".state"));
+        // Case 1: 'statefile' is explicitly provided
+        if (set_param_value<string>(cuba_settings, "cuba", "statefile")) {
+#if (__cplusplus > 201703L)
+            fs::path file_path(get<string>("statefile"));
+            fs::path parent = file_path.parent_path();
+
+            if (!parent.empty() && !fs::exists(parent)) {
+                std::error_code ec;
+                if (!fs::create_directories(parent, ec)) {
+                    throw ConfigException("Failed to create CUBA statefile directory \"" +
+                                          parent.string() + "\": " + ec.message());
+                }
+            }
+
+            // Optional: check if the file can be written
+            std::ofstream test(file_path);
+            if (!test) {
+                throw ConfigException("Cannot write to CUBA statefile \"" +
+                                      file_path.string() + "\".");
+            }
+#endif
+            return;
+        }
+
+        // Case 2: fallback to 'statefile_path'
+        if (cuba_settings.lookupValue("statefile_path", statefile_path)) {
+#if (__cplusplus > 201703L)
+            fs::path dir_path(statefile_path);
+
+            if (!fs::exists(dir_path)) {
+                std::error_code ec;
+                if (!fs::create_directories(dir_path, ec)) {
+                    throw ConfigException("Failed to create CUBA statefile directory \"" +
+                                          dir_path.string() + "\": " + ec.message());
+                }
+            }
+
+            if (!fs::is_directory(dir_path)) {
+                throw ConfigException("CUBA statefile path \"" + statefile_path +
+                                      "\" is not a directory.");
+            }
+#endif
+            set<string>("statefile",
+                create_filename_from_wavenumbers(statefile_path, ".state"));
+            return;
         }
     }
-    catch (const libconfig::SettingTypeException& tex) {
-        throw ConfigException(
-            "Encountered type exception for CUBA statefile setting.");
-    }
-    catch (const ConfigException& ex) {
-        throw ex;
+    catch (const libconfig::SettingTypeException&) {
+        throw ConfigException("Encountered type exception for CUBA statefile setting.");
     }
 }
 
