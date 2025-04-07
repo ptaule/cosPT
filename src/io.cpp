@@ -61,56 +61,57 @@ void write_results(
         const Config& cfg,
         const Vec1D<double>& tree_level_result,
         const Vec1D<double>& loop_result,
-        const Vec1D<double>& errors
+        const Vec1D<double>& errors,
+        std::ostream& out,
+        bool header
         )
 {
-    std::ofstream out(cfg.get<string>("output_file"));
-
     if (out.fail()){
-        throw(std::runtime_error("Could not open \"" + cfg.get<string>("output_file") +
-                                 "\" for writing."));
+        throw(std::runtime_error("write_results(): output stream failed."));
     }
 
-    out << cfg;
+    if (header) {
+        out << cfg;
 
-    /* A column consists of 14 characters; 4 whitespaces in between each column */
-    if (cfg.get<Spectrum>("spectrum") == POWERSPECTRUM) {
-        out << "#" << setw(17) << "k";
+        /* A column consists of 14 characters; 4 whitespaces in between each column */
+        if (cfg.get<Spectrum>("spectrum") == POWERSPECTRUM) {
+            out << "#" << setw(17) << "k";
 
-        if (cfg.get<bool>("rsd")) {
-            for (int i = 0; i < 3; ++i) {
-                out << setw(14) << "P_l" << 2*i << "_L0";
-                if (cfg.get<int>("n_loops") > 0) {
-                    out << setw(14)  << "P_l" << 2*i << "_L"   << cfg.get<int>("n_loops");
-                    out << setw(14)  << "err_l" << 2*i << "_L" << cfg.get<int>("n_loops");
+            if (cfg.get<bool>("rsd")) {
+                for (int i = 0; i < 3; ++i) {
+                    out << setw(14) << "P_l" << 2*i << "_L0";
+                    if (cfg.get<int>("n_loops") > 0) {
+                        out << setw(14)  << "P_l" << 2*i << "_L"   << cfg.get<int>("n_loops");
+                        out << setw(14)  << "err_l" << 2*i << "_L" << cfg.get<int>("n_loops");
+                    }
+                }
+            }
+            else {
+                for (auto& el : cfg.pair_correlations()) {
+                    out << setw(13) << "P_L0 " << el;
+                    if (cfg.get<int>("n_loops") > 0) {
+                        out << setw(11)  << "P_L"   << cfg.get<int>("n_loops") << " " << el;
+                        out << setw(11)  << "err_L" << cfg.get<int>("n_loops") << " " << el;
+                    }
                 }
             }
         }
         else {
-            for (auto& el : cfg.pair_correlations()) {
-                out << setw(13) << "P_L0 " << el;
+            out << "#" << setw(17) << "k_a";
+            out << setw(18) << "k_b";
+            out << setw(18) << "k_c";
+
+            for (auto& el : cfg.triple_correlations()) {
+                out << setw(13) << "B_L0 " << el;
                 if (cfg.get<int>("n_loops") > 0) {
-                    out << setw(11)  << "P_L"   << cfg.get<int>("n_loops") << " " << el;
-                    out << setw(11)  << "err_L" << cfg.get<int>("n_loops") << " " << el;
+                    out << setw(13)  << "B_L"   << cfg.get<int>("n_loops") << " " << el;
+                    out << setw(13)  << "err_L" << cfg.get<int>("n_loops") << " " << el;
                 }
             }
         }
-    }
-    else {
-        out << "#" << setw(17) << "k_a";
-        out << setw(18) << "k_b";
-        out << setw(18) << "k_c";
-
-        for (auto& el : cfg.triple_correlations()) {
-            out << setw(13) << "B_L0 " << el;
-            if (cfg.get<int>("n_loops") > 0) {
-                out << setw(13)  << "B_L"   << cfg.get<int>("n_loops") << " " << el;
-                out << setw(13)  << "err_L" << cfg.get<int>("n_loops") << " " << el;
-            }
-        }
+        out << "\n";
     }
 
-    out << "\n";
     out << std::setw(18) << cfg.get<double>("k_a");
 
     if (cfg.get<Spectrum>("spectrum") == POWERSPECTRUM) {
@@ -146,6 +147,4 @@ void write_results(
         }
     }
     out << std::endl;
-
-    out.close();
 }

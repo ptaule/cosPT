@@ -1,4 +1,5 @@
 #include <cmath>
+#include <fstream>
 #include <iostream>
 
 extern "C" {
@@ -21,7 +22,7 @@ using std::string;
 void print_help();
 
 int main(int argc, char* argv[]) {
-    /* Default values for k_a_idx etc. indicate that they should be set
+    /* Default values -1 for k_a_idx etc. indicate that they should be set
      * in ini_file */
     int k_a_idx = -1;
     int k_b_idx = -1;
@@ -29,6 +30,8 @@ int main(int argc, char* argv[]) {
     int cuba_maxevals = 0;
     int cuba_cores = -1;
     string config_file;
+    int stdout_mode = -1; /* Not set (-1), write to file (0), only print to stdout (1) */
+    int verbosity_level = -1;
 
     static struct option long_options[] = {
           {"k_a_idx", required_argument, 0, 'a'},
@@ -37,12 +40,14 @@ int main(int argc, char* argv[]) {
           {"help",    no_argument,       0, 'h'},
           {"n_evals", required_argument, 0, 'n'},
           {"n_cores", required_argument, 0, 'p'},
+          {"stdout_mode", no_argument, 0, 'P'},
+          {"verbosity", required_argument, 0, 'v'},
           {NULL, 0, NULL, 0}
         };
 
     int option_index = 0;
     int c = 0;
-    while ((c = getopt_long(argc, argv, "a:b:c:hn:p:", long_options, &option_index))
+    while ((c = getopt_long(argc, argv, "a:b:c:hn:p:Pv:", long_options, &option_index))
             != -1)
     {
         switch (c) {
@@ -64,6 +69,12 @@ int main(int argc, char* argv[]) {
             case 'p':
                 cuba_cores = atoi(optarg);
                 break;
+            case 'P':
+                stdout_mode = 1;
+                break;
+            case 'v':
+                verbosity_level = atoi(optarg);
+                break;
             case '?':
             default:
                 std::cerr << "Unknown option given." << std::endl;
@@ -79,8 +90,19 @@ int main(int argc, char* argv[]) {
     config_file = string(argv[optind]);
 
     try {
-        std::cout << "Reading configuration file \"" << config_file << "\"." << std::endl;
+        if (verbosity_level > 0) {
+            std::cout << "Reading configuration file \"" << config_file << "\"." << std::endl;
+        }
         Config cfg(config_file, k_a_idx, k_b_idx, k_c_idx, cuba_maxevals, cuba_cores);
+
+        /* If stdout_mode/verbosity_level is not set with command line options,
+         * use the one from the config file */
+        if (stdout_mode == -1) {
+            stdout_mode = cfg.get<bool>("stdout_mode");
+        }
+        if (verbosity_level == -1) {
+            verbosity_level = cfg.get<int>("cuba_verbosity_level");
+        }
 
         int n_loops = cfg.get<int>("n_loops");
         int n_dims = 0; /* Dimension of integral measure */
@@ -252,7 +274,7 @@ int main(int argc, char* argv[]) {
                   CUBA_NVEC,
                   cfg.get<double>("cuba_rel_tolerance"),
                   cfg.get<double>("cuba_abs_tolerance"),
-                  (cfg.get<int>("cuba_verbosity_level") | CUBA_LAST | cuba_retain_statefile),
+                  (verbosity_level | CUBA_LAST | cuba_retain_statefile),
                   CUBA_SEED,
                   CUBA_MINEVAL,
                   cfg.get<int>("cuba_max_evaluations"),
@@ -298,16 +320,32 @@ int main(int argc, char* argv[]) {
                 }
             }
 
-            std::cout << "Integration probability/probabilities: ";
-            for (auto& el : integration_probs) {
-                std::cout << el << ", ";
+            if (verbosity_level > 0) {
+                std::cout << "Integration probability/probabilities: ";
+                for (auto& el : integration_probs) {
+                    std::cout << el << ", ";
+                }
+                std::cout << std::endl;
             }
-            std::cout << std::endl;
         }
 
-        write_results(cfg, tree_level_result, loop_result, errors);
-        std::cout << "Results written to " << cfg.get<string>("output_file")
-            << "." << std::endl;
+        if (stdout_mode == 1) {
+            write_results(cfg, tree_level_result, loop_result, errors,
+                    std::cout, false);
+        } else {
+            const std::string filename = cfg.get<std::string>("output_file");
+            std::ofstream out(filename);
+            if (!out) {
+                throw std::runtime_error("Failed to open " + filename);
+            }
+
+            write_results(cfg, tree_level_result, loop_result, errors,
+                    out, cfg.get<bool>("write_header"));
+
+            if (verbosity_level > 0) {
+                std::cout << "Results written to " << filename << "." << std::endl;
+            }
+        }
     }
     catch (const ConfigException& e) {
         std::cerr << e.what() << "\nExiting." << std::endl;
@@ -327,8 +365,8 @@ void print_help() {
 
 CosPT computes loop corrections to the power spectrum or bispectrum in
 cosmological perturbation theory. The program takes a configuration file as
-argument, see README.md for how to enter settings in this file. Some settings
-may also be set as a command line options, see below.
+argument. For details on how to set up the configuration file, see README.md.
+Some settings may also be modified via command-line options, as described below.
 
 Usage:
   cosPT config_file
@@ -338,14 +376,18 @@ Usage:
   cosPT -h | --help
 
 Options:
-  -h --help     Show this screen.
-  -a --k_a_idx  External wavenumber to compute, index in k_a_grid
-                file. Overrides index given in configuration file.
-  -b --k_b_idx  Similarly for second external wavenumber (bispectrum).
-  -c --k_c_idx  Similarly for third external wavenumber (bispectrum).
-  -n --n_evals  Number of evaluations in Monte Carlo integration.
-  -p --n_cores  Number of cores/threads for CUBA to spawn, in addition to master.
-            )";
+  -h --help        Show this help message.
+  -a --k_a_idx     External wavenumber to compute, index in k_a_grid
+                   file. Overrides the index specified in the configuration file.
+  -b --k_b_idx     Similarly for second external wavenumber (for bispectrum).
+  -c --k_c_idx     Similarly for third external wavenumber (for bispectrum).
+  -n --n_evals     Number of evaluations for Monte Carlo integration.
+  -p --n_cores     Number of cores/threads to spawn for CUBA, in addition to the master.
+  -P --stdout_mode Output results to stdout instead of to a file.
+  -v --verbosity   Set verbosity level for standard output. Higher values provide
+                   more detailed output.
+
+)";
     std::cout << help;
     return;
 }

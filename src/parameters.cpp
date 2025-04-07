@@ -832,6 +832,10 @@ Config::Config()
     set("cuba_statefile_path", string());
 
     set("description", string());
+    /* Write header with additional information in output */
+    set("write_header", true);
+    /* Print results only to stdout, not to file */
+    set("stdout_mode", false);
 
     set("ode_abs_tolerance", 1e-6);
     set("ode_rel_tolerance", 1e-4);
@@ -964,6 +968,8 @@ Config::Config(const string& ini_file,
 
     /* Store potential description */
     set_param_value<string>(cfg, "description");
+    /* Write header in output file? */
+    set_param_value<bool>(cfg, "write_header");
 
     if (cfg.exists("cuba_settings")) {
         const libconfig::Setting& cuba_settings = cfg.lookup("cuba_settings");
@@ -977,7 +983,14 @@ Config::Config(const string& ini_file,
     }
     set_input_ps(cfg);
     set_dynamics(cfg);
-    set_output_file(cfg);
+
+    set_param_value<bool>(cfg, "stdout_mode");
+    if (!get<bool>("stdout_mode")) {
+        if(!set_output_file(cfg)) {
+            throw ConfigException("No output path/file given in"
+                    " configuration. (stdout_mode = false)");
+        }
+    }
 }
 
 
