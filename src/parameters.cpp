@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <utility>
 
-#if (__cplusplus > 201703L)
+#if (__cplusplus >= 201703L)
 #include <filesystem>
 namespace fs = std::filesystem;
 #endif
@@ -469,7 +469,7 @@ bool Config::set_output_file(const libconfig::Config& cfg)
 
         // Case 1: output_file is explicitly set
         if (set_param_value<std::string>(cfg, "output_file")) {
-#if (__cplusplus > 201703L)
+#if (__cplusplus >= 201703L)
             fs::path file_path(get<std::string>("output_file"));
             fs::path parent = file_path.parent_path();
 
@@ -496,7 +496,7 @@ bool Config::set_output_file(const libconfig::Config& cfg)
         }
         else {
             cfg.lookupValue("output_path", output_path);
-#if (__cplusplus > 201703L)
+#if (__cplusplus >= 201703L)
             fs::path dir_path(output_path);
 
             if (!fs::exists(dir_path)) {
@@ -691,7 +691,7 @@ void Config::set_cuba_statefile(const libconfig::Setting& cuba_settings)
 
         // Case 1: 'statefile' is explicitly provided
         if (set_param_value<string>(cuba_settings, "cuba", "statefile")) {
-#if (__cplusplus > 201703L)
+#if (__cplusplus >= 201703L)
             fs::path file_path(get<string>("statefile"));
             fs::path parent = file_path.parent_path();
 
@@ -715,7 +715,7 @@ void Config::set_cuba_statefile(const libconfig::Setting& cuba_settings)
 
         // Case 2: fallback to 'statefile_path'
         if (cuba_settings.lookupValue("statefile_path", statefile_path)) {
-#if (__cplusplus > 201703L)
+#if (__cplusplus >= 201703L)
             fs::path dir_path(statefile_path);
 
             if (!fs::exists(dir_path)) {
