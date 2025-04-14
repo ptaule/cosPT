@@ -107,10 +107,11 @@ int main(int argc, char* argv[]) {
         int n_loops = cfg.get<int>("n_loops");
         int n_dims = 0; /* Dimension of integral measure */
         size_t n_comp = 0; /* Integrand dimension */
+        bool rsd = cfg.get<bool>("rsd");
+        Dynamics dynamics = cfg.get<Dynamics>("dynamics");
 
         LoopParameters loop_params(n_loops, cfg.get<Spectrum>("spectrum"),
-                                   cfg.get<Dynamics>("dynamics"),
-                                   cfg.get<bool>("rsd"));
+                                   dynamics, rsd);
         SumTable sum_table(loop_params);
 
         IRresumSettings ir_settings(
@@ -142,7 +143,7 @@ int main(int argc, char* argv[]) {
                                       cfg.get<double>("ode_rel_tolerance"),
                                       cfg.get<double>("ode_start_step"));
         OmegaEigenspace omega_eigenspace(
-            cfg.get<Dynamics>("dynamics"),
+            dynamics,
             eta_grid.eta_ini(),
             ev_params,
             cfg.get<int>("omega_eigenmode"),
@@ -155,7 +156,7 @@ int main(int argc, char* argv[]) {
         if (cfg.get<Spectrum>("spectrum") == POWERSPECTRUM) {
             input.pair_correlations = cfg.pair_correlations();
 
-            if (loop_params.rsd()) {
+            if (rsd) {
                 n_comp = 3; /* Monopole, quadrupole, hexadecapole */
             }
             else {
@@ -163,7 +164,7 @@ int main(int argc, char* argv[]) {
             }
 
             if (n_loops > 0) {
-                if (loop_params.rsd()) {
+                if (rsd) {
                     n_dims = 3 * n_loops + 1;
                 }
                 else {
@@ -186,7 +187,7 @@ int main(int argc, char* argv[]) {
             input.triple_correlations = cfg.triple_correlations();
             n_comp = input.triple_correlations.size();
 
-            if (cfg.get<bool>("rsd")) {
+            if (rsd) {
                 std::cerr << "RSD is not implemented for bispectrum. Exiting."
                     << std::endl;
                 return EXIT_FAILURE;
@@ -304,7 +305,7 @@ int main(int argc, char* argv[]) {
              *   (powerspectrum) */
             double overall_factor =
                 pow(2, n_loops) * gsl_sf_fact(static_cast<unsigned>(n_loops));
-            if (cfg.get<Spectrum>("spectrum") == POWERSPECTRUM && !cfg.get<bool>("rsd")) {
+            if (cfg.get<Spectrum>("spectrum") == POWERSPECTRUM && !rsd) {
                 overall_factor *= TWOPI;
             }
 
@@ -319,7 +320,8 @@ int main(int argc, char* argv[]) {
                     errors.at(i)      *= SQUARE(cfg.get<double>("sh_Q1"));
                 }
 
-                if (cfg.get<bool>("rsd")) {
+                /* Multiply multipole by (2l + 1) */
+                if (rsd) {
                     loop_result.at(i) *= 4 * static_cast<double>(i) + 1;
                     errors.at(i)      *= 4 * static_cast<double>(i) + 1;
                 }
