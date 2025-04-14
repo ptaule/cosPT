@@ -632,54 +632,40 @@ void Config::set_dynamics(const libconfig::Config& cfg)
 
 
 
-void Config::set_cuba_config(
-    const libconfig::Setting& cuba_settings,
-    int cuba_max_evaluations,
-    int cuba_cores
-    )
+void Config::set_cuba_config(const libconfig::Setting& cuba_settings)
 {
     set_param_value<double>(cuba_settings, "cuba", "abs_tolerance");
     set_param_value<double>(cuba_settings, "cuba", "rel_tolerance");
     set_param_value<int>(cuba_settings, "cuba", "verbosity_level");
     set_param_value<bool>(cuba_settings, "cuba", "retain_statefile");
 
-    /* If cuba_max_evaluations is not already set, look up value */
-    if (cuba_max_evaluations == 0) {
-        /* Try int */
+    /* Try int */
+    try {
+        set<int>("cuba_max_evaluations", cuba_settings.lookup("max_evaluations"));
+    }
+    catch (const libconfig::SettingTypeException& tex) {
+        /* If not recognized, try double */
         try {
-            set<int>("cuba_max_evaluations", cuba_settings.lookup("max_evaluations"));
+            double value = cuba_settings.lookup("max_evaluations");
+            if (value > std::numeric_limits<int>::max() || value < std::numeric_limits<int>::min()) {
+                throw std::overflow_error("Value is out of range for int");
+            }
+            set<int>("cuba_max_evaluations", static_cast<int>(std::round(value)));
+        }
+        catch (std::overflow_error& oe) {
+            throw ConfigException("Parsing cuba_settings: "
+                    "max_evaluations: value is out of range for int");
         }
         catch (const libconfig::SettingTypeException& tex) {
-            /* If not recognized, try double */
-            try {
-                double value = cuba_settings.lookup("max_evaluations");
-                if (value > std::numeric_limits<int>::max() || value < std::numeric_limits<int>::min()) {
-                    throw std::overflow_error("Value is out of range for int");
-                }
-                set<int>("cuba_max_evaluations", static_cast<int>(std::round(value)));
-            }
-            catch (std::overflow_error& oe) {
-                throw ConfigException("Parsing cuba_settings: "
-                        "max_evaluations: value is out of range for int");
-            }
-            catch (const libconfig::SettingTypeException& tex) {
-                throw ConfigException("Encountered type exception parsing "
-                        "cuba_settings: max_evaluations setting.");
-            }
-        }
-        catch (const libconfig::SettingNotFoundException& nfex) {
-            std::cout << "No cuba max. evaluations given. Using default value: "
-                << get<double>("cuba_maxeval") << std::endl;
+            throw ConfigException("Encountered type exception parsing "
+                    "cuba_settings: max_evaluations setting.");
         }
     }
-    /* If cuba_cores is not already set, look up value */
-    if (cuba_cores == 0 && !set_param_value<int>(cuba_settings, "cuba", "n_cores")) {
-        std::cout << "No CUBA number of cores option given. Using default value: "
-            << get<double>("cuba_n_cores") << "."<< std::endl;
+    catch (const libconfig::SettingNotFoundException& nfex) {
+        std::cout << "No cuba max. evaluations given. Using default value: "
+            << get<double>("cuba_maxeval") << std::endl;
     }
-    else {
-        set<int>("cuba_n_cores", cuba_cores);
-    }
+    set_param_value<int>(cuba_settings, "cuba", "n_cores");
 }
 
 
@@ -859,9 +845,7 @@ Config::Config()
 Config::Config(const string& ini_file,
         int k_a_idx,
         int k_b_idx,
-        int k_c_idx,
-        int cuba_max_evaluations,
-        int cuba_cores
+        int k_c_idx
         )
     : Config()
 {
@@ -976,7 +960,7 @@ Config::Config(const string& ini_file,
 
     if (cfg.exists("cuba_settings")) {
         const libconfig::Setting& cuba_settings = cfg.lookup("cuba_settings");
-        set_cuba_config(cuba_settings, cuba_max_evaluations, cuba_cores);
+        set_cuba_config(cuba_settings);
         set_cuba_statefile(cuba_settings);
     }
 

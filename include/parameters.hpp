@@ -79,11 +79,7 @@ class Config {
 
         void set_dynamics(const libconfig::Config& cfg);
 
-        void set_cuba_config(
-            const libconfig::Setting& cuba_settings,
-            int cuba_maxevals = 0,
-            int cuba_cores = -1
-            );
+        void set_cuba_config(const libconfig::Setting& cuba_settings);
         void set_cuba_statefile(const libconfig::Setting& cuba_settings);
         std::string create_filename_from_wavenumbers(
             const std::string& base_path,
@@ -94,9 +90,7 @@ class Config {
         Config(const std::string& ini_file,
                 int k_a_idx = -1,
                 int k_b_idx = -1,
-                int k_c_idx = -1,
-                int cuba_maxevals = 0,
-                int cuba_cores = -1
+                int k_c_idx = -1
                 );
 
         Vec1D<Pair<int>> pair_correlations() const {return pair_correlations_;}

@@ -28,8 +28,8 @@ int main(int argc, char* argv[]) {
     int k_a_idx = -1;
     int k_b_idx = -1;
     int k_c_idx = -1;
-    int cuba_maxevals = 0;
-    int cuba_cores = -1;
+    int cuba_maxevals = -1;
+    int cuba_n_cores = -1;
     string config_file;
     int stdout_mode = -1; /* Not set (-1), write to file (0), only print to stdout (1) */
     int verbosity_level = -1;
@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
                 cuba_maxevals = static_cast<int>(atof(optarg));
                 break;
             case 'p':
-                cuba_cores = atoi(optarg);
+                cuba_n_cores = atoi(optarg);
                 break;
             case 'P':
                 stdout_mode = 1;
@@ -94,15 +94,22 @@ int main(int argc, char* argv[]) {
         if (verbosity_level > 0) {
             std::cout << "Reading configuration file \"" << config_file << "\"." << std::endl;
         }
-        Config cfg(config_file, k_a_idx, k_b_idx, k_c_idx, cuba_maxevals, cuba_cores);
+        Config cfg(config_file, k_a_idx, k_b_idx, k_c_idx);
 
-        /* If stdout_mode/verbosity_level is not set with command line options,
-         * use the one from the config file */
+        /* If stdout_mode/verbosity_level/cuba_n_cores/cuba_max_evaluations is
+         * not set with command line options, use the one from the config
+         * file */
         if (stdout_mode == -1) {
             stdout_mode = cfg.get<bool>("stdout_mode");
         }
         if (verbosity_level == -1) {
             verbosity_level = cfg.get<int>("cuba_verbosity_level");
+        }
+        if (cuba_n_cores == -1) {
+            cuba_n_cores = cfg.get<int>("cuba_n_cores");
+        }
+        if (cuba_maxevals == -1) {
+            cuba_maxevals = cfg.get<int>("cuba_max_evaluations");
         }
 
         int n_loops = cfg.get<int>("n_loops");
@@ -183,7 +190,7 @@ int main(int argc, char* argv[]) {
                 input.ps_diagrams = ps::construct_diagrams(loop_params);
 
                 /* (Master + n_cores) instances of IntegrandTables */
-                for (int i = 0; i < cfg.get<int>("cuba_n_cores") + 1; ++i) {
+                for (int i = 0; i < cuba_n_cores + 1; ++i) {
                     input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
                                                   cfg.get<double>("rsd_growth_f"),
                                                   loop_params, sum_table,
@@ -262,9 +269,8 @@ int main(int argc, char* argv[]) {
         }
 
         if (n_loops > 0) {
-            cuba_cores = cfg.get<int>("cuba_n_cores");
             int cuba_points = 10000;
-            cubacores(&cuba_cores, &cuba_points);
+            cubacores(&cuba_n_cores, &cuba_points);
             int cuba_retain_statefile = 0;
             string cuba_statefile = cfg.get<string>("cuba_statefile");
             if (cfg.get<bool>("cuba_retain_statefile")) {
@@ -292,7 +298,7 @@ int main(int argc, char* argv[]) {
                   (verbosity_level | CUBA_LAST | cuba_retain_statefile),
                   CUBA_SEED,
                   CUBA_MINEVAL,
-                  cfg.get<int>("cuba_max_evaluations"),
+                  cuba_maxevals,
                   CUBA_NNEW,
                   CUBA_NMIN,
                   CUBA_FLATNESS,
