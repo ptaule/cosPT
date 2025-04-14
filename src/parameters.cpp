@@ -935,14 +935,16 @@ Config::Config(const string& ini_file,
     }
 
     /* IR resummation */
-    if(set_param_value<bool>(cfg, "ir_resum")) {
+    set_param_value<bool>(cfg, "ir_resum");
+    if(get<bool>("ir_resum")) {
         set_param_value<double>(cfg, "k_s");
         set_param_value<double>(cfg, "k_osc");
         set_param_value<int>(cfg, "pt_order", true);
     }
 
     /* Compute eft_displacement_dispersion? */
-    if(set_param_value<bool>(cfg, "compute_eft_displacement_dispersion")) {
+    set_param_value<bool>(cfg, "compute_eft_displacement_dispersion");
+    if(get<bool>("compute_eft_displacement_dispersion")) {
         if(!set_param_value<double>(cfg, "eft_displacement_dispersion_infty")) {
             std::cout <<
                 "Info: No value for eft_displacement_dispersion_infty read, "
@@ -953,7 +955,8 @@ Config::Config(const string& ini_file,
     }
 
     /* Compute single hard limit? */
-    if(set_param_value<bool>(cfg, "single_hard_limit")) {
+    set_param_value<bool>(cfg, "single_hard_limit");
+    if(get<bool>("single_hard_limit")) {
         if(!set_param_value<double>(cfg, "single_hard_limit_q")) {
             set<double>("sh_Q1", get<double>("q_max") * 10);
             std::cout << "Info: Single hard limit: Setting q = 10 * q_max = "
