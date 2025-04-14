@@ -37,13 +37,11 @@ InputPowerSpectrum::InputPowerSpectrum(
                 double input_ps_rescale,
                 bool ir_resum,
                 const IRresumSettings& ir_settings,
-                int loop_order,
-                int pt_order,
                 bool rsd,
                 double rsd_growth_f
                 ) :
-    loop_order(loop_order), pt_order(pt_order), ir_resum_(ir_resum), rsd_(rsd),
-    rsd_growth_f_(rsd_growth_f)
+    loop_order(ir_settings.loop_order), pt_order(ir_settings.pt_order),
+    ir_resum_(ir_resum), rsd_(rsd), rsd_growth_f_(rsd_growth_f)
 {
     ps = Interpolation1D(input_ps_filename, input_ps_rescale);
 
@@ -56,7 +54,7 @@ InputPowerSpectrum::InputPowerSpectrum(
 
     if (ir_resum) {
         remove_BAO_wiggles(ps, ps_nw, ir_settings);
-        compute_ir_damping(ps_nw, Sigma2, delta_Sigma2, ir_settings);
+        compute_ir_damping(ps_nw, ir_settings, Sigma2, delta_Sigma2);
 
 #if DEBUG > 1
         std::cout << "IR damping factor Sigma^2 = " << Sigma2 << std::endl;
@@ -235,7 +233,7 @@ void DST_III(Vec1D<double>& data) {
 
 
 
-void remove_BAO_wiggles(
+void InputPowerSpectrum::remove_BAO_wiggles(
         const Interpolation1D& ps,
         Interpolation1D& ps_nw,
         const IRresumSettings& settings
@@ -306,11 +304,11 @@ void remove_BAO_wiggles(
 
 
 
-void compute_ir_damping(
+void InputPowerSpectrum::compute_ir_damping(
         const Interpolation1D& ps_nw,
+        const IRresumSettings& settings,
         double& Sigma2,        /* out */
-        double& delta_Sigma2,  /* out */
-        const IRresumSettings& settings
+        double& delta_Sigma2  /* out */
         )
 {
     gsl_integration_workspace* workspace =

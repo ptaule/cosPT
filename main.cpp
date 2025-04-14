@@ -113,12 +113,17 @@ int main(int argc, char* argv[]) {
                                    cfg.get<bool>("rsd"));
         SumTable sum_table(loop_params);
 
-        IRresumSettings ir_settings(cfg.get<double>("k_s"), cfg.get<double>("k_osc"));
+        IRresumSettings ir_settings(
+            n_loops,
+            cfg.get<int>("pt_order"),
+            cfg.get<double>("k_s"),
+            cfg.get<double>("k_osc"),
+        );
 
         InputPowerSpectrum ps(cfg.get<string>("input_ps_file"),
                               cfg.get<double>("input_ps_rescale_num"),
-                              cfg.get<bool>("ir_resum"), ir_settings, n_loops,
-                              cfg.get<int>("pt_order"), cfg.get<bool>("rsd"),
+                              cfg.get<bool>("ir_resum"),
+                              ir_settings, cfg.get<bool>("rsd"),
                               cfg.get<double>("rsd_growth_f"));
 
         IntegrationInput input(ps, cfg.get<double>("q_min"),

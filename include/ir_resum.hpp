@@ -19,30 +19,45 @@ void DST_III(std::vector<double>& data);
 
 
 struct IRresumSettings {
-    /* Wiggly/non-wiggly split */
-    double k_max = 10;
-    int N_power = 16;
-    int N_left = 120;
-    int N_right = 240;
+    public:
+        int loop_order  = 0; /* Which loop order */
+        /* At which PT order are we working? To avoid overcounting of soft
+            * loops */
+        int pt_order = 0;
 
-    /* Damping factor */
-    double k_min = 1e-4;
-    double k_s = 0.2;
-    double k_osc = 1.0/110.0;
-    std::size_t integration_sub_regions = 10000;
-    double integration_atol = 0;
-    double integration_rtol = 1e-6;
-    int integration_key = GSL_INTEG_GAUSS61;
+        /* Wiggly/non-wiggly split */
+        double k_max = 10;
+        int N_power = 16;
+        int N_left = 120;
+        int N_right = 240;
 
-    IRresumSettings(double k_s, double k_osc) : k_s(k_s), k_osc(k_osc) {}
+        /* Damping factor calculation */
+        double k_min = 1e-4;
+        double k_s = 0.2;
+        double k_osc = 1.0/110.0;
+        std::size_t integration_sub_regions = 10000;
+        double integration_atol = 0;
+        double integration_rtol = 1e-6;
+        int integration_key = GSL_INTEG_GAUSS61;
+
+        IRresumSettings(
+            int loop_order,
+            int pt_order,
+            double k_s,
+            double k_osc
+            ) :
+            loop_order(loop_order), pt_order(pt_order),
+            k_s(k_s), k_osc(k_osc)
+            {}
 };
 
 
 class InputPowerSpectrum {
     private:
         int loop_order  = 0; /* Which loop order */
-        int pt_order = 0; /* At which PT order are we working? To avoid
-                              overcounting of soft loops */
+        /* At which PT order are we working? To avoid overcounting of soft
+         * loops */
+        int pt_order = 0;
 
         Interpolation1D ps;
         Interpolation1D ps_nw;
@@ -89,8 +104,6 @@ class InputPowerSpectrum {
                 double input_ps_rescale,
                 bool ir_resum,
                 const IRresumSettings& ir_settings,
-                int loop_order,
-                int pt_order,
                 bool rsd,
                 double rsd_growth_f
                 );
@@ -117,23 +130,23 @@ class InputPowerSpectrum {
         bool ir_resum() const { return ir_resum_; }
         bool rsd() const { return rsd_; }
         double rsd_growth_f() const { return rsd_growth_f_; }
+
+        /* Remove BAO wiggles. Default parameters taken from CLASS-PT, i.e. 2004.10607 */
+        static void remove_BAO_wiggles(
+            const Interpolation1D& ps,
+            Interpolation1D& ps_nw,
+            const IRresumSettings& settings
+        );
+
+        static void compute_ir_damping(
+            const Interpolation1D& ps_nw,
+            const IRresumSettings& settings,
+            double& Sigma2,       /* out */
+            double& delta_Sigma2 /* out */
+        );
 };
 
 
-/* Remove BAO wiggles. Default parameters taken from CLASS-PT, i.e. 2004.10607 */
-void remove_BAO_wiggles(
-        const Interpolation1D& ps,
-        Interpolation1D& ps_nw,
-        const IRresumSettings& settings
-        );
-
-
-void compute_ir_damping(
-        const Interpolation1D& ps_nw,
-        double& Sigma2,       /* out */
-        double& delta_Sigma2, /* out */
-        const IRresumSettings& settings
-        );
 
 
 #endif /* ifndef IR_RESUM_HPP */
