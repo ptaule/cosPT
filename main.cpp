@@ -17,6 +17,7 @@ extern "C" {
 #include "include/tree_level.hpp"
 
 using std::pow;
+using std::exp;
 using std::string;
 
 void print_help();
@@ -114,23 +115,6 @@ int main(int argc, char* argv[]) {
                                    dynamics, rsd);
         SumTable sum_table(loop_params);
 
-        IRresumSettings ir_settings(
-            n_loops,
-            cfg.get<int>("pt_order"),
-            cfg.get<double>("k_s"),
-            cfg.get<double>("k_osc"),
-        );
-
-        InputPowerSpectrum ps(cfg.get<string>("input_ps_file"),
-                              cfg.get<double>("input_ps_rescale_num"),
-                              cfg.get<bool>("ir_resum"),
-                              ir_settings, cfg.get<bool>("rsd"),
-                              cfg.get<double>("rsd_growth_f"));
-
-        IntegrationInput input(ps, cfg.get<double>("q_min"),
-                               cfg.get<double>("q_max"),
-                               cfg.get<bool>("single_hard_limit"));
-
         EtaGrid eta_grid(cfg.get<double>("eta_ini"),
                          cfg.get<double>("eta_fin"),
                          cfg.get<size_t>("time_steps"),
@@ -152,6 +136,31 @@ int main(int argc, char* argv[]) {
             cfg.get<int>("omega_N"),
             cfg.get<double>("omega_imag_threshold")
             );
+
+        /* Multiply by exp(n (eta_fin - eta_ini)) ? */
+        double growth_factor_multiplier = 1;
+        if (dynamics == EVOLVE_EDS_ICS || dynamics == EVOLVE_ASYMPTOTIC_ICS) {
+            growth_factor_multiplier =
+                exp((eta_grid.eta_fin() - eta_grid.eta_ini()));
+        }
+
+        IRresumSettings ir_settings(
+            n_loops,
+            cfg.get<int>("pt_order"),
+            cfg.get<double>("k_s"),
+            cfg.get<double>("k_osc"),
+            growth_factor_multiplier
+        );
+
+        InputPowerSpectrum ps(cfg.get<string>("input_ps_file"),
+                              cfg.get<double>("input_ps_rescale_num"),
+                              cfg.get<bool>("ir_resum"),
+                              ir_settings, rsd,
+                              cfg.get<double>("rsd_growth_f"));
+
+        IntegrationInput input(ps, cfg.get<double>("q_min"),
+                               cfg.get<double>("q_max"),
+                               cfg.get<bool>("single_hard_limit"));
 
         if (cfg.get<Spectrum>("spectrum") == POWERSPECTRUM) {
             input.pair_correlations = cfg.pair_correlations();
@@ -324,6 +333,12 @@ int main(int argc, char* argv[]) {
                 if (rsd) {
                     loop_result.at(i) *= 4 * static_cast<double>(i) + 1;
                     errors.at(i)      *= 4 * static_cast<double>(i) + 1;
+                }
+
+                /* Multiply by growth factor */
+                if (dynamics == EVOLVE_EDS_ICS || dynamics == EVOLVE_ASYMPTOTIC_ICS) {
+                    loop_result.at(i) *= pow(growth_factor_multiplier, 2*n_loops);
+                    errors.at(i)      *= pow(growth_factor_multiplier, 2*n_loops);
                 }
             }
 

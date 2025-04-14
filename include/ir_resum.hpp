@@ -40,14 +40,20 @@ struct IRresumSettings {
         double integration_rtol = 1e-6;
         int integration_key = GSL_INTEG_GAUSS61;
 
+        /* Multiply linear PS in damping factor integral by overall growth
+         * factor */
+        double growth_factor_multiplier = 1;
+
         IRresumSettings(
             int loop_order,
             int pt_order,
             double k_s,
-            double k_osc
+            double k_osc,
+            double growth_factor_multiplier
             ) :
             loop_order(loop_order), pt_order(pt_order),
-            k_s(k_s), k_osc(k_osc)
+            k_s(k_s), k_osc(k_osc),
+            growth_factor_multiplier(growth_factor_multiplier)
             {}
 };
 

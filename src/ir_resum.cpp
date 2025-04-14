@@ -56,6 +56,8 @@ InputPowerSpectrum::InputPowerSpectrum(
         remove_BAO_wiggles(ps, ps_nw, ir_settings);
         compute_ir_damping(ps_nw, ir_settings, Sigma2, delta_Sigma2);
 
+        Sigma2 *= SQUARE(ir_settings.growth_factor_multiplier);
+        delta_Sigma2 *= SQUARE(ir_settings.growth_factor_multiplier);
 #if DEBUG > 1
         std::cout << "IR damping factor Sigma^2 = " << Sigma2 << std::endl;
         std::cout << "IR damping factor delta_Sigma^2 = "
