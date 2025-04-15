@@ -214,7 +214,7 @@ int main(int argc, char* argv[]) {
                 input.bs_diagrams = bs::construct_diagrams(loop_params);
 
                 /* (Master + n_cores) instances of IntegrandTables */
-                for (int i = 0; i < cfg.get<int>("cuba_n_cores") + 1; ++i) {
+                for (int i = 0; i < cuba_n_cores + 1; ++i) {
                     input.tables_vec.emplace_back(cfg.get<double>("k_a"),
                                                   cfg.get<double>("k_b"),
                                                   cfg.get<double>("cos_ab"),
