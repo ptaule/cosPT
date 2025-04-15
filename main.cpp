@@ -343,8 +343,8 @@ int main(int argc, char* argv[]) {
 
                 /* Multiply by growth factor */
                 if (dynamics == EVOLVE_EDS_ICS || dynamics == EVOLVE_ASYMPTOTIC_ICS) {
-                    loop_result.at(i) *= pow(growth_factor_multiplier, 2*n_loops);
-                    errors.at(i)      *= pow(growth_factor_multiplier, 2*n_loops);
+                    loop_result.at(i) *= pow(growth_factor_multiplier, 2*(n_loops+1));
+                    errors.at(i)      *= pow(growth_factor_multiplier, 2*(n_loops+1));
                 }
             }
 
@@ -354,6 +354,13 @@ int main(int argc, char* argv[]) {
                     std::cout << el << ", ";
                 }
                 std::cout << std::endl;
+            }
+        }
+
+        /* Multiply by growth factor */
+        for (size_t i = 0; i < n_comp; ++i) {
+            if (dynamics == EVOLVE_EDS_ICS || dynamics == EVOLVE_ASYMPTOTIC_ICS) {
+                tree_level_result.at(i) *= pow(growth_factor_multiplier, 2);
             }
         }
 
