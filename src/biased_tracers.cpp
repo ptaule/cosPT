@@ -220,9 +220,20 @@ inline double n3(
 
         double mu12 = tables.composite_los_projection().at(static_cast<size_t>(q12_label)) / q12;
 
-        int n2_kernel_index = compute_SPT_kernels(n2_args, -1, 2, tables); /* F2(q1,q2) and G2(q1,q2) */
-        double F2 = tables.spt_kernels.at(static_cast<size_t>(n2_kernel_index)).values[0];
-        double G2 = tables.spt_kernels.at(static_cast<size_t>(n2_kernel_index)).values[1];
+        /* F2(q1,q2) and G2(q1,q2) */
+        double F2 = 0;
+        double G2 = 0;
+        if (tables.loop_params.dynamics() == EDS_SPT) {
+            int n2_kernel_index = compute_SPT_kernels(n2_args, -1, 2, tables);
+            F2 = tables.spt_kernels.at(static_cast<size_t>(n2_kernel_index)).values[0];
+            G2 = tables.spt_kernels.at(static_cast<size_t>(n2_kernel_index)).values[1];
+        }
+        else {
+            KernelEvolver kernel_evolver(tables);
+            int n2_kernel_index = kernel_evolver.compute(n2_args, -1, 2);
+            F2 = tables.kernels.at(static_cast<size_t>(n2_kernel_index)).values.back().at(0);
+            G2 = tables.kernels.at(static_cast<size_t>(n2_kernel_index)).values.back().at(1);
+        }
 
         result += (
             + f_mu_k * mu3/q3 * G1.at(2) * (b1 * F2 + f * SQUARE(mu12) * G2)
