@@ -88,7 +88,6 @@ for k_a in {000,005,010,015,020,025,030,035,040,045,050,055}; do
     {
         for f in {L1,L2,L2_sh,rsd_L1,rsd_L2,rsd_L2_sh,rsd_ir_L1,rsd_ir_L2,rsd_ir_L2_sh}; do
             {
-                mkdir -p "$tempdir"/output/eds_spt_ps/"$f"
                 "$exe" --k_a_idx "$k_a" --n_cores "$n_cores" "$tempdir"/tests/ini/eds_spt_ps_"$f".cfg
             } >>"$log_file"
         done
@@ -99,7 +98,6 @@ for k_a in {000,010,020,030,040,050,060,070,080,090,100}; do
     {
         for f in {L1,L2}; do
             {
-                mkdir -p "$tempdir"/output/eds_spt_bs/"$f"
                 "$exe" --k_a_idx "$k_a" --k_b_idx "$k_a" --k_c_idx "$k_a" --n_cores $n_cores \
                     "$tempdir"/tests/ini/eds_spt_bs_"$f".cfg
             } >>"$log_file"
@@ -109,14 +107,12 @@ done
 
 for k_a in {000,010,020,030,040,050,060,070,080}; do
     {
-        mkdir -p "$tempdir"/output/quijote_Mnu_0p1eV/L1/
         "$exe" --k_a_idx "$k_a" --n_cores "$n_cores" "$tempdir"/tests/ini/quijote_Mnu_0p1eV_L1.cfg
     } >>"$log_file"
 done
 
 for k_a in {030,045}; do
     {
-        mkdir -p "$tempdir"/output/quijote_Mnu_0p1eV/L2/
         "$exe" --k_a_idx "$k_a" --n_cores "$n_cores" "$tempdir"/tests/ini/quijote_Mnu_0p1eV_L2.cfg
     } >>"$log_file"
 done
