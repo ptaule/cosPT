@@ -133,14 +133,11 @@ void KernelEvolver::compute_RHS_sum(
     size_t time_steps    = tables.eta_grid.time_steps();
     size_t n_kernel_args = tables.loop_params.n_kernel_args();
 
-    Vec2D<double> rhs_sum;
-    Vec2D<double> partial_rhs_sum;
-
     /* Note different dimensions of rhs_sum and partial_rhs_sum. rhs_sum is
      * interpolated for each component, and needs to be a vector for each
      * component. partial_rhs_sum is opposite due to overhead reduction */
-    rhs_sum.assign(COMPONENTS, Vec1D<double>(time_steps, 0.0));
-    partial_rhs_sum.assign(time_steps, Vec1D<double>(COMPONENTS));
+    Vec2D<double> rhs_sum(COMPONENTS, Vec1D<double>(time_steps, 0.0));
+    Vec2D<double> partial_rhs_sum(time_steps, Vec1D<double>(COMPONENTS));
 
     int args_l[N_KERNEL_ARGS_MAX] = {0};
     int args_r[N_KERNEL_ARGS_MAX] = {0};
@@ -188,6 +185,116 @@ void KernelEvolver::compute_RHS_sum(
         for (size_t i = 0; i < COMPONENTS; ++i) {
             for (size_t j = 0; j < time_steps; ++j) {
                 rhs_sum.at(i).at(j) += partial_rhs_sum.at(j).at(i) / n_choose_m;
+            }
+        }
+    }
+
+    for (size_t i = 0; i < COMPONENTS; ++i) {
+        rhs.at(i) = Interpolation1D(tables.eta_grid.grid(), rhs_sum.at(i));
+    }
+}
+
+
+
+void KernelEvolver::compute_RHS_sum_3factors(
+        const int arguments[],
+        int n,
+        std::array<Interpolation1D, COMPONENTS>& rhs /* out */
+        )
+{
+    size_t time_steps    = tables.eta_grid.time_steps();
+    size_t n_kernel_args = tables.loop_params.n_kernel_args();
+
+    /* Note different dimensions of rhs_sum and partial_rhs_sum. rhs_sum is
+     * interpolated for each component, and needs to be a vector for each
+     * component. partial_rhs_sum is opposite due to overhead reduction */
+    Vec2D<double> rhs_sum(COMPONENTS, Vec1D<double>(time_steps, 0.0));
+    Vec2D<double> outer_partial_rhs_sum(time_steps, Vec1D<double>(COMPONENTS));
+    Vec2D<double> inner_partial_rhs_sum(time_steps, Vec1D<double>(COMPONENTS));
+
+    int args_l[N_KERNEL_ARGS_MAX] = {0};
+    int args_r[N_KERNEL_ARGS_MAX] = {0};
+    int args_r_a[N_KERNEL_ARGS_MAX] = {0};
+    int args_r_b[N_KERNEL_ARGS_MAX] = {0};
+
+    for (int m = 1; m < n; ++m) {
+        /* Initialize partial_rhs_sum to 0 */
+        for (auto& el : outer_partial_rhs_sum) {
+            std::fill(el.begin(), el.end(), 0.0);
+        }
+
+        /* Initialize args_l and args_r */
+        std::fill(&args_l[0], &args_l[n_kernel_args],
+                tables.loop_params.zero_label());
+        std::fill(&args_r[0], &args_r[n_kernel_args],
+                tables.loop_params.zero_label());
+
+        /* Go through all ways to pick m (unordered) elements from group of n */
+        Combinations comb(n, m);
+        do {
+            /* Set args_l and args_r from current combination and complement,
+             * respectively */
+            comb.rearrange_from_current_combination(arguments, args_l,
+                                                    static_cast<size_t>(m));
+            comb.rearrange_from_current_complement(arguments, args_r,
+                                                   static_cast<size_t>(n - m));
+
+            int sum_l = tables.sum_table.sum_labels(args_l, n_kernel_args);
+
+            for (int l = 1; l <= (n-m)/2; ++m) {
+                for (auto& el : inner_partial_rhs_sum) {
+                    std::fill(el.begin(), el.end(), 0.0);
+                }
+                std::fill(&args_r_a[0], &args_r[n_kernel_args],
+                        tables.loop_params.zero_label());
+                std::fill(&args_r_b[0], &args_r[n_kernel_args],
+                        tables.loop_params.zero_label());
+
+                /* Go through all ways to pick l (unordered) elements from group of n-m */
+                Combinations comb_r(n-m, l);
+                do {
+                    /* Set args_r_1 and args_r_2 from current combination and complement,
+                     * respectively */
+                    comb.rearrange_from_current_combination(args_r, args_r_a,
+                            static_cast<size_t>(l));
+                    comb.rearrange_from_current_complement(args_r, args_r_b,
+                                                   static_cast<size_t>(n-m-l));
+                    int sum_r_a = tables.sum_table.sum_labels(args_r_a, n_kernel_args);
+                    int sum_r_b = tables.sum_table.sum_labels(args_r_b, n_kernel_args);
+
+                    vertex_3factors(m, l, n-m-l, args_l, args_r_a, args_r_b, sum_l, sum_r_a, sum_r_b, inner_partial_rhs_sum);
+
+                    /* When l != (n - m - l), we may additionally compute the (n-m-l)-term by*/
+                    /* swapping args_r_a, sum_r_a, l with args_r_b, sum_r_b and (n-m-l). */
+                    if (l != n - m - l) {
+                        vertex_3factors(m, n-m-l, l, args_l, args_r_b, args_r_a, sum_l, sum_r_b, sum_r_a, inner_partial_rhs_sum);
+                    }
+                }
+                while (comb_r.next());
+                // Devide through by symmetrization factor (n-m choose l)
+                int choose_l = static_cast<int>(
+                        gsl_sf_choose(static_cast<unsigned int>(n-m),
+                            static_cast<unsigned int>(l))
+                        );
+                for (size_t i = 0; i < COMPONENTS; ++i) {
+                    for (size_t j = 0; j < time_steps; ++j) {
+                        outer_partial_rhs_sum.at(i).at(j) +=
+                            inner_partial_rhs_sum.at(j).at(i) / choose_l;
+                    }
+                }
+            }
+
+        } while (comb.next());
+
+        // Devide through by symmetrization factor (n choose m)
+        int choose_m = static_cast<int>(
+                gsl_sf_choose(static_cast<unsigned int>(n),
+                    static_cast<unsigned int>(m))
+                );
+        for (size_t i = 0; i < COMPONENTS; ++i) {
+            for (size_t j = 0; j < time_steps; ++j) {
+                rhs_sum.at(i).at(j) +=
+                    outer_partial_rhs_sum.at(j).at(i) / choose_m;
             }
         }
     }

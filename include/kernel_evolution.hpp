@@ -45,6 +45,7 @@ class KernelEvolver {
         void vertex(int m_l, int m_r, const int args_l[], const int args_r[],
                 int sum_l, int sum_r, Vec2D<double>& partial_rhs_sum);
         void compute_RHS_sum(const int arguments[], int n, std::array<Interpolation1D, COMPONENTS>& rhs);
+        void compute_RHS_sum_3factors(const int arguments[], int n, std::array<Interpolation1D, COMPONENTS>& rhs);
 
         static int ode_system(double eta, const double y[], double f[], void* ode_input);
         static int ode_system_fixed_eta(double eta, const double y[], double f[], void* ode_input);
