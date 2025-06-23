@@ -1,6 +1,7 @@
 #ifndef UTILITIES_HPP
 #define UTILITIES_HPP
 
+#include <array>
 #include <cstddef>
 #include <vector>
 #include <iosfwd>
@@ -51,6 +52,18 @@ template <class T>
 using Vec2D = std::vector<std::vector<T>>;
 template <class T>
 using Vec3D = std::vector<std::vector<std::vector<T>>>;
+
+template <std::size_t N>
+std::array<double, N> operator+=(
+    std::array<double, N>& a,
+    const std::array<double, N>& b
+)
+{
+    for (std::size_t i = 0; i < N; ++i) {
+        a[i] += b[i];
+    }
+    return a;
+}
 
 enum Spectrum {POWERSPECTRUM, BISPECTRUM};
 enum Dynamics {EDS_SPT, EVOLVE_EDS_ICS, EVOLVE_ASYMPTOTIC_ICS};

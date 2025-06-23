@@ -1,6 +1,8 @@
 #ifndef TABLES_HPP
 #define TABLES_HPP
 
+#include <array>
+
 #include "utilities.hpp"
 
 class LoopParameters;
@@ -22,7 +24,7 @@ struct IntegrationVariables {
 
 
 struct SPTKernel {
-    double values[EDS_SPT_COMPONENTS] = {0};
+    std::array<double, EDS_SPT_COMPONENTS> values;
     bool computed = false;
 };
 

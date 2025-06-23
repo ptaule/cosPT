@@ -16,49 +16,45 @@ extern "C" {
 #define at(x) operator[](x)
 #endif
 
-double spt_term(
-        int m_l,
-        int m_r,
-        int component,
-        int args_l[],
-        int args_r[],
-        int sum_l,
-        int sum_r,
-        IntegrandTables& tables
-        )
-{
+
+const std::array<double, EDS_SPT_COMPONENTS> vertex(
+    int m_l,
+    int m_r,
+    const int args_l[],
+    const int args_r[],
+    int sum_l,
+    int sum_r,
+    IntegrandTables& tables
+) {
     int n = m_l + m_r;
 
     int index_l = compute_SPT_kernels(args_l, -1, m_l, tables);
     int index_r = compute_SPT_kernels(args_r, -1, m_r, tables);
 
-    int a,b;
-    switch (component) {
-        case 0:
-            a = 2 * n + 1;
-            b = 2;
-            break;
-        case 1:
-            a = 3;
-            b = 2 * n;
-            break;
-        default:
-            throw(std::invalid_argument(
-                "SPT_term() does not accept argument 'component' which does "
-                "not equal 0 or 1."));
-        }
+    const auto& alpha_val =
+        tables.alpha().at(static_cast<size_t>(sum_l)).at(static_cast<size_t>(sum_r));
+    const auto& beta_val  =
+        tables.beta().at(static_cast<size_t>(sum_l)).at(static_cast<size_t>(sum_r));
 
-        return tables.spt_kernels.at(static_cast<size_t>(index_l)).values[1] *
-               (a * tables.alpha()
-                        .at(static_cast<size_t>(sum_l))
-                        .at(static_cast<size_t>(sum_r)) *
-                    tables.spt_kernels.at(static_cast<size_t>(index_r))
-                        .values[0] +
-                b * tables.beta()
-                        .at(static_cast<size_t>(sum_l))
-                        .at(static_cast<size_t>(sum_r)) *
-                    tables.spt_kernels.at(static_cast<size_t>(index_r))
-                        .values[1]);
+    const auto& spt_l = tables.spt_kernels.at(static_cast<size_t>(index_l)).values;
+    const auto& spt_r = tables.spt_kernels.at(static_cast<size_t>(index_r)).values;
+
+    std::array<double, EDS_SPT_COMPONENTS> results;
+    // component 0
+    {
+        int a = 2 * n + 1;
+        int b = 2;
+        results.at(0) = spt_l.at(1) * (a * alpha_val * spt_r.at(0)
+            + b * beta_val * spt_r.at(1));
+    }
+    // component 1
+    {
+        int a = 3;
+        int b = 2 * n;
+        results.at(1) = spt_l.at(1) * (a * alpha_val * spt_r.at(0)
+            + b * beta_val * spt_r.at(1));
+    }
+    return results;
 }
 
 
@@ -71,15 +67,17 @@ void partial_SPT_sum(
         IntegrandTables& tables
         )
 {
-    double partial_kernel_values[EDS_SPT_COMPONENTS] = {0};
+    std::array<double, EDS_SPT_COMPONENTS> partial_kernel_values = {0};
+
+    int zero_label = tables.loop_params.zero_label();
 
     size_t n_kernel_args = tables.loop_params.n_kernel_args();
     int args_l[N_KERNEL_ARGS_MAX] = {0};
     int args_r[N_KERNEL_ARGS_MAX] = {0};
 
     // Initialize args_l and args_r
-    std::fill(&args_l[0], &args_l[n_kernel_args], tables.loop_params.zero_label());
-    std::fill(&args_r[0], &args_r[n_kernel_args], tables.loop_params.zero_label());
+    std::fill(&args_l[0], &args_l[n_kernel_args], zero_label);
+    std::fill(&args_r[0], &args_r[n_kernel_args], zero_label);
 
     /* Go through all ways to pick m (unordered) elements from group of n */
     Combinations comb(n, m);
@@ -94,19 +92,14 @@ void partial_SPT_sum(
         int sum_l = tables.sum_table.sum_labels(args_l, n_kernel_args);
         int sum_r = tables.sum_table.sum_labels(args_r, n_kernel_args);
 
-        for (int i = 0; i < EDS_SPT_COMPONENTS; ++i) {
-            partial_kernel_values[i] +=
-                spt_term(m, n-m, i, args_l, args_r, sum_l, sum_r, tables);
-        }
+        partial_kernel_values += vertex(m, n-m, args_l, args_r,
+                                        sum_l, sum_r, tables);
 
         // When m != (n - m), we may additionally compute the (n-m)-term by
         // swapping args_l, sum_l, m with args_r, sum_r and (n-m). Then
         // compute_SPT_kernels() only needs to sum up to (including) floor(n/2).
         if (m != n - m) {
-            for (int i = 0; i < EDS_SPT_COMPONENTS; ++i) {
-                partial_kernel_values[i] +=
-                    spt_term(n-m, m, i, args_r, args_l, sum_r, sum_l, tables);
-            }
+            partial_kernel_values += vertex(n-m, m, args_r, args_l, sum_r, sum_l, tables);
         }
     } while (comb.next());
 
@@ -115,14 +108,15 @@ void partial_SPT_sum(
             gsl_sf_choose(static_cast<unsigned int>(n),
                           static_cast<unsigned int>(m))
             );
-    for (int i = 0; i < EDS_SPT_COMPONENTS; ++i) {
-        partial_kernel_values[i] /= n_choose_m;
+    for (auto& val : partial_kernel_values) {
+        val /= n_choose_m;
     }
 
     // Add calculated term for each component to kernel table
-    for (size_t i = 0; i < EDS_SPT_COMPONENTS; ++i) {
-        tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values[i] +=
-            partial_kernel_values[i];
+    auto& kernel_values =
+        tables.spt_kernels.at(static_cast<size_t>(kernel_index)).values;
+    for (size_t i = 0; i < kernel_values.size(); ++i) {
+        kernel_values.at(i) += partial_kernel_values.at(i);
     }
 }
 
@@ -155,8 +149,8 @@ int compute_SPT_kernels(
 
     // For SPT kernels, F_1 = G_1 = ... = 1
     if (n == 1) {
-        for (int i = 0; i < EDS_SPT_COMPONENTS; ++i) {
-            kernel.values[i] = 1.0;
+        for (size_t i = 0; i < EDS_SPT_COMPONENTS; ++i) {
+            kernel.values.at(i) = 1.0;
         }
         return kernel_index;
     }
@@ -168,8 +162,8 @@ int compute_SPT_kernels(
     }
 
     // Divide by overall factor in SPT recursion relation
-    for (int i = 0; i < EDS_SPT_COMPONENTS; ++i) {
-        kernel.values[i] /= (2*n + 3) * (n - 1);
+    for (size_t i = 0; i < EDS_SPT_COMPONENTS; ++i) {
+        kernel.values.at(i) /= (2*n + 3) * (n - 1);
     }
 
     // Update kernel table

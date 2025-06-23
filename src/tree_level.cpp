@@ -295,66 +295,42 @@ void diagram_term(
     size_t k_a_idx = n_coeffs - 1;
     size_t k_b_idx = n_coeffs - 2;
 
-    Triple<ArgumentConfiguration> arg_config =
+    const Dynamics dynamics = tables.loop_params.dynamics();
+    const Triple<ArgumentConfiguration> arg_config =
         kernel_arguments(diagram_idx, tables.loop_params);
 
-    /* Pointers to SPTKernel vector or last time step of Kernel vector */
-    double* values_a = nullptr;
-    double* values_b = nullptr;
-    double* values_c = nullptr;
+    int k_idx_a = arg_config.a().kernel_index;
+    int k_idx_b = arg_config.b().kernel_index;
+    int k_idx_c = arg_config.c().kernel_index;
+    const auto args_a = arg_config.a().args.data();
+    const auto args_b = arg_config.b().args.data();
+    const auto args_c = arg_config.c().args.data();
 
-    if (tables.loop_params.dynamics() == EDS_SPT) {
-        compute_SPT_kernels(arg_config.a().args.data(),
-                arg_config.a().kernel_index, 2, tables);
-        compute_SPT_kernels(arg_config.b().args.data(),
-                arg_config.b().kernel_index, 1, tables);
-        compute_SPT_kernels(arg_config.c().args.data(),
-                arg_config.c().kernel_index, 1, tables);
-
-        values_a = tables.spt_kernels
-                       .at(static_cast<size_t>(arg_config.a().kernel_index))
-                       .values;
-        values_b = tables.spt_kernels
-                       .at(static_cast<size_t>(arg_config.b().kernel_index))
-                       .values;
-        values_c = tables.spt_kernels
-                       .at(static_cast<size_t>(arg_config.c().kernel_index))
-                       .values;
+    if (dynamics == EDS_SPT || dynamics == EVOLVE_EDS_ICS) {
+        compute_SPT_kernels(args_a, k_idx_a, 2, tables);
+        compute_SPT_kernels(args_b, k_idx_b, 1, tables);
+        compute_SPT_kernels(args_c, k_idx_c, 1, tables);
     }
-    else if (tables.loop_params.dynamics() == EVOLVE_ASYMPTOTIC_ICS ||
-            tables.loop_params.dynamics() == EVOLVE_EDS_ICS) {
-        if (tables.loop_params.dynamics() == EVOLVE_EDS_ICS) {
-            compute_SPT_kernels(arg_config.a().args.data(),
-                    arg_config.a().kernel_index, 2, tables);
-            compute_SPT_kernels(arg_config.b().args.data(),
-                    arg_config.b().kernel_index, 1, tables);
-            compute_SPT_kernels(arg_config.c().args.data(),
-                    arg_config.c().kernel_index, 1, tables);
-        }
-
+    if (dynamics != EDS_SPT) {
         KernelEvolver kernel_evolver(tables);
 
-        kernel_evolver.compute(arg_config.a().args.data(),
-                arg_config.a().kernel_index, 2);
-        kernel_evolver.compute(arg_config.b().args.data(),
-                arg_config.b().kernel_index, 1);
-        kernel_evolver.compute(arg_config.c().args.data(),
-                arg_config.c().kernel_index, 1);
-
-        size_t time_steps = tables.eta_grid.time_steps();
-        values_a =
-            tables.kernels.at(static_cast<size_t>(arg_config.a().kernel_index))
-                .values.at(time_steps - 1)
-                .data();
-        values_b =
-            tables.kernels.at(static_cast<size_t>(arg_config.b().kernel_index))
-                .values.at(time_steps - 1)
-                .data();
-        values_c =
-            tables.kernels.at(static_cast<size_t>(arg_config.c().kernel_index))
-                .values.at(time_steps - 1)
-                .data();
+        kernel_evolver.compute(args_a, k_idx_a, 2);
+        kernel_evolver.compute(args_b, k_idx_b, 1);
+        kernel_evolver.compute(args_c, k_idx_c, 1);
     }
+
+    auto get_kernel_values_ptr = [&](size_t k_idx) -> double* {
+        if (dynamics == EDS_SPT) {
+            return tables.spt_kernels.at(k_idx).values.data();  // std::array<double, N>
+        } else {
+            return tables.kernels.at(k_idx).values.back().data();  // std::vector<double>
+        }
+    };
+
+    /* Pointers to SPTKernel vector or last time step of Kernel vector */
+    double* vals_a = get_kernel_values_ptr(static_cast<size_t>(k_idx_a));
+    double* vals_b = get_kernel_values_ptr(static_cast<size_t>(k_idx_b));
+    double* vals_c = get_kernel_values_ptr(static_cast<size_t>(k_idx_c));
 
     /* External momentum values */
     double k_a = std::sqrt(tables.bare_dot_products().at(k_a_idx).at(k_a_idx));
@@ -362,12 +338,11 @@ void diagram_term(
     double k_c = std::sqrt(SQUARE(k_a) + SQUARE(k_b) + 2 *
             tables.bare_dot_products().at(k_a_idx).at(k_b_idx));
 
-
     for (size_t i = 0; i < triple_correlations.size(); ++i) {
         diagram_results.at(i) = 2 *
-            values_a[triple_correlations.at(i).first()] *
-            values_b[triple_correlations.at(i).second()] *
-            values_c[triple_correlations.at(i).third()];
+            vals_a[triple_correlations.at(i).first()] *
+            vals_b[triple_correlations.at(i).second()] *
+            vals_c[triple_correlations.at(i).third()];
 
         switch (diagram_idx) {
             case 0:
