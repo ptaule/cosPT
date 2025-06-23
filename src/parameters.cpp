@@ -544,9 +544,17 @@ void Config::set_dynamics(const libconfig::Config& cfg)
         dynamics = EDS_SPT;
     }
     else if (dynamics_str == "evolve-asymp-ics") {
+        if (get<bool>("rsd") && !get<bool>("biased_tracers")) {
+            throw ConfigException("Generic RSD calculation not implemented for "
+                                  "asymptotic IC dynamics.");
+        }
         dynamics = EVOLVE_ASYMPTOTIC_ICS;
     }
     else if (dynamics_str == "evolve-eds-ics") {
+        if (get<bool>("rsd") && !get<bool>("biased_tracers")) {
+            throw ConfigException("Generic RSD calculation not implemented for "
+                                  "EdS IC dynamics.");
+        }
         dynamics = EVOLVE_EDS_ICS;
     }
     else {
