@@ -9,6 +9,7 @@
 #include "omega_matrix.hpp"
 #include "parameters.hpp"
 #include "tables.hpp"
+#include "utilities.hpp"
 
 class Interpolation1D;
 class EvolutionParameters;
@@ -21,7 +22,9 @@ class KernelEvolver {
 
         IntegrandTables& tables;
 
-        Vec2D<double> omega; /* Used for computing ICs if needed, omega matrix used in ODE is part of ODEParameters */
+        /* Used for computing ICs if needed, omega matrix used in ODE is part
+         * of ODEParameters */
+        Strided2DVec<double> omega;
 
         struct ODEParameters {
             const int n;
@@ -29,22 +32,23 @@ class KernelEvolver {
             const double eta_ini;  /* Only used when dynamics = EVOLVE_IC_ASYMP */
             const EvolutionParameters& ev_params;
             std::array<Interpolation1D, COMPONENTS>& rhs;
-            Vec2D<double>& omega;
+            Strided2DVec<double>& omega;
             ODEParameters(
                 int n,
                 double k,
                 double eta_ini,
                 const EvolutionParameters &ev_params,
                 std::array<Interpolation1D, COMPONENTS>& rhs,
-                Vec2D<double>& omega
+                Strided2DVec<double>& omega
                 )
                 : n(n), k(k), eta_ini(eta_ini), ev_params(ev_params), rhs(rhs),
                 omega(omega) {}
         };
 
         void vertex(int m_l, int m_r, const int args_l[], const int args_r[],
-                int sum_l, int sum_r, Vec2D<double>& partial_rhs_sum);
-        void compute_RHS_sum(const int arguments[], int n, std::array<Interpolation1D, COMPONENTS>& rhs);
+                    int sum_l, int sum_r, Strided2DVec<double>& partial_rhs_sum);
+        void RHS(const int arguments[], int n,
+                             std::array<std::vector<double>, COMPONENTS>& rhs);
 
         static int ode_system(double eta, const double y[], double f[], void* ode_input);
         static int ode_system_fixed_eta(double eta, const double y[], double f[], void* ode_input);

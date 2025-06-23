@@ -37,6 +37,10 @@ constexpr std::array<std::array<int, MAX_N + 1>, MAX_N + 1> make_binomial_table(
     return table;
 }
 constexpr auto binomial_coeffs = make_binomial_table();
+
+enum Spectrum {POWERSPECTRUM, BISPECTRUM};
+enum Dynamics {EDS_SPT, EVOLVE_EDS_ICS, EVOLVE_ASYMPTOTIC_ICS};
+
 /* Debug modes (if not set by compile options): */
 /* 1: Perform additional checks during runtime. */
 /* 2: In addition, print info during */
@@ -58,16 +62,69 @@ namespace Colors {
     constexpr char CYAN[]    = "\x1b[36m";
 }
 
+// Usage: std::cout << Colors::RED << "Error" << Colors::RESET << "\n";
+
+
 /* Unused parameters (to silence gcc warnings) */
 #define UNUSED(x) (void)(x)
 
-/* Vector aliases */
 template <class T>
 using Vec1D = std::vector<T>;
+
 template <class T>
 using Vec2D = std::vector<std::vector<T>>;
+
 template <class T>
 using Vec3D = std::vector<std::vector<std::vector<T>>>;
+
+/* Strided 2D vector class. Internal flat layout for fast memory access */
+template<typename T>
+class Strided2DVec {
+    private:
+        std::size_t stride_ = 0;
+        std::vector<T> data_;
+    public:
+        Strided2DVec() = default;
+        Strided2DVec(const Strided2DVec&) = default;
+        Strided2DVec(Strided2DVec&&) = default;
+        Strided2DVec& operator=(const Strided2DVec&) = default;
+        Strided2DVec& operator=(Strided2DVec&&) = default;
+        Strided2DVec(std::size_t rows, std::size_t cols)
+            : stride_(cols), data_(rows * cols, T()) {}
+
+        void resize(std::size_t rows, std::size_t cols, const T& value = T()) {
+            stride_ = cols;
+            data_.resize(rows * cols, value);
+        }
+
+        std::vector<T>& data() { return data_; }
+        const std::vector<T>& data() const { return data_; }
+        T* pointer() { return data_.data(); }
+
+        std::size_t stride() const { return stride_; }
+        std::size_t rows() const { return data_.size() / stride_; }
+        std::size_t size() const { return data_.size(); }
+
+        // Non-const access
+        auto begin() { return data_.begin(); }
+        auto end()   { return data_.end(); }
+        // Const access
+        auto begin() const { return data_.begin(); }
+        auto end()   const { return data_.end(); }
+        auto cbegin() const { return data_.cbegin(); }
+        auto cend()   const { return data_.cend(); }
+#if DEBUG == 0
+#define at(x) operator[](x)
+#endif
+        T& operator()(std::size_t i, std::size_t j) {
+            return data_.at(i * stride_ + j);
+        }
+        const T& operator()(std::size_t i, std::size_t j) const {
+            return data_.at(i * stride_ + j);
+        }
+#undef at
+};
+
 
 template <std::size_t N>
 std::array<double, N> operator+=(
@@ -81,8 +138,6 @@ std::array<double, N> operator+=(
     return a;
 }
 
-enum Spectrum {POWERSPECTRUM, BISPECTRUM};
-enum Dynamics {EDS_SPT, EVOLVE_EDS_ICS, EVOLVE_ASYMPTOTIC_ICS};
 
 /* Pair and triple classes */
 template <typename T>
@@ -142,8 +197,8 @@ std::ostream& operator<<(std::ostream& out, const Triple<int>& pair);
 
 /* Utility functions */
 
-void label2config(int label, Vec1D<int>& config);
-int config2label(const Vec1D<int>& config);
+void label2config(int label, std::vector<int>& config);
+int config2label(const std::vector<int>& config);
 
 std::string label2string(
     int label,

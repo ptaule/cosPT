@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <cmath>
 
-#include "../include/omega_matrix.hpp"
 #include "../include/parameters.hpp"
 #include "../include/tables.hpp"
 
@@ -154,109 +153,69 @@ IntegrandTables::IntegrandTables(
     size_t n_configs = loop_params.n_configs();
     size_t n_kernels = loop_params.n_kernels();
 
-    bare_dot_prod.resize(n_coeffs);
-    for (size_t i = 0; i < n_coeffs; ++i) {
-        bare_dot_prod.at(i).resize(n_coeffs);
-    }
-
-    composite_dot_prod.resize(n_configs);
-    alpha_.resize(n_configs);
-    beta_.resize(n_configs);
-    for (size_t i = 0; i < n_configs; ++i) {
-        composite_dot_prod.at(i).resize(n_configs);
-        alpha_.at(i).resize(n_configs);
-        beta_.at(i).resize(n_configs);
-    }
     a_coeffs.resize(n_coeffs);
     b_coeffs.resize(n_coeffs);
 
-    if (loop_params.dynamics() == EDS_SPT ||
-        loop_params.dynamics() == EVOLVE_EDS_ICS) {
-        spt_kernels.resize(n_kernels);
-    }
-    if (loop_params.dynamics() == EVOLVE_EDS_ICS ||
-        loop_params.dynamics() == EVOLVE_ASYMPTOTIC_ICS
-        ) {
-        kernels.resize(n_kernels);
+    bare_dot_prod.resize(n_coeffs, n_coeffs);
+    composite_dot_prod.resize(n_configs, n_configs);
+    alpha_.resize(n_configs, n_configs);
+    beta_.resize(n_configs, n_configs);
 
-        for (size_t i = 0; i < n_kernels; ++i) {
-            kernels.at(i).values.assign(eta_grid.time_steps(),
-                Vec1D<double>(COMPONENTS));
-        }
-    }
+    spt_kernels.resize(n_kernels, SPTKernel());
+    kernels.resize(n_kernels,
+                   Kernel(eta_grid.time_steps()));
     if (loop_params.rsd()) {
         bare_los_projection_.resize(n_coeffs);
         composite_los_projection_.resize(n_configs);
 
-        rsd_kernels.resize(n_kernels);
-        vel_power_kernels.resize(n_kernels);
-
-        for (size_t i = 0; i < n_kernels; ++i) {
-            vel_power_kernels.at(i).resize(2*static_cast<size_t>(n_loops));
-        }
+        rsd_kernels.resize(n_kernels, RSDKernel());
+        vel_power_kernels.resize(n_kernels,
+                                 2*static_cast<size_t>(n_loops) ,
+                                 RSDKernel());
     }
 }
 
 
 
-void IntegrandTables::reset()
-{
-    // bare_dot_prod, alpha_, beta_ tables etc. are completely rewritten
-    // by their respective compute-functions, hence no need to zero initialize
+/* Generic function for resetting kernels */
+template <typename KernelType, typename ResetFn>
+void reset_kernels(KernelType& kernels, ResetFn reset_fn) {
+    for (auto& kernel : kernels) {
+        kernel.computed = false;
+        reset_fn(kernel);
+    }
+}
 
-    if (loop_params.dynamics() == EDS_SPT) {
-        reset_spt_kernels();
+
+
+void IntegrandTables::reset() {
+    switch (loop_params.dynamics()) {
+        case EDS_SPT:
+            reset_kernels(spt_kernels, [](auto &k) {
+                std::fill(k.values.begin(), k.values.end(), 0.0);
+            });
+            break;
+        case EVOLVE_ASYMPTOTIC_ICS:
+            reset_kernels(kernels, [](auto &k) {
+                std::fill(k.values.begin(), k.values.end(), 0.0);
+            });
+            break;
+        case EVOLVE_EDS_ICS:
+            reset_kernels(spt_kernels, [](auto &k) {
+                std::fill(k.values.begin(), k.values.end(), 0.0);
+            });
+            reset_kernels(kernels, [](auto &k) {
+                std::fill(k.values.begin(), k.values.end(), 0.0);
+            });
+            break;
+        default:
+            throw std::runtime_error("IntegrandTables::reset(): Invalid dynamics type.");
     }
-    else if (loop_params.dynamics() == EVOLVE_ASYMPTOTIC_ICS ) {
-        reset_kernels();
-    }
-    else {
-        /* loop_params.dynamics() == EVOLVE_EDS_ICS */
-        reset_spt_kernels();
-        reset_kernels();
-    }
+
     if (loop_params.rsd()) {
-        reset_rsd_kernels();
-    }
-}
-
-
-
-void IntegrandTables::reset_spt_kernels()
-{
-    for (size_t i = 0; i < loop_params.n_kernels(); ++i) {
-        spt_kernels.at(i).computed = false;
-        spt_kernels.at(i).values[0] = 0;
-        spt_kernels.at(i).values[1] = 0;
-    }
-}
-
-
-
-void IntegrandTables::reset_kernels()
-{
-    for (size_t i = 0; i < loop_params.n_kernels(); ++i) {
-        kernels.at(i).computed = false;
-
-        for (size_t j = 0; j < eta_grid.time_steps(); ++j) {
-          std::fill(kernels.at(i).values.at(j).begin(),
-                    kernels.at(i).values.at(j).end(), 0);
-        }
-    }
-}
-
-
-
-void IntegrandTables::reset_rsd_kernels()
-{
-    for (size_t i = 0; i < loop_params.n_kernels(); ++i) {
-        rsd_kernels.at(i).computed = false;
-        rsd_kernels.at(i).value = 0;
-
-        for (auto& el : vel_power_kernels.at(i)) {
-            el.value    = 0;
-            el.computed = false;
-        }
+        reset_kernels(rsd_kernels, [](auto &k) {
+            k.value = 0.0;
+        });
     }
 }
 
@@ -270,17 +229,17 @@ void IntegrandTables::compute_bare_dot_prod()
 
     /* Diagonal products correspond to Q1*Q1, etc. */
     for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
-        bare_dot_prod.at(i).at(i) = SQUARE(vars.magnitudes.at(i));
+        bare_dot_prod(i,i) = SQUARE(vars.magnitudes.at(i));
     }
-    bare_dot_prod.at(k_a_idx).at(k_a_idx) = SQUARE(k_a);
+    bare_dot_prod(k_a_idx, k_a_idx) = SQUARE(k_a);
 
     double value = 0;
     /* k_a is chosen to point in the z-direction, hence products involving k_a
      * and Q_i has the form k_a*Q_i*cos(theta_i) */
     for (size_t i = 0; i < static_cast<size_t>(n_loops); ++i) {
         value = k_a * vars.magnitudes.at(i) * vars.cos_theta.at(i);
-        bare_dot_prod.at(k_a_idx).at(i) = value;
-        bare_dot_prod.at(i).at(k_a_idx) = value;
+        bare_dot_prod(k_a_idx, i) = value;
+        bare_dot_prod(i, k_a_idx) = value;
     }
 
     if (n_loops > 1) {
@@ -297,8 +256,8 @@ void IntegrandTables::compute_bare_dot_prod()
                     vars.cos_theta.at(i) * vars.cos_theta.at(j);
 
                 value *= vars.magnitudes.at(i) * vars.magnitudes.at(j);
-                bare_dot_prod.at(i).at(j) = value;
-                bare_dot_prod.at(j).at(i) = value;
+                bare_dot_prod(i, j) = value;
+                bare_dot_prod(j, i) = value;
             }
         }
     }
@@ -307,10 +266,9 @@ void IntegrandTables::compute_bare_dot_prod()
         size_t k_b_idx = n_coeffs - 2;
 
         double value = k_a * k_b * cos_ab;
-        bare_dot_prod.at(k_a_idx).at(k_b_idx) = value;
-        bare_dot_prod.at(k_b_idx).at(k_a_idx) = value;
-
-        bare_dot_prod.at(k_b_idx).at(k_b_idx) = SQUARE(k_b);
+        bare_dot_prod(k_a_idx, k_b_idx) = value;
+        bare_dot_prod(k_b_idx, k_a_idx) = value;
+        bare_dot_prod(k_b_idx, k_b_idx) = SQUARE(k_b);
         /* Products involving k_b and Q_i (special case since k_b has azimuthal
          * angle 0)*/
         double sin_ab = sqrt(1 - SQUARE(cos_ab));
@@ -320,8 +278,8 @@ void IntegrandTables::compute_bare_dot_prod()
             value = sin_ab * cos(vars.phi.at(i)) * sin_theta_i +
                 cos_ab * vars.cos_theta.at(i);
             value *= k_b * vars.magnitudes.at(i);
-            bare_dot_prod.at(k_b_idx).at(i) = value;
-            bare_dot_prod.at(i).at(k_b_idx) = value;
+            bare_dot_prod(k_b_idx, i) = value;
+            bare_dot_prod(i, k_b_idx) = value;
         }
     }
 }
@@ -360,7 +318,7 @@ void IntegrandTables::compute_composite_los_proj() {
 
         label2config(static_cast<int>(a), a_coeffs);
         for (size_t i = 0; i < n_coeffs; ++i) {
-            product_value += a_coeffs[i] * bare_los_projection_.at(i);
+            product_value += a_coeffs.at(i) * bare_los_projection_.at(i);
         }
         composite_los_projection_.at(a) = product_value;
     }
@@ -384,16 +342,16 @@ void IntegrandTables::compute_composite_dot_prod()
             label2config(static_cast<int>(b), b_coeffs);
             for (size_t i = 0; i < n_coeffs; ++i) {
                 for (size_t j = 0; j < n_coeffs; ++j) {
-                    product_value += a_coeffs[i] * b_coeffs[j]
-                        * bare_dot_prod.at(i).at(j);
+                    product_value += a_coeffs.at(i) * b_coeffs.at(j)
+                        * bare_dot_prod(i, j);
                 }
             }
             if (a == b) {
-                composite_dot_prod.at(a).at(a) = product_value;
+                composite_dot_prod(a, a) = product_value;
             }
             else {
-                composite_dot_prod.at(a).at(b) = product_value;
-                composite_dot_prod.at(b).at(a) = product_value;
+                composite_dot_prod(a, b) = product_value;
+                composite_dot_prod(b, a) = product_value;
             }
         }
     }
@@ -408,8 +366,8 @@ void IntegrandTables::compute_alpha_beta()
         for (size_t b = 0; b < n_configs; ++b) {
             // Special case when a == b
             if (a == b) {
-                alpha_.at(a).at(b) = 2.0;
-                beta_.at(a).at(b)  = 2.0;
+                alpha_(a, b) = 2.0;
+                beta_(a, b)  = 2.0;
                 continue;
             }
 
@@ -419,13 +377,13 @@ void IntegrandTables::compute_alpha_beta()
             // If the first argument is the zero-vector, alpha and beta remains 0
             // If the second argument is the zero-vector, beta remains 0
             if (a != static_cast<size_t>(loop_params.zero_label())) {
-                double product_ab = composite_dot_prod.at(a).at(b);
-                double product_aa = composite_dot_prod.at(a).at(a);
+                double product_ab = composite_dot_prod(a, b);
+                double product_aa = composite_dot_prod(a, a);
 
                 alpha_val = 1 + product_ab/product_aa;
 
                 if (b != static_cast<size_t>(loop_params.zero_label())) {
-                    double product_bb = composite_dot_prod.at(b).at(b);
+                    double product_bb = composite_dot_prod(b, b);
 
                     beta_val = product_ab / 2.0
                         * ( 1.0 / product_aa + 1.0 / product_bb
@@ -433,8 +391,8 @@ void IntegrandTables::compute_alpha_beta()
                           );
                 }
             }
-            alpha_.at(a).at(b) = alpha_val;
-            beta_.at(a).at(b) = beta_val;
+            alpha_(a, b) = alpha_val;
+            beta_(a, b) = beta_val;
         }
     }
 }

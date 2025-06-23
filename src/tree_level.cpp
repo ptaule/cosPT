@@ -15,7 +15,6 @@ extern "C" {
 
 using std::size_t;
 
-
 namespace ps {
 
 void rsd_tree_level(
@@ -179,14 +178,12 @@ void tree_level(
         int kernel_index = kernel_evolver.compute(arguments.data(), -1, 1);
 
         for (size_t i = 0; i < results.size(); ++i) {
-            results.at(i) *=
-                tables.kernels.at(static_cast<size_t>(kernel_index))
-                .values.back()
-                .at(static_cast<size_t>(pair_correlations.at(i).first()))
-                *
-                tables.kernels.at(static_cast<size_t>(kernel_index))
-                .values.back()
-                .at(static_cast<size_t>(pair_correlations.at(i).second()));
+            size_t last = tables.eta_grid.time_steps() - 1;
+            auto& kernel_vec =
+                tables.kernels.at(static_cast<size_t>(kernel_index)).values;
+            size_t f = static_cast<size_t>(pair_correlations.at(i).first());
+            size_t s = static_cast<size_t>(pair_correlations.at(i).second());
+            results.at(i) *= kernel_vec(last, f) * kernel_vec(last, s);
         }
     }
     /* Zero-initialize kernel tables again, to ensure that values do not
@@ -291,10 +288,6 @@ void diagram_term(
         Vec1D<double>& diagram_results /* out */
         )
 {
-    size_t n_coeffs = tables.loop_params.n_coeffs();
-    size_t k_a_idx = n_coeffs - 1;
-    size_t k_b_idx = n_coeffs - 2;
-
     const Dynamics dynamics = tables.loop_params.dynamics();
     const Triple<ArgumentConfiguration> arg_config =
         kernel_arguments(diagram_idx, tables.loop_params);
@@ -313,7 +306,6 @@ void diagram_term(
     }
     if (dynamics != EDS_SPT) {
         KernelEvolver kernel_evolver(tables);
-
         kernel_evolver.compute(args_a, k_idx_a, 2);
         kernel_evolver.compute(args_b, k_idx_b, 1);
         kernel_evolver.compute(args_c, k_idx_c, 1);
@@ -323,7 +315,9 @@ void diagram_term(
         if (dynamics == EDS_SPT) {
             return tables.spt_kernels.at(k_idx).values.data();  // std::array<double, N>
         } else {
-            return tables.kernels.at(k_idx).values.back().data();  // std::vector<double>
+            size_t last = tables.eta_grid.time_steps() - 1;
+            auto& kernel_vec = tables.kernels.at(k_idx).values;
+            return &kernel_vec(last, 0);
         }
     };
 
@@ -333,10 +327,10 @@ void diagram_term(
     double* vals_c = get_kernel_values_ptr(static_cast<size_t>(k_idx_c));
 
     /* External momentum values */
-    double k_a = std::sqrt(tables.bare_dot_products().at(k_a_idx).at(k_a_idx));
-    double k_b = std::sqrt(tables.bare_dot_products().at(k_b_idx).at(k_b_idx));
-    double k_c = std::sqrt(SQUARE(k_a) + SQUARE(k_b) + 2 *
-            tables.bare_dot_products().at(k_a_idx).at(k_b_idx));
+    double k_a = tables.get_k_a();
+    double k_b = tables.get_k_b();
+    double k_c = std::sqrt(SQUARE(k_a) + SQUARE(k_b) +
+                           2 * k_a * k_b * tables.get_cos_ab());
 
     for (size_t i = 0; i < triple_correlations.size(); ++i) {
         diagram_results.at(i) = 2 *

@@ -61,12 +61,12 @@ class PowerSpectrumDiagram {
         double q_m1(
                 std::size_t rearr_idx,
                 std::size_t sign_idx,
-                const Vec2D<double>& scalar_products
+                const Strided2DVec<double>& dot_products
                 ) const
         {
             std::size_t q_m1_label =
                 static_cast<std::size_t>(q_m1_labels.at(rearr_idx).at(sign_idx));
-            return std::sqrt(scalar_products.at(q_m1_label).at(q_m1_label));
+            return std::sqrt(dot_products(q_m1_label, q_m1_label));
         }
 
         /* Heaviside theta for q_m1 and first connecting loop */
@@ -182,7 +182,7 @@ class BiSpectrumDiagram {
                 std::size_t sign_idx,
                 std::size_t overall_loop_idx,
                 const Vec1D<double>& loop_magnitudes,
-                const Vec2D<double>& scalar_products,
+                const Strided2DVec<double>& dot_products,
                 Triple<double>& q_xy1, /* out */
                 int& heaviside_theta   /* out */
                 ) const;

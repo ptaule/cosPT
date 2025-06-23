@@ -2,8 +2,8 @@
 #define TABLES_HPP
 
 #include <array>
-#include <stdexcept>
 
+#include "omega_matrix.hpp"
 #include "utilities.hpp"
 
 class LoopParameters;
@@ -27,17 +27,23 @@ struct IntegrationVariables {
 struct SPTKernel {
     std::array<double, EDS_SPT_COMPONENTS> values;
     bool computed = false;
+    SPTKernel() : computed(false) {
+        std::fill(values.begin(), values.end(), 0.0);
+    }
 };
 
 
 struct Kernel {
-    Vec2D<double> values;
+    Strided2DVec<double> values; /* COMPONENTS x time_steps */
     bool computed = false;
+    Kernel(size_t time_steps) : computed(false) {
+        values.resize(time_steps, COMPONENTS);
+    }
 };
 
 
 struct RSDKernel {
-    double value;
+    double value = 0.0;
     bool computed = false;
 };
 
@@ -112,24 +118,20 @@ class IntegrandTables {
         double rsd_f; /* Growth factor (at observation redshift) for L.o.S. */
 
         /* Helper vectors for compute_scalar_products() */
-        Vec1D<int> a_coeffs;
-        Vec1D<int> b_coeffs;
+        std::vector<int> a_coeffs;
+        std::vector<int> b_coeffs;
 
-        Vec2D<double> bare_dot_prod;
         /* N_COEFFS x N_COEFFS, dot products between external/loop wavenumbers */
-        Vec2D<double> composite_dot_prod;
+        Strided2DVec<double> bare_dot_prod;
         /* N_CONFIGS x N_CONFIGS, dot products between composite wavenumbers */
-        Vec2D<double> alpha_;                /* N_CONFIGS x N_CONFIGS */
-        Vec2D<double> beta_;                 /* N_CONFIGS x N_CONFIGS */
+        Strided2DVec<double> composite_dot_prod;
+        Strided2DVec<double> alpha_;                /* N_CONFIGS x N_CONFIGS */
+        Strided2DVec<double> beta_;                 /* N_CONFIGS x N_CONFIGS */
 
         Vec1D<double> bare_los_projection_;
         /* N_COEFFS dot products between external/loop wavenumber and L.o.S */
         Vec1D<double> composite_los_projection_;
         /* N_CONFIGS dot products between composite wavenumber and L.o.S */
-
-        void reset_spt_kernels();
-        void reset_kernels();
-        void reset_rsd_kernels();
 
         void compute_bare_los_proj();
         void compute_composite_los_proj();
@@ -148,11 +150,11 @@ class IntegrandTables {
 
         IntegrationVariables vars;
 
-        Vec1D<SPTKernel> spt_kernels;
-        Vec1D<Kernel> kernels;
+        std::vector<SPTKernel> spt_kernels;
+        std::vector<Kernel> kernels;
 
-        Vec1D<RSDKernel> rsd_kernels;
-        Vec2D<RSDKernel> vel_power_kernels;
+        std::vector<RSDKernel> rsd_kernels;
+        Strided2DVec<RSDKernel> vel_power_kernels;
 
         IntegrandTables() = delete;
         IntegrandTables(
@@ -167,15 +169,17 @@ class IntegrandTables {
                 const OmegaEigenspace& omega_eigenspace
                 );
 
-        const Vec2D<double>& bare_dot_products() const { return bare_dot_prod; }
-        const Vec2D<double>& composite_dot_products() const { return composite_dot_prod; }
-        const Vec2D<double>& alpha() const {return alpha_;}
-        const Vec2D<double>& beta() const {return beta_;}
+        const Strided2DVec<double>& bare_dot_products() const { return bare_dot_prod; }
+        const Strided2DVec<double>& composite_dot_products() const { return composite_dot_prod; }
+        const Strided2DVec<double>& alpha() const {return alpha_;}
+        const Strided2DVec<double>& beta() const {return beta_;}
 
-        const Vec1D<double>& bare_los_projection() const { return bare_los_projection_; }
-        const Vec1D<double>& composite_los_projection() const { return composite_los_projection_; }
+        const std::vector<double>& bare_los_projection() const { return bare_los_projection_; }
+        const std::vector<double>& composite_los_projection() const { return composite_los_projection_; }
 
         double get_k_a() const { return k_a; }
+        double get_k_b() const { return k_b; }
+        double get_cos_ab() const {return cos_ab;}
         double rsd_growth_f() const { return rsd_f; }
 
         void reset();

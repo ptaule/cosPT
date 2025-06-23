@@ -7,13 +7,15 @@
 #include "../include/tables.hpp"
 #include "../include/spt_kernels.hpp"
 
+using std::size_t;
+
 /* Turn off vector bounds check if not in debug-mode */
 #if DEBUG == 0
 #define at(x) operator[](x)
 #endif
 
 
-const std::array<double, EDS_SPT_COMPONENTS> vertex(
+[[nodiscard]] const std::array<double, EDS_SPT_COMPONENTS> vertex(
     int m_l,
     int m_r,
     const int args_l[],
@@ -22,33 +24,35 @@ const std::array<double, EDS_SPT_COMPONENTS> vertex(
     int sum_r,
     IntegrandTables& tables
 ) {
-    int n = m_l + m_r;
+    size_t sl = static_cast<size_t>(sum_l);
+    size_t sr = static_cast<size_t>(sum_r);
+    double alpha_lr = tables.alpha()(sl, sr);
+    double beta     = tables.beta()(sl, sr);
 
-    int index_l = compute_SPT_kernels(args_l, -1, m_l, tables);
-    int index_r = compute_SPT_kernels(args_r, -1, m_r, tables);
-
-    const auto& alpha_val =
-        tables.alpha().at(static_cast<size_t>(sum_l)).at(static_cast<size_t>(sum_r));
-    const auto& beta_val  =
-        tables.beta().at(static_cast<size_t>(sum_l)).at(static_cast<size_t>(sum_r));
+    size_t index_l = static_cast<size_t>(
+        compute_SPT_kernels(args_l, -1, m_l, tables));
+    size_t index_r = static_cast<size_t>(
+        compute_SPT_kernels(args_r, -1, m_r, tables));
 
     const auto& spt_l = tables.spt_kernels.at(static_cast<size_t>(index_l)).values;
     const auto& spt_r = tables.spt_kernels.at(static_cast<size_t>(index_r)).values;
+
+    int n = m_l + m_r;
 
     std::array<double, EDS_SPT_COMPONENTS> results;
     // component 0
     {
         int a = 2 * n + 1;
         int b = 2;
-        results.at(0) = spt_l.at(1) * (a * alpha_val * spt_r.at(0)
-            + b * beta_val * spt_r.at(1));
+        results.at(0) = spt_l.at(1) * (a * alpha_lr * spt_r.at(0)
+            + b * beta * spt_r.at(1));
     }
     // component 1
     {
         int a = 3;
         int b = 2 * n;
-        results.at(1) = spt_l.at(1) * (a * alpha_val * spt_r.at(0)
-            + b * beta_val * spt_r.at(1));
+        results.at(1) = spt_l.at(1) * (a * alpha_lr * spt_r.at(0)
+            + b * beta * spt_r.at(1));
     }
     return results;
 }
@@ -143,9 +147,7 @@ int compute_SPT_kernels(
 
     // For SPT kernels, F_1 = G_1 = ... = 1
     if (n == 1) {
-        for (size_t i = 0; i < EDS_SPT_COMPONENTS; ++i) {
-            kernel.values.at(i) = 1.0;
-        }
+        std::fill(kernel.values.begin(), kernel.values.end(), 1.0);
         return kernel_index;
     }
 
@@ -182,6 +184,7 @@ void kernel_computer_validate_n(
     }
     if (n_args != n) {
         throw(std::logic_error(
+            "kernel_computer_validate_n(): "
             "number of non-zero-label arguments does not equal n."));
     }
 }

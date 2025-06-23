@@ -1,7 +1,7 @@
 #include <cmath>
 #include <cstddef>
-#include <numeric>
 #include <iostream>
+#include <numeric>
 #include <stdexcept>
 #include <string>
 

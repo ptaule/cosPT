@@ -82,7 +82,9 @@ void configuration_term(
         if (dynamics == EDS_SPT) {
             return tables.spt_kernels.at(k_idx).values.data();  // std::array<double, N>
         } else {
-            return tables.kernels.at(k_idx).values.back().data();  // std::vector<double>
+            size_t last = tables.eta_grid.time_steps() - 1;
+            auto& kernel_vec = tables.kernels.at(k_idx).values;
+            return &kernel_vec(last, 0);
         }
     };
 
@@ -214,7 +216,9 @@ void configuration_term(
         if (dynamics == EDS_SPT) {
             return tables.spt_kernels.at(k_idx).values.data();  // std::array<double, N>
         } else {
-            return tables.kernels.at(k_idx).values.back().data();  // std::vector<double>
+            size_t last = tables.eta_grid.time_steps() - 1;
+            auto& kernel_vec = tables.kernels.at(k_idx).values;
+            return &kernel_vec(last, 0);
         }
     };
 
@@ -251,7 +255,9 @@ void diagram_term(
         for (size_t j = 0; j < diagram.n_sign_configs(); ++j) {
             for (size_t k = 0; k < overall_loop_assosiations; ++k) {
 #if DEBUG >= 2
-                std::cout << Colors::BLUE << diagram.argument_configuration(i, j, k)
+                std::cout << Colors::BLUE <<
+                    diagram.argument_configuration(i, j,
+                                                   k)
                     << Colors::RESET << std::endl;
 #endif
                 Triple<double> q_xy1(0,0,0);

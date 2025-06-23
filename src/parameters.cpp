@@ -1414,7 +1414,7 @@ void OmegaEigenspace::omega_eigenspace_at_k(
     Vec1D<double>& eigenvector /* out */
     )
 {
-    Vec2D<double> omega(COMPONENTS, Vec1D<double>(COMPONENTS, 0));
+    Strided2DVec<double> omega(COMPONENTS, COMPONENTS);
 
     update_omega_matrix(eta_ini, k, ev_params.kappa(),
         ev_params.zeta(), ev_params.xi(), omega);
@@ -1423,19 +1423,13 @@ void OmegaEigenspace::omega_eigenspace_at_k(
     /* d(y)/d(eta) + omega.y + y */
     /* Hence we add 1 to the diagonal of omega before finding eigenvalues/vectors */
     for (size_t i = 0; i < COMPONENTS; ++i) {
-        omega.at(i).at(i) += 1;
+        omega(i, i) += 1;
     }
+    /* Switch sign of omega */
+    std::transform(omega.begin(), omega.end(), omega.begin(),
+                   [](double x) { return -x; } );
 
-    /* Convert omega to double[] and switch sign (1d) */
-    double data[COMPONENTS * COMPONENTS];
-    size_t i = 0;
-    for (auto& row : omega) {
-        for (auto& el : row) {
-            data[i++] = -el;
-        }
-    }
-
-    gsl_matrix_view m = gsl_matrix_view_array (data, COMPONENTS, COMPONENTS);
+    gsl_matrix_view m = gsl_matrix_view_array (omega.pointer(), COMPONENTS, COMPONENTS);
 
     gsl_vector_complex *eval = gsl_vector_complex_alloc (COMPONENTS);
     gsl_matrix_complex *evec = gsl_matrix_complex_alloc(COMPONENTS, COMPONENTS);
