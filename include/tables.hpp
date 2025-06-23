@@ -2,6 +2,7 @@
 #define TABLES_HPP
 
 #include <array>
+#include <stdexcept>
 
 #include "utilities.hpp"
 
@@ -48,10 +49,21 @@ class SumTable {
 
         Vec2D<int> sum_table;
 
-        int sum_two_labels(int a, int b);
+        void check_result(int res) const;
+        int convert_and_sum(int a, int b);
     public:
         SumTable(const LoopParameters& loop_params);
-        int sum_labels(const int labels[], std::size_t size) const;
+
+        int operator()(int a, int b) const {
+            int result = sum_table.at(static_cast<size_t>(a))
+                                  .at(static_cast<size_t>(b));
+#if DEBUG > 0
+            check_result(result);
+#endif
+            return result;
+        }
+
+        int operator()(const int labels[], std::size_t size) const;
 };
 
 

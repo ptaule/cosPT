@@ -8,8 +8,14 @@
 
 using std::size_t;
 
-int SumTable::sum_two_labels(int a, int b)
-{
+/* Turn off vector bounds check if not in debug-mode */
+#if DEBUG == 0
+#define at(x) operator[](x)
+#endif
+
+
+/* Helper function for constructing the sum table */
+int SumTable::convert_and_sum(int a, int b) {
     Vec1D<int> a_coeffs(n_coeffs, 0);
     Vec1D<int> b_coeffs(n_coeffs, 0);
     Vec1D<int> res_coeffs(n_coeffs, 0);
@@ -21,6 +27,24 @@ int SumTable::sum_two_labels(int a, int b)
         res_coeffs.at(i) = a_coeffs.at(i) + b_coeffs.at(i);
     }
     return config2label(res_coeffs);
+}
+
+
+
+/* Check that sum is an appropriate vector configuration, i.e. that
+ * Q-coefficients are elements of (-1,0,1) and k-coefficient is an element
+ * of (0,1) */
+void SumTable::check_result(int res) const {
+    Vec1D<int> res_coeffs(n_coeffs, 0);
+    label2config(res, res_coeffs);
+    for (size_t i = 0; i < n_coeffs; ++i) {
+        int c = res_coeffs.at(i);
+        if (!(c == -1 || c == 0 || c == 1)) {
+            throw(std::logic_error(
+                "SumTable::check_result(): Sum of labels does not correspond to "
+                "an appropriate configuration."));
+        }
+    }
 }
 
 
@@ -43,7 +67,7 @@ SumTable::SumTable(const LoopParameters& loop_params) :
             }
             else {
                 sum_table.at(a).at(b) =
-                    sum_two_labels(static_cast<int>(a),static_cast<int>(b));
+                    convert_and_sum(static_cast<int>(a),static_cast<int>(b));
             }
         }
     }
@@ -51,38 +75,20 @@ SumTable::SumTable(const LoopParameters& loop_params) :
 
 
 
-/* Turn off vector bounds check if not in debug-mode */
-#if DEBUG == 0
-#define at(x) operator[](x)
-#endif
 
-int SumTable::sum_labels(const int labels[], size_t size) const
+int SumTable::operator()(const int labels[], size_t size) const
 {
     if (size == 1) return labels[0];
 
     int result = labels[0];
-
     for (size_t i = 1; i < size; ++i) {
         if (labels[i] == zero_label) continue;
         result = sum_table.at(static_cast<size_t>(result))
                      .at(static_cast<size_t>(labels[i]));
     }
-
-    /* If DEBUG>=1, check that sum is an appropriate vector configuration, i.e.
-     * that Q-coefficients are elements of (-1,0,1) and k-coefficient is an
-     * element of (0,1) */
 #if DEBUG >= 1
-    Vec1D<int> res_coeffs(n_coeffs, 0);
-    label2config(result, res_coeffs);
-    for (size_t i = 0; i < n_coeffs; ++i) {
-        int c = res_coeffs.at(i);
-        if (!(c == -1 || c == 0 || c == 1))
-            throw(std::logic_error(
-                "SumTable::sum_labels(): Sum of labels does not correspond to "
-                "an appropriate configuration."));
-    }
+    check_result(result);
 #endif
-
     return result;
 }
 

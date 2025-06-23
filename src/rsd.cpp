@@ -32,7 +32,7 @@ inline double rsd_coord_transformation(
     kernel_computer_validate_kernel_index(arguments, kernel_index, tables);
 #endif
     /* Compute sum of arguments */
-    int sum = tables.sum_table.sum_labels(arguments,
+    int sum = tables.sum_table(arguments,
             tables.loop_params.n_kernel_args());
     /* If sum of arguments is zero, the PT kernels are zero */
     if (sum == tables.loop_params.zero_label()) return 0;
@@ -69,7 +69,7 @@ inline double rsd_jac_transformation(
     kernel_computer_validate_kernel_index(arguments, kernel_index, tables);
 #endif
     /* Compute sum of arguments */
-    int sum = tables.sum_table.sum_labels(arguments,
+    int sum = tables.sum_table(arguments,
             tables.loop_params.n_kernel_args());
     /* If sum of arguments is zero, the PT kernels are zero */
     if (sum == tables.loop_params.zero_label()) return 0;
@@ -244,7 +244,7 @@ void compute_rsd_kernels(
     size_t n_kernel_args = tables.loop_params.n_kernel_args();
 
     /* Compute sum of arguments, and its absolute value k */
-    int sum = tables.sum_table.sum_labels(arguments,
+    int sum = tables.sum_table(arguments,
             tables.loop_params.n_kernel_args());
     double k = std::sqrt(tables.composite_dot_products()
             .at(static_cast<size_t>(sum))

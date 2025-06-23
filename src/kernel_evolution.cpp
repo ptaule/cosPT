@@ -167,8 +167,8 @@ void KernelEvolver::compute_RHS_sum(
             comb.rearrange_from_current_complement(arguments, args_r,
                                                    static_cast<size_t>(n - m));
 
-            int sum_l = tables.sum_table.sum_labels(args_l, n_kernel_args);
-            int sum_r = tables.sum_table.sum_labels(args_r, n_kernel_args);
+            int sum_l = tables.sum_table(args_l, n_kernel_args);
+            int sum_r = tables.sum_table(args_r, n_kernel_args);
 
             vertex(m, n-m, args_l, args_r, sum_l, sum_r, partial_rhs_sum);
 
@@ -455,7 +455,7 @@ int KernelEvolver::compute(
     }
 
     /* Compute k (sum of kernel arguments) */
-    int sum = tables.sum_table.sum_labels(arguments,
+    int sum = tables.sum_table(arguments,
         tables.loop_params.n_kernel_args());
     double k = std::sqrt(tables.composite_dot_products()
         .at(static_cast<size_t>(sum))
