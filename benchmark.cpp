@@ -1,4 +1,3 @@
-#include <cmath>
 #include <iostream>
 
 #include <benchmark/benchmark.h>
@@ -13,25 +12,42 @@
 using std::size_t;
 using std::string;
 
-static void BM_PS_EdS_integrand_1loop(benchmark::State& state) {
-    // Perform setup here
+void run_integrand_benchmark(
+    benchmark::State& state,
+    int n_loops,
+    Spectrum spectrum,
+    const std::string& config_path
+) {
     try {
-        Config cfg("benchmark/ini/ps_eds_spt.cfg", -1, -1, -1, 0, 0);
+        Config cfg(config_path, -1, -1, -1);
 
-        int n_loops = 1;
-        int n_dims = 3 * n_loops - 1;
+        int n_dims = 0; /* Dimension of integral measure */
+        switch (spectrum) {
+            case POWERSPECTRUM:
+                n_dims = 3 * n_loops - 1;
+                break;
+            case BISPECTRUM:
+                n_dims = 3 * n_loops;
+                break;
+        }
 
         LoopParameters loop_params(n_loops, cfg.get<Spectrum>("spectrum"),
                                    cfg.get<Dynamics>("dynamics"),
                                    cfg.get<bool>("rsd"));
         SumTable sum_table(loop_params);
 
-        IRresumSettings ir_settings(cfg.get<double>("k_s"), cfg.get<double>("k_osc"));
+        IRresumSettings ir_settings(
+            n_loops,
+            cfg.get<int>("pt_order"),
+            cfg.get<double>("k_s"),
+            cfg.get<double>("k_osc"),
+            1
+        );
 
-        InputPowerSpectrum ps(cfg.get<string>("input_ps_file"),
+        InputPowerSpectrum ps(cfg.get<std::string>("input_ps_file"),
                               cfg.get<double>("input_ps_rescale_num"),
-                              cfg.get<bool>("ir_resum"), ir_settings, n_loops,
-                              cfg.get<int>("pt_order"), cfg.get<bool>("rsd"),
+                              cfg.get<bool>("ir_resum"),
+                              ir_settings, cfg.get<bool>("rsd"),
                               cfg.get<double>("rsd_growth_f"));
 
         IntegrationInput input(ps, cfg.get<double>("q_min"),
@@ -43,365 +59,14 @@ static void BM_PS_EdS_integrand_1loop(benchmark::State& state) {
                          cfg.get<size_t>("time_steps"),
                          cfg.get<size_t>("pre_time_steps"),
                          cfg.get<double>("eta_asymp"));
-        EvolutionParameters ev_params(cfg.kappa(),
-                                      cfg.zeta_files(),
-                                      cfg.xi_files(),
-                                      cfg.get<double>("ode_atol"),
-                                      cfg.get<double>("ode_rtol"),
-                                      cfg.get<double>("ode_hstart"));
-        OmegaEigenspace omega_eigenspace(
-            cfg.get<Dynamics>("dynamics"),
-            eta_grid.eta_ini(),
-            ev_params,
-            cfg.get<int>("omega_eigenmode"),
-            cfg.get<double>("omega_k_min"),
-            cfg.get<double>("omega_k_max"),
-            cfg.get<int>("omega_N"),
-            cfg.get<double>("omega_imag_threshold")
-            );
 
-        input.pair_correlations = cfg.pair_correlations();
-        input.ps_diagrams = ps::construct_diagrams(loop_params);
-
-        input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
-                                        cfg.get<double>("rsd_growth_f"),
-                                        loop_params, sum_table,
-                                        ev_params, eta_grid, omega_eigenspace);
-
-        int n_correlations = static_cast<int>(input.pair_correlations.size());
-
-        double* xx = new double[static_cast<size_t>(n_dims)];
-        double* ff = new double[static_cast<size_t>(n_correlations)];
-
-        for (int i = 0; i < n_dims; ++i) {
-            xx[i] = 0.5;
-        }
-
-        for (auto _ : state) {
-            // This code gets timed
-            int nvec = 1;
-            /* core = -1 in accordance with ps::integrand() or bs::integrand() */
-            int core = -1;
-            integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
-        }
-
-        delete[] xx;
-        delete[] ff;
-    }
-    catch (const ConfigException& cfgex) {
-        std::cerr << cfgex.what() << std::endl;
-            return;
-    }
-    catch (const std::exception& ex) {
-        std::cerr << ex.what() << std::endl;
-        return;
-    }
-}
-
-
-
-static void BM_PS_EdS_integrand_2loop(benchmark::State& state) {
-    // Perform setup here
-    try {
-        Config cfg("benchmark/ini/ps_eds_spt.cfg", -1, -1, -1, 0, 0);
-
-        int n_loops = 2;
-        int n_dims = 3 * n_loops - 1;
-
-        LoopParameters loop_params(n_loops, cfg.get<Spectrum>("spectrum"),
-                                   cfg.get<Dynamics>("dynamics"),
-                                   cfg.get<bool>("rsd"));
-        SumTable sum_table(loop_params);
-
-        IRresumSettings ir_settings(cfg.get<double>("k_s"), cfg.get<double>("k_osc"));
-
-        InputPowerSpectrum ps(cfg.get<string>("input_ps_file"),
-                              cfg.get<double>("input_ps_rescale_num"),
-                              cfg.get<bool>("ir_resum"), ir_settings, n_loops,
-                              cfg.get<int>("pt_order"), cfg.get<bool>("rsd"),
-                              cfg.get<double>("rsd_growth_f"));
-
-        IntegrationInput input(ps, cfg.get<double>("q_min"),
-                               cfg.get<double>("q_max"),
-                               cfg.get<bool>("single_hard_limit"));
-
-        EtaGrid eta_grid(cfg.get<double>("eta_ini"),
-                         cfg.get<double>("eta_fin"),
-                         cfg.get<size_t>("time_steps"),
-                         cfg.get<size_t>("pre_time_steps"),
-                         cfg.get<double>("eta_asymp"));
-        EvolutionParameters ev_params(cfg.kappa(),
-                                      cfg.zeta_files(),
-                                      cfg.xi_files(),
-                                      cfg.get<double>("ode_atol"),
-                                      cfg.get<double>("ode_rtol"),
-                                      cfg.get<double>("ode_hstart"));
-        OmegaEigenspace omega_eigenspace(
-            cfg.get<Dynamics>("dynamics"),
-            eta_grid.eta_ini(),
-            ev_params,
-            cfg.get<int>("omega_eigenmode"),
-            cfg.get<double>("omega_k_min"),
-            cfg.get<double>("omega_k_max"),
-            cfg.get<int>("omega_N"),
-            cfg.get<double>("omega_imag_threshold")
-            );
-
-        input.pair_correlations = cfg.pair_correlations();
-        input.ps_diagrams = ps::construct_diagrams(loop_params);
-
-        input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
-                                        cfg.get<double>("rsd_growth_f"),
-                                        loop_params, sum_table,
-                                        ev_params, eta_grid, omega_eigenspace);
-
-        int n_correlations = static_cast<int>(input.pair_correlations.size());
-
-        double* xx = new double[static_cast<size_t>(n_dims)];
-        double* ff = new double[static_cast<size_t>(n_correlations)];
-
-        for (int i = 0; i < n_dims; ++i) {
-            xx[i] = 0.5;
-        }
-
-        for (auto _ : state) {
-            // This code gets timed
-            int nvec = 1;
-            /* core = -1 in accordance with ps::integrand() or bs::integrand() */
-            int core = -1;
-            integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
-        }
-
-        delete[] xx;
-        delete[] ff;
-    }
-    catch (const ConfigException& cfgex) {
-        std::cerr << cfgex.what() << std::endl;
-            return;
-    }
-    catch (const std::exception& ex) {
-        std::cerr << ex.what() << std::endl;
-            return;
-    }
-}
-
-
-static void BM_BS_EdS_integrand_1loop(benchmark::State& state) {
-    // Perform setup here
-    try {
-        Config cfg("benchmark/ini/bs_eds_spt.cfg", -1, -1, -1, 0, 0);
-
-        int n_loops = 1;
-        int n_dims = 3 * n_loops;
-
-        LoopParameters loop_params(n_loops, cfg.get<Spectrum>("spectrum"),
-                                   cfg.get<Dynamics>("dynamics"),
-                                   cfg.get<bool>("rsd"));
-        SumTable sum_table(loop_params);
-
-        IRresumSettings ir_settings(cfg.get<double>("k_s"), cfg.get<double>("k_osc"));
-
-        InputPowerSpectrum ps(cfg.get<string>("input_ps_file"),
-                              cfg.get<double>("input_ps_rescale_num"),
-                              cfg.get<bool>("ir_resum"), ir_settings, n_loops,
-                              cfg.get<int>("pt_order"), cfg.get<bool>("rsd"),
-                              cfg.get<double>("rsd_growth_f"));
-
-        IntegrationInput input(ps, cfg.get<double>("q_min"),
-                               cfg.get<double>("q_max"),
-                               cfg.get<bool>("single_hard_limit"));
-
-        EtaGrid eta_grid(cfg.get<double>("eta_ini"),
-                         cfg.get<double>("eta_fin"),
-                         cfg.get<size_t>("time_steps"),
-                         cfg.get<size_t>("pre_time_steps"),
-                         cfg.get<double>("eta_asymp"));
-        EvolutionParameters ev_params(cfg.kappa(),
-                                      cfg.zeta_files(),
-                                      cfg.xi_files(),
-                                      cfg.get<double>("ode_atol"),
-                                      cfg.get<double>("ode_rtol"),
-                                      cfg.get<double>("ode_hstart"));
-        OmegaEigenspace omega_eigenspace(
-            cfg.get<Dynamics>("dynamics"),
-            eta_grid.eta_ini(),
-            ev_params,
-            cfg.get<int>("omega_eigenmode"),
-            cfg.get<double>("omega_k_min"),
-            cfg.get<double>("omega_k_max"),
-            cfg.get<int>("omega_N"),
-            cfg.get<double>("omega_imag_threshold")
-            );
-
-        input.pair_correlations = cfg.pair_correlations();
-        input.bs_diagrams = bs::construct_diagrams(loop_params);
-
-        input.tables_vec.emplace_back(cfg.get<double>("k_a"),
-                                      cfg.get<double>("k_b"),
-                                      cfg.get<double>("cos_ab"),
-                                      cfg.get<double>("rsd_growth_f"),
-                                      loop_params, sum_table, ev_params,
-                                      eta_grid, omega_eigenspace);
-
-        int n_correlations = static_cast<int>(input.pair_correlations.size());
-
-        double* xx = new double[static_cast<size_t>(n_dims)];
-        double* ff = new double[static_cast<size_t>(n_correlations)];
-
-        for (int i = 0; i < n_dims; ++i) {
-            xx[i] = 0.5;
-        }
-
-        for (auto _ : state) {
-            // This code gets timed
-            int nvec = 1;
-            /* core = -1 in accordance with bs::integrand() or bs::integrand() */
-            int core = -1;
-            integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
-        }
-
-        delete[] xx;
-        delete[] ff;
-    }
-    catch (const ConfigException& cfgex) {
-        std::cerr << cfgex.what() << std::endl;
-            return;
-    }
-    catch (const std::exception& ex) {
-        std::cerr << ex.what() << std::endl;
-        return;
-    }
-}
-
-
-
-static void BM_BS_EdS_integrand_2loop(benchmark::State& state) {
-    // Perform setup here
-    try {
-        Config cfg("benchmark/ini/bs_eds_spt.cfg", -1, -1, -1, 0, 0);
-
-        int n_loops = 2;
-        int n_dims = 3 * n_loops;
-
-        LoopParameters loop_params(n_loops, cfg.get<Spectrum>("spectrum"),
-                                   cfg.get<Dynamics>("dynamics"),
-                                   cfg.get<bool>("rsd"));
-        SumTable sum_table(loop_params);
-
-        IRresumSettings ir_settings(cfg.get<double>("k_s"), cfg.get<double>("k_osc"));
-
-        InputPowerSpectrum ps(cfg.get<string>("input_ps_file"),
-                              cfg.get<double>("input_ps_rescale_num"),
-                              cfg.get<bool>("ir_resum"), ir_settings, n_loops,
-                              cfg.get<int>("pt_order"), cfg.get<bool>("rsd"),
-                              cfg.get<double>("rsd_growth_f"));
-
-        IntegrationInput input(ps, cfg.get<double>("q_min"),
-                               cfg.get<double>("q_max"),
-                               cfg.get<bool>("single_hard_limit"));
-
-        EtaGrid eta_grid(cfg.get<double>("eta_ini"),
-                         cfg.get<double>("eta_fin"),
-                         cfg.get<size_t>("time_steps"),
-                         cfg.get<size_t>("pre_time_steps"),
-                         cfg.get<double>("eta_asymp"));
-        EvolutionParameters ev_params(cfg.kappa(),
-                                      cfg.zeta_files(),
-                                      cfg.xi_files(),
-                                      cfg.get<double>("ode_atol"),
-                                      cfg.get<double>("ode_rtol"),
-                                      cfg.get<double>("ode_hstart"));
-        OmegaEigenspace omega_eigenspace(
-            cfg.get<Dynamics>("dynamics"),
-            eta_grid.eta_ini(),
-            ev_params,
-            cfg.get<int>("omega_eigenmode"),
-            cfg.get<double>("omega_k_min"),
-            cfg.get<double>("omega_k_max"),
-            cfg.get<int>("omega_N"),
-            cfg.get<double>("omega_imag_threshold")
-            );
-
-        input.pair_correlations = cfg.pair_correlations();
-        input.bs_diagrams = bs::construct_diagrams(loop_params);
-
-        input.tables_vec.emplace_back(cfg.get<double>("k_a"),
-                                      cfg.get<double>("k_b"),
-                                      cfg.get<double>("cos_ab"),
-                                      cfg.get<double>("rsd_growth_f"),
-                                      loop_params, sum_table, ev_params,
-                                      eta_grid, omega_eigenspace);
-
-        int n_correlations = static_cast<int>(input.pair_correlations.size());
-
-        double* xx = new double[static_cast<size_t>(n_dims)];
-        double* ff = new double[static_cast<size_t>(n_correlations)];
-
-        for (int i = 0; i < n_dims; ++i) {
-            xx[i] = 0.5;
-        }
-
-        for (auto _ : state) {
-            // This code gets timed
-            int nvec = 1;
-            /* core = -1 in accordance with bs::integrand() or bs::integrand() */
-            int core = -1;
-            integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
-        }
-
-        delete[] xx;
-        delete[] ff;
-    }
-    catch (const ConfigException& cfgex) {
-        std::cerr << cfgex.what() << std::endl;
-            return;
-    }
-    catch (const std::exception& ex) {
-        std::cerr << ex.what() << std::endl;
-        return;
-    }
-}
-
-
-
-static void BM_PS_2fluid_integrand_1loop(benchmark::State& state) {
-    // Perform setup here
-    try {
-        Config cfg("benchmark/ini/quijote_Mnu_0.1eV.cfg",
-                   -1, -1, -1, 0,
-                   0);
-
-        int n_loops = 1;
-        int n_dims = 3 * n_loops - 1;
-
-        LoopParameters loop_params(n_loops, cfg.get<Spectrum>("spectrum"),
-                                   cfg.get<Dynamics>("dynamics"),
-                                   cfg.get<bool>("rsd"));
-        SumTable sum_table(loop_params);
-
-        IRresumSettings ir_settings(cfg.get<double>("k_s"), cfg.get<double>("k_osc"));
-
-        InputPowerSpectrum ps(cfg.get<string>("input_ps_file"),
-                              cfg.get<double>("input_ps_rescale_num"),
-                              cfg.get<bool>("ir_resum"), ir_settings, n_loops,
-                              cfg.get<int>("pt_order"), cfg.get<bool>("rsd"),
-                              cfg.get<double>("rsd_growth_f"));
-
-        IntegrationInput input(ps, cfg.get<double>("q_min"),
-                               cfg.get<double>("q_max"),
-                               cfg.get<bool>("single_hard_limit"));
-
-        EtaGrid eta_grid(cfg.get<double>("eta_ini"),
-                         cfg.get<double>("eta_fin"),
-                         cfg.get<size_t>("time_steps"),
-                         cfg.get<size_t>("pre_time_steps"),
-                         cfg.get<double>("eta_asymp"));
         EvolutionParameters ev_params(cfg.kappa(),
                                       cfg.zeta_files(),
                                       cfg.xi_files(),
                                       cfg.get<double>("ode_abs_tolerance"),
                                       cfg.get<double>("ode_rel_tolerance"),
                                       cfg.get<double>("ode_start_step"));
+
         OmegaEigenspace omega_eigenspace(
             cfg.get<Dynamics>("dynamics"),
             eta_grid.eta_ini(),
@@ -411,143 +76,67 @@ static void BM_PS_2fluid_integrand_1loop(benchmark::State& state) {
             cfg.get<double>("omega_k_max"),
             cfg.get<int>("omega_N"),
             cfg.get<double>("omega_imag_threshold")
-            );
+        );
 
-        input.pair_correlations = cfg.pair_correlations();
-        input.ps_diagrams = ps::construct_diagrams(loop_params);
-
-        input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
-                                        cfg.get<double>("rsd_growth_f"),
-                                        loop_params, sum_table,
-                                        ev_params, eta_grid, omega_eigenspace);
-
-        int n_correlations = static_cast<int>(input.pair_correlations.size());
-
-        double* xx = new double[static_cast<size_t>(n_dims)];
-        double* ff = new double[static_cast<size_t>(n_correlations)];
-
-        for (int i = 0; i < n_dims; ++i) {
-            xx[i] = 0.5;
+        int n_correlations = 0;
+        switch (spectrum) {
+            case POWERSPECTRUM:
+                input.pair_correlations = cfg.pair_correlations();
+                n_correlations = static_cast<int>(input.pair_correlations.size());
+                input.ps_diagrams = ps::construct_diagrams(loop_params);
+                input.tables_vec.emplace_back(
+                    cfg.get<double>("k_a"), 0, 0,
+                    cfg.get<double>("rsd_growth_f"),
+                    loop_params, sum_table,
+                    ev_params, eta_grid, omega_eigenspace);
+                break;
+            case BISPECTRUM:
+                input.triple_correlations = cfg.triple_correlations();
+                n_correlations = static_cast<int>(input.triple_correlations.size());
+                input.bs_diagrams = bs::construct_diagrams(loop_params);
+                input.tables_vec.emplace_back(
+                    cfg.get<double>("k_a"),
+                    cfg.get<double>("k_b"),
+                    cfg.get<double>("cos_ab"),
+                    cfg.get<double>("rsd_growth_f"),
+                    loop_params, sum_table,
+                    ev_params, eta_grid, omega_eigenspace);
+                break;
         }
+
+        std::vector<double> xx(static_cast<size_t>(n_dims), 0.5);
+        std::vector<double> ff(static_cast<size_t>(n_correlations));
 
         for (auto _ : state) {
-            // This code gets timed
             int nvec = 1;
-            /* core = -1 in accordance with ps::integrand() or bs::integrand() */
             int core = -1;
-            integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
+            integrand(&n_dims, xx.data(), &n_correlations,
+                      ff.data(), &input, &nvec,
+                      &core);
         }
-
-        delete[] xx;
-        delete[] ff;
     }
     catch (const ConfigException& cfgex) {
         std::cerr << cfgex.what() << std::endl;
-            return;
     }
     catch (const std::exception& ex) {
         std::cerr << ex.what() << std::endl;
-        return;
     }
 }
 
 
 
-static void BM_PS_2fluid_integrand_2loop(benchmark::State& state) {
-    // Perform setup here
-    try {
-        Config cfg("benchmark/ini/quijote_Mnu_0.1eV.cfg",
-                   -1, -1, -1, 0,
-                   0);
+#define REGISTER_BENCHMARK(NAME, N_LOOPS, spectrum, CONFIG_FILE) \
+    static void NAME(benchmark::State& state) { \
+        run_integrand_benchmark(state, N_LOOPS, spectrum, CONFIG_FILE); \
+    } \
+    BENCHMARK(NAME);
 
-        int n_loops = 2;
-        int n_dims = 3 * n_loops - 1;
+REGISTER_BENCHMARK(BM_PS_EdS_integrand_1loop, 1, POWERSPECTRUM, "benchmark/ini/ps_eds_spt.cfg")
+REGISTER_BENCHMARK(BM_PS_EdS_integrand_2loop, 2, POWERSPECTRUM, "benchmark/ini/ps_eds_spt.cfg")
+REGISTER_BENCHMARK(BM_BS_EdS_integrand_1loop, 1, BISPECTRUM,   "benchmark/ini/bs_eds_spt.cfg")
+REGISTER_BENCHMARK(BM_BS_EdS_integrand_2loop, 2, BISPECTRUM,   "benchmark/ini/bs_eds_spt.cfg")
+REGISTER_BENCHMARK(BM_PS_2fluid_integrand_1loop, 1, POWERSPECTRUM, "benchmark/ini/quijote_Mnu_0.1eV.cfg")
+REGISTER_BENCHMARK(BM_PS_2fluid_integrand_2loop, 2, POWERSPECTRUM, "benchmark/ini/quijote_Mnu_0.1eV.cfg")
 
-        LoopParameters loop_params(n_loops, cfg.get<Spectrum>("spectrum"),
-                                   cfg.get<Dynamics>("dynamics"),
-                                   cfg.get<bool>("rsd"));
-        SumTable sum_table(loop_params);
-
-        IRresumSettings ir_settings(cfg.get<double>("k_s"), cfg.get<double>("k_osc"));
-
-        InputPowerSpectrum ps(cfg.get<string>("input_ps_file"),
-                              cfg.get<double>("input_ps_rescale_num"),
-                              cfg.get<bool>("ir_resum"), ir_settings, n_loops,
-                              cfg.get<int>("pt_order"), cfg.get<bool>("rsd"),
-                              cfg.get<double>("rsd_growth_f"));
-
-        IntegrationInput input(ps, cfg.get<double>("q_min"),
-                               cfg.get<double>("q_max"),
-                               cfg.get<bool>("single_hard_limit"));
-
-        EtaGrid eta_grid(cfg.get<double>("eta_ini"),
-                         cfg.get<double>("eta_fin"),
-                         cfg.get<size_t>("time_steps"),
-                         cfg.get<size_t>("pre_time_steps"),
-                         cfg.get<double>("eta_asymp"));
-        EvolutionParameters ev_params(cfg.kappa(),
-                                      cfg.zeta_files(),
-                                      cfg.xi_files(),
-                                      cfg.get<double>("ode_abs_tolerance"),
-                                      cfg.get<double>("ode_rel_tolerance"),
-                                      cfg.get<double>("ode_start_step"));
-        OmegaEigenspace omega_eigenspace(
-            cfg.get<Dynamics>("dynamics"),
-            eta_grid.eta_ini(),
-            ev_params,
-            cfg.get<int>("omega_eigenmode"),
-            cfg.get<double>("omega_k_min"),
-            cfg.get<double>("omega_k_max"),
-            cfg.get<int>("omega_N"),
-            cfg.get<double>("omega_imag_threshold")
-            );
-
-        input.pair_correlations = cfg.pair_correlations();
-        input.ps_diagrams = ps::construct_diagrams(loop_params);
-
-        input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
-                                        cfg.get<double>("rsd_growth_f"),
-                                        loop_params, sum_table,
-                                        ev_params, eta_grid, omega_eigenspace);
-
-        int n_correlations = static_cast<int>(input.pair_correlations.size());
-
-        double* xx = new double[static_cast<size_t>(n_dims)];
-        double* ff = new double[static_cast<size_t>(n_correlations)];
-
-        for (int i = 0; i < n_dims; ++i) {
-            xx[i] = 0.5;
-        }
-
-        for (auto _ : state) {
-            // This code gets timed
-            int nvec = 1;
-            /* core = -1 in accordance with ps::integrand() or bs::integrand() */
-            int core = -1;
-            integrand(&n_dims, xx, &n_correlations, ff, &input, &nvec, &core);
-        }
-
-        delete[] xx;
-        delete[] ff;
-    }
-    catch (const ConfigException& cfgex) {
-        std::cerr << cfgex.what() << std::endl;
-            return;
-    }
-    catch (const std::exception& ex) {
-        std::cerr << ex.what() << std::endl;
-        return;
-    }
-}
-
-
-
-// Register the functions as benchmarks
-BENCHMARK(BM_PS_EdS_integrand_1loop);
-BENCHMARK(BM_PS_EdS_integrand_2loop);
-BENCHMARK(BM_BS_EdS_integrand_1loop);
-BENCHMARK(BM_BS_EdS_integrand_2loop);
-BENCHMARK(BM_PS_2fluid_integrand_1loop);
-BENCHMARK(BM_PS_2fluid_integrand_2loop);
 // Run the benchmark
 BENCHMARK_MAIN();
