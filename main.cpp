@@ -181,6 +181,8 @@ CalculationSetup::CalculationSetup(const Config& cfg) :
              cfg.get<double>("eta_asymp")),
     evolution_params(cfg.kappa(), cfg.zeta_files(),
                      cfg.xi_files(),
+                     cfg.get<std::string>("mu2_file"),
+                     cfg.get<std::string>("mu22_file"),
                      cfg.get<double>("ode_abs_tolerance"),
                      cfg.get<double>("ode_rel_tolerance"),
                      cfg.get<double>("ode_start_step")),
