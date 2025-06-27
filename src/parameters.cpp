@@ -599,6 +599,12 @@ void Config::set_dynamics(const libconfig::Config& cfg)
             for (int i = 0; i < xi_files_list.getLength(); ++i) {
                 xi_files_.push_back(xi_files_list[i].c_str());
             }
+
+            set_param_value<bool>(cfg, "modified_gravity", false);
+            if (get<bool>("modified_gravity")) {
+                set_param_value<string>(cfg, "mu2_file", true);
+                set_param_value<string>(cfg, "mu22_file", true);
+            }
         }
         catch (const libconfig::SettingNotFoundException& nfex) {
             throw ConfigException(
@@ -844,6 +850,10 @@ Config::Config()
     set<size_t>("time_steps", 0);
     set<size_t>("pre_time_steps", 0);
     set("eta_asymp", 0.0);
+
+    set("modified_gravity", false);
+    set("mu2_file", string());
+    set("mu22_file", string());
 
     set("omega_eigenmode", 0);
     set("omega_k_min", get<double>("q_min"));
@@ -1454,6 +1464,8 @@ EvolutionParameters::EvolutionParameters(
     const Vec1D<double>& kappa,
     const Vec1D<std::string>& zeta_files,
     const Vec1D<std::string>& xi_files,
+    const std::string& mu2_file,
+    const std::string& mu22_file,
     double ode_atol,
     double ode_rtol,
     double ode_hstart
@@ -1467,6 +1479,13 @@ EvolutionParameters::EvolutionParameters(
     }
     for (auto& el : xi_files) {
         xi_.push_back(el);
+    }
+
+    if (!mu2_file.empty()) {
+        mu2_ = Interpolation1D(mu2_file);
+    }
+    if (!mu22_file.empty()) {
+        mu22_ = Interpolation1D(mu22_file);
     }
 }
 

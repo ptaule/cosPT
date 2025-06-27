@@ -188,6 +188,9 @@ class EvolutionParameters {
         Vec1D<Interpolation1D> zeta_; /* Time-dependent functions */
         Vec1D<Interpolation2D> xi_;   /* Space- and time-dependent functions */
 
+        Interpolation1D mu2_; /* modified gravity */
+        Interpolation1D mu22_; /* modified gravity */
+
         double ode_atol_   = 0.0;
         double ode_rtol_   = 0.0;
         double ode_hstart_ = 0.0;
@@ -202,6 +205,8 @@ class EvolutionParameters {
                 const Vec1D<double>& kappa,
                 const Vec1D<std::string>& zeta_files,
                 const Vec1D<std::string>& xi_files,
+                const std::string& mu2_file = "",
+                const std::string& mu22_file = "",
                 double ode_atol = 1e-6,
                 double ode_rtol = 1e-4,
                 double ode_hstart = 1e-3
@@ -214,6 +219,9 @@ class EvolutionParameters {
         const Vec1D<double>& kappa() const { return kappa_; }
         const Vec1D<Interpolation1D>& zeta() const { return zeta_; }
         const Vec1D<Interpolation2D>& xi() const { return xi_; }
+
+        const Interpolation1D& mu2() const { return mu2_; }
+        const Interpolation1D& mu22() const { return mu22_; }
 };
 
 
