@@ -113,8 +113,8 @@ void diagram_term(
         )
 {
 #if DEBUG >= 2
-    diagram.print_diagram_tags(std::cout);
-    std::cout << std::endl;
+    std::cout << Colors::MAGENTA << diagram.tags()
+        << Colors::RESET << std::endl;
 #endif
     size_t n_comp = diagram_results.size();
 
@@ -122,7 +122,8 @@ void diagram_term(
     for (size_t i = 0; i < diagram.n_rearrangements(); ++i) {
         for (size_t j = 0; j < diagram.n_sign_configs(); ++j) {
 #if DEBUG >= 2
-            diagram.print_argument_configuration(std::cout, i, j);
+        std::cout << Colors::BLUE << diagram.argument_configuration(i, j)
+            << Colors::RESET << std::endl;
 #endif
 
             double q_m1 = diagram.q_m1(i, j,
@@ -239,8 +240,8 @@ void diagram_term(
         )
 {
 #if DEBUG >= 2
-    diagram.print_diagram_tags(std::cout);
-    std::cout << std::endl;
+    std::cout << Colors::MAGENTA << diagram.tags()
+        << Colors::RESET << std::endl;
 #endif
     size_t n_comp = diagram_results.size();
 
@@ -250,7 +251,8 @@ void diagram_term(
         for (size_t j = 0; j < diagram.n_sign_configs(); ++j) {
             for (size_t k = 0; k < overall_loop_assosiations; ++k) {
 #if DEBUG >= 2
-                diagram.print_argument_configuration(std::cout, i, j, k);
+                std::cout << Colors::BLUE << diagram.argument_configuration(i, j, k)
+                    << Colors::RESET << std::endl;
 #endif
                 Triple<double> q_xy1(0,0,0);
                 int heaviside_theta = 1;

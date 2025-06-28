@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <iosfwd>
+#include <string>
 
 #include "utilities.hpp"
 
@@ -111,12 +112,13 @@ class PowerSpectrumDiagram {
         }
 #undef at
 
-        void print_diagram_tags(std::ostream& out) const;
-        void print_argument_configuration(
-                std::ostream& out,
-                std::size_t a,
-                std::size_t b
-                ) const;
+        std::string tags() const {
+            return ("(m,l,r) = ("
+                + std::to_string(m) + ","
+                + std::to_string(l) + ","
+                + std::to_string(r) + ")");
+        }
+        std::string argument_configuration(std::size_t a,std::size_t b) const;
 };
 
 
@@ -208,9 +210,8 @@ class BiSpectrumDiagram {
         }
 #undef at
 
-        void print_diagram_tags(std::ostream& out) const;
-        void print_argument_configuration(
-                std::ostream& out,
+        std::string tags() const;
+        std::string argument_configuration(
                 std::size_t rearr_idx,
                 std::size_t sign_idx,
                 std::size_t overall_loop_idx = 0

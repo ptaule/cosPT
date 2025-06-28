@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cstddef>
 #include <ostream>
+#include <sstream>
 
 #include "../include/utilities.hpp"
 
@@ -52,89 +53,56 @@ int config2label(const Vec1D<int>& config)
 
 
 
-void print_label(
-        int label,
-        size_t n_coeffs,
-        Spectrum spectrum,
-        std::ostream& out
-        )
-{
+std::string label2string(
+    int label,
+    size_t n_coeffs,
+    Spectrum spectrum
+) {
     Vec1D<int> config(n_coeffs, 0);
     label2config(label, config);
 
+    std::ostringstream oss;
+
+    auto print_sign = [&](int val, const std::string& wavevector) {
+        if (val == -1) oss << "-" << wavevector;
+        else if (val == 1) oss << "+" << wavevector;
+    };
+
     if (spectrum == POWERSPECTRUM) {
-        if (config.at(n_coeffs - 1) == -1) {
-            out << "-k";
-        }
-        else if (config.at(n_coeffs - 1) == 1) {
-            out << "+k";
-        }
-
-        if (config.at(n_coeffs - 2) == -1) {
-            out << "-Q" << n_coeffs - 1;
-        }
-        else if (config.at(n_coeffs - 2) == 1) {
-            out << "+Q" << n_coeffs - 1;
-        }
-    }
-    else if (spectrum == BISPECTRUM) {
-        if (config.at(n_coeffs - 1) == -1) {
-            out << "-ka";
-        }
-        else if (config.at(n_coeffs - 1) == 1) {
-            out << "+ka";
-        }
-
-        if (config.at(n_coeffs - 2) == -1) {
-            out << "-kb";
-        }
-        else if (config.at(n_coeffs - 2) == 1) {
-            out << "+kb";
-        }
+        print_sign(config[n_coeffs - 1], "k");
+        oss << "";
+        print_sign(config[n_coeffs - 2], "Q" + std::to_string(n_coeffs - 1));
+    } else if (spectrum == BISPECTRUM) {
+        print_sign(config[n_coeffs - 1], "ka");
+        print_sign(config[n_coeffs - 2], "kb");
     }
 
     for (size_t i = 0; i < n_coeffs - 2; ++i) {
-        if (config.at(i) == 0) continue;
-        else if (config.at(i) == -1) {
-            out << "-Q" << i + 1;
-        }
-        else if (config.at(i) == 1) {
-            out << "+Q" << i + 1;
-        }
+        print_sign(config[i], "Q" + std::to_string(i + 1));
     }
+    return oss.str();
 }
 
 
 
-void print_labels(
-        const int labels[],
-        size_t size,
-        size_t n_coeffs,
-        Spectrum spectrum,
-        std::ostream& out
-        )
+std::string labels2string(
+    const int labels[],
+    size_t size,
+    size_t n_coeffs,
+    Spectrum spectrum
+    )
 {
-    out << "(";
+    std::ostringstream oss;
+    oss << "(";
+    bool first = true;
     for (size_t i = 0; i < size; ++i) {
-        if (labels[i] == get_zero_label(n_coeffs)) {
-            continue;
-        }
-        print_label(labels[i], n_coeffs, spectrum, out);
-        out << ", ";
+        if (labels[i] == get_zero_label(n_coeffs)) continue;
+        if (!first) oss << ", ";
+        oss << label2string(labels[i], n_coeffs, spectrum);
+        first = false;
     }
-    out << ")";
-}
-
-
-
-void print_labels(
-        const Vec1D<int>& labels,
-        size_t n_coeffs,
-        Spectrum spectrum,
-        std::ostream& out
-        )
-{
-    return print_labels(labels.data(), labels.size(), n_coeffs, spectrum, out);
+    oss << ")";
+    return oss.str();
 }
 
 

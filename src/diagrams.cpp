@@ -1,6 +1,7 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
+#include <sstream>
 #include <stdexcept>
 
 extern "C" {
@@ -220,28 +221,14 @@ PowerSpectrumDiagram::PowerSpectrumDiagram(
 
 
 
-void PowerSpectrumDiagram::print_diagram_tags(std::ostream& out) const
-{
-    out << COLOR_MAGENTA
-        << "(m,l,r) = (" << m << "," << l << "," << r << ")"
-        << COLOR_RESET;
-}
-
-
-
-void PowerSpectrumDiagram::print_argument_configuration(
-        std::ostream& out,
-        size_t a,
-        size_t b
-        ) const
-{
-    out << COLOR_BLUE;
-    print_labels(arg_configs_l.at(a).at(b).args, loop_params.n_coeffs(),
-                 loop_params.spectrum(), out);
-    out << " ";
-    print_labels(arg_configs_r.at(a).at(b).args, loop_params.n_coeffs(),
-                 loop_params.spectrum(), out);
-    out << COLOR_RESET;
+std::string PowerSpectrumDiagram::argument_configuration(size_t a, size_t b) const {
+    return (
+        labels2string(arg_configs_l.at(a).at(b).args,
+                      loop_params.n_coeffs(), loop_params.spectrum())
+        + " "
+        + labels2string(arg_configs_r.at(a).at(b).args,
+                        loop_params.n_coeffs(), loop_params.spectrum())
+    );
 }
 
 
@@ -838,50 +825,51 @@ void BiSpectrumDiagram::connecting_lines_factors(
 
 
 
-void BiSpectrumDiagram::print_diagram_tags(std::ostream& out) const
+std::string BiSpectrumDiagram::tags() const
 {
-    out << COLOR_MAGENTA
-        << "(n_a, n_b, n_c, n_ab, n_bc, n_ca) = ("
-        << n_a << "," << n_b << "," << n_c << "," << n_ab << "," << n_bc << ","
-        << n_ca << ")" << COLOR_RESET;
+    std::ostringstream oss;
+    oss << "(n_a, n_b, n_c, n_ab, n_bc, n_ca) = ("
+        << n_a << ", "
+        << n_b << ", "
+        << n_c << ", "
+        << n_ab << ", "
+        << n_bc << ", "
+        << n_ca << ")";
+    return oss.str();
 }
 
 
 
-void BiSpectrumDiagram::print_argument_configuration(
-        std::ostream& out,
+std::string BiSpectrumDiagram::argument_configuration(
         size_t rearr_idx,
         size_t sign_idx,
         size_t overall_loop_idx
         ) const
 {
-    out << COLOR_BLUE;
-    print_labels(
+    std::ostringstream oss;
+    oss << labels2string(
         arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).a().args,
-        loop_params.n_coeffs(), loop_params.spectrum(), out);
-    out << " ";
-    print_labels(
-        arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).b().args,
-        loop_params.n_coeffs(), loop_params.spectrum(), out);
-    out << " ";
-    print_labels(
-        arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).c().args,
-        loop_params.n_coeffs(), loop_params.spectrum(), out);
-    out << COLOR_RESET;
+        loop_params.n_coeffs(), loop_params.spectrum())
+        << " "
+        << labels2string(
+            arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).b().args,
+            loop_params.n_coeffs(), loop_params.spectrum())
+        << " "
+        << labels2string(
+            arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).c().args,
+            loop_params.n_coeffs(), loop_params.spectrum());
+    return oss.str();
 }
 
 
 
 std::ostream& operator<<(std::ostream& out, const PowerSpectrumDiagram& diagram)
 {
-    diagram.print_diagram_tags(out);
-    out << std::endl;
+    out << diagram.tags() << std::endl;
 
     for (size_t a = 0; a < diagram.n_rearrangements(); ++a) {
         for (size_t b = 0; b < diagram.n_sign_configs(); ++b) {
-            out << "\t";
-            diagram.print_argument_configuration(out, a, b);
-            out << std::endl;
+            out << "\t" << diagram.argument_configuration(a, b) << std::endl;
         }
     }
     return out;
@@ -891,22 +879,21 @@ std::ostream& operator<<(std::ostream& out, const PowerSpectrumDiagram& diagram)
 
 std::ostream& operator<<(std::ostream& out, const BiSpectrumDiagram& diagram)
 {
-    diagram.print_diagram_tags(out);
-    out << std::endl;
+    out << diagram.tags() << std::endl;
 
     for (size_t i = 0; i < diagram.n_rearrangements(); ++i) {
         for (size_t j = 0; j < diagram.n_sign_configs(); ++j) {
             if (diagram.overall_loop()) {
                 for (size_t k = 0; k < 6; ++k) {
-                    out << "\t";
-                    diagram.print_argument_configuration(out, i, j, k);
-                    out << std::endl;
+                    out << "\t"
+                        << diagram.argument_configuration(i, j, k)
+                        << std::endl;
                 }
             }
             else {
-                out << "\t";
-                diagram.print_argument_configuration(out, i, j);
-                out << std::endl;
+                out << "\t"
+                    << diagram.argument_configuration(i, j)
+                    << std::endl;
             }
         }
     }

@@ -3,8 +3,9 @@
 
 #include <array>
 #include <cstddef>
-#include <vector>
 #include <iosfwd>
+#include <string>
+#include <vector>
 
 /* Maximum number of kernel arguments at 2-loop */
 #define N_KERNEL_ARGS_MAX 6
@@ -33,14 +34,15 @@
 // Which GSL ODE routine to use
 #define ODE_ROUTINE gsl_odeiv2_step_rkf45
 
-// Various colors
-#define COLOR_RED     "\x1b[31m"
-#define COLOR_GREEN   "\x1b[32m"
-#define COLOR_YELLOW  "\x1b[33m"
-#define COLOR_BLUE    "\x1b[34m"
-#define COLOR_MAGENTA "\x1b[35m"
-#define COLOR_CYAN    "\x1b[36m"
-#define COLOR_RESET   "\x1b[0m"
+namespace Colors {
+    constexpr char RESET[]   = "\x1b[0m";
+    constexpr char RED[]     = "\x1b[31m";
+    constexpr char GREEN[]   = "\x1b[32m";
+    constexpr char YELLOW[]  = "\x1b[33m";
+    constexpr char BLUE[]    = "\x1b[34m";
+    constexpr char MAGENTA[] = "\x1b[35m";
+    constexpr char CYAN[]    = "\x1b[36m";
+}
 
 /* Unused parameters (to silence gcc warnings) */
 #define UNUSED(x) (void)(x)
@@ -129,27 +131,28 @@ std::ostream& operator<<(std::ostream& out, const Triple<int>& pair);
 void label2config(int label, Vec1D<int>& config);
 int config2label(const Vec1D<int>& config);
 
-void print_label(
-        int label,
-        size_t n_coeffs,
-        Spectrum spectrum,
-        std::ostream& out
-        );
+std::string label2string(
+    int label,
+    size_t n_coeffs,
+    Spectrum spectrum
+);
 
-void print_labels(
-        const int labels[],
-        size_t size,
-        size_t n_coeffs,
-        Spectrum spectrum,
-        std::ostream& out
-        );
+std::string labels2string(
+    const int labels[],
+    size_t size,
+    size_t n_coeffs,
+    Spectrum spectrum
+);
 
-void print_labels(
-        const Vec1D<int>& labels,
-        size_t n_coeffs,
-        Spectrum spectrum,
-        std::ostream& out
-        );
+inline std::string labels2string(
+    const std::vector<int>& labels,
+    size_t n_coeffs,
+    Spectrum spectrum
+)
+{
+    return labels2string(labels.data(), labels.size(), n_coeffs,
+                         spectrum);
+}
 
 
 int get_zero_label(size_t n_coeffs);
