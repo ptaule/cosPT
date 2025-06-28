@@ -1,6 +1,7 @@
+#include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <ostream>
-#include <cmath>
 
 #include "../include/utilities.hpp"
 
@@ -181,8 +182,9 @@ bool single_loop_label(int label, size_t n_coeffs, Spectrum spectrum)
 
 int flip_signs(int label, size_t n_coeffs)
 {
-    Vec1D<int> config(n_coeffs);
+    std::vector<int> config(n_coeffs);
     label2config(label, config);
-    flip_signs(config, config);
+    std::transform(config.begin(), config.end(), config.begin(),
+                   [](int x) { return -x; });
     return config2label(config);
 }

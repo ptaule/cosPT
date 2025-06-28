@@ -155,13 +155,6 @@ void print_labels(
 int get_zero_label(size_t n_coeffs);
 bool single_loop_label(int label, size_t n_coeffs, Spectrum spectrum);
 
-template <typename T>
-void flip_signs(const Vec1D<T>& input, Vec1D<T>& result) {
-    for (std::size_t i = 0; i < input.size(); ++i) {
-        result.at(i) = -input.at(i);
-    }
-}
-
 /* Return the label corresponding to the sign flipped configuration */
 int flip_signs(int label, size_t n_coeffs);
 
