@@ -1227,7 +1227,7 @@ int LoopParameters::ps_args_2_kernel_index(const int arguments[]) const
 
     // In DEBUG-mode, check that non-zero arguments (zero_label) are unique
 #if DEBUG >= 1
-    if (!unique_elements(arguments, n_kernel_args_, zero_label_))
+    if (has_duplicates_excluding(arguments, n_kernel_args_, zero_label_))
         throw(std::logic_error(
             "LoopParameters::ps_args_2_kernel_index(): duplicate "
             "vector arguments passed."));
@@ -1292,7 +1292,7 @@ int LoopParameters::bs_args_2_kernel_index(const int arguments[]) const
 
     /* In DEBUG-mode, check that non-zero_label arguments are unique */
 #if DEBUG >= 1
-    if (!unique_elements(arguments, n_kernel_args_, zero_label_))
+    if (has_duplicates_excluding(arguments, n_kernel_args_, zero_label_))
         throw(std::logic_error(
             "LoopParameters::bs_args_2_kernel_index(): duplicate "
             "vector arguments passed."));

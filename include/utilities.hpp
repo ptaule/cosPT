@@ -161,15 +161,14 @@ int flip_signs(int label, size_t n_coeffs);
 template <typename T>
 /* Are there duplicate elements of the array? Yes, return true; */
 /* no, return false. Do not consider elements equal to skip. */
-bool unique_elements(const T array[], size_t size, T skip) {
+bool has_duplicates_excluding(const T array[], size_t size, T skip) {
     for (size_t i = 0; i < size; ++i) {
-        T val = array[i];
-        if (val == skip) continue;
+        if (array[i] == skip) continue;
         for (size_t j = i + 1; j < size; ++j) {
-            if (array[j] == val) return false;
+            if (array[j] == array[i]) return true;
         }
     }
-    return true;
+    return false;
 }
 
 #endif /* ifndef UTILITIES_HPP */
