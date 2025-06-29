@@ -399,7 +399,7 @@ KernelEvolver::KernelEvolver(IntegrandTables& tables)
 {
     sys = {ode_system, nullptr, COMPONENTS, nullptr};
     driver = gsl_odeiv2_driver_alloc_y_new( &sys,
-            gsl_odeiv2_step_rkf45,
+            ODE_ROUTINE,
             tables.ev_params.ode_hstart(),
             tables.ev_params.ode_rtol(),
             tables.ev_params.ode_atol()
