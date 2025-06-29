@@ -21,19 +21,11 @@ void run_integrand_benchmark(
     try {
         Config cfg(config_path, -1, -1, -1);
 
-        int n_dims = 0; /* Dimension of integral measure */
-        switch (spectrum) {
-            case POWERSPECTRUM:
-                n_dims = 3 * n_loops - 1;
-                break;
-            case BISPECTRUM:
-                n_dims = 3 * n_loops;
-                break;
-        }
+        bool rsd = cfg.get<bool>("rsd");
 
         LoopParameters loop_params(n_loops, cfg.get<Spectrum>("spectrum"),
                                    cfg.get<Dynamics>("dynamics"),
-                                   cfg.get<bool>("rsd"));
+                                   rsd);
         SumTable sum_table(loop_params);
 
         IRresumSettings ir_settings(
@@ -47,8 +39,8 @@ void run_integrand_benchmark(
         InputPowerSpectrum ps(cfg.get<std::string>("input_ps_file"),
                               cfg.get<double>("input_ps_rescale_num"),
                               cfg.get<bool>("ir_resum"),
-                              ir_settings, cfg.get<bool>("rsd"),
-                              cfg.get<double>("rsd_growth_f"));
+                              ir_settings, rsd,
+                              rsd);
 
         IntegrationInput input(ps, cfg.get<double>("q_min"),
                                cfg.get<double>("q_max"),
@@ -78,19 +70,31 @@ void run_integrand_benchmark(
             cfg.get<double>("omega_imag_threshold")
         );
 
+        int n_dims = 0; /* Dimension of integral measure */
         int n_correlations = 0;
         switch (spectrum) {
             case POWERSPECTRUM:
                 input.pair_correlations = cfg.pair_correlations();
-                n_correlations = static_cast<int>(input.pair_correlations.size());
                 input.ps_diagrams = ps::construct_diagrams(loop_params);
                 input.tables_vec.emplace_back(
                     cfg.get<double>("k_a"), 0, 0,
                     cfg.get<double>("rsd_growth_f"),
                     loop_params, sum_table,
                     ev_params, eta_grid, omega_eigenspace);
+
+                if (rsd) {
+                    n_dims = 3 * n_loops + 1;
+                    /* (not correlations, but monopole, quadrupole, hexadecapole */
+                    n_correlations = 3;
+                }
+                else {
+                    n_dims = 3 * n_loops - 1;
+                    n_correlations = static_cast<int>(input.pair_correlations.size());
+                }
+
                 break;
             case BISPECTRUM:
+                n_dims = 3 * n_loops;
                 input.triple_correlations = cfg.triple_correlations();
                 n_correlations = static_cast<int>(input.triple_correlations.size());
                 input.bs_diagrams = bs::construct_diagrams(loop_params);
@@ -133,6 +137,8 @@ void run_integrand_benchmark(
 
 REGISTER_BENCHMARK(BM_PS_EdS_integrand_1loop, 1, POWERSPECTRUM, "benchmark/ini/ps_eds_spt.cfg")
 REGISTER_BENCHMARK(BM_PS_EdS_integrand_2loop, 2, POWERSPECTRUM, "benchmark/ini/ps_eds_spt.cfg")
+REGISTER_BENCHMARK(BM_PS_RSD_EdS_integrand_1loop, 1, POWERSPECTRUM, "benchmark/ini/ps_eds_spt_rsd.cfg")
+REGISTER_BENCHMARK(BM_PS_RSD_EdS_integrand_2loop, 2, POWERSPECTRUM, "benchmark/ini/ps_eds_spt_rsd.cfg")
 REGISTER_BENCHMARK(BM_BS_EdS_integrand_1loop, 1, BISPECTRUM,   "benchmark/ini/bs_eds_spt.cfg")
 REGISTER_BENCHMARK(BM_BS_EdS_integrand_2loop, 2, BISPECTRUM,   "benchmark/ini/bs_eds_spt.cfg")
 REGISTER_BENCHMARK(BM_PS_2fluid_integrand_1loop, 1, POWERSPECTRUM, "benchmark/ini/quijote_Mnu_0.1eV.cfg")
