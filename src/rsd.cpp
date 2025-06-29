@@ -199,11 +199,9 @@ int rsd_velocity_power(
         } while (comb.next());
 
         /* Devide through by symmetrization factor (n choose m) */
-        int n_choose_m = static_cast<int>(
-                gsl_sf_choose(static_cast<unsigned int>(n),
-                    static_cast<unsigned int>(m))
-                );
-        result += result_for_m / n_choose_m;
+        size_t n_t = static_cast<size_t>(n);
+        size_t m_t = static_cast<size_t>(m);
+        result += result_for_m / binomial_coeffs[n_t][m_t];
     }
 
     /* Update vel_power_kernels table */
@@ -307,11 +305,9 @@ void compute_rsd_kernels(
         } while (comb.next());
 
         /* Devide through by symmetrization factor (n choose m) */
-        int n_choose_m = static_cast<int>(
-                gsl_sf_choose(static_cast<unsigned int>(n),
-                    static_cast<unsigned int>(m))
-                );
-        result += result_for_m / n_choose_m;
+        size_t n_t = static_cast<size_t>(n);
+        size_t m_t = static_cast<size_t>(m);
+        result += result_for_m / binomial_coeffs[n_t][m_t];
     }
 
     /* Add contribution with no velocity powers */

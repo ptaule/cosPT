@@ -1,10 +1,6 @@
 #include <algorithm>
 #include <stdexcept>
 
-extern "C" {
-    #include <gsl/gsl_sf.h>
-}
-
 #include "../include/utilities.hpp"
 #include "../include/combinatorics.hpp"
 #include "../include/parameters.hpp"
@@ -104,12 +100,10 @@ void partial_SPT_sum(
     } while (comb.next());
 
     // Devide through by symmetrization factor (n choose m)
-    int n_choose_m = static_cast<int>(
-            gsl_sf_choose(static_cast<unsigned int>(n),
-                          static_cast<unsigned int>(m))
-            );
+    size_t n_t = static_cast<size_t>(n);
+    size_t m_t = static_cast<size_t>(m);
     for (auto& val : partial_kernel_values) {
-        val /= n_choose_m;
+        val /= binomial_coeffs[n_t][m_t];
     }
 
     // Add calculated term for each component to kernel table

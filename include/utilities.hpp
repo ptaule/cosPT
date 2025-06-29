@@ -23,6 +23,20 @@
 #define CUBE(x) (x)*(x)*(x)
 #define POW4(x) (x)*(x)*(x)*(x)
 
+// Precompute binomial coefficients up to n=6
+constexpr int MAX_N = 6;
+
+constexpr std::array<std::array<int, MAX_N + 1>, MAX_N + 1> make_binomial_table() {
+    std::array<std::array<int, MAX_N + 1>, MAX_N + 1> table{};
+    for (std::size_t n = 0; n <= MAX_N; ++n) {
+        table[n][0] = table[n][n] = 1;
+        for (std::size_t k = 1; k < n; ++k) {
+            table[n][k] = table[n - 1][k - 1] + table[n - 1][k];
+        }
+    }
+    return table;
+}
+constexpr auto binomial_coeffs = make_binomial_table();
 /* Debug modes (if not set by compile options): */
 /* 1: Perform additional checks during runtime. */
 /* 2: In addition, print info during */

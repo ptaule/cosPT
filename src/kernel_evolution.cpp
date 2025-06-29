@@ -7,7 +7,7 @@
 extern "C" {
     #include <cmath>
     #include <gsl/gsl_odeiv2.h>
-    #include <gsl/gsl_sf.h>
+    #include <gsl/gsl_errno.h>
 }
 
 #include "../include/utilities.hpp"
@@ -180,14 +180,13 @@ void KernelEvolver::compute_RHS_sum(
             }
         } while (comb.next());
 
-        // Devide through by symmetrization factor (n choose m)
-        int n_choose_m = static_cast<int>(
-                gsl_sf_choose(static_cast<unsigned int>(n),
-                    static_cast<unsigned int>(m))
-                );
+        size_t n_t = static_cast<size_t>(n);
+        size_t m_t = static_cast<size_t>(m);
         for (size_t i = 0; i < COMPONENTS; ++i) {
             for (size_t j = 0; j < time_steps; ++j) {
-                rhs_sum.at(i).at(j) += partial_rhs_sum.at(j).at(i) / n_choose_m;
+                // Devide through by symmetrization factor (n choose m)
+                rhs_sum.at(i).at(j) +=
+                    partial_rhs_sum.at(j).at(i) / binomial_coeffs[n_t][m_t];
             }
         }
     }
