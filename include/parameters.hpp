@@ -143,9 +143,7 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg);
 // hashed kernel indices (args_2_kernel_index).
 class LoopStructure {
     private:
-        const Dynamics dynamics_;
         const Spectrum spectrum_;
-        const bool rsd_;
 
         const int n_loops_;
 
@@ -166,12 +164,9 @@ class LoopStructure {
         int bs_args_2_kernel_index(const int arguments[]) const;
 
     public:
-        LoopStructure(int n_loops, Spectrum spectrum, Dynamics dynamics,
-                bool rsd);
+        LoopStructure(int n_loops, Spectrum spectrum);
 
-        Dynamics dynamics() const { return dynamics_; }
         Spectrum spectrum() const { return spectrum_; }
-        bool rsd() const { return rsd_; }
 
         int n_loops() const { return n_loops_; }
         std::size_t n_coeffs() const { return n_coeffs_; }

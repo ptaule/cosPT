@@ -136,7 +136,9 @@ IntegrandTables::IntegrandTables(
         double k_a,
         double k_b,
         double cos_ab,
+        bool rsd,
         double rsd_growth_f,
+        const Dynamics dynamics,
         const LoopStructure& loop_structure,
         const SumTable& sum_table,
         const EvolutionParameters& ev_params,
@@ -144,8 +146,9 @@ IntegrandTables::IntegrandTables(
         const OmegaEigenspace& omega_eigenspace
         ) :
     k_a(k_a), k_b(k_b), cos_ab(cos_ab), rsd_f(rsd_growth_f),
-    loop_structure(loop_structure), sum_table(sum_table), ev_params(ev_params),
-    eta_grid(eta_grid), omega_eigenspace(omega_eigenspace),
+    rsd(rsd), dynamics(dynamics), loop_structure(loop_structure),
+    sum_table(sum_table), ev_params(ev_params), eta_grid(eta_grid),
+    omega_eigenspace(omega_eigenspace),
     vars(IntegrationVariables(static_cast<size_t>(loop_structure.n_loops())))
 {
     int n_loops = loop_structure.n_loops();
@@ -164,7 +167,7 @@ IntegrandTables::IntegrandTables(
     spt_kernels.resize(n_kernels, SPTKernel());
     kernels.resize(n_kernels,
                    Kernel(eta_grid.time_steps()));
-    if (loop_structure.rsd()) {
+    if (rsd) {
         bare_los_projection_.resize(n_coeffs);
         composite_los_projection_.resize(n_configs);
 
@@ -189,7 +192,7 @@ void reset_kernels(KernelType& kernels, ResetFn reset_fn) {
 
 
 void IntegrandTables::reset() {
-    switch (loop_structure.dynamics()) {
+    switch (dynamics) {
         case EDS_SPT:
             reset_kernels(spt_kernels, [](auto &k) {
                 std::fill(k.values.begin(), k.values.end(), 0.0);
@@ -212,7 +215,7 @@ void IntegrandTables::reset() {
             throw std::runtime_error("IntegrandTables::reset(): Invalid dynamics type.");
     }
 
-    if (loop_structure.rsd()) {
+    if (rsd) {
         reset_kernels(rsd_kernels, [](auto &k) {
             k.value = 0.0;
         });
@@ -405,7 +408,7 @@ void IntegrandTables::compute_tables()
     compute_composite_dot_prod();
     compute_alpha_beta();
 
-    if (loop_structure.rsd()) {
+    if (rsd) {
         compute_bare_los_proj();
         compute_composite_los_proj();
     }

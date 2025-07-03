@@ -141,6 +141,8 @@ class IntegrandTables {
         void compute_composite_dot_prod();
         void compute_alpha_beta();
     public:
+        const bool rsd;
+        const Dynamics dynamics;
         const LoopStructure& loop_structure;
         const SumTable& sum_table;
 
@@ -161,7 +163,9 @@ class IntegrandTables {
                 double k_a,
                 double k_b,
                 double cos_ab,
+                bool rsd,
                 double rsd_growth_f,
+                const Dynamics dynamics,
                 const LoopStructure& loop_structure,
                 const SumTable& sum_table,
                 const EvolutionParameters& ev_params,

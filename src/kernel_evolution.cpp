@@ -303,7 +303,7 @@ void KernelEvolver::evolve(
     };
 
     size_t i = 1;
-    if (tables.loop_structure.dynamics() == EVOLVE_ASYMPTOTIC_ICS) {
+    if (tables.dynamics == EVOLVE_ASYMPTOTIC_ICS) {
         if (n == 1) {
             std::array<double, COMPONENTS> k_ini;
             if constexpr (COMPONENTS == 2) {
@@ -360,12 +360,12 @@ KernelEvolver::KernelEvolver(IntegrandTables& tables)
             tables.ev_params.ode_rtol(),
             tables.ev_params.ode_atol()
             );
-    if (tables.loop_structure.dynamics() == EVOLVE_EDS_ICS) {
+    if (tables.dynamics == EVOLVE_EDS_ICS) {
         set_ICs = [this](const int arguments[], int kernel_index, int n, double k) {
             return this->set_EdS_ICs(arguments, kernel_index, n, k);
         };
     }
-    else if (tables.loop_structure.dynamics() == EVOLVE_ASYMPTOTIC_ICS) {
+    else if (tables.dynamics == EVOLVE_ASYMPTOTIC_ICS) {
         set_ICs = [this](const int arguments[], int kernel_index, int n, double k) {
             return this->set_asymptotic_ICs(arguments, kernel_index, n, k);
         };

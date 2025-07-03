@@ -35,8 +35,7 @@ void configuration_term(
         Vec1D<double>& term_results
         )
 {
-    const Dynamics dynamics = tables.loop_structure.dynamics();
-    bool rsd = tables.loop_structure.rsd();
+    const Dynamics dynamics = tables.dynamics;
 
     const ArgumentConfiguration& arg_config_l =
         diagram.get_arg_config_l(rearr_idx, sign_idx);
@@ -64,7 +63,7 @@ void configuration_term(
         kernel_evolver.compute(args_r, k_idx_r, n_r);
     }
 
-    if (rsd) {
+    if (tables.rsd) {
         compute_rsd_kernels(args_l, k_idx_l, n_l, tables);
         compute_rsd_kernels(args_r, k_idx_r, n_r, tables);
 
@@ -184,7 +183,7 @@ void configuration_term(
         Vec1D<double>& term_results
         )
 {
-    const Dynamics dynamics = tables.loop_structure.dynamics();
+    const Dynamics dynamics = tables.dynamics;
     const Triple<ArgumentConfiguration>& arg_config =
         diagram.get_arg_config(rearr_idx, sign_idx, overall_loop_idx);
 
@@ -379,7 +378,7 @@ int integrand(
     IntegrationVariables& vars = tables.vars;
 
     Spectrum spectrum = tables.loop_structure.spectrum();
-    bool rsd = tables.loop_structure.rsd();
+    bool rsd = tables.rsd;
 
 #if DEBUG > 1
     /* Check that n_loops > 0 */

@@ -22,10 +22,10 @@ void run_integrand_benchmark(
         Config cfg(config_path, -1, -1, -1);
 
         bool rsd = cfg.get<bool>("rsd");
+        const Dynamics dynamics = cfg.get<Dynamics>("dynamics");
 
-        LoopStructure loop_structure(n_loops, cfg.get<Spectrum>("spectrum"),
-                                   cfg.get<Dynamics>("dynamics"),
-                                   rsd);
+        LoopStructure loop_structure(n_loops, cfg.get<Spectrum>("spectrum"));
+
         SumTable sum_table(loop_structure);
 
         IRresumSettings ir_settings(
@@ -59,16 +59,14 @@ void run_integrand_benchmark(
                                       cfg.get<double>("ode_rel_tolerance"),
                                       cfg.get<double>("ode_start_step"));
 
-        OmegaEigenspace omega_eigenspace(
-            cfg.get<Dynamics>("dynamics"),
-            eta_grid.eta_ini(),
-            ev_params,
-            cfg.get<int>("omega_eigenmode"),
-            cfg.get<double>("omega_k_min"),
-            cfg.get<double>("omega_k_max"),
-            cfg.get<int>("omega_N"),
-            cfg.get<double>("omega_imag_threshold")
-        );
+        OmegaEigenspace omega_eigenspace( dynamics,
+                                         eta_grid.eta_ini(),
+                                         ev_params,
+                                         cfg.get<int>("omega_eigenmode"),
+                                         cfg.get<double>("omega_k_min"),
+                                         cfg.get<double>("omega_k_max"),
+                                         cfg.get<int>("omega_N"),
+                                         cfg.get<double>("omega_imag_threshold"));
 
         int n_dims = 0; /* Dimension of integral measure */
         int n_correlations = 0;
@@ -77,10 +75,10 @@ void run_integrand_benchmark(
                 input.pair_correlations = cfg.pair_correlations();
                 input.ps_diagrams = ps::construct_diagrams(loop_structure);
                 input.tables_vec.emplace_back(
-                    cfg.get<double>("k_a"), 0, 0,
+                    cfg.get<double>("k_a"), 0, 0, rsd,
                     cfg.get<double>("rsd_growth_f"),
-                    loop_structure, sum_table,
-                    ev_params, eta_grid, omega_eigenspace);
+                    dynamics, loop_structure, sum_table, ev_params, eta_grid,
+                    omega_eigenspace);
 
                 if (rsd) {
                     n_dims = 3 * n_loops + 1;
@@ -94,6 +92,10 @@ void run_integrand_benchmark(
 
                 break;
             case BISPECTRUM:
+                if (rsd) {
+                    throw ConfigException(
+                        "RSD not implemented for bispectrum.");
+                }
                 n_dims = 3 * n_loops;
                 input.triple_correlations = cfg.triple_correlations();
                 n_correlations = static_cast<int>(input.triple_correlations.size());
@@ -101,9 +103,8 @@ void run_integrand_benchmark(
                 input.tables_vec.emplace_back(
                     cfg.get<double>("k_a"),
                     cfg.get<double>("k_b"),
-                    cfg.get<double>("cos_ab"),
-                    cfg.get<double>("rsd_growth_f"),
-                    loop_structure, sum_table,
+                    cfg.get<double>("cos_ab"), false,
+                    0, dynamics, loop_structure, sum_table,
                     ev_params, eta_grid, omega_eigenspace);
                 break;
         }

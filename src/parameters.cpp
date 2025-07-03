@@ -1146,9 +1146,8 @@ static inline size_t uintpow(int a, int b) {
 
 
 
-LoopStructure::LoopStructure(int n_loops, Spectrum spectrum,
-        Dynamics dynamics, bool rsd)
-    : dynamics_(dynamics), spectrum_(spectrum), rsd_(rsd), n_loops_(n_loops)
+LoopStructure::LoopStructure(int n_loops, Spectrum spectrum)
+    : spectrum_(spectrum), n_loops_(n_loops)
 {
     if (n_loops_ < 0 || n_loops_ > 2) {
         throw(std::invalid_argument("LoopStructure::LoopStructure(): "

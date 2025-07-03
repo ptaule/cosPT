@@ -166,7 +166,7 @@ void tree_level(
         for (auto& el : results) el = ps.tree_level(k_a, 0);
     }
 
-    if (tables.loop_structure.dynamics() != EDS_SPT) {
+    if (tables.dynamics != EDS_SPT) {
         Vec1D<int> config(tables.loop_structure.n_coeffs(), 0);
         config.at(tables.loop_structure.n_coeffs() - 1) = 1; /* Config for k_a */
 
@@ -288,7 +288,7 @@ void diagram_term(
         Vec1D<double>& diagram_results /* out */
         )
 {
-    const Dynamics dynamics = tables.loop_structure.dynamics();
+    const Dynamics dynamics = tables.dynamics;
     const Triple<ArgumentConfiguration> arg_config =
         kernel_arguments(diagram_idx, tables.loop_structure);
 
