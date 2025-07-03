@@ -53,7 +53,7 @@ int config2label(const Vec1D<int>& config)
 
 
 
-std::string label2string(
+std::string label_to_string(
     int label,
     size_t n_coeffs,
     Spectrum spectrum
@@ -85,7 +85,7 @@ std::string label2string(
 
 
 
-std::string labels2string(
+std::string labels_to_string(
     const int labels[],
     size_t size,
     size_t n_coeffs,
@@ -98,7 +98,7 @@ std::string labels2string(
     for (size_t i = 0; i < size; ++i) {
         if (labels[i] == get_zero_label(n_coeffs)) continue;
         if (!first) oss << ", ";
-        oss << label2string(labels[i], n_coeffs, spectrum);
+        oss << label_to_string(labels[i], n_coeffs, spectrum);
         first = false;
     }
     oss << ")";

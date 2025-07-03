@@ -222,10 +222,10 @@ PowerSpectrumDiagram::PowerSpectrumDiagram(
 
 std::string PowerSpectrumDiagram::argument_configuration(size_t a, size_t b) const {
     return (
-        labels2string(arg_configs_l.at(a).at(b).args,
+        labels_to_string(arg_configs_l.at(a).at(b).args,
                       loop_structure.n_coeffs(), loop_structure.spectrum())
         + " "
-        + labels2string(arg_configs_r.at(a).at(b).args,
+        + labels_to_string(arg_configs_r.at(a).at(b).args,
                         loop_structure.n_coeffs(), loop_structure.spectrum())
     );
 }
@@ -846,15 +846,15 @@ std::string BiSpectrumDiagram::argument_configuration(
         ) const
 {
     std::ostringstream oss;
-    oss << labels2string(
+    oss << labels_to_string(
         arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).a().args,
         loop_structure.n_coeffs(), loop_structure.spectrum())
         << " "
-        << labels2string(
+        << labels_to_string(
             arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).b().args,
             loop_structure.n_coeffs(), loop_structure.spectrum())
         << " "
-        << labels2string(
+        << labels_to_string(
             arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).c().args,
             loop_structure.n_coeffs(), loop_structure.spectrum());
     return oss.str();

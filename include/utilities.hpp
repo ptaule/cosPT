@@ -200,26 +200,26 @@ std::ostream& operator<<(std::ostream& out, const Triple<int>& pair);
 void label2config(int label, std::vector<int>& config);
 int config2label(const std::vector<int>& config);
 
-std::string label2string(
+std::string label_to_string(
     int label,
     size_t n_coeffs,
     Spectrum spectrum
 );
 
-std::string labels2string(
+std::string labels_to_string(
     const int labels[],
     size_t size,
     size_t n_coeffs,
     Spectrum spectrum
 );
 
-inline std::string labels2string(
+inline std::string labels_to_string(
     const std::vector<int>& labels,
     size_t n_coeffs,
     Spectrum spectrum
 )
 {
-    return labels2string(labels.data(), labels.size(), n_coeffs,
+    return labels_to_string(labels.data(), labels.size(), n_coeffs,
                          spectrum);
 }
 
