@@ -4,6 +4,7 @@
 #include <cmath>
 #include <iosfwd>
 #include <string>
+#include <stdexcept>
 
 #include "utilities.hpp"
 
