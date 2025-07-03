@@ -140,7 +140,7 @@ std::ostream& operator<<(std::ostream& out, const Config& cfg);
 
 // Represents the structural and indexing logic for n-loop computations.
 // Provides configuration metadata and converts argument lists into
-// hashed kernel indices (args_2_kernel_index).
+// hashed kernel indices (args_to_kernel_index).
 class LoopStructure {
     private:
         const Spectrum spectrum_;
@@ -160,8 +160,8 @@ class LoopStructure {
 
         int first_composite_block_size = 0; /* Bispectrum */
 
-        int ps_args_2_kernel_index(const int arguments[]) const;
-        int bs_args_2_kernel_index(const int arguments[]) const;
+        int ps_args_to_kernel_index(const int arguments[]) const;
+        int bs_args_to_kernel_index(const int arguments[]) const;
 
     public:
         LoopStructure(int n_loops, Spectrum spectrum);
@@ -175,7 +175,7 @@ class LoopStructure {
         std::size_t n_kernel_args() const { return n_kernel_args_; }
         int zero_label() const { return zero_label_; }
 
-        std::function<int(const int[])> args_2_kernel_index;
+        std::function<int(const int[])> args_to_kernel_index;
 };
 
 

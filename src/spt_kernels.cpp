@@ -136,7 +136,7 @@ int compute_SPT_kernels(
 
     // If kernel_index is not known, -1 is sent as argument
     if (kernel_index == -1) {
-        kernel_index = tables.loop_structure.args_2_kernel_index(arguments);
+        kernel_index = tables.loop_structure.args_to_kernel_index(arguments);
     }
 
     // Alias reference to kernel we are working with for convenience/readability
@@ -198,7 +198,7 @@ void kernel_computer_validate_kernel_index(
         )
 {
     int argument_index =
-        tables.loop_structure.args_2_kernel_index(arguments);
+        tables.loop_structure.args_to_kernel_index(arguments);
     if (kernel_index != -1 && argument_index != kernel_index) {
         throw(std::logic_error("Index computed from kernel arguments does not "
                                "equal kernel index."));

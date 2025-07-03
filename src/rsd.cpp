@@ -113,7 +113,7 @@ int rsd_velocity_power(
 #endif
     // If kernel_index is not known, -1 is sent as argument
     if (kernel_index == -1) {
-        kernel_index = tables.loop_structure.args_2_kernel_index(arguments);
+        kernel_index = tables.loop_structure.args_to_kernel_index(arguments);
     }
 
     /* If N < 1 or there are more factors N than wavenumbers, do nothing */
@@ -234,7 +234,7 @@ void compute_rsd_kernels(
 
     // If kernel_index is not known, -1 is sent as argument
     if (kernel_index == -1) {
-        kernel_index = tables.loop_structure.args_2_kernel_index(arguments);
+        kernel_index = tables.loop_structure.args_to_kernel_index(arguments);
     }
 
     // Alias reference to kernel we are working with for convenience/readability

@@ -269,11 +269,11 @@ Triple<ArgumentConfiguration> kernel_arguments(
     }
 
     arg_config.a().kernel_index =
-        loop_structure.args_2_kernel_index(arg_config.a().args.data());
+        loop_structure.args_to_kernel_index(arg_config.a().args.data());
     arg_config.b().kernel_index =
-        loop_structure.args_2_kernel_index(arg_config.b().args.data());
+        loop_structure.args_to_kernel_index(arg_config.b().args.data());
     arg_config.c().kernel_index =
-        loop_structure.args_2_kernel_index(arg_config.c().args.data());
+        loop_structure.args_to_kernel_index(arg_config.c().args.data());
 
     return arg_config;
 }

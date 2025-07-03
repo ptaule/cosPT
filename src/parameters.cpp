@@ -1169,8 +1169,8 @@ LoopStructure::LoopStructure(int n_loops, Spectrum spectrum)
         single_loop_label_max = 2 * static_cast<int>(n_configs_) / 3 - 1;
 
         /* Set argument-to-kernel index converter to a lambda function for the PS case */
-        args_2_kernel_index = [this](const int args[]) {
-            return this->ps_args_2_kernel_index(args);
+        args_to_kernel_index = [this](const int args[]) {
+            return this->ps_args_to_kernel_index(args);
         };
     }
     else if (spectrum_ == BISPECTRUM) {
@@ -1191,8 +1191,8 @@ LoopStructure::LoopStructure(int n_loops, Spectrum spectrum)
             single_loop_block_size;
 
         /* Set argument-to-kernel index converter to a lambda function for the BS case */
-        args_2_kernel_index = [this](const int args[]) {
-            return this->bs_args_2_kernel_index(args);
+        args_to_kernel_index = [this](const int args[]) {
+            return this->bs_args_to_kernel_index(args);
         };
     }
     else {
@@ -1219,7 +1219,7 @@ LoopStructure::LoopStructure(int n_loops, Spectrum spectrum)
 
 
 
-int LoopStructure::ps_args_2_kernel_index(const int arguments[]) const
+int LoopStructure::ps_args_to_kernel_index(const int arguments[]) const
 {
    /* Precompute powers of two for speedup */
     int pow2[] = {1,2,4,8,16,32,64,128};
@@ -1228,7 +1228,7 @@ int LoopStructure::ps_args_2_kernel_index(const int arguments[]) const
 #if DEBUG >= 1
     if (has_duplicates_excluding(arguments, n_kernel_args_, zero_label_))
         throw(std::logic_error(
-            "LoopStructure::ps_args_2_kernel_index(): duplicate "
+            "LoopStructure::ps_args_to_kernel_index(): duplicate "
             "vector arguments passed."));
     int n_k_labels = 0;
 #endif
@@ -1252,7 +1252,7 @@ int LoopStructure::ps_args_2_kernel_index(const int arguments[]) const
 #if DEBUG >= 1
         /* We should not get -k in power spectrum computation */
         else if (arguments[i] < single_loop_label_min) {
-            throw(std::logic_error("LoopStructure::ps_args_2_kernel_index()"
+            throw(std::logic_error("LoopStructure::ps_args_to_kernel_index()"
                                    ": got argument with -k."));
         }
 #endif
@@ -1268,14 +1268,14 @@ int LoopStructure::ps_args_2_kernel_index(const int arguments[]) const
             /* Check that this is in fact a single loop vector */
             if(!single_loop_label(arguments[i], n_coeffs_, spectrum_))
                 throw(std::logic_error(
-                    "LoopStructure::ps_args_2_kernel_index(): argument is "
+                    "LoopStructure::ps_args_to_kernel_index(): argument is "
                     "neither 0, composite type, or single loop."));
 #endif
         }
     }
 #if DEBUG >= 1
     if (n_k_labels > 1)
-        throw(std::logic_error("LoopStructure::ps_args_2_kernel_index(): "
+        throw(std::logic_error("LoopStructure::ps_args_to_kernel_index(): "
                                "more than one argument is of composite type."));
 #endif
 
@@ -1284,7 +1284,7 @@ int LoopStructure::ps_args_2_kernel_index(const int arguments[]) const
 
 
 
-int LoopStructure::bs_args_2_kernel_index(const int arguments[]) const
+int LoopStructure::bs_args_to_kernel_index(const int arguments[]) const
 {
    /* Precompute powers of two for speedup */
     int pow2[] = {1,2,4,8,16,32,64,128};
@@ -1293,7 +1293,7 @@ int LoopStructure::bs_args_2_kernel_index(const int arguments[]) const
 #if DEBUG >= 1
     if (has_duplicates_excluding(arguments, n_kernel_args_, zero_label_))
         throw(std::logic_error(
-            "LoopStructure::bs_args_2_kernel_index(): duplicate "
+            "LoopStructure::bs_args_to_kernel_index(): duplicate "
             "vector arguments passed."));
 #endif
 
@@ -1342,7 +1342,7 @@ found_single_loop: ;
 #if DEBUG >= 1
     if (n_composite > 2)
         throw(std::logic_error(
-            "LoopStructure::bs_args_2_kernel_index(): more than two "
+            "LoopStructure::bs_args_to_kernel_index(): more than two "
             "arguments is of composite type."));
 #endif
 
