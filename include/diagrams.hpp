@@ -7,7 +7,7 @@
 
 #include "utilities.hpp"
 
-class LoopParameters;
+class LoopStructure;
 
 class ArgumentConfiguration {
     public:
@@ -19,7 +19,7 @@ class PowerSpectrumDiagram {
     private:
         int diagram_factor_; /* Topological multiplicative diagram factor */
 
-        const LoopParameters& loop_params;
+        const LoopStructure& loop_structure;
 
         /* Table of rearrangements */
         Vec2D<int> rearrangements;
@@ -44,7 +44,7 @@ class PowerSpectrumDiagram {
         const int m, l, r;
 
         PowerSpectrumDiagram(
-                const LoopParameters& params,
+                const LoopStructure& params,
                 int m, int l, int r
                 );
 
@@ -132,7 +132,7 @@ class BiSpectrumDiagram {
         /* Number of connecting loops */
         Triple<int> n_connecting_loops;
 
-        const LoopParameters& loop_params;
+        const LoopStructure& loop_structure;
 
         /* Table of rearrangements */
         Vec2D<int> rearrangements;
@@ -167,7 +167,7 @@ class BiSpectrumDiagram {
         const int n_a, n_b, n_c;
 
         BiSpectrumDiagram(
-                const LoopParameters& loop_params,
+                const LoopStructure& loop_structure,
                 int n_ab, int n_bc, int n_ca,
                 int n_a, int n_b, int n_c
                 );
@@ -222,11 +222,11 @@ std::ostream& operator<<(std::ostream& out, const PowerSpectrumDiagram& diagram)
 std::ostream& operator<<(std::ostream& out, const BiSpectrumDiagram& diagram);
 
 namespace ps {
-Vec1D<PowerSpectrumDiagram> construct_diagrams(const LoopParameters& loop_params);
+Vec1D<PowerSpectrumDiagram> construct_diagrams(const LoopStructure& loop_structure);
 }
 
 namespace bs {
-Vec1D<BiSpectrumDiagram> construct_diagrams(const LoopParameters& loop_params);
+Vec1D<BiSpectrumDiagram> construct_diagrams(const LoopStructure& loop_structure);
 }
 
 #endif /* ifndef DIAGRAMS_HPP */

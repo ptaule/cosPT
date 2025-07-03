@@ -76,8 +76,8 @@ void KernelEvolver::RHS(
      * later */
 ) {
     const size_t time_steps = tables.eta_grid.time_steps();
-    const size_t n_kernel_args = tables.loop_params.n_kernel_args();
-    int zero_label = tables.loop_params.zero_label();
+    const size_t n_kernel_args = tables.loop_structure.n_kernel_args();
+    int zero_label = tables.loop_structure.zero_label();
 
     /* Resize and zero rhs */
     for (auto& vec : rhs) {
@@ -303,7 +303,7 @@ void KernelEvolver::evolve(
     };
 
     size_t i = 1;
-    if (tables.loop_params.dynamics() == EVOLVE_ASYMPTOTIC_ICS) {
+    if (tables.loop_structure.dynamics() == EVOLVE_ASYMPTOTIC_ICS) {
         if (n == 1) {
             std::array<double, COMPONENTS> k_ini;
             if constexpr (COMPONENTS == 2) {
@@ -360,12 +360,12 @@ KernelEvolver::KernelEvolver(IntegrandTables& tables)
             tables.ev_params.ode_rtol(),
             tables.ev_params.ode_atol()
             );
-    if (tables.loop_params.dynamics() == EVOLVE_EDS_ICS) {
+    if (tables.loop_structure.dynamics() == EVOLVE_EDS_ICS) {
         set_ICs = [this](const int arguments[], int kernel_index, int n, double k) {
             return this->set_EdS_ICs(arguments, kernel_index, n, k);
         };
     }
-    else if (tables.loop_params.dynamics() == EVOLVE_ASYMPTOTIC_ICS) {
+    else if (tables.loop_structure.dynamics() == EVOLVE_ASYMPTOTIC_ICS) {
         set_ICs = [this](const int arguments[], int kernel_index, int n, double k) {
             return this->set_asymptotic_ICs(arguments, kernel_index, n, k);
         };
@@ -392,7 +392,7 @@ int KernelEvolver::compute(
 
     /* If kernel_index is not known, -1 is sent as argument */
     if (kernel_index == -1) {
-        kernel_index = tables.loop_params.args_2_kernel_index(arguments);
+        kernel_index = tables.loop_structure.args_2_kernel_index(arguments);
     }
 
     /* Alias reference to kernel we are working with for convenience/readability */
@@ -415,7 +415,7 @@ int KernelEvolver::compute(
 
     /* Compute k (here: sum of kernel arguments) */
     size_t sum = static_cast<size_t>(tables.sum_table(arguments,
-        tables.loop_params.n_kernel_args()));
+        tables.loop_structure.n_kernel_args()));
     double k = std::sqrt( tables.composite_dot_products()(sum,sum));
 
     /* Set up ODE input and system */

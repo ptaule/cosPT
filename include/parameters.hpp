@@ -138,7 +138,10 @@ class Config {
 std::ostream& operator<<(std::ostream& out, const Config& cfg);
 
 
-class LoopParameters {
+// Represents the structural and indexing logic for n-loop computations.
+// Provides configuration metadata and converts argument lists into
+// hashed kernel indices (args_2_kernel_index).
+class LoopStructure {
     private:
         const Dynamics dynamics_;
         const Spectrum spectrum_;
@@ -163,7 +166,7 @@ class LoopParameters {
         int bs_args_2_kernel_index(const int arguments[]) const;
 
     public:
-        LoopParameters(int n_loops, Spectrum spectrum, Dynamics dynamics,
+        LoopStructure(int n_loops, Spectrum spectrum, Dynamics dynamics,
                 bool rsd);
 
         Dynamics dynamics() const { return dynamics_; }

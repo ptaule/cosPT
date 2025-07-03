@@ -138,7 +138,7 @@ void tree_level(
 {
     double k_a = tables.get_k_a();
     /* Set some irrelevant values for non-existent loops */
-    for (size_t i = 0; i < static_cast<size_t>(tables.loop_params.n_loops()); ++i) {
+    for (size_t i = 0; i < static_cast<size_t>(tables.loop_structure.n_loops()); ++i) {
         tables.vars.magnitudes.at(i) = 0;
         tables.vars.cos_theta.at(i) = 0;
         tables.vars.phi.at(i) = 0;
@@ -166,12 +166,12 @@ void tree_level(
         for (auto& el : results) el = ps.tree_level(k_a, 0);
     }
 
-    if (tables.loop_params.dynamics() != EDS_SPT) {
-        Vec1D<int> config(tables.loop_params.n_coeffs(), 0);
-        config.at(tables.loop_params.n_coeffs() - 1) = 1; /* Config for k_a */
+    if (tables.loop_structure.dynamics() != EDS_SPT) {
+        Vec1D<int> config(tables.loop_structure.n_coeffs(), 0);
+        config.at(tables.loop_structure.n_coeffs() - 1) = 1; /* Config for k_a */
 
-        Vec1D<int> arguments(tables.loop_params.n_kernel_args(),
-                tables.loop_params.zero_label());
+        Vec1D<int> arguments(tables.loop_structure.n_kernel_args(),
+                tables.loop_structure.zero_label());
         arguments.at(0) = config2label(config);
 
         KernelEvolver kernel_evolver(tables);
@@ -197,12 +197,12 @@ void tree_level(
 namespace bs {
 Triple<ArgumentConfiguration> kernel_arguments(
         int diagram_idx,
-        const LoopParameters& loop_params
+        const LoopStructure& loop_structure
         )
 {
-    size_t n_coeffs      = loop_params.n_coeffs();
-    size_t n_kernel_args = loop_params.n_kernel_args();
-    int zero_label    = loop_params.zero_label();
+    size_t n_coeffs      = loop_structure.n_coeffs();
+    size_t n_kernel_args = loop_structure.n_kernel_args();
+    int zero_label    = loop_structure.zero_label();
 
     size_t k_a_idx = n_coeffs - 1;
     size_t k_b_idx = n_coeffs - 2;
@@ -269,11 +269,11 @@ Triple<ArgumentConfiguration> kernel_arguments(
     }
 
     arg_config.a().kernel_index =
-        loop_params.args_2_kernel_index(arg_config.a().args.data());
+        loop_structure.args_2_kernel_index(arg_config.a().args.data());
     arg_config.b().kernel_index =
-        loop_params.args_2_kernel_index(arg_config.b().args.data());
+        loop_structure.args_2_kernel_index(arg_config.b().args.data());
     arg_config.c().kernel_index =
-        loop_params.args_2_kernel_index(arg_config.c().args.data());
+        loop_structure.args_2_kernel_index(arg_config.c().args.data());
 
     return arg_config;
 }
@@ -288,9 +288,9 @@ void diagram_term(
         Vec1D<double>& diagram_results /* out */
         )
 {
-    const Dynamics dynamics = tables.loop_params.dynamics();
+    const Dynamics dynamics = tables.loop_structure.dynamics();
     const Triple<ArgumentConfiguration> arg_config =
-        kernel_arguments(diagram_idx, tables.loop_params);
+        kernel_arguments(diagram_idx, tables.loop_structure);
 
     int k_idx_a = arg_config.a().kernel_index;
     int k_idx_b = arg_config.b().kernel_index;
@@ -368,7 +368,7 @@ void tree_level(
         )
 {
     /* Set some irrelevant values for non-existent loops */
-    for (size_t i = 0; i < static_cast<size_t>(tables.loop_params.n_loops()); ++i) {
+    for (size_t i = 0; i < static_cast<size_t>(tables.loop_structure.n_loops()); ++i) {
         tables.vars.magnitudes.at(i) = 0;
         tables.vars.cos_theta.at(i) = 0;
         tables.vars.phi.at(i) = 0;

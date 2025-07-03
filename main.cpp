@@ -118,9 +118,9 @@ int main(int argc, char* argv[]) {
         bool rsd = cfg.get<bool>("rsd");
         Dynamics dynamics = cfg.get<Dynamics>("dynamics");
 
-        LoopParameters loop_params(n_loops, cfg.get<Spectrum>("spectrum"),
+        LoopStructure loop_structure(n_loops, cfg.get<Spectrum>("spectrum"),
                                    dynamics, rsd);
-        SumTable sum_table(loop_params);
+        SumTable sum_table(loop_structure);
 
         EtaGrid eta_grid(cfg.get<double>("eta_ini"),
                          cfg.get<double>("eta_fin"),
@@ -187,13 +187,13 @@ int main(int argc, char* argv[]) {
                     n_dims = 3 * n_loops - 1;
                 }
 
-                input.ps_diagrams = ps::construct_diagrams(loop_params);
+                input.ps_diagrams = ps::construct_diagrams(loop_structure);
 
                 /* (Master + n_cores) instances of IntegrandTables */
                 for (int i = 0; i < cuba_n_cores + 1; ++i) {
                     input.tables_vec.emplace_back(cfg.get<double>("k_a"), 0, 0,
                                                   cfg.get<double>("rsd_growth_f"),
-                                                  loop_params, sum_table,
+                                                  loop_structure, sum_table,
                                                   ev_params, eta_grid,
                                                   omega_eigenspace);
                 }
@@ -211,7 +211,7 @@ int main(int argc, char* argv[]) {
 
             if (n_loops > 0) {
                 n_dims = 3 * n_loops;
-                input.bs_diagrams = bs::construct_diagrams(loop_params);
+                input.bs_diagrams = bs::construct_diagrams(loop_structure);
 
                 /* (Master + n_cores) instances of IntegrandTables */
                 for (int i = 0; i < cuba_n_cores + 1; ++i) {
@@ -219,7 +219,7 @@ int main(int argc, char* argv[]) {
                                                   cfg.get<double>("k_b"),
                                                   cfg.get<double>("cos_ab"),
                                                   cfg.get<double>("rsd_growth_f"),
-                                                  loop_params, sum_table,
+                                                  loop_structure, sum_table,
                                                   ev_params, eta_grid,
                                                   omega_eigenspace);
                 }
@@ -243,7 +243,7 @@ int main(int argc, char* argv[]) {
         /* Tree-level results */
         if (cfg.get<Spectrum>("spectrum") == POWERSPECTRUM) {
             IntegrandTables tables(cfg.get<double>("k_a"), 0, 0,
-                    cfg.get<double>("rsd_growth_f"), loop_params, sum_table,
+                    cfg.get<double>("rsd_growth_f"), loop_structure, sum_table,
                     ev_params, eta_grid, omega_eigenspace);
             ps::tree_level(tables, ps, input.pair_correlations, tree_level_result);
         }
@@ -251,7 +251,7 @@ int main(int argc, char* argv[]) {
             /* Tree level bispectrum */
             IntegrandTables tables(cfg.get<double>("k_a"),
                                    cfg.get<double>("k_b"),
-                                   cfg.get<double>("cos_ab"), 0, loop_params,
+                                   cfg.get<double>("cos_ab"), 0, loop_structure,
                                    sum_table, ev_params, eta_grid, omega_eigenspace);
             bs::tree_level(tables, ps, input.triple_correlations,
                            tree_level_result);

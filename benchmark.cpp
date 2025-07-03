@@ -23,10 +23,10 @@ void run_integrand_benchmark(
 
         bool rsd = cfg.get<bool>("rsd");
 
-        LoopParameters loop_params(n_loops, cfg.get<Spectrum>("spectrum"),
+        LoopStructure loop_structure(n_loops, cfg.get<Spectrum>("spectrum"),
                                    cfg.get<Dynamics>("dynamics"),
                                    rsd);
-        SumTable sum_table(loop_params);
+        SumTable sum_table(loop_structure);
 
         IRresumSettings ir_settings(
             n_loops,
@@ -75,11 +75,11 @@ void run_integrand_benchmark(
         switch (spectrum) {
             case POWERSPECTRUM:
                 input.pair_correlations = cfg.pair_correlations();
-                input.ps_diagrams = ps::construct_diagrams(loop_params);
+                input.ps_diagrams = ps::construct_diagrams(loop_structure);
                 input.tables_vec.emplace_back(
                     cfg.get<double>("k_a"), 0, 0,
                     cfg.get<double>("rsd_growth_f"),
-                    loop_params, sum_table,
+                    loop_structure, sum_table,
                     ev_params, eta_grid, omega_eigenspace);
 
                 if (rsd) {
@@ -97,13 +97,13 @@ void run_integrand_benchmark(
                 n_dims = 3 * n_loops;
                 input.triple_correlations = cfg.triple_correlations();
                 n_correlations = static_cast<int>(input.triple_correlations.size());
-                input.bs_diagrams = bs::construct_diagrams(loop_params);
+                input.bs_diagrams = bs::construct_diagrams(loop_structure);
                 input.tables_vec.emplace_back(
                     cfg.get<double>("k_a"),
                     cfg.get<double>("k_b"),
                     cfg.get<double>("cos_ab"),
                     cfg.get<double>("rsd_growth_f"),
-                    loop_params, sum_table,
+                    loop_structure, sum_table,
                     ev_params, eta_grid, omega_eigenspace);
                 break;
         }

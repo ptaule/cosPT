@@ -40,7 +40,7 @@ inline double mu_of_args(size_t label, IntegrandTables& tables, double k) {
 
 inline size_t get_label(const int arguments[], IntegrandTables& tables) {
     return static_cast<size_t>(
-        tables.sum_table(arguments,tables.loop_params.n_kernel_args()));
+        tables.sum_table(arguments,tables.loop_structure.n_kernel_args()));
 }
 
 
@@ -60,7 +60,7 @@ inline double rsd_coord_transformation(
     /* Compute sum of arguments */
     size_t sum = get_label(arguments, tables);
     /* If sum of arguments is zero, the PT kernels are zero */
-    if (sum == static_cast<size_t>(tables.loop_params.zero_label())) return 0;
+    if (sum == static_cast<size_t>(tables.loop_structure.zero_label())) return 0;
 
     double mu = mu_of_args(sum, tables);
 
@@ -86,7 +86,7 @@ inline double rsd_jac_transformation(
 #endif
     size_t sum = get_label(arguments, tables);
     /* If sum of arguments is zero, the PT kernels are zero */
-    if (sum == static_cast<size_t>(tables.loop_params.zero_label())) return 0;
+    if (sum == static_cast<size_t>(tables.loop_structure.zero_label())) return 0;
 
     double k = k_of_args(static_cast<size_t>(sum), tables);
     double mu = mu_of_args(static_cast<size_t>(sum), tables, k);
@@ -113,14 +113,14 @@ int rsd_velocity_power(
 #endif
     // If kernel_index is not known, -1 is sent as argument
     if (kernel_index == -1) {
-        kernel_index = tables.loop_params.args_2_kernel_index(arguments);
+        kernel_index = tables.loop_structure.args_2_kernel_index(arguments);
     }
 
     /* If N < 1 or there are more factors N than wavenumbers, do nothing */
     if (N < 1 || n < N) return kernel_index;
 
-    int zero_label = tables.loop_params.zero_label();
-    size_t n_kernel_args = tables.loop_params.n_kernel_args();
+    int zero_label = tables.loop_structure.zero_label();
+    size_t n_kernel_args = tables.loop_structure.n_kernel_args();
     /* Convert N and kernel_index to size_t for convenience since they are used
      * as indices */
     size_t k_idx_t = static_cast<size_t>(kernel_index);
@@ -234,7 +234,7 @@ void compute_rsd_kernels(
 
     // If kernel_index is not known, -1 is sent as argument
     if (kernel_index == -1) {
-        kernel_index = tables.loop_params.args_2_kernel_index(arguments);
+        kernel_index = tables.loop_structure.args_2_kernel_index(arguments);
     }
 
     // Alias reference to kernel we are working with for convenience/readability
@@ -245,8 +245,8 @@ void compute_rsd_kernels(
         return;
     }
 
-    size_t n_kernel_args = tables.loop_params.n_kernel_args();
-    int zero_label = tables.loop_params.zero_label();
+    size_t n_kernel_args = tables.loop_structure.n_kernel_args();
+    int zero_label = tables.loop_structure.zero_label();
 
     /* Compute sum of arguments, and its absolute value k */
     size_t sum = get_label(arguments, tables);

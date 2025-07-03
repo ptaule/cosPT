@@ -6,7 +6,7 @@
 #include "omega_matrix.hpp"
 #include "utilities.hpp"
 
-class LoopParameters;
+class LoopStructure;
 class EvolutionParameters;
 class OmegaEigenspace;
 
@@ -58,7 +58,7 @@ class SumTable {
         void check_result(int res) const;
         int convert_and_sum(int a, int b);
     public:
-        SumTable(const LoopParameters& loop_params);
+        SumTable(const LoopStructure& loop_structure);
 
         int operator()(int a, int b) const {
             int result = sum_table.at(static_cast<size_t>(a))
@@ -141,7 +141,7 @@ class IntegrandTables {
         void compute_composite_dot_prod();
         void compute_alpha_beta();
     public:
-        const LoopParameters& loop_params;
+        const LoopStructure& loop_structure;
         const SumTable& sum_table;
 
         const EvolutionParameters& ev_params;
@@ -162,7 +162,7 @@ class IntegrandTables {
                 double k_b,
                 double cos_ab,
                 double rsd_growth_f,
-                const LoopParameters& loop_params,
+                const LoopStructure& loop_structure,
                 const SumTable& sum_table,
                 const EvolutionParameters& ev_params,
                 const EtaGrid& eta_grid,

@@ -35,8 +35,8 @@ void configuration_term(
         Vec1D<double>& term_results
         )
 {
-    const Dynamics dynamics = tables.loop_params.dynamics();
-    bool rsd = tables.loop_params.rsd();
+    const Dynamics dynamics = tables.loop_structure.dynamics();
+    bool rsd = tables.loop_structure.rsd();
 
     const ArgumentConfiguration& arg_config_l =
         diagram.get_arg_config_l(rearr_idx, sign_idx);
@@ -184,7 +184,7 @@ void configuration_term(
         Vec1D<double>& term_results
         )
 {
-    const Dynamics dynamics = tables.loop_params.dynamics();
+    const Dynamics dynamics = tables.loop_structure.dynamics();
     const Triple<ArgumentConfiguration>& arg_config =
         diagram.get_arg_config(rearr_idx, sign_idx, overall_loop_idx);
 
@@ -375,11 +375,11 @@ int integrand(
     IntegrandTables& tables = input.tables_vec.at(static_cast<size_t>(*core + 1));
 
     size_t n_comp = static_cast<size_t>(*ncomp);
-    int n_loops = tables.loop_params.n_loops();
+    int n_loops = tables.loop_structure.n_loops();
     IntegrationVariables& vars = tables.vars;
 
-    Spectrum spectrum = tables.loop_params.spectrum();
-    bool rsd = tables.loop_params.rsd();
+    Spectrum spectrum = tables.loop_structure.spectrum();
+    bool rsd = tables.loop_structure.rsd();
 
 #if DEBUG > 1
     /* Check that n_loops > 0 */
@@ -477,7 +477,7 @@ int integrand(
         int i = 0;
         /* Skip P_lin(Q1) if single_hard_limit = true */
         if (input.single_hard_limit) ++i;
-        for (; i < tables.loop_params.n_loops(); ++i) {
+        for (; i < tables.loop_structure.n_loops(); ++i) {
             for (auto& el : results) {
                 el *= input.ps(
                         tables.vars.magnitudes.at(static_cast<size_t>(i)),

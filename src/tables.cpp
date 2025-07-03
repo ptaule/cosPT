@@ -48,11 +48,11 @@ void SumTable::check_result(int res) const {
 
 
 
-SumTable::SumTable(const LoopParameters& loop_params) :
-    zero_label(loop_params.zero_label()),
-    n_coeffs(loop_params.n_coeffs())
+SumTable::SumTable(const LoopStructure& loop_structure) :
+    zero_label(loop_structure.zero_label()),
+    n_coeffs(loop_structure.n_coeffs())
 {
-    size_t n_configs = loop_params.n_configs();
+    size_t n_configs = loop_structure.n_configs();
 
     sum_table.resize(n_configs);
     for (size_t a = 0; a < n_configs; ++a) {
@@ -137,21 +137,21 @@ IntegrandTables::IntegrandTables(
         double k_b,
         double cos_ab,
         double rsd_growth_f,
-        const LoopParameters& loop_params,
+        const LoopStructure& loop_structure,
         const SumTable& sum_table,
         const EvolutionParameters& ev_params,
         const EtaGrid& eta_grid,
         const OmegaEigenspace& omega_eigenspace
         ) :
     k_a(k_a), k_b(k_b), cos_ab(cos_ab), rsd_f(rsd_growth_f),
-    loop_params(loop_params), sum_table(sum_table), ev_params(ev_params),
+    loop_structure(loop_structure), sum_table(sum_table), ev_params(ev_params),
     eta_grid(eta_grid), omega_eigenspace(omega_eigenspace),
-    vars(IntegrationVariables(static_cast<size_t>(loop_params.n_loops())))
+    vars(IntegrationVariables(static_cast<size_t>(loop_structure.n_loops())))
 {
-    int n_loops = loop_params.n_loops();
-    size_t n_coeffs = loop_params.n_coeffs();
-    size_t n_configs = loop_params.n_configs();
-    size_t n_kernels = loop_params.n_kernels();
+    int n_loops = loop_structure.n_loops();
+    size_t n_coeffs = loop_structure.n_coeffs();
+    size_t n_configs = loop_structure.n_configs();
+    size_t n_kernels = loop_structure.n_kernels();
 
     a_coeffs.resize(n_coeffs);
     b_coeffs.resize(n_coeffs);
@@ -164,7 +164,7 @@ IntegrandTables::IntegrandTables(
     spt_kernels.resize(n_kernels, SPTKernel());
     kernels.resize(n_kernels,
                    Kernel(eta_grid.time_steps()));
-    if (loop_params.rsd()) {
+    if (loop_structure.rsd()) {
         bare_los_projection_.resize(n_coeffs);
         composite_los_projection_.resize(n_configs);
 
@@ -189,7 +189,7 @@ void reset_kernels(KernelType& kernels, ResetFn reset_fn) {
 
 
 void IntegrandTables::reset() {
-    switch (loop_params.dynamics()) {
+    switch (loop_structure.dynamics()) {
         case EDS_SPT:
             reset_kernels(spt_kernels, [](auto &k) {
                 std::fill(k.values.begin(), k.values.end(), 0.0);
@@ -212,7 +212,7 @@ void IntegrandTables::reset() {
             throw std::runtime_error("IntegrandTables::reset(): Invalid dynamics type.");
     }
 
-    if (loop_params.rsd()) {
+    if (loop_structure.rsd()) {
         reset_kernels(rsd_kernels, [](auto &k) {
             k.value = 0.0;
         });
@@ -223,8 +223,8 @@ void IntegrandTables::reset() {
 
 void IntegrandTables::compute_bare_dot_prod()
 {
-    int n_loops = loop_params.n_loops();
-    size_t n_coeffs = loop_params.n_coeffs();
+    int n_loops = loop_structure.n_loops();
+    size_t n_coeffs = loop_structure.n_coeffs();
     size_t k_a_idx = n_coeffs - 1;
 
     /* Diagonal products correspond to Q1*Q1, etc. */
@@ -262,7 +262,7 @@ void IntegrandTables::compute_bare_dot_prod()
         }
     }
 
-    if (loop_params.spectrum() == BISPECTRUM) {
+    if (loop_structure.spectrum() == BISPECTRUM) {
         size_t k_b_idx = n_coeffs - 2;
 
         double value = k_a * k_b * cos_ab;
@@ -287,8 +287,8 @@ void IntegrandTables::compute_bare_dot_prod()
 
 
 void IntegrandTables::compute_bare_los_proj() {
-    int n_loops = loop_params.n_loops();
-    size_t n_coeffs = loop_params.n_coeffs();
+    int n_loops = loop_structure.n_loops();
+    size_t n_coeffs = loop_structure.n_coeffs();
 
     size_t k_a_idx = n_coeffs - 1;
 
@@ -310,8 +310,8 @@ void IntegrandTables::compute_bare_los_proj() {
 
 
 void IntegrandTables::compute_composite_los_proj() {
-    size_t n_coeffs = loop_params.n_coeffs();
-    size_t n_configs = loop_params.n_configs();
+    size_t n_coeffs = loop_structure.n_coeffs();
+    size_t n_configs = loop_structure.n_configs();
 
     for (size_t a = 0; a < n_configs; ++a) {
         double product_value = 0;
@@ -329,8 +329,8 @@ void IntegrandTables::compute_composite_los_proj() {
 /* Computes table of composite dot products given bare_dot_prod table */
 void IntegrandTables::compute_composite_dot_prod()
 {
-    size_t n_coeffs = loop_params.n_coeffs();
-    size_t n_configs = loop_params.n_configs();
+    size_t n_coeffs = loop_structure.n_coeffs();
+    size_t n_configs = loop_structure.n_configs();
 
     // Scalar product matrix is symmetric, hence compute indices [a,b] and
     // [b,a] simultaneously
@@ -361,7 +361,7 @@ void IntegrandTables::compute_composite_dot_prod()
 
 void IntegrandTables::compute_alpha_beta()
 {
-    size_t n_configs = loop_params.n_configs();
+    size_t n_configs = loop_structure.n_configs();
     for (size_t a = 0; a < n_configs; ++a) {
         for (size_t b = 0; b < n_configs; ++b) {
             // Special case when a == b
@@ -376,13 +376,13 @@ void IntegrandTables::compute_alpha_beta()
 
             // If the first argument is the zero-vector, alpha and beta remains 0
             // If the second argument is the zero-vector, beta remains 0
-            if (a != static_cast<size_t>(loop_params.zero_label())) {
+            if (a != static_cast<size_t>(loop_structure.zero_label())) {
                 double product_ab = composite_dot_prod(a, b);
                 double product_aa = composite_dot_prod(a, a);
 
                 alpha_val = 1 + product_ab/product_aa;
 
-                if (b != static_cast<size_t>(loop_params.zero_label())) {
+                if (b != static_cast<size_t>(loop_structure.zero_label())) {
                     double product_bb = composite_dot_prod(b, b);
 
                     beta_val = product_ab / 2.0
@@ -405,7 +405,7 @@ void IntegrandTables::compute_tables()
     compute_composite_dot_prod();
     compute_alpha_beta();
 
-    if (loop_params.rsd()) {
+    if (loop_structure.rsd()) {
         compute_bare_los_proj();
         compute_composite_los_proj();
     }

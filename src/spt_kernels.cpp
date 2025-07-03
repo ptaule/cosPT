@@ -69,9 +69,9 @@ void partial_SPT_sum(
 {
     std::array<double, EDS_SPT_COMPONENTS> partial_kernel_values = {0};
 
-    int zero_label = tables.loop_params.zero_label();
+    int zero_label = tables.loop_structure.zero_label();
 
-    size_t n_kernel_args = tables.loop_params.n_kernel_args();
+    size_t n_kernel_args = tables.loop_structure.n_kernel_args();
     int args_l[N_KERNEL_ARGS_MAX] = {0};
     int args_r[N_KERNEL_ARGS_MAX] = {0};
 
@@ -136,7 +136,7 @@ int compute_SPT_kernels(
 
     // If kernel_index is not known, -1 is sent as argument
     if (kernel_index == -1) {
-        kernel_index = tables.loop_params.args_2_kernel_index(arguments);
+        kernel_index = tables.loop_structure.args_2_kernel_index(arguments);
     }
 
     // Alias reference to kernel we are working with for convenience/readability
@@ -177,8 +177,8 @@ void kernel_computer_validate_n(
         )
 {
     int n_args = 0;
-    for (size_t i = 0; i < tables.loop_params.n_kernel_args(); ++i) {
-        if (arguments[i] != tables.loop_params.zero_label()){
+    for (size_t i = 0; i < tables.loop_structure.n_kernel_args(); ++i) {
+        if (arguments[i] != tables.loop_structure.zero_label()){
             n_args++;
         }
     }
@@ -198,7 +198,7 @@ void kernel_computer_validate_kernel_index(
         )
 {
     int argument_index =
-        tables.loop_params.args_2_kernel_index(arguments);
+        tables.loop_structure.args_2_kernel_index(arguments);
     if (kernel_index != -1 && argument_index != kernel_index) {
         throw(std::logic_error("Index computed from kernel arguments does not "
                                "equal kernel index."));

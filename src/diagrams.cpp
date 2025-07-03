@@ -24,7 +24,7 @@ double gsl_sf_fact(int n) {
 
 void PowerSpectrumDiagram::kernel_arguments(size_t rearr_idx, size_t sign_idx)
 {
-    size_t n_coeffs = loop_params.n_coeffs();
+    size_t n_coeffs = loop_structure.n_coeffs();
 
     Vec1D<int>& rearrangement = rearrangements.at(rearr_idx);
     Vec1D<bool>& signs = sign_configs.at(sign_idx);
@@ -89,8 +89,8 @@ void PowerSpectrumDiagram::kernel_arguments(size_t rearr_idx, size_t sign_idx)
     }
 
     /* Fill remaining spots with zero-label */
-    int zero_label = loop_params.zero_label();
-    size_t n_kernel_args = loop_params.n_kernel_args();
+    int zero_label = loop_structure.zero_label();
+    size_t n_kernel_args = loop_structure.n_kernel_args();
     while (index_l < n_kernel_args) {
         arguments_l.at(index_l++) = zero_label;
     }
@@ -111,9 +111,9 @@ void PowerSpectrumDiagram::kernel_arguments(size_t rearr_idx, size_t sign_idx)
 #endif
 
     arg_configs_l.at(rearr_idx).at(sign_idx).kernel_index =
-        loop_params.args_2_kernel_index(arguments_l.data());
+        loop_structure.args_2_kernel_index(arguments_l.data());
     arg_configs_r.at(rearr_idx).at(sign_idx).kernel_index =
-        loop_params.args_2_kernel_index(arguments_r.data());
+        loop_structure.args_2_kernel_index(arguments_r.data());
 }
 
 
@@ -171,12 +171,12 @@ void PowerSpectrumDiagram::compute_sign_flips() {
 
 
 PowerSpectrumDiagram::PowerSpectrumDiagram(
-        const LoopParameters& loop_params,
+        const LoopStructure& loop_structure,
         int m, int l, int r
-        ) : loop_params(loop_params), m(m), l(l), r(r)
+        ) : loop_structure(loop_structure), m(m), l(l), r(r)
 {
-    int n_loops = loop_params.n_loops();
-    size_t n_kernel_args = loop_params.n_kernel_args();
+    int n_loops = loop_structure.n_loops();
+    size_t n_kernel_args = loop_structure.n_kernel_args();
 
     if (m + l + r != n_loops + 1) {
         throw(std::invalid_argument("m + l + r != n_loops + 1"));
@@ -223,10 +223,10 @@ PowerSpectrumDiagram::PowerSpectrumDiagram(
 std::string PowerSpectrumDiagram::argument_configuration(size_t a, size_t b) const {
     return (
         labels2string(arg_configs_l.at(a).at(b).args,
-                      loop_params.n_coeffs(), loop_params.spectrum())
+                      loop_structure.n_coeffs(), loop_structure.spectrum())
         + " "
         + labels2string(arg_configs_r.at(a).at(b).args,
-                        loop_params.n_coeffs(), loop_params.spectrum())
+                        loop_structure.n_coeffs(), loop_structure.spectrum())
     );
 }
 
@@ -369,7 +369,7 @@ void BiSpectrumDiagram::kernel_arguments(
         size_t overall_loop_idx /* Overall loop assosiation index */
         )
 {
-    size_t n_coeffs = loop_params.n_coeffs();
+    size_t n_coeffs = loop_structure.n_coeffs();
     Vec1D<int>& rearrangement = rearrangements.at(rearr_idx);
 
     size_t rearr_counter = 0; /* How many loop momenta have been assigned */
@@ -554,8 +554,8 @@ void BiSpectrumDiagram::kernel_arguments(
     }
 
     // Fill remaining spots with zero-label
-    int zero_label = loop_params.zero_label();
-    size_t n_kernel_args = loop_params.n_kernel_args();
+    int zero_label = loop_structure.zero_label();
+    size_t n_kernel_args = loop_structure.n_kernel_args();
     while (args_idx.a() < n_kernel_args) {
         args.a().at(args_idx.a()++) = zero_label;
     }
@@ -580,26 +580,26 @@ void BiSpectrumDiagram::kernel_arguments(
 #endif
 
     arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).a().kernel_index
-        = loop_params.args_2_kernel_index(args.a().data());
+        = loop_structure.args_2_kernel_index(args.a().data());
     arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).b().kernel_index
-        = loop_params.args_2_kernel_index(args.b().data());
+        = loop_structure.args_2_kernel_index(args.b().data());
     arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).c().kernel_index
-        = loop_params.args_2_kernel_index(args.c().data());
+        = loop_structure.args_2_kernel_index(args.c().data());
 }
 
 
 
 BiSpectrumDiagram::BiSpectrumDiagram(
-        const LoopParameters& loop_params,
+        const LoopStructure& loop_structure,
         int n_ab, int n_bc, int n_ca,
         int n_a, int n_b, int n_c
         ) :
-    loop_params(loop_params),
+    loop_structure(loop_structure),
     n_ab(n_ab), n_bc(n_bc), n_ca(n_ca),
     n_a(n_a), n_b(n_b), n_c(n_c)
 {
-    int n_loops = loop_params.n_loops();
-    size_t n_kernel_args = loop_params.n_kernel_args();
+    int n_loops = loop_structure.n_loops();
+    size_t n_kernel_args = loop_structure.n_kernel_args();
 
     if (n_ab + n_bc + n_ca + n_a + n_b + n_c != n_loops + 2) {
         throw(std::invalid_argument(
@@ -848,15 +848,15 @@ std::string BiSpectrumDiagram::argument_configuration(
     std::ostringstream oss;
     oss << labels2string(
         arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).a().args,
-        loop_params.n_coeffs(), loop_params.spectrum())
+        loop_structure.n_coeffs(), loop_structure.spectrum())
         << " "
         << labels2string(
             arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).b().args,
-            loop_params.n_coeffs(), loop_params.spectrum())
+            loop_structure.n_coeffs(), loop_structure.spectrum())
         << " "
         << labels2string(
             arg_configs.at(rearr_idx).at(sign_idx).at(overall_loop_idx).c().args,
-            loop_params.n_coeffs(), loop_params.spectrum());
+            loop_structure.n_coeffs(), loop_structure.spectrum());
     return oss.str();
 }
 
@@ -901,7 +901,7 @@ std::ostream& operator<<(std::ostream& out, const BiSpectrumDiagram& diagram)
 
 
 
-Vec1D<PowerSpectrumDiagram> ps::construct_diagrams(const LoopParameters& params) {
+Vec1D<PowerSpectrumDiagram> ps::construct_diagrams(const LoopStructure& params) {
     Vec1D<PowerSpectrumDiagram> diagrams;
 
     int n_loops = params.n_loops();
@@ -934,11 +934,11 @@ Vec1D<PowerSpectrumDiagram> ps::construct_diagrams(const LoopParameters& params)
 
 
 
-Vec1D<BiSpectrumDiagram> bs::construct_diagrams(const LoopParameters& loop_params)
+Vec1D<BiSpectrumDiagram> bs::construct_diagrams(const LoopStructure& loop_structure)
 {
     Vec1D<BiSpectrumDiagram> diagrams;
 
-    int n_loops = loop_params.n_loops();
+    int n_loops = loop_structure.n_loops();
     if (n_loops < 1) {
         throw std::logic_error(
             "bs::construct_diagrams(): called with n_loops < 1.");
@@ -957,14 +957,14 @@ Vec1D<BiSpectrumDiagram> bs::construct_diagrams(const LoopParameters& loop_param
                 int n_c = 0;
                 while (n_b >= n_c) {
                     /* Three diagrams, picking n_ab, n_bc, or n_ca as line being zero */
-                    diagrams.emplace_back(loop_params, 0,    n_bc, n_ca, n_a, n_b, n_c);
-                    diagrams.emplace_back(loop_params, n_bc, 0,    n_ca, n_a, n_b, n_c);
-                    diagrams.emplace_back(loop_params, n_ca, n_bc, 0,    n_a, n_b, n_c);
+                    diagrams.emplace_back(loop_structure, 0,    n_bc, n_ca, n_a, n_b, n_c);
+                    diagrams.emplace_back(loop_structure, n_bc, 0,    n_ca, n_a, n_b, n_c);
+                    diagrams.emplace_back(loop_structure, n_ca, n_bc, 0,    n_a, n_b, n_c);
                     /* If n_b != n_c, there are diagrams with n_b <-> n_c */
                     if (n_b != n_c) {
-                        diagrams.emplace_back(loop_params, 0,    n_bc, n_ca, n_a, n_c, n_b);
-                        diagrams.emplace_back(loop_params, n_bc, 0,    n_ca, n_a, n_c, n_b);
-                        diagrams.emplace_back(loop_params, n_ca, n_bc, 0,    n_a, n_c, n_b);
+                        diagrams.emplace_back(loop_structure, 0,    n_bc, n_ca, n_a, n_c, n_b);
+                        diagrams.emplace_back(loop_structure, n_bc, 0,    n_ca, n_a, n_c, n_b);
+                        diagrams.emplace_back(loop_structure, n_ca, n_bc, 0,    n_a, n_c, n_b);
                     }
 
                     n_b = n_self - n_a - (++n_c);
@@ -985,10 +985,10 @@ Vec1D<BiSpectrumDiagram> bs::construct_diagrams(const LoopParameters& loop_param
                     int n_b = n_self - n_a;
                     int n_c = 0;
                     while (n_b >= n_c) {
-                        diagrams.emplace_back(loop_params, n_ab, n_bc, n_ca, n_a, n_b, n_c);
+                        diagrams.emplace_back(loop_structure, n_ab, n_bc, n_ca, n_a, n_b, n_c);
                         /* If n_b != n_c, there is a diagram with n_b <-> n_c */
                         if (n_b != n_c) {
-                            diagrams.emplace_back(loop_params, n_ab, n_bc, n_ca, n_a, n_c, n_b);
+                            diagrams.emplace_back(loop_structure, n_ab, n_bc, n_ca, n_a, n_c, n_b);
                         }
 
                         n_b = n_self - n_a - (++n_c);
