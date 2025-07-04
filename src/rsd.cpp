@@ -263,12 +263,11 @@ void compute_rsd_kernels(
 
     // Precompute powers of rsd_f * mu_los * k / (N-1)! for N up to n
     size_t n_t = static_cast<size_t>(n);
-    std::vector<double> powers(n_t > 2 ? n_t : 2);
+    std::vector<double> powers(n_t > 1 ? n_t : 1);
     double fmuk = rsd_f * mu_los * k;
     powers[0] = fmuk;
-    powers[1] = fmuk * fmuk;
-    for (size_t N = 2; N < powers.size(); ++N) {
-        powers[N] = powers[N-1] * fmuk / static_cast<double>(N-1);
+    for (size_t N = 1; N < powers.size(); ++N) {
+        powers[N] = powers[N-1] * fmuk / static_cast<double>(N+1);
     }
 
     auto get_velocity_power= [&](const int* args, int m) -> double {

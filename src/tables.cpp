@@ -219,6 +219,9 @@ void IntegrandTables::reset() {
         reset_kernels(rsd_kernels, [](auto &k) {
             k.value = 0.0;
         });
+        reset_kernels(vel_power_kernels, [](auto &k) {
+            k.value = 0.0;
+        });
     }
 }
 
