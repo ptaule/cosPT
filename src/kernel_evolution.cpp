@@ -68,21 +68,43 @@ void KernelEvolver::vertex(
 
 
 
+/* Helper functions for RHS computation */
+inline void zero_args(int* args, size_t count, int zero_label) {
+    std::fill(args, args + count, zero_label);
+}
+
+
+
+inline void accumulate_rhs(
+    const Strided2DVec<double>& partial,
+    std::array<std::vector<double>, COMPONENTS>& rhs,
+    int a,
+    int b
+) {
+    size_t a_t = static_cast<size_t>(a);
+    size_t b_t = static_cast<size_t>(b);
+    for (size_t i = 0; i < COMPONENTS; ++i) {
+        for (size_t j = 0; j < partial.rows(); ++j) {
+            /* rhs is COMPONENTS x time_steps, partial is time_steps x
+             * COMPONENTS because this is faster in vertex, looping over
+             * time_steps */
+            rhs[i][j] += partial(j, i) / binomial_coeffs[a_t][b_t];
+        }
+    }
+}
+
+
+
+
 void KernelEvolver::RHS(
     const int arguments[],
     int n,
-    std::array<std::vector<double>, COMPONENTS>& rhs /* out, overwritten(!),
-    array of size COMPONENTS, containing vectors which will be interpolated
-     * later */
+    std::array<std::vector<double>, COMPONENTS>& rhs /* out, added to */
 ) {
     const size_t time_steps = tables.eta_grid.time_steps();
     const size_t n_kernel_args = tables.loop_structure.n_kernel_args();
-    int zero_label = tables.loop_structure.zero_label();
+    const int zero_label = tables.loop_structure.zero_label();
 
-    /* Resize and zero rhs */
-    for (auto& vec : rhs) {
-        vec.resize(time_steps, 0.0);
-    }
     /* partial_rhs_sum is instead a flatted vector for (potential) speedup,
      * use get(partial_rhs_sum, i=time_step, j=component, stride=COMPONENTS)
      * to access */
@@ -92,11 +114,10 @@ void KernelEvolver::RHS(
     int args_r[N_KERNEL_ARGS_MAX] = {0};
 
     for (int m = 1; m <= n / 2; ++m) {
-        /* Initialize partial_rhs_sum to 0 */
+        zero_args(args_l, n_kernel_args, zero_label);
+        zero_args(args_r, n_kernel_args, zero_label);
+
         std::fill(partial_rhs_sum.begin(), partial_rhs_sum.end(), 0.0);
-        /* Initialize args_l and args_r */
-        std::fill(&args_l[0], &args_l[n_kernel_args], zero_label);
-        std::fill(&args_r[0], &args_r[n_kernel_args], zero_label);
 
         /* Go through all ways to pick m (unordered) elements from group of n */
         Combinations comb(n, m);
@@ -113,24 +134,11 @@ void KernelEvolver::RHS(
             int sum_l = tables.sum_table(args_l, n_kernel_args);
             int sum_r = tables.sum_table(args_r, n_kernel_args);
 
-            vertex(m, n-m, args_l, args_r, sum_l, sum_r, partial_rhs_sum);
-
-            // When m != (n - m), we may additionally compute the (n-m)-term by
-            // swapping args_l, sum_l, m with args_r, sum_r and (n-m). Then
-            // compute_RHS_sum() only needs to sum up to (including) floor(n/2).
-            if (m != n - m) {
-                vertex(n - m, m, args_r, args_l, sum_r, sum_l, partial_rhs_sum);
-            }
+            apply_symmetric_vertex(m, n - m, args_l, args_r, sum_l,
+                                   sum_r, partial_rhs_sum);
         } while (comb.next());
 
-        size_t n_t = static_cast<size_t>(n);
-        size_t m_t = static_cast<size_t>(m);
-        for (size_t i = 0; i < COMPONENTS; ++i) {
-            for (size_t j = 0; j < time_steps; ++j) {
-                rhs.at(i).at(j) +=
-                    partial_rhs_sum(j, i) / binomial_coeffs[n_t][m_t];
-            }
-        }
+        accumulate_rhs(partial_rhs_sum, rhs, n, m);
     }
 }
 
@@ -406,6 +414,10 @@ int KernelEvolver::compute(
     std::array<Interpolation1D, COMPONENTS> rhs;
     if (n > 1) {
         std::array<std::vector<double>, COMPONENTS> rhs_sum;
+        for (auto& vec : rhs_sum) {
+            vec.resize(tables.eta_grid.time_steps(), 0.0);
+        }
+
         RHS(arguments, n, rhs_sum);
         for (size_t i = 0; i < COMPONENTS; ++i) {
             rhs.at(i) =

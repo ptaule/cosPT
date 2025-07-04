@@ -47,6 +47,21 @@ class KernelEvolver {
 
         void vertex(int m_l, int m_r, const int args_l[], const int args_r[],
                     int sum_l, int sum_r, Strided2DVec<double>& partial_rhs_sum);
+
+        // Loops splitting kernel arguments are symmetric, because the kernels are
+        // symmetric in arguments. Therefore, introduce a helper function to apply the
+        // vertex twice, but with "left" and "right" arguments swapped.
+        void apply_symmetric_vertex(int n_l, int n_r, int args_l[],
+                                    int args_r[], int sum_l, int sum_r,
+                                    Strided2DVec<double>& out
+        ) {
+            vertex(n_l, n_r, args_l, args_r, sum_l, sum_r, out);
+            if (n_l != n_r) {
+                vertex(n_r, n_l, args_r, args_l,
+                       sum_r, sum_l, out);
+            }
+        }
+
         void RHS(const int arguments[], int n,
                              std::array<std::vector<double>, COMPONENTS>& rhs);
 
