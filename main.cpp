@@ -430,12 +430,10 @@ void write_output(
     int stdout_mode,
     int verbosity_level
 ) {
-    const bool write_header = cfg.get<bool>("write_header");
-
     if (stdout_mode == 1) {
         write_results(cfg, tree_result,
                       loop_result, errors,
-                      std::cout, write_header);
+                      std::cout, false);
     } else {
         const std::string filename = cfg.get<std::string>("output_file");
         std::ofstream out(filename);
@@ -445,7 +443,7 @@ void write_output(
 
         write_results(cfg, tree_result,
                       loop_result, errors, out,
-                      write_header);
+                      cfg.get<bool>("write_header"));
 
         if (verbosity_level > 0) {
             std::cout << "Results written to " << filename << "." << std::endl;
