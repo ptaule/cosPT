@@ -14,14 +14,14 @@ using std::string;
 
 void run_integrand_benchmark(
     benchmark::State& state,
-    int n_loops,
-    Spectrum spectrum,
     const std::string& config_path
 ) {
     try {
         Config cfg(config_path, -1, -1, -1);
 
         bool rsd = cfg.get<bool>("rsd");
+        const int n_loops = cfg.get<int>("n_loops");
+        const Spectrum spectrum = cfg.get<Spectrum>("spectrum");
         const Dynamics dynamics = cfg.get<Dynamics>("dynamics");
 
         LoopStructure loop_structure(n_loops, cfg.get<Spectrum>("spectrum"));
@@ -134,20 +134,20 @@ void run_integrand_benchmark(
 
 
 
-#define REGISTER_BENCHMARK(NAME, N_LOOPS, spectrum, CONFIG_FILE) \
+#define REGISTER_BENCHMARK(NAME, CONFIG_FILE) \
     static void NAME(benchmark::State& state) { \
-        run_integrand_benchmark(state, N_LOOPS, spectrum, CONFIG_FILE); \
+        run_integrand_benchmark(state, CONFIG_FILE); \
     } \
     BENCHMARK(NAME);
 
-REGISTER_BENCHMARK(BM_PS_EdS_integrand_1loop, 1, POWERSPECTRUM, "benchmark/ini/ps_eds_spt.cfg")
-REGISTER_BENCHMARK(BM_PS_EdS_integrand_2loop, 2, POWERSPECTRUM, "benchmark/ini/ps_eds_spt.cfg")
-REGISTER_BENCHMARK(BM_PS_RSD_EdS_integrand_1loop, 1, POWERSPECTRUM, "benchmark/ini/ps_eds_spt_rsd.cfg")
-REGISTER_BENCHMARK(BM_PS_RSD_EdS_integrand_2loop, 2, POWERSPECTRUM, "benchmark/ini/ps_eds_spt_rsd.cfg")
-REGISTER_BENCHMARK(BM_BS_EdS_integrand_1loop, 1, BISPECTRUM,   "benchmark/ini/bs_eds_spt.cfg")
-REGISTER_BENCHMARK(BM_BS_EdS_integrand_2loop, 2, BISPECTRUM,   "benchmark/ini/bs_eds_spt.cfg")
-REGISTER_BENCHMARK(BM_PS_2fluid_integrand_1loop, 1, POWERSPECTRUM, "benchmark/ini/quijote_Mnu_0.1eV.cfg")
-REGISTER_BENCHMARK(BM_PS_2fluid_integrand_2loop, 2, POWERSPECTRUM, "benchmark/ini/quijote_Mnu_0.1eV.cfg")
+REGISTER_BENCHMARK(BM_PS_EdS_integrand_1loop, "benchmark/ini/ps_eds_spt_L1.cfg")
+REGISTER_BENCHMARK(BM_PS_EdS_integrand_2loop, "benchmark/ini/ps_eds_spt_L2.cfg")
+REGISTER_BENCHMARK(BM_PS_RSD_EdS_integrand_1loop , "benchmark/ini/ps_eds_spt_rsd_L1.cfg")
+REGISTER_BENCHMARK(BM_PS_RSD_EdS_integrand_2loop , "benchmark/ini/ps_eds_spt_rsd_L2.cfg")
+REGISTER_BENCHMARK(BM_BS_EdS_integrand_1loop, "benchmark/ini/bs_eds_spt_L1.cfg")
+REGISTER_BENCHMARK(BM_BS_EdS_integrand_2loop, "benchmark/ini/bs_eds_spt_L2.cfg")
+REGISTER_BENCHMARK(BM_PS_2fluid_integrand_1loop, "benchmark/ini/quijote_Mnu_0.1eV_L1.cfg")
+REGISTER_BENCHMARK(BM_PS_2fluid_integrand_2loop, "benchmark/ini/quijote_Mnu_0.1eV_L2.cfg")
 
 // Run the benchmark
 BENCHMARK_MAIN();
