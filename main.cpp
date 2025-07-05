@@ -266,26 +266,6 @@ IntegrationInput initialize_integration_input(const Config& cfg, const Calculati
 
 
 
-IntegrandTables make_tables_for_tree_level(const Config& cfg, const CalculationSetup& setup) {
-    return IntegrandTables(
-        cfg.get<double>("k_a"),
-        (setup.spectrum == BISPECTRUM ? cfg.get<double>("k_b") : 0.0),
-        (setup.spectrum == BISPECTRUM ? cfg.get<double>("cos_ab") : 0.0),
-        setup.rsd,
-        cfg.get<double>("rsd_growth_f"),
-        cfg.get<bool>("biased_tracers"),
-        cfg.bias_parameters(),
-        setup.dynamics,
-        setup.loop_structure,
-        setup.sum_table,
-        setup.evolution_params,
-        setup.eta_grid,
-        setup.omega_eigenspace
-    );
-}
-
-
-
 void compute_tree_level(const CalculationSetup& setup, const Config& cfg,
                         const IntegrationInput& input, std::vector<double>& tree_level_result) {
     if (setup.spectrum == POWERSPECTRUM) {
