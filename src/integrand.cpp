@@ -6,6 +6,7 @@ extern "C" {
     #include <cuba.h>
 }
 
+#include "../include/biased_tracers.hpp"
 #include "../include/diagrams.hpp"
 #include "../include/kernel_evolution.hpp"
 #include "../include/ir_resum.hpp"
@@ -63,7 +64,25 @@ void configuration_term(
         kernel_evolver.compute(args_r, k_idx_r, n_r);
     }
 
-    if (tables.rsd) {
+    if (tables.biased_tracers) {
+        compute_rsd_biased_kernels(args_l, k_idx_l, n_l, tables);
+        compute_rsd_biased_kernels(args_r, k_idx_r, n_r, tables);
+        compute_rsd_biased_kernels(arg_config_l.args.data(), arg_config_l.kernel_index,
+                2 * diagram.l + diagram.m, tables);
+        compute_rsd_biased_kernels(arg_config_r.args.data(), arg_config_r.kernel_index,
+                2 * diagram.r + diagram.m, tables);
+
+        /* Read values for two-point correlators.
+         * If l != r, there are two diagrams corresponding to l <-> r */
+        term_results.at(0) = tables.rsd_kernels
+            .at(static_cast<size_t>(k_idx_l)).value
+            * tables.rsd_kernels
+            .at(static_cast<size_t>(k_idx_r)).value
+            * (diagram.l == diagram.r ? 1 : 2);
+        return;
+    }
+    /* Generic RSD computation (general loop order) */
+    else if (tables.rsd) {
         compute_rsd_kernels(args_l, k_idx_l, n_l, tables);
         compute_rsd_kernels(args_r, k_idx_r, n_r, tables);
 
@@ -479,12 +498,48 @@ int integrand(
         for (; i < tables.loop_structure.n_loops(); ++i) {
             for (auto& el : results) {
                 el *= input.ps(
-                        tables.vars.magnitudes.at(static_cast<size_t>(i)),
-                        tables.vars.mu_los
+                        vars.magnitudes.at(static_cast<size_t>(i)),
+                        vars.mu_los
                         );
             }
         }
 
+        if (tables.biased_tracers) {
+            /* We define b2 such that the constant contribution to Id2d2 as k->
+             * 0 is removed */
+            /* TODO: atm only implemented for n_loops = 1 */
+            /* Compute F1(k) (which is 1 for EdS-SPT) */
+            double F1 = 1;
+            if (tables.dynamics != EDS_SPT) {
+                KernelEvolver kernel_evolver(tables);
+
+                Vec1D<int> config(tables.loop_structure.n_coeffs(), 0);
+                if (config.empty()) {
+                    throw std::runtime_error("integrand(): n_coeffs = 0");
+                }
+                config.at(0) = 1; /* Config for q1 */
+
+                Vec1D<int> arguments(tables.loop_structure.n_kernel_args(),
+                    tables.loop_structure.zero_label());
+                arguments.at(0) = config2label(config);
+
+                int kernel_index =
+                    kernel_evolver.compute(arguments.data(),
+                                           -1, 1);
+                size_t k_idx_t = static_cast<size_t>(kernel_index);
+                size_t last = tables.eta_grid.time_steps() - 1;
+                F1 =
+                    tables.kernels.at(k_idx_t).values(last, 0);
+            }
+
+            double b2_subtract = 0.5 *
+                SQUARE(F1) *
+                SQUARE(tables.bias_parameters.at(1)) *
+                SQUARE(input.ps(vars.magnitudes.at(0), vars.mu_los));
+            results.at(0) -= b2_subtract;
+            results.at(1) -= b2_subtract;
+            results.at(2) -= b2_subtract;
+        }
         /* RSD multipoles: multiply with Legendre polynomials */
         if (rsd) {
             results.at(1) *= 0.5 * (3 * SQUARE(vars.mu_los) - 1);

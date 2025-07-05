@@ -138,6 +138,8 @@ IntegrandTables::IntegrandTables(
         double cos_ab,
         bool rsd,
         double rsd_growth_f,
+        bool biased_tracers,
+        const Vec1D<double>& bias_parameters,
         const Dynamics dynamics,
         const LoopStructure& loop_structure,
         const SumTable& sum_table,
@@ -146,11 +148,18 @@ IntegrandTables::IntegrandTables(
         const OmegaEigenspace& omega_eigenspace
         ) :
     k_a(k_a), k_b(k_b), cos_ab(cos_ab), rsd_f(rsd_growth_f),
-    rsd(rsd), dynamics(dynamics), loop_structure(loop_structure),
+    rsd(rsd), biased_tracers(biased_tracers), bias_parameters(bias_parameters),
+    dynamics(dynamics), loop_structure(loop_structure),
     sum_table(sum_table), ev_params(ev_params), eta_grid(eta_grid),
     omega_eigenspace(omega_eigenspace),
     vars(IntegrationVariables(static_cast<size_t>(loop_structure.n_loops())))
 {
+    if (biased_tracers && !rsd) {
+        throw std::logic_error(
+            "IntegrandTables::IntegrandTables(): Biased tracers only implemented "
+            "for rsd = true.");
+    }
+
     int n_loops = loop_structure.n_loops();
     size_t n_coeffs = loop_structure.n_coeffs();
     size_t n_configs = loop_structure.n_configs();

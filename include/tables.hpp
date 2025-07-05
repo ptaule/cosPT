@@ -142,6 +142,9 @@ class IntegrandTables {
         void compute_alpha_beta();
     public:
         const bool rsd;
+        const bool biased_tracers;
+        const Vec1D<double> bias_parameters;
+
         const Dynamics dynamics;
         const LoopStructure& loop_structure;
         const SumTable& sum_table;
@@ -165,6 +168,8 @@ class IntegrandTables {
                 double cos_ab,
                 bool rsd,
                 double rsd_growth_f,
+                bool biased_tracers,
+                const Vec1D<double>& bias_parameters,
                 const Dynamics dynamics,
                 const LoopStructure& loop_structure,
                 const SumTable& sum_table,

@@ -250,6 +250,8 @@ IntegrationInput initialize_integration_input(const Config& cfg, const Calculati
             (setup.spectrum == BISPECTRUM ? cfg.get<double>("cos_ab") : 0.0),
             setup.rsd,
             cfg.get<double>("rsd_growth_f"),
+            cfg.get<bool>("biased_tracers"),
+            cfg.bias_parameters(),
             setup.dynamics,
             setup.loop_structure,
             setup.sum_table,
@@ -271,6 +273,8 @@ IntegrandTables make_tables_for_tree_level(const Config& cfg, const CalculationS
         (setup.spectrum == BISPECTRUM ? cfg.get<double>("cos_ab") : 0.0),
         setup.rsd,
         cfg.get<double>("rsd_growth_f"),
+        cfg.get<bool>("biased_tracers"),
+        cfg.bias_parameters(),
         setup.dynamics,
         setup.loop_structure,
         setup.sum_table,
@@ -285,19 +289,30 @@ IntegrandTables make_tables_for_tree_level(const Config& cfg, const CalculationS
 void compute_tree_level(const CalculationSetup& setup, const Config& cfg,
                         const IntegrationInput& input, std::vector<double>& tree_level_result) {
     if (setup.spectrum == POWERSPECTRUM) {
-        IntegrandTables tables(cfg.get<double>("k_a"), 0, 0, setup.rsd,
+        IntegrandTables tables(cfg.get<double>("k_a"), 0,
+                               0, setup.rsd,
                                cfg.get<double>("rsd_growth_f"),
-                               setup.dynamics, setup.loop_structure,
-                               setup.sum_table, setup.evolution_params,
-                               setup.eta_grid, setup.omega_eigenspace);
+                               cfg.get<bool>("biased_tracers"),
+                               cfg.bias_parameters(),
+                               setup.dynamics,
+                               setup.loop_structure,
+                               setup.sum_table,
+                               setup.evolution_params,
+                               setup.eta_grid,
+                               setup.omega_eigenspace);
         ps::tree_level(tables, setup.ps, input.pair_correlations, tree_level_result);
     } else if (setup.spectrum == BISPECTRUM) {
         IntegrandTables tables(cfg.get<double>("k_a"),
                                cfg.get<double>("k_b"),
-                               cfg.get<double>("cos_ab"), false, 0,
+                               cfg.get<double>("cos_ab"),
+                               false, 0,
+                               cfg.get<bool>("biased_tracers"),
+                               cfg.bias_parameters(),
                                setup.dynamics,
-                               setup.loop_structure, setup.sum_table,
-                               setup.evolution_params, setup.eta_grid,
+                               setup.loop_structure,
+                               setup.sum_table,
+                               setup.evolution_params,
+                               setup.eta_grid,
                                setup.omega_eigenspace);
         bs::tree_level(tables, setup.ps, input.triple_correlations, tree_level_result);
     }

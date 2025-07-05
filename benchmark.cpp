@@ -77,6 +77,8 @@ void run_integrand_benchmark(
                 input.tables_vec.emplace_back(
                     cfg.get<double>("k_a"), 0, 0, rsd,
                     cfg.get<double>("rsd_growth_f"),
+                    cfg.get<bool>("biased_tracers"),
+                    cfg.bias_parameters(),
                     dynamics, loop_structure, sum_table, ev_params, eta_grid,
                     omega_eigenspace);
 
@@ -104,8 +106,10 @@ void run_integrand_benchmark(
                     cfg.get<double>("k_a"),
                     cfg.get<double>("k_b"),
                     cfg.get<double>("cos_ab"), false,
-                    0, dynamics, loop_structure, sum_table,
-                    ev_params, eta_grid, omega_eigenspace);
+                    0.0, false,
+                    cfg.bias_parameters(),
+                    dynamics, loop_structure, sum_table, ev_params, eta_grid,
+                    omega_eigenspace);
                 break;
         }
 

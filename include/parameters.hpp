@@ -47,6 +47,8 @@ class Config {
         Vec1D<std::string> zeta_files_;
         Vec1D<std::string> xi_files_;
 
+        Vec1D<double> bias_parameters_;
+
         /* T is the type of the parameter */
         template<typename T>
         bool set_param_value(
@@ -99,6 +101,7 @@ class Config {
         Vec1D<double> kappa() const {return kappa_;}
         Vec1D<std::string> zeta_files() const {return zeta_files_;}
         Vec1D<std::string> xi_files() const {return xi_files_;}
+        Vec1D<double> bias_parameters() const {return bias_parameters_;}
 
         /* Read CUBA info */
         int cuba_evals() const {return cuba_evals_;}

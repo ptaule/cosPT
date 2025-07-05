@@ -204,6 +204,7 @@ Vec1D<string> Config::keys_not_recognized(const libconfig::Config& cfg) const {
         "k_c_grid_file",
         "correlations",
         "input_ps_rescale",
+        "bias_parameters",
         "cuba_settings",
         "ode_settings",
         "kappa_values",
@@ -543,9 +544,17 @@ void Config::set_dynamics(const libconfig::Config& cfg)
         dynamics = EDS_SPT;
     }
     else if (dynamics_str == "evolve-asymp-ics") {
+        if (get<bool>("rsd") && !get<bool>("biased_tracers")) {
+            throw ConfigException("Generic RSD calculation not implemented for "
+                                  "asymptotic IC dynamics.");
+        }
         dynamics = EVOLVE_ASYMPTOTIC_ICS;
     }
     else if (dynamics_str == "evolve-eds-ics") {
+        if (get<bool>("rsd") && !get<bool>("biased_tracers")) {
+            throw ConfigException("Generic RSD calculation not implemented for "
+                                  "EdS IC dynamics.");
+        }
         dynamics = EVOLVE_EDS_ICS;
     }
     else {
@@ -795,6 +804,9 @@ Config::Config()
     set("rsd", false);
     set("rsd_growth_f", 0.0);
 
+    set("biased_tracers", false);
+    bias_parameters_ = {1,0,0,0};
+
     set("ir_resum", false);
     /* Values from 1605.02149 */
     set("k_s", 0.2);
@@ -918,6 +930,60 @@ Config::Config(const string& ini_file,
         }
     }
 
+    /* Biased tracers */
+    set_param_value<bool>(cfg, "biased_tracers");
+    if(get<bool>("biased_tracers")) {
+        if (!get<bool>("rsd")) {
+            throw ConfigException("Biased tracers only implemented for rsd = true.");
+        }
+        if (get<int>("n_loops") > 1) {
+            throw ConfigException("Biased tracers only implemented for n_loops <= 1.");
+        }
+        try {
+            const libconfig::Setting& bias_params_setting = cfg.lookup("bias_parameters");
+            int count = bias_params_setting.getLength();
+            if (count != 4) {
+                throw ConfigException(
+                        "There should be 4 bias parameters in the configuration");
+            }
+            for (int i = 0; i < count; ++i) {
+                switch (bias_params_setting[i].getType()) {
+                    case libconfig::Setting::TypeInt:
+                    case libconfig::Setting::TypeInt64:
+                        {
+                        int value = bias_params_setting[i];
+                        bias_parameters_.at(static_cast<size_t>(i)) =
+                            static_cast<double>(value);
+                        break;
+                        }
+                    case libconfig::Setting::TypeFloat:
+                        {
+                        bias_parameters_.at(static_cast<size_t>(i)) =
+                            static_cast<double>(bias_params_setting[i]);
+                        break;
+                        }
+                    default:
+                        throw ConfigException("Encountered type exception parsing bias_parameters.");
+                }
+            }
+        }
+        catch (const ConfigException& ce) {
+            throw ce;
+        }
+        catch (const libconfig::SettingNotFoundException& nfex) {
+            std::cout <<
+                "Info: No value for bias parameters read, using default values = ";
+            for (auto& el : bias_parameters_) {
+                std::cout << el << ",";
+            }
+            std::cout << std::endl;
+        }
+        catch (const libconfig::SettingTypeException& tex) {
+            throw ConfigException("Encountered type exception parsing bias_parameters.");
+        }
+    }
+
+
     /* IR resummation */
     set_param_value<bool>(cfg, "ir_resum");
     if(get<bool>("ir_resum")) {
@@ -1038,6 +1104,14 @@ std::ostream& operator<<(std::ostream& out, const Config& c) {
     out << std::scientific;
     if (c.get<bool>("rsd")) {
         out << "# (RSD) growth_f = " << c.get<double>("rsd_growth_f") << "\n#\n";
+    }
+
+    if (c.get<bool>("biased_tracers")) {
+        out << "# Bias parameters:\n# ";
+        for (auto& el : c.bias_parameters()) {
+            out << " " << el <<  " ,";
+        }
+        out << "\n#\n";
     }
 
     if (c.get<bool>("single_hard_limit")) {
