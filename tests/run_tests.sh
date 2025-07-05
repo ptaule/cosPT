@@ -86,7 +86,7 @@ make -j "$n_cores"
 
 for k_a in {000,005,010,015,020,025,030,035,040,045,050,055}; do
     {
-        for f in {L1,L2,L2_sh,rsd_L1,rsd_L2,rsd_L2_sh,rsd_ir_L1,rsd_ir_L2,rsd_ir_L2_sh}; do
+        for f in {L1,L2,L2_sh,rsd_L1,rsd_L2,rsd_L2_sh,rsd_ir_L1,rsd_ir_L2,rsd_ir_L2_sh,bias_ir_L1}; do
             {
                 "$exe" --k_a_idx "$k_a" --n_cores "$n_cores" "$tempdir"/tests/ini/eds_spt_ps_"$f".cfg
             } >>"$log_file"
@@ -122,7 +122,7 @@ for f in output/*/*/; do
 done
 
 # Comparison
-for m in {L1,L2,L2_sh,rsd_L1,rsd_L2,rsd_L2_sh,rsd_ir_L1,rsd_ir_L2,rsd_ir_L2_sh}; do
+for m in {L1,L2,L2_sh,rsd_L1,rsd_L2,rsd_L2_sh,rsd_ir_L1,rsd_ir_L2,rsd_ir_L2_sh,bias_ir_L1}; do
     {
         "$compare_prog" "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
             "$tempdir"/tests/data/eds_spt_ps/"$m".dat "$tempdir"/output/eds_spt_ps/"$m"/total.dat
