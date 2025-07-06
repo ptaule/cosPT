@@ -122,17 +122,23 @@ for f in output/*/*/; do
 done
 
 # Comparison
-for m in {L1,L2,L2_sh,rsd_L1,rsd_L2,rsd_L2_sh,rsd_ir_L1,rsd_ir_L2,rsd_ir_L2_sh,bias_ir_L1}; do
-    {
-        "$compare_prog" "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
-            "$tempdir"/tests/data/eds_spt_ps/"$m".dat "$tempdir"/output/eds_spt_ps/"$m"/total.dat
-    } >>"$log_file"
-done
-
 for m in {L1,L2}; do
     {
         "$compare_prog" "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
+            "$tempdir"/tests/data/eds_spt_ps/"$m".dat "$tempdir"/output/eds_spt_ps/"$m"/total.dat
+        "$compare_prog" "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
             "$tempdir"/tests/data/eds_spt_bs/"$m".dat "$tempdir"/output/eds_spt_bs/"$m"/total.dat
+    } >>"$log_file"
+done
+
+for m in {rsd_L1,rsd_L2,rsd_L2_sh,rsd_ir_L1,rsd_ir_L2,rsd_ir_L2_sh,bias_ir_L1}; do
+    {
+        "$compare_prog" "$isapprox" --col_A 3 --col_err_A 4 --col_B 3 --col_err_B 4 \
+            "$tempdir"/tests/data/eds_spt_ps/"$m".dat "$tempdir"/output/eds_spt_ps/"$m"/total.dat
+        "$compare_prog" "$isapprox" --col_A 6 --col_err_A 7 --col_B 6 --col_err_B 7 \
+            "$tempdir"/tests/data/eds_spt_ps/"$m".dat "$tempdir"/output/eds_spt_ps/"$m"/total.dat
+        "$compare_prog" "$isapprox" --col_A 9 --col_err_A 10 --col_B 9 --col_err_B 10 \
+            "$tempdir"/tests/data/eds_spt_ps/"$m".dat "$tempdir"/output/eds_spt_ps/"$m"/total.dat
     } >>"$log_file"
 done
 
