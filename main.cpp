@@ -105,7 +105,11 @@ int main(int argc, char* argv[]) {
 
         write_output(cfg, tree_level_result, loop_result, errors,
                      opts.stdout_mode, opts.verbosity);
-    } catch (const std::exception& e) {
+    } catch (const ConfigException& e) {
+        std::cerr << e.what() << "\nExiting." << std::endl;
+        return EXIT_FAILURE;
+    }
+    catch (const std::exception& e) {
         std::cerr << e.what() << "\nExiting." << std::endl;
         return EXIT_FAILURE;
     }
