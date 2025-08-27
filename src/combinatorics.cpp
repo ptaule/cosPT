@@ -181,7 +181,7 @@ void Combinations::rearrange_from_current_complement(
 {
     if (size != static_cast<size_t>(n_ - k_)) {
         throw(std::invalid_argument(
-            "Combinations::rearrange_from_current_complement(): size != k."));
+            "Combinations::rearrange_from_current_complement(): size != n-k."));
     }
     for (size_t i = 0; i < static_cast<size_t>(n_ - k_); ++i) {
         rearranged[i] = original[complement.at(i)];
