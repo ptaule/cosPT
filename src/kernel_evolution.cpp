@@ -45,8 +45,7 @@ void KernelEvolver::vertex(
     size_t index_l = static_cast<size_t>(
         compute(args_l, -1, m_l));
     size_t index_r = static_cast<size_t>(
-        compute(args_r,
-                                                 -1, m_r));
+        compute(args_r, -1, m_r));
     const auto& kernel_l =
         tables.kernels.at(index_l).values;
     const auto& kernel_r =
@@ -54,12 +53,12 @@ void KernelEvolver::vertex(
 
     for (size_t i = 0; i < tables.eta_grid.time_steps(); ++i) {
         if constexpr (COMPONENTS >= 4) {
-            partial_rhs_sum(i, 2) = alpha_lr * kernel_l(i, 3) * kernel_r(i, 2);
-            partial_rhs_sum(i, 3) = beta     * kernel_l(i, 3) * kernel_r(i, 3);
+            partial_rhs_sum(i, 2) += alpha_lr * kernel_l(i, 3) * kernel_r(i, 2);
+            partial_rhs_sum(i, 3) += beta     * kernel_l(i, 3) * kernel_r(i, 3);
         }
         if constexpr (COMPONENTS >= 2) {
-            partial_rhs_sum(i, 0) = alpha_lr * kernel_l(i, 1) * kernel_r(i, 0);
-            partial_rhs_sum(i, 1) = beta     * kernel_l(i, 1) * kernel_r(i, 1);
+            partial_rhs_sum(i, 0) += alpha_lr * kernel_l(i, 1) * kernel_r(i, 0);
+            partial_rhs_sum(i, 1) += beta     * kernel_l(i, 1) * kernel_r(i, 1);
         }
         static_assert(COMPONENTS == 2 || COMPONENTS == 4,
             "vertex only implemented for COMPONENTS = 2 or 4");
