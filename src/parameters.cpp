@@ -197,11 +197,12 @@ Vec1D<string> Config::keys_not_recognized(const libconfig::Config& cfg) const {
     Vec1D<string> additional_keys = {
         "loops",
         "k_a_grid",
-        "k_a_grid_file",
+        "k_a_idx",
         "k_b_grid",
-        "k_b_grid_file",
+        "k_b_idx",
         "k_c_grid",
-        "k_c_grid_file",
+        "k_c_idx",
+        "single_hard_limit_q",
         "correlations",
         "input_ps_rescale",
         "bias_parameters",
@@ -287,7 +288,7 @@ void Config::set_spectrum(const libconfig::Config& cfg)
                     }
                     a = correlation[i][0];
                     b = correlation[i][1];
-                    c = correlation[i][1];
+                    c = correlation[i][2];
                     triple_correlations_.push_back({a,b,c});
                 }
                 if (a < 0 || a >= COMPONENTS ||
@@ -449,7 +450,7 @@ void Config::set_input_ps(const libconfig::Config& cfg)
         }
         /* Last, try integer */
         else if (cfg.lookupValue("input_ps_rescale", r_int)) {
-            set("input_ps_rescale_num", r_int);
+            set("input_ps_rescale_num", static_cast<double>(r_int));
         }
     }
     catch (const libconfig::SettingTypeException& tex) {
@@ -565,16 +566,11 @@ void Config::set_dynamics(const libconfig::Config& cfg)
     /* Settings for evolution dynamics */
     if (dynamics == EVOLVE_ASYMPTOTIC_ICS || dynamics == EVOLVE_EDS_ICS) {
         /* ODE settings */
-        try {
-            if (cfg.exists("ode_settings")) {
-                const libconfig::Setting& ode_settings = cfg.lookup("ode_settings");
-                set<double>("ode_atol", ode_settings.lookup("abs_tolerance"));
-                set<double>("ode_rtol", ode_settings.lookup("rel_tolerance"));
-                set<double>("ode_hstart", ode_settings.lookup("start_step"));
-            }
-        }
-        catch (const libconfig::SettingTypeException& tex) {
-            throw ConfigException("Encountered type exception parsing ODE settings.");
+        if (cfg.exists("ode_settings")) {
+            const libconfig::Setting& ode_settings = cfg.lookup("ode_settings");
+            set_param_value<double>(ode_settings, "ode", "abs_tolerance");
+            set_param_value<double>(ode_settings, "ode", "rel_tolerance");
+            set_param_value<double>(ode_settings, "ode", "start_step");
         }
 
         set_param_value<size_t>(cfg, "time_steps", true);
@@ -626,7 +622,7 @@ void Config::set_dynamics(const libconfig::Config& cfg)
 
                     set_param_value<int>(omega_eigenspace_settings, "omega", "eigenmode");
                     set_param_value<double>(omega_eigenspace_settings, "omega", "k_min");
-                    set_param_value<double>(omega_eigenspace_settings, "omega", "k_min");
+                    set_param_value<double>(omega_eigenspace_settings, "omega", "k_max");
                     set_param_value<int>(omega_eigenspace_settings, "omega", "N");
                     set_param_value<double>(omega_eigenspace_settings, "omega", "imag_threshold");
                 }
@@ -672,7 +668,7 @@ void Config::set_cuba_config(const libconfig::Setting& cuba_settings)
     }
     catch (const libconfig::SettingNotFoundException& nfex) {
         std::cout << "No cuba max. evaluations given. Using default value: "
-            << get<double>("cuba_maxeval") << std::endl;
+            << get<int>("cuba_max_evaluations") << std::endl;
     }
     set_param_value<int>(cuba_settings, "cuba", "n_cores");
 }
@@ -687,7 +683,7 @@ void Config::set_cuba_statefile(const libconfig::Setting& cuba_settings)
         // Case 1: 'statefile' is explicitly provided
         if (set_param_value<string>(cuba_settings, "cuba", "statefile")) {
 #if (__cplusplus >= 201703L)
-            fs::path file_path(get<string>("statefile"));
+            fs::path file_path(get<string>("cuba_statefile"));
             fs::path parent = file_path.parent_path();
 
             if (!parent.empty() && !fs::exists(parent)) {
@@ -726,7 +722,7 @@ void Config::set_cuba_statefile(const libconfig::Setting& cuba_settings)
                                       "\" is not a directory.");
             }
 #endif
-            set<string>("statefile",
+            set<string>("cuba_statefile",
                 create_filename_from_wavenumbers(statefile_path, ".state"));
             return;
         }
@@ -816,9 +812,9 @@ Config::Config()
     set("pt_order", 0);
 
     set("compute_eft_displacement_dispersion", false);
-    set("eft_displacement_dispersion", 0);
+    set("eft_displacement_dispersion", 0.0);
     /* Upper limit for EFT displacement dispersion integral. Lower limit = cutoff */
-    set("eft_displacement_dispersion_infty_", 10);
+    set("eft_displacement_dispersion_infty", 10.0);
 
     set("cuba_abs_tolerance", 1e-12);
     set("cuba_rel_tolerance", 1e-4);
@@ -1012,10 +1008,13 @@ Config::Config(const string& ini_file,
             std::cout << "Info: Single hard limit: Setting q = 10 * q_max = "
                 << get<double>("sh_Q1") << "."<< std::endl;
         }
-        else if (get<double>("sh_Q1") < get<double>("q_max")) {
-            std::cout << "Warning: Single hard limit: Fixed q = " <<
-                get<double>("sh_Q1") << " is less than q_max = " <<
-                get<double>("q_max") << "."<< std::endl;
+        else {
+            set<double>("sh_Q1", get<double>("single_hard_limit_q"));
+            if (get<double>("sh_Q1") < get<double>("q_max")) {
+                std::cout << "Warning: Single hard limit: Fixed q = " <<
+                    get<double>("sh_Q1") << " is less than q_max = " <<
+                    get<double>("q_max") << "."<< std::endl;
+            }
         }
     }
 
@@ -1024,18 +1023,19 @@ Config::Config(const string& ini_file,
     /* Write header in output file? */
     set_param_value<bool>(cfg, "write_header");
 
-    if (cfg.exists("cuba_settings")) {
-        const libconfig::Setting& cuba_settings = cfg.lookup("cuba_settings");
-        set_cuba_config(cuba_settings);
-        set_cuba_statefile(cuba_settings);
-    }
-
     set_spectrum(cfg);
     if (get<Spectrum>("spectrum") == BISPECTRUM) {
         set_bispectrum_ext_momenta(cfg);
     }
     set_input_ps(cfg);
     set_dynamics(cfg);
+
+    /* After spectrum/external momenta, which are needed for statefile name */
+    if (cfg.exists("cuba_settings")) {
+        const libconfig::Setting& cuba_settings = cfg.lookup("cuba_settings");
+        set_cuba_config(cuba_settings);
+        set_cuba_statefile(cuba_settings);
+    }
 
     set_param_value<bool>(cfg, "stdout_mode");
     if (!get<bool>("stdout_mode")) {
@@ -1089,13 +1089,13 @@ std::ostream& operator<<(std::ostream& out, const Config& c) {
     }
 
     out << "# Input power spectrum read from " << c.get<string>("input_ps_file") << "\n";
-    if (c.get<double>("input_ps_rescale") != 1) {
+    if (c.get<double>("input_ps_rescale_num") != 1) {
         out << "# Input power spectrum rescaled by a factor ";
         if (!c.get<string>("input_ps_rescale_str").empty()) {
             out << c.get<string>("input_ps_rescale_str");
         }
         else {
-            out << c.get<double>("input_ps_rescale");
+            out << c.get<double>("input_ps_rescale_num");
         }
         out << " before interpolation." << "\n";
     }
