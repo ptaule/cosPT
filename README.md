@@ -25,7 +25,10 @@ Anybody is free to use the software, but please cite at least
 ## Building and running the program
 
 The binary can be compiled by running `make` (with the `-j` option to
-build in parallel). It is placed in the build directory and can be run as
+build in parallel). Machine-specific settings, such as the compiler or include
+and library paths of the dependencies, can be set in `config.mk` (see
+[config.mk.example](config.mk.example)). The binary is placed in the build
+directory and can be run as
 ```
 cosPT configuration_file [--option argument]
 ```
@@ -144,11 +147,12 @@ See [tests/ini/quijote_Mnu_0p1eV_L1.cfg](tests/ini/quijote_Mnu_0p1eV_L1.cfg) for
 
 To run the program in debug mode, where numerous checks and assertions are
 performed at runtime, build the program with `make debug` and run
-`debug`. As is to be expected, running the program in debug mode
+`cosPT-debug`. As is to be expected, running the program in debug mode
 increases the computation time greatly.
 
 ## Benchmarking
 
 The program can be benchmarked by building the benchmark binary with `make
 benchmark` and running it as `bench`. This requires the Google benchmark
-library being installed.
+library being installed. `make profile` builds `bench-profile`, which includes
+debug symbols and frame pointers for use with a profiler.

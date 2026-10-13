@@ -47,5 +47,7 @@
 *.png
 *.pdf
 
-# Specific .cpp files
-src/version.cpp
+# Build directories and local build configuration
+obj/
+build/
+config.mk

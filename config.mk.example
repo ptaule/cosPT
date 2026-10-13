@@ -1,0 +1,9 @@
+# Machine-specific build settings. Copy to config.mk (which is not tracked by
+# git) and adjust. Variables can also be given on the command line, e.g.
+# `make CXX=g++-14`.
+
+# CXX = g++
+
+# Example for dependencies installed with Homebrew on Apple Silicon:
+# CPPFLAGS += -I/opt/homebrew/include
+# LDFLAGS  += -L/opt/homebrew/lib
